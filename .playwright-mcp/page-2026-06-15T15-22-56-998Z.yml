@@ -1,0 +1,135 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - link "V V-ERP Lite" [ref=e6] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e8]: V
+      - generic [ref=e9]: V-ERP Lite
+    - navigation [ref=e10]:
+      - link "Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e12]
+        - text: Dashboard
+      - link "Customers" [ref=e17] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e18]
+        - text: Customers
+      - link "Business" [ref=e23] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e24]
+        - text: Business
+      - link "Profile" [active] [ref=e28] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e29]
+        - text: Profile
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - img [ref=e36]
+        - generic [ref=e42]: Theme
+      - generic [ref=e43]:
+        - img [ref=e44]
+        - switch "Toggle dark mode" [ref=e50] [cursor=pointer]
+        - img [ref=e51]
+  - generic [ref=e53]:
+    - banner [ref=e54]:
+      - generic [ref=e55]:
+        - button "Toggle dark mode" [ref=e56] [cursor=pointer]:
+          - img
+        - button "AU admin@v-erp.com" [ref=e57]:
+          - generic [ref=e59]: AU
+          - generic [ref=e60]: admin@v-erp.com
+    - main [ref=e61]:
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - heading "Profile" [level=1] [ref=e88]
+            - paragraph [ref=e89]: Manage your identity, contact info, and preferences
+          - button "Edit" [ref=e90] [cursor=pointer]:
+            - img
+            - text: Edit
+        - generic [ref=e93]:
+          - generic [ref=e95]: AU
+          - generic [ref=e96]:
+            - heading "Admin User" [level=2] [ref=e97]
+            - generic [ref=e98]:
+              - paragraph [ref=e99]: No job title set
+              - paragraph [ref=e100]: admin@v-erp.com
+        - generic [ref=e101]:
+          - generic [ref=e103]:
+            - img [ref=e104]
+            - text: About
+          - paragraph [ref=e108]: No bio provided yet.
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - generic [ref=e112]:
+              - img [ref=e113]
+              - text: Contact
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - text: Email
+                - paragraph [ref=e118]: admin@v-erp.com
+              - generic [ref=e119]:
+                - text: Phone
+                - paragraph [ref=e120]: "-"
+          - generic [ref=e121]:
+            - generic [ref=e123]:
+              - img [ref=e124]
+              - text: Work
+            - generic [ref=e127]:
+              - generic [ref=e128]:
+                - text: Job Title
+                - paragraph [ref=e129]: "-"
+              - generic [ref=e130]:
+                - text: Timezone
+                - paragraph [ref=e131]: UTC
+              - generic [ref=e132]:
+                - text: Tenant
+                - paragraph [ref=e133]: default
+        - generic [ref=e134]:
+          - generic [ref=e136]:
+            - img [ref=e137]
+            - text: Preferences
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - generic [ref=e142]:
+                - text: Appearance
+                - paragraph [ref=e143]: Toggle between light and dark mode
+              - generic [ref=e144]:
+                - img [ref=e145]
+                - switch "Toggle dark mode" [ref=e151] [cursor=pointer]
+                - img [ref=e152]
+            - separator [ref=e154]
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - text: Timezone
+                - paragraph [ref=e157]: Your local timezone for scheduling
+              - generic [ref=e158]: UTC
+        - generic [ref=e159]:
+          - generic [ref=e161]:
+            - img [ref=e162]
+            - text: Account
+          - generic [ref=e165]:
+            - generic [ref=e166]:
+              - text: Role
+              - generic [ref=e168]: user
+            - generic [ref=e169]:
+              - text: Status
+              - generic [ref=e171]: Active
+            - generic [ref=e172]:
+              - text: Created
+              - paragraph [ref=e173]: "-"
+            - generic [ref=e174]:
+              - text: Last Updated
+              - paragraph [ref=e175]: "-"
+        - generic [ref=e176]:
+          - generic [ref=e178]:
+            - img [ref=e179]
+            - text: Keycloak Connection
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - text: Subject (ID)
+              - paragraph [ref=e183]: fde73d62-d9ee-4833-bf8b-173ad5b61d93
+            - generic [ref=e184]:
+              - text: Issuer
+              - paragraph [ref=e185]: http://localhost:8181/realms/v-erp-lite
+            - separator [ref=e186]
+            - paragraph [ref=e187]: Managed by Keycloak. To change your password or update MFA, visit your Keycloak account console.

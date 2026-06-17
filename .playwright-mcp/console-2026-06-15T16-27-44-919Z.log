@@ -1,0 +1,19 @@
+[      55ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[     251ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[     251ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[    1175ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[   43208ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/auth/mfa/status:0
+[   43210ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[   43244ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[   43357ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[   43407ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[   43407ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=19948024:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[   53958ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102

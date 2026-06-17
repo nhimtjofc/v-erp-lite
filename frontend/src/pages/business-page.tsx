@@ -1,0 +1,153 @@
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
+import { useListQuery, useCreateMutation, useUpdateMutation } from '@/shared/api'
+import type { Business } from '@/shared/api'
+import { Button } from '@/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+
+export function BusinessPage() {
+  const { t } = useTranslation()
+  const { data: businesses, isLoading } = useListQuery()
+  const createMutation = useCreateMutation()
+  const updateMutation = useUpdateMutation()
+  const [business, setBusiness] = useState<Business | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState<Partial<Business>>({})
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (businesses !== undefined) {
+      const biz = businesses[0] || null
+      setBusiness(biz)
+      if (biz) setForm({ ...biz })
+    }
+  }, [businesses])
+
+  const handleCreate = async () => {
+    setSaving(true)
+    try {
+      const created = await createMutation.mutateAsync({ body: { name: 'My Business' } as Business }) as Business
+      setBusiness(created)
+      setForm(created)
+      queryClient.invalidateQueries({ queryKey: ['list'] })
+      setEditing(true)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!business) return
+    setSaving(true)
+    try {
+      const updated = await updateMutation.mutateAsync({ path: { id: business.id! }, body: form })
+      setBusiness(updated)
+      setEditing(false)
+      queryClient.invalidateQueries({ queryKey: ['list'] })
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return <p className="text-muted-foreground py-8 text-center">{t('common:loading', 'Loading...')}</p>
+  }
+
+  if (!business) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('common:businessInformation', 'Business Information')}</h1>
+          <p className="text-muted-foreground mt-1">{t('common:businessNotFound', 'No business record found.')}</p>
+        </div>
+        <Button onClick={handleCreate} disabled={saving}>
+          {saving ? t('common:saving', 'Creating...') : t('common:createBusiness', 'Create Business Profile')}
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('common:businessInformation', 'Business Information')}</h1>
+          <p className="text-muted-foreground mt-1">{t('common:manageBusinessProfile', 'Manage your business profile')}</p>
+        </div>
+        {editing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setEditing(false); setForm(business) }}>
+              {t('common:cancel', 'Cancel')}
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t('common:saving', 'Saving...') : t('common:save', 'Save')}
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={() => setEditing(true)}>{t('common:edit', 'Edit')}</Button>
+        )}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('common:details', 'Details')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="field-name">{t('common:businessName', 'Business Name')}</Label>
+              {editing ? (
+                <Input id="field-name" value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            ) : (
+              <p className="text-sm font-medium">{business.name}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="field-address">{t('common:address', 'Address')}</Label>
+              {editing ? (
+                <Input id="field-address" value={form.address || ''} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            ) : (
+              <p className="text-sm">{business.address || '-'}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="field-phone">{t('common:phone', 'Phone')}</Label>
+              {editing ? (
+                <Input id="field-phone" value={form.phone || ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              ) : (
+                <p className="text-sm">{business.phone || '-'}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="field-email">{t('common:email', 'Email')}</Label>
+              {editing ? (
+                <Input id="field-email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              ) : (
+                <p className="text-sm">{business.email || '-'}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="field-taxId">{t('common:taxId', 'Tax ID')}</Label>
+              {editing ? (
+                <Input id="field-taxId" value={form.taxId || ''} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
+            ) : (
+              <p className="text-sm">{business.taxId || '-'}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

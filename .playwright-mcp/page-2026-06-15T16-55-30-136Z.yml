@@ -1,0 +1,44 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - link "V V-ERP Lite" [ref=e6] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e8]: V
+      - generic [ref=e9]: V-ERP Lite
+    - navigation [ref=e10]:
+      - link "Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e12]
+        - text: Dashboard
+      - link "Customers" [ref=e17] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e18]
+        - text: Customers
+      - link "Business" [ref=e23] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e24]
+        - text: Business
+      - link "Profile" [ref=e28] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e29]
+        - text: Profile
+      - link "Settings" [ref=e33] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e34]
+        - text: Settings
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - img [ref=e40]
+        - generic [ref=e46]: Theme
+      - generic [ref=e47]:
+        - img [ref=e48]
+        - switch "Toggle dark mode" [checked] [ref=e54] [cursor=pointer]
+        - img [ref=e55]
+  - generic [ref=e57]:
+    - banner [ref=e58]:
+      - generic [ref=e59]:
+        - button "Toggle dark mode" [ref=e60] [cursor=pointer]:
+          - img
+        - button "AU admin@v-erp.com" [ref=e61]:
+          - generic [ref=e63]: AU
+          - generic [ref=e64]: admin@v-erp.com
+    - main [ref=e65]

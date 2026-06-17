@@ -1,0 +1,29 @@
+.gradle/
+build/
+bin/
+*.class
+*.jar
+*.war
+*.db
+.env.local
+*.iml
+.idea/
+.DS_Store
+node_modules/
+dist/
+.next/
+
+# Eclipse IDE
+.project
+.classpath
+.factorypath
+.settings/
+
+# Build output
+bin/
+
+# TanStack router temp files
+.tanstack/
+
+# Local env overrides
+.env.local

@@ -1,0 +1,75 @@
+- generic [ref=e9]:
+  - complementary [ref=e10]:
+    - link "V V-ERP Lite" [ref=e12] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e14]: V
+      - generic [ref=e15]: V-ERP Lite
+    - navigation [ref=e82]:
+      - link "Dashboard" [ref=e83] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e84]
+        - text: Dashboard
+      - link "Customers" [ref=e89] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e90]
+        - text: Customers
+      - link "Business" [ref=e95] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e96]
+        - text: Business
+      - button "Profile" [ref=e101]:
+        - img [ref=e102]
+        - generic [ref=e106]: Profile
+        - img [ref=e107]
+      - generic [ref=e109]:
+        - button "Settings" [ref=e110]:
+          - img [ref=e111]
+          - generic [ref=e114]: Settings
+          - img [ref=e115]
+        - generic [ref=e117]:
+          - link "Regional" [ref=e118] [cursor=pointer]:
+            - /url: /settings/regional
+            - img [ref=e119]
+            - text: Regional
+          - link "Currency" [ref=e122] [cursor=pointer]:
+            - /url: /settings/currency
+            - img [ref=e123]
+            - text: Currency
+          - link "Security" [ref=e125] [cursor=pointer]:
+            - /url: /settings/security
+            - img [ref=e126]
+            - text: Security
+          - link "Features" [ref=e128] [cursor=pointer]:
+            - /url: /settings/features
+            - img [ref=e129]
+            - text: Features
+          - link "Communication" [ref=e131] [cursor=pointer]:
+            - /url: /settings/communication
+            - img [ref=e132]
+            - text: Communication
+  - generic [ref=e51]:
+    - banner [ref=e52]:
+      - button "AU admin@v-erp.com" [ref=e54]:
+        - generic [ref=e56]: AU
+        - generic [ref=e57]: admin@v-erp.com
+    - main [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - heading "Dashboard" [level=1] [ref=e61]
+          - paragraph [ref=e62]: Welcome
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e66]: System Status
+            - generic [ref=e67]:
+              - generic [ref=e68]: UP
+              - paragraph [ref=e69]: v-erp-lite
+          - generic [ref=e70]:
+            - generic [ref=e72]: Customers
+            - generic [ref=e73]:
+              - generic [ref=e74]: "1"
+              - paragraph [ref=e75]: customersCount
+          - generic [ref=e76]:
+            - generic [ref=e78]: Tenant
+            - generic [ref=e79]:
+              - generic [ref=e80]: default
+              - paragraph [ref=e81]: Active tenant

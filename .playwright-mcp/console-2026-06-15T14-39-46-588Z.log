@@ -1,0 +1,464 @@
+[      82ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:20102
+[    7344ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:20102
+[    7611ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[    7611ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=1ed08124:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts?t=1781534365453:25:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[    8276ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/customers:0
+[    8285ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/customers:0
+[  187644ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/customers:0
+[  187646ms] [ERROR] ApiError: API Error: 500 Internal Server Error
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[  187653ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/customers:0
+[  187653ms] [ERROR] ApiError: API Error: 500 Internal Server Error
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[  188440ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/business:0
+[  188440ms] [ERROR] TypeError: Failed to fetch
+    at request (http://localhost:5174/src/shared/api/client.ts:28:26) @ :0
+[  188441ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/business:0
+[  188441ms] [ERROR] TypeError: Failed to fetch
+    at request (http://localhost:5174/src/shared/api/client.ts:28:26) @ :0
+[  189271ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/users/me:0
+[  189271ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/users/me:0
+[  191745ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/health:0
+[  191745ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/customers:0
+[  191745ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/health:0
+[  191745ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/customers:0
+[  247833ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  421251ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  421251ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  459425ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/business:0
+[  459426ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[  459433ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/business:0
+[  459433ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[  471171ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[  471174ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[  473013ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  473015ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  473022ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  473023ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  529533ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  529534ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  532926ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  532929ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  880352ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:20102
+[  880594ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  880595ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  880600ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  880604ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  914967ms] [ERROR] %o
+
+%s
+
+%s
+ ReferenceError: useRef is not defined
+    at AppLayout (http://localhost:5174/src/app/layouts/app-layout.tsx?t=1781535301188:16:23)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:18509:20)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:5654:24)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7475:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:8525:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:997:72)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12561:98)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12424:43)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12408:13)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:11827:37) The above error occurred in the <AppLayout> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7000
+[  914975ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7591
+[  914975ms] [WARNING] Warning: useRef is not defined @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7592
+[  918553ms] [ERROR] %o
+
+%s
+
+%s
+ ReferenceError: userMenuRef is not defined
+    at AppLayout (http://localhost:5174/src/app/layouts/app-layout.tsx?t=1781535305049:230:157)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:18509:20)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:5654:24)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7475:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:8525:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:997:72)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12561:98)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12424:43)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12408:13)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:11827:37) The above error occurred in the <AppLayout> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7000
+[  918553ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7591
+[  918553ms] [WARNING] Warning: userMenuRef is not defined @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7592
+[  922348ms] [ERROR] %o
+
+%s
+
+%s
+ ReferenceError: userMenuRef is not defined
+    at AppLayout (http://localhost:5174/src/app/layouts/app-layout.tsx?t=1781535308884:221:157)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:18509:20)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:5654:24)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7475:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:8525:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:997:72)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12561:98)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12424:43)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12408:13)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:11827:37) The above error occurred in the <AppLayout> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7000
+[  922348ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7591
+[  922348ms] [WARNING] Warning: userMenuRef is not defined @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7592
+[  931609ms] [ERROR] Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-42LCURWG.js?v=aad9c8d0:391
+[  931613ms] [ERROR] Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-42LCURWG.js?v=aad9c8d0:391
+[  931618ms] [ERROR] %o
+
+%s
+
+%s
+ TypeError: Cannot read properties of null (reading 'useRef')
+    at exports.useRef (http://localhost:5174/node_modules/.vite/deps/chunk-42LCURWG.js?v=aad9c8d0:956:35)
+    at useRefWithInit (http://localhost:5174/node_modules/.vite/deps/@base-ui_react_menu.js?v=f195e8c4:91:22)
+    at FastComponent (http://localhost:5174/node_modules/.vite/deps/@base-ui_react_menu.js?v=f195e8c4:6743:22)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:18509:20)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:5654:24)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7475:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:8525:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:997:72)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12561:98)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:12424:43) The above error occurred in the <MenuRoot> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=771fcdcb:7000
+[  931618ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7591
+[  931618ms] [WARNING] Warning: Cannot read properties of null (reading 'useRef') @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=9b5d2911:7592
+[  932090ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:20102
+[  932304ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  932304ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[  932309ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  932312ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1026276ms] [ERROR] Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-42LCURWG.js?v=0aace2da:391
+[ 1026282ms] [ERROR] Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-42LCURWG.js?v=0aace2da:391
+[ 1026285ms] [ERROR] %o
+
+%s
+
+%s
+ TypeError: Cannot read properties of null (reading 'useContext')
+    at exports.useContext (http://localhost:5174/node_modules/.vite/deps/chunk-42LCURWG.js?v=0aace2da:911:27)
+    at useAvatarRootContext (http://localhost:5174/node_modules/.vite/deps/@base-ui_react_avatar.js?v=b3f8e087:39:25)
+    at AvatarFallback2 (http://localhost:5174/node_modules/.vite/deps/@base-ui_react_avatar.js?v=b3f8e087:197:7)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:18509:20)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:5654:24)
+    at updateForwardRef (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:7198:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:8735:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:997:72)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:12561:98)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:12424:43) The above error occurred in the <AvatarFallback> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=aad9c8d0:7000
+[ 1026285ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=aad9c8d0:7438
+[ 1026286ms] [WARNING] Warning: Cannot read properties of null (reading 'useContext') @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=aad9c8d0:7439
+[ 1026631ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1026782ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1026782ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1026784ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1026787ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1039819ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1039889ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1039890ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1039890ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1039892ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1044353ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1044394ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1044396ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1044397ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1044400ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1052557ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1052623ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1052623ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1052629ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1052630ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1075972ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1075985ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1077185ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/business:0
+[ 1077185ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1077188ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/business:0
+[ 1077188ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1078298ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1078298ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1078299ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1078299ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1079107ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1079108ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1079110ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1079110ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1079888ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1079889ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1079892ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1079892ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1083220ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1083226ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1086732ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1086733ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1086737ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1086739ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1165630ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1165631ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1166702ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1166704ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1166707ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/health:0
+[ 1166710ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1166749ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1166750ms] [ERROR] ApiError: API Error: 401 Unauthorized
+    at request (http://localhost:5174/src/shared/api/client.ts:34:11) @ :0
+[ 1173523ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1173528ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1178774ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1295402ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1295473ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1295477ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1295640ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1295683ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1295686ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1315962ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1316033ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1316036ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1345335ms] [ERROR] [vite] SyntaxError: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' @ http://localhost:5174/@vite/client:808
+[ 1345335ms] [ERROR] [vite] Failed to reload /src/pages/profile-page.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:808
+[ 1360976ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1361037ms] [ERROR] %o
+
+%s
+
+%s
+ SyntaxError: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' The above error occurred in the <Lazy> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:7000
+[ 1361037ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7438
+[ 1361037ms] [WARNING] Warning: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7439
+[ 1364478ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1364523ms] [ERROR] %o
+
+%s
+
+%s
+ SyntaxError: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' The above error occurred in the <Lazy> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:7000
+[ 1364523ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7438
+[ 1364523ms] [WARNING] Warning: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7439
+[ 1527965ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1528013ms] [ERROR] %o
+
+%s
+
+%s
+ SyntaxError: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' The above error occurred in the <Lazy> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:7000
+[ 1528013ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7438
+[ 1528013ms] [WARNING] Warning: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7439
+[ 1531263ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1531305ms] [ERROR] %o
+
+%s
+
+%s
+ SyntaxError: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' The above error occurred in the <Lazy> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:7000
+[ 1531305ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7438
+[ 1531305ms] [WARNING] Warning: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7439
+[ 1538066ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1538126ms] [ERROR] %o
+
+%s
+
+%s
+ SyntaxError: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' The above error occurred in the <Lazy> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:7000
+[ 1538126ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7438
+[ 1538126ms] [WARNING] Warning: The requested module '/src/shared/api/index.ts?t=1781535731833' does not provide an export named 'api' @ http://localhost:5174/node_modules/.vite/deps/@tanstack_react-router.js?v=0aace2da:7439
+[ 1579697ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1579876ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/users/me:0
+[ 1580884ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/users/me:0
+[ 1610176ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1610244ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/users/me:0
+[ 1611249ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8081/api/users/me:0
+[ 1620686ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1620831ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1620876ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1620951ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1620971ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621014ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621064ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621077ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621119ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621181ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621207ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621244ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621299ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621315ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621357ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621410ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621447ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621482ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621530ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621549ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621587ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621639ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621669ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621716ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621763ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621785ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621823ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621869ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1621891ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1621923ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1621974ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622000ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622039ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622088ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622113ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622155ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622200ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622222ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622263ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622309ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622324ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622366ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622410ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622421ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622461ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622514ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622526ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622560ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622606ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622623ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622658ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622705ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622724ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622759ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622809ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622822ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622858ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622903ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1622916ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1622950ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1622999ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623009ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623043ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623086ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623100ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623133ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623177ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623194ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623230ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623276ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623297ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623333ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623378ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623404ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623437ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623487ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623505ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623540ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623583ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623615ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623672ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623737ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623764ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1623826ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1623894ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1623926ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1624007ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1624070ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1624121ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1624183ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1624252ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1624282ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1624356ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1624418ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1624442ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1624501ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1624560ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1624600ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1624652ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1624725ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1624756ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1624828ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1624916ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1624978ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1625052ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1625165ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1625206ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1625277ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1625359ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1625382ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1625426ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1625481ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1625526ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1625591ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1625674ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1625709ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1625797ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1625890ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1625948ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626029ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626151ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626189ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626263ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626333ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626394ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626452ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626507ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626549ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626591ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626646ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626659ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626696ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626742ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626753ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626789ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626846ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626865ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1626906ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1626951ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1626977ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1627040ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1627125ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1627213ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1627294ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1627385ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1627496ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1627569ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1627653ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1627766ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1627831ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1627943ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1628028ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1628079ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1628142ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1628151ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1628216ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1628325ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1628379ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1628446ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1628541ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1628678ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1628752ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1628889ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1628957ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1629236ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102
+[ 1629566ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1629816ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1629923ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=0aace2da:20102

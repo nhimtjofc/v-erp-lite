@@ -1,0 +1,10 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome",
+  "systemStatus": "System Status",
+  "customers": "Customers",
+  "tenant": "Tenant",
+  "totalCustomers": "Total registered customers",
+  "activeTenant": "Active tenant",
+  "checking": "Checking..."
+}

@@ -1,0 +1,129 @@
+- generic [ref=e9]:
+  - complementary [ref=e10]:
+    - link "V V-ERP Lite" [ref=e12] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e14]: V
+      - generic [ref=e15]: V-ERP Lite
+    - navigation [ref=e211]:
+      - link "Dashboard" [ref=e212] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e213]
+        - text: Dashboard
+      - link "Customers" [ref=e218] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e219]
+        - text: Customers
+      - link "Business" [ref=e224] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e225]
+        - text: Business
+      - generic [ref=e229]:
+        - button "Profile" [ref=e230]:
+          - img [ref=e231]
+          - generic [ref=e235]: Profile
+          - img [ref=e236]
+        - generic [ref=e238]:
+          - link "Personal Info" [ref=e239] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e240]
+            - text: Personal Info
+          - link "Preferences" [ref=e243] [cursor=pointer]:
+            - /url: /profile/preferences
+            - img [ref=e244]
+            - text: Preferences
+          - link "Security" [ref=e250] [cursor=pointer]:
+            - /url: /profile/security
+            - img [ref=e251]
+            - text: Security
+      - generic [ref=e253]:
+        - button "Settings" [ref=e254]:
+          - img [ref=e255]
+          - generic [ref=e258]: Settings
+          - img [ref=e259]
+        - generic [ref=e261]:
+          - link "Regional" [ref=e262] [cursor=pointer]:
+            - /url: /settings/regional
+            - img [ref=e263]
+            - text: Regional
+          - link "Currency" [ref=e266] [cursor=pointer]:
+            - /url: /settings/currency
+            - img [ref=e267]
+            - text: Currency
+          - link "Security" [ref=e269] [cursor=pointer]:
+            - /url: /settings/security
+            - img [ref=e270]
+            - text: Security
+          - link "Features" [ref=e272] [cursor=pointer]:
+            - /url: /settings/features
+            - img [ref=e273]
+            - text: Features
+          - link "Communication" [ref=e275] [cursor=pointer]:
+            - /url: /settings/communication
+            - img [ref=e276]
+            - text: Communication
+  - generic [ref=e51]:
+    - banner [ref=e52]:
+      - button "AU admin@v-erp.com" [ref=e54]:
+        - generic [ref=e56]: AU
+        - generic [ref=e57]: admin@v-erp.com
+    - main [ref=e58]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - img [ref=e188]
+          - generic [ref=e192]:
+            - heading "Regional" [level=2] [ref=e193]
+            - generic [ref=e194]: Admin
+        - generic [ref=e195]:
+          - generic [ref=e196]:
+            - text: Timezone
+            - combobox [ref=e197]:
+              - option "Select..."
+              - option "UTC" [selected]
+              - option "America/New_York"
+              - option "America/Chicago"
+              - option "America/Denver"
+              - option "America/Los_Angeles"
+              - option "Europe/London"
+              - option "Europe/Paris"
+              - option "Europe/Berlin"
+              - option "Asia/Tokyo"
+              - option "Asia/Shanghai"
+              - option "Asia/Singapore"
+              - option "Australia/Sydney"
+              - option "Pacific/Auckland"
+            - paragraph [ref=e198]: "Default:: UTC"
+          - generic [ref=e199]:
+            - text: Language
+            - combobox [ref=e200]:
+              - option "Select..."
+              - option "English" [selected]
+              - option "Tiếng Việt"
+              - option "日本語"
+              - option "中文"
+              - option "한국어"
+              - option "Deutsch"
+              - option "Français"
+            - paragraph [ref=e201]: "Default:: English"
+          - generic [ref=e202]:
+            - text: Date Format
+            - combobox [ref=e203]:
+              - option "Select..."
+              - option "2024-12-31" [selected]
+              - option "31/12/2024"
+              - option "12/31/2024"
+              - option "31.12.2024"
+            - paragraph [ref=e204]: "Default:: YYYY-MM-DD"
+          - generic [ref=e205]:
+            - text: Time Format
+            - combobox [ref=e206]:
+              - option "Select..."
+              - option "14:30" [selected]
+              - option "2:30 PM"
+            - paragraph [ref=e207]: "Default:: 14:30"
+        - generic [ref=e210]:
+          - button "Reset" [disabled]:
+            - img
+            - text: Reset
+          - button "Save" [disabled]:
+            - img
+            - text: Save

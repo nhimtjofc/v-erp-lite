@@ -1,0 +1,93 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - link [ref=e6] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e8]: V
+        - generic [ref=e9]: V-ERP Lite
+      - navigation [ref=e10]:
+        - link [ref=e11] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e12]
+          - text: Dashboard
+        - link [ref=e17] [cursor=pointer]:
+          - /url: /customers
+          - img [ref=e18]
+          - text: Customers
+        - link [ref=e23] [cursor=pointer]:
+          - /url: /business
+          - img [ref=e24]
+          - text: Business
+        - link [ref=e28] [cursor=pointer]:
+          - /url: /admin/tenants
+          - img [ref=e29]
+          - text: Administration
+        - button [ref=e33]:
+          - img [ref=e34]
+          - generic [ref=e38]: Profile
+          - img [ref=e39]
+        - button [ref=e42]:
+          - img [ref=e43]
+          - generic [ref=e46]: Settings
+          - img [ref=e47]
+    - generic [ref=e49]:
+      - banner [ref=e50]:
+        - button [ref=e52]:
+          - generic [ref=e54]: AU
+          - generic [ref=e55]: admin@v-erp.com
+      - main [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - heading [level=1] [ref=e60]: Tenants
+              - paragraph [ref=e61]: Administration
+            - button [ref=e62] [cursor=pointer]:
+              - img
+              - text: Create Tenant
+          - generic [ref=e63]:
+            - generic [ref=e65]: Tenants
+            - table [ref=e68]:
+              - rowgroup [ref=e69]:
+                - row [ref=e70]:
+                  - columnheader [ref=e71]: Code
+                  - columnheader [ref=e72]: Name
+                  - columnheader [ref=e73]: Active
+                  - columnheader [ref=e74]
+              - rowgroup [ref=e75]:
+                - row [ref=e76]:
+                  - cell [ref=e77]: v-erp-app
+                  - cell [ref=e78]: V-ERP App
+                  - cell [ref=e79]:
+                    - generic [ref=e80]: Active
+                  - cell [ref=e81]:
+                    - generic [ref=e82]:
+                      - link [ref=e83] [cursor=pointer]:
+                        - /url: /admin/tenants/fca3053d-2817-4736-89fa-8ca4369de807
+                        - button [ref=e84]:
+                          - img
+                      - button [ref=e85] [cursor=pointer]:
+                        - img
+                      - button [ref=e86] [cursor=pointer]:
+                        - img
+  - dialog "Create Tenant" [ref=e90]:
+    - generic [ref=e91]:
+      - heading "Create Tenant" [level=2] [ref=e92]
+      - paragraph [ref=e93]: Create Tenant
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - text: Code
+        - textbox "Code" [active] [ref=e96]:
+          - /placeholder: e.g. acme-corp
+      - generic [ref=e97]:
+        - text: Name
+        - textbox "Name" [ref=e98]:
+          - /placeholder: e.g. Acme Corp
+      - generic [ref=e99]:
+        - checkbox "Active" [checked] [ref=e100]
+        - generic [ref=e101]: Active
+      - generic [ref=e102]:
+        - button "Cancel" [ref=e103] [cursor=pointer]
+        - button "Save" [ref=e104] [cursor=pointer]
+    - button "Close" [ref=e105]:
+      - img [ref=e106]
+      - generic [ref=e109]: Close

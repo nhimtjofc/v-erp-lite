@@ -1,0 +1,10 @@
+{
+  "title": "Bảng điều khiển",
+  "welcome": "Chào mừng",
+  "systemStatus": "Trạng thái hệ thống",
+  "customers": "Khách hàng",
+  "tenant": "Tổ chức",
+  "totalCustomers": "Tổng số khách hàng đã đăng ký",
+  "activeTenant": "Tổ chức đang hoạt động",
+  "checking": "Đang kiểm tra..."
+}

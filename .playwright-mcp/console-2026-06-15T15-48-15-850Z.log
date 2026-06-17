@@ -1,0 +1,69 @@
+[     117ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[     204ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8081/api/users/me:0
+[     206ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8081/api/auth/mfa/status:0
+[    1212ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8081/api/users/me:0
+[    1231ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8081/api/auth/mfa/status:0
+[    1329ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[    1329ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[  110190ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  469019ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/auth/mfa/setup:0
+[  477456ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/auth/mfa/setup:0
+[ 1931027ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[ 1931275ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/users/me:0
+[ 1931284ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/auth/mfa/status:0
+[ 1931353ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 2055122ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[ 2055253ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 2055253ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[ 2064319ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2064319ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2100937ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[ 2107078ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[ 2107150ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 2107151ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[ 2108834ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2108834ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2110335ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2110335ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2179731ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[ 2180024ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2180024ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2181098ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[ 2181338ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2181338ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2194760ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2194760ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2200656ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[ 2201020ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2201020ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2214401ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[ 2214697ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2214697ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2220214ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[ 2220494ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2220494ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2255421ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[ 2255633ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2255633ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2295960ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2295960ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2316442ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=19948024:20102
+[ 2316632ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2316632ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile:0
+[ 2346620ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0

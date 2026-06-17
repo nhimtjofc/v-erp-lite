@@ -1,0 +1,33 @@
+[     364ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=b2da0e57:20102
+[   43548ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=b2da0e57:20102
+[   43848ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[   43851ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[  112434ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile/security:0
+[  112434ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile/security:0
+[  119359ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile/security:0
+[  119360ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/profile/security:0
+[  283908ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  382762ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/auth/mfa/status:0
+[  382832ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  383109ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=b2da0e57:20102
+[  383188ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  383189ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=b2da0e57:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[  623338ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[ 1301648ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[ 1301739ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0

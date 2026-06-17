@@ -1,0 +1,6 @@
+[      85ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=eae3ef1e:20102
+[     480ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[     570ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[     570ms] [WARNING] [refreshToken] signinSilent failed: Token is not active @ http://localhost:5174/src/shared/api/interceptors.ts:91
+[   51201ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8181/realms/v-erp-lite/login-actions/authenticate?execution=3d160365-65a5-4cb4-b27c-3aaa5acd69c4&client_id=v-erp-app&tab_id=cAwJPDId5Io&client_data=eyJydSI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3NC9hdXRoLWNhbGxiYWNrIiwicnQiOiJjb2RlIiwic3QiOiJkYTY5MmY4MjEzYWI0ZjY3YWU1N2YyMmE4MTY5MTkyZCJ9:207
+[   81300ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=eae3ef1e:20102

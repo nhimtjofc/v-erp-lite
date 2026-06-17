@@ -1,0 +1,14 @@
+[     137ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[     247ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[     336ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[     450ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=df4bc54c:20102
+[     511ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[     511ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=df4bc54c:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14

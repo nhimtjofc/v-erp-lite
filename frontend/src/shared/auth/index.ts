@@ -1,0 +1,68 @@
+import { User, UserManager, WebStorageStateStore } from 'oidc-client-ts'
+
+const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8181'
+const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'v-erp-lite'
+const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'v-erp-app'
+
+const origin = window.location.origin
+
+const userManager = new UserManager({
+  authority: `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`,
+  client_id: KEYCLOAK_CLIENT_ID,
+  redirect_uri: `${origin}/auth-callback`,
+  post_logout_redirect_uri: `${origin}/login`,
+  response_type: 'code',
+  scope: 'openid profile email roles',
+  userStore: new WebStorageStateStore({ store: window.localStorage }),
+  automaticSilentRenew: false,
+})
+
+// Mirror tokens to plain localStorage keys so the hey-api client can read them synchronously
+userManager.events.addUserLoaded((user) => {
+  localStorage.setItem('access_token', user.access_token)
+  if (user.refresh_token) {
+    localStorage.setItem('refresh_token', user.refresh_token)
+  }
+})
+
+// Clear mirrored tokens on logout
+userManager.events.addUserUnloaded(() => {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+})
+
+// Bootstrap: if a user session already exists, mirror its tokens now
+userManager.getUser().then((user) => {
+  if (user) {
+    localStorage.setItem('access_token', user.access_token)
+    if (user.refresh_token) {
+      localStorage.setItem('refresh_token', user.refresh_token)
+    }
+  }
+})
+
+export { userManager }
+export type { User }
+
+export async function getUser(): Promise<User | null> {
+  const user = await userManager.getUser()
+  return user
+}
+
+export async function login(): Promise<void> {
+  await userManager.signinRedirect()
+}
+
+export async function handleCallback(): Promise<User> {
+  const user = await userManager.signinRedirectCallback()
+  return user
+}
+
+export async function logout(): Promise<void> {
+  await userManager.signoutRedirect()
+}
+
+export async function getAccessToken(): Promise<string | null> {
+  const user = await userManager.getUser()
+  return user?.access_token ?? null
+}

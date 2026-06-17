@@ -1,0 +1,70 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - link "V V-ERP Lite" [ref=e6] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e8]: V
+      - generic [ref=e9]: V-ERP Lite
+    - navigation [ref=e98]:
+      - link "Dashboard" [ref=e99] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e100]
+        - text: Dashboard
+      - link "Customers" [ref=e105] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e106]
+        - text: Customers
+      - link "Business" [ref=e111] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e112]
+        - text: Business
+      - link "Administration" [ref=e116] [cursor=pointer]:
+        - /url: /admin/tenants
+        - img [ref=e117]
+        - text: Administration
+      - button "Profile" [ref=e121]:
+        - img [ref=e122]
+        - generic [ref=e126]: Profile
+        - img [ref=e127]
+      - button "Settings" [ref=e130]:
+        - img [ref=e131]
+        - generic [ref=e134]: Settings
+        - img [ref=e135]
+  - generic [ref=e49]:
+    - banner [ref=e50]:
+      - button "AU admin@v-erp.com" [ref=e52]:
+        - generic [ref=e54]: AU
+        - generic [ref=e55]: admin@v-erp.com
+    - main [ref=e56]:
+      - generic [ref=e137]:
+        - generic [ref=e138]:
+          - generic [ref=e139]:
+            - button [ref=e140] [cursor=pointer]:
+              - img
+            - generic [ref=e141]:
+              - heading "Acme Corp" [level=1] [ref=e142]
+              - paragraph [ref=e143]: "Code: acme-corp"
+          - button "Delete Tenant" [ref=e144] [cursor=pointer]:
+            - img
+            - text: Delete Tenant
+        - generic [ref=e145]:
+          - generic [ref=e147]: Tenant Details
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e151]: "Code:"
+              - text: acme-corp
+            - generic [ref=e152]:
+              - generic [ref=e153]: "Name:"
+              - text: Acme Corp
+            - generic [ref=e154]:
+              - generic [ref=e155]: "Active:"
+              - generic [ref=e156]: Active
+            - generic [ref=e157]:
+              - generic [ref=e158]: "Total Users:"
+              - text: "0"
+        - generic [ref=e159]:
+          - generic [ref=e161]:
+            - generic [ref=e162]: Tenant Users
+            - button "Create User" [ref=e163] [cursor=pointer]:
+              - img
+              - text: Create User
+          - paragraph [ref=e165]: No users found in this tenant

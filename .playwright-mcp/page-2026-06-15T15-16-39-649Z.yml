@@ -1,0 +1,5 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - strong [ref=e5]: Something went wrong!
+    - button "Hide Error" [ref=e6]
+  - code [ref=e10]: "Failed to fetch dynamically imported module: http://localhost:5174/src/routes/_authenticated/profile.tsx?t=1781536324484&tsr-split=component"

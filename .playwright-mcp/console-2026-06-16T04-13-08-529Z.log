@@ -1,0 +1,78 @@
+[      98ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=85c01ede:20102
+[   24391ms] [INFO] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: http://localhost:8181/resources/pzzv7/common/keycloak/vendor/patternfly-v5/assets/fonts/webfonts/fa-solid-900.woff2 @ http://localhost:8181/realms/v-erp-lite/login-actions/authenticate?execution=c038cb49-48cf-44f3-a544-bf5e8acc974c&client_id=v-erp-app&tab_id=OsHPR0NkzdY&client_data=eyJydSI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3NC9hdXRoLWNhbGxiYWNrIiwicnQiOiJjb2RlIiwic3QiOiIwNmU2MzYzNDAyNjc0ZjE1OGM2NzQwYzlhYWE3OGM1MSJ9:207
+[   24396ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8181/realms/v-erp-lite/login-actions/authenticate?execution=c038cb49-48cf-44f3-a544-bf5e8acc974c&client_id=v-erp-app&tab_id=OsHPR0NkzdY&client_data=eyJydSI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3NC9hdXRoLWNhbGxiYWNrIiwicnQiOiJjb2RlIiwic3QiOiIwNmU2MzYzNDAyNjc0ZjE1OGM2NzQwYzlhYWE3OGM1MSJ9:207
+[   36355ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=85c01ede:20102
+[   36412ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[   36413ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14
+[   60765ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[   61772ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  144948ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  146068ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  217575ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  218582ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  257148ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  258160ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:8081/api/tenants:0
+[  276487ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  545400ms] [ERROR] WebSocket connection to 'ws://localhost:5174/?token=MzzqDJxILP40' failed:  @ http://localhost:5174/@vite/client:744
+[  545408ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:864
+[  546179ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=85c01ede:20102
+[  546209ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/common:0
+[  546209ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/dashboard:0
+[  546209ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/nav:0
+[  546209ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/profile:0
+[  546209ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/settings:0
+[  546209ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/admin:0
+[  546562ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/common:0
+[  546562ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/dashboard:0
+[  546562ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/nav:0
+[  546562ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/profile:0
+[  546562ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/settings:0
+[  546562ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/admin:0
+[  547266ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/common:0
+[  547266ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/dashboard:0
+[  547266ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/nav:0
+[  547266ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/profile:0
+[  547266ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/settings:0
+[  547266ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/admin:0
+[  548669ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/common:0
+[  548669ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/dashboard:0
+[  548669ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/nav:0
+[  548669ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/profile:0
+[  548669ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/settings:0
+[  548669ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/admin:0
+[  551472ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/common:0
+[  551472ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/dashboard:0
+[  551472ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/nav:0
+[  551473ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/profile:0
+[  551473ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/settings:0
+[  551473ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/admin:0
+[  557078ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/common:0
+[  557078ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/dashboard:0
+[  557079ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/nav:0
+[  557079ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/profile:0
+[  557079ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/settings:0
+[  557079ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/i18n/en/admin:0
+[  557141ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/tenants:0
+[  558143ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8081/api/tenants:0
+[  893754ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8081/api/customers:0
+[  893781ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  898181ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8181/realms/v-erp-lite/login-actions/authenticate?execution=3d160365-65a5-4cb4-b27c-3aaa5acd69c4&client_id=v-erp-app&tab_id=pib0tsYy3ts&client_data=eyJydSI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3NC9hdXRoLWNhbGxiYWNrIiwicnQiOiJjb2RlIiwic3QiOiI5NWY1MmUzNjliZGI0Mzc0YjFiOGY0YmY3ZDdiOGEyYiJ9:207
+[  902832ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=85c01ede:20102
+[  902940ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8181/realms/v-erp-lite/protocol/openid-connect/token:0
+[  902941ms] [ERROR] Auth callback error: ErrorResponse: Code not valid
+    at JsonService.postForm (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:827:15)
+    at async TokenClient.exchangeCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1208:22)
+    at async ResponseValidator._processCode (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1468:29)
+    at async ResponseValidator.validateSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1369:5)
+    at async OidcClient.processSigninResponse (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:1984:7)
+    at async UserManager._signinEnd (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:3280:28)
+    at async UserManager.signinRedirectCallback (http://localhost:5174/node_modules/.vite/deps/oidc-client-ts.js?v=85c01ede:2978:18)
+    at async handleCallback (http://localhost:5174/src/shared/auth/index.ts:43:16) @ http://localhost:5174/src/pages/auth-callback-page.tsx:14

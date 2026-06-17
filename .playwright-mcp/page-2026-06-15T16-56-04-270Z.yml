@@ -1,0 +1,222 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - link "V V-ERP Lite" [ref=e6] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e8]: V
+      - generic [ref=e9]: V-ERP Lite
+    - navigation [ref=e10]:
+      - link "Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e12]
+        - text: Dashboard
+      - link "Customers" [ref=e17] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e18]
+        - text: Customers
+      - link "Business" [ref=e23] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e24]
+        - text: Business
+      - link "Profile" [ref=e28] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e29]
+        - text: Profile
+      - link "Settings" [ref=e33] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e34]
+        - text: Settings
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - img [ref=e40]
+        - generic [ref=e46]: Theme
+      - generic [ref=e47]:
+        - img [ref=e48]
+        - switch "Toggle dark mode" [checked] [ref=e54] [cursor=pointer]
+        - img [ref=e55]
+  - generic [ref=e57]:
+    - banner [ref=e58]:
+      - generic [ref=e59]:
+        - button "Toggle dark mode" [ref=e60] [cursor=pointer]:
+          - img
+        - button "AU admin@v-erp.com" [ref=e61]:
+          - generic [ref=e63]: AU
+          - generic [ref=e64]: admin@v-erp.com
+    - main [ref=e65]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - heading "Tenant Settings" [level=1] [ref=e69]
+            - paragraph [ref=e70]: Configure business-wide defaults for regional, currency, security, features, and communication settings.
+          - generic [ref=e71]: admin
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - img [ref=e75]
+            - heading "regional" [level=2] [ref=e78]
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - text: Timezone
+              - combobox [ref=e81]:
+                - option "useSystemDefault" [selected]
+                - option "UTC"
+                - option "America/New_York"
+                - option "America/Chicago"
+                - option "America/Denver"
+                - option "America/Los_Angeles"
+                - option "Europe/London"
+                - option "Europe/Paris"
+                - option "Europe/Berlin"
+                - option "Asia/Tokyo"
+                - option "Asia/Shanghai"
+                - option "Asia/Singapore"
+                - option "Australia/Sydney"
+                - option "Pacific/Auckland"
+              - paragraph [ref=e166]: effective UTC
+            - generic [ref=e82]:
+              - text: Language
+              - combobox [ref=e83]:
+                - option "useSystemDefault" [selected]
+                - option "English"
+                - option "Tiếng Việt"
+                - option "日本語"
+                - option "中文"
+                - option "한국어"
+                - option "Deutsch"
+                - option "Français"
+              - paragraph [ref=e167]: effective English
+            - generic [ref=e84]:
+              - text: Date Format
+              - combobox [ref=e85]:
+                - option "useSystemDefault" [selected]
+                - option "2024-12-31"
+                - option "31/12/2024"
+                - option "12/31/2024"
+                - option "31.12.2024"
+              - paragraph [ref=e168]: effective YYYY-MM-DD
+            - generic [ref=e86]:
+              - text: Time Format
+              - combobox [ref=e87]:
+                - option "useSystemDefault" [selected]
+                - option "14:30"
+                - option "2:30 PM"
+              - paragraph [ref=e169]: effective 24h
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - img [ref=e90]
+            - heading "Currency" [level=2] [ref=e92]
+          - generic [ref=e93]:
+            - generic [ref=e94]:
+              - text: Currency
+              - combobox [ref=e95]:
+                - option "useSystemDefault" [selected]
+                - option "USD ($)"
+                - option "EUR (€)"
+                - option "GBP (£)"
+                - option "JPY (¥)"
+                - option "VND (₫)"
+                - option "SGD ($)"
+                - option "AUD ($)"
+              - paragraph [ref=e170]: effective USD
+            - generic [ref=e96]:
+              - text: Currency Symbol
+              - textbox "e.g. $, €, ₫" [ref=e97]
+            - generic [ref=e98]:
+              - text: Decimal Places
+              - spinbutton [ref=e99]
+              - paragraph [ref=e171]: effective 2
+            - generic [ref=e100]:
+              - text: Fiscal Year Start
+              - textbox "e.g. 01-01" [ref=e101]
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - img [ref=e104]
+            - heading "security" [level=2] [ref=e106]
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - text: Minimum Password Length
+              - spinbutton [ref=e109]
+            - generic [ref=e110]:
+              - text: Session Timeout (minutes)
+              - spinbutton [ref=e111]
+              - paragraph [ref=e172]: effective 60 min
+            - generic [ref=e112]:
+              - text: Max Login Attempts
+              - spinbutton [ref=e113]
+              - paragraph [ref=e173]: effective 5
+            - generic [ref=e114]:
+              - text: Require MFA
+              - generic [ref=e115]:
+                - switch [ref=e116] [cursor=pointer]
+                - generic [ref=e117]: Disabled
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - img [ref=e120]
+            - heading "features" [level=2] [ref=e122]
+          - generic [ref=e123]:
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - text: Customers
+                - paragraph [ref=e126]: featureCustomersDesc
+              - generic [ref=e127]:
+                - switch [ref=e128] [cursor=pointer]
+                - generic [ref=e129]: "Off"
+            - generic [ref=e130]:
+              - generic [ref=e131]:
+                - text: Business
+                - paragraph [ref=e132]: featureBusinessDesc
+              - generic [ref=e133]:
+                - switch [ref=e134] [cursor=pointer]
+                - generic [ref=e135]: "Off"
+            - generic [ref=e136]:
+              - generic [ref=e137]:
+                - text: Users
+                - paragraph [ref=e138]: featureUsersDesc
+              - generic [ref=e139]:
+                - switch [ref=e140] [cursor=pointer]
+                - generic [ref=e141]: "Off"
+            - generic [ref=e142]:
+              - generic [ref=e143]:
+                - text: Settings
+                - paragraph [ref=e144]: featureSettingsDesc
+              - generic [ref=e145]:
+                - switch [ref=e146] [cursor=pointer]
+                - generic [ref=e147]: "Off"
+            - generic [ref=e148]:
+              - generic [ref=e149]:
+                - text: Roles
+                - paragraph [ref=e150]: featureRolesDesc
+              - generic [ref=e151]:
+                - switch [ref=e152] [cursor=pointer]
+                - generic [ref=e153]: "Off"
+          - group [ref=e174]:
+            - generic "viewEffective" [ref=e175] [cursor=pointer]
+        - generic [ref=e154]:
+          - generic [ref=e155]:
+            - img [ref=e156]
+            - heading "communication" [level=2] [ref=e158]
+          - generic [ref=e159]:
+            - generic [ref=e160]:
+              - text: Default Email From
+              - textbox "noreply@example.com" [ref=e161]
+            - generic [ref=e162]:
+              - text: Default Email Signature
+              - 'textbox "Best regards, {{name}} {{company}}" [ref=e163]':
+                - /placeholder: "Best regards,\n{{name}}\n{{company}}"
+            - generic [ref=e164]:
+              - text: Default Notification Channel
+              - combobox [ref=e165]:
+                - option "useSystemDefault" [selected]
+                - option "Email"
+                - option "In-App"
+        - generic [ref=e176]:
+          - generic [ref=e182]:
+            - img [ref=e183]
+            - text: settingsSaveFailed
+          - generic [ref=e177]:
+            - paragraph [ref=e178]: immediateEffect
+            - generic [ref=e179]:
+              - button "Reset" [ref=e180] [cursor=pointer]:
+                - img
+                - text: Reset
+              - button "Save" [ref=e181] [cursor=pointer]:
+                - img
+                - text: Save

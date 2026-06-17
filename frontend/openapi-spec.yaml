@@ -1,0 +1,1224 @@
+---
+openapi: 3.1.1
+components:
+  schemas:
+    Business:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        taxId:
+          type: string
+        logoUrl:
+          type: string
+        active:
+          type: boolean
+    ConfigRequest:
+      type: object
+      properties:
+        settings:
+          type: object
+          additionalProperties: {}
+    Customer:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        id:
+          $ref: "#/components/schemas/UUID"
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        birthDate:
+          $ref: "#/components/schemas/LocalDate"
+        notes:
+          type: string
+        active:
+          type: boolean
+    Instant:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T16:15:50Z
+    LocalDate:
+      type: string
+      format: date
+      examples:
+      - 2022-03-10
+    MfaVerifyRequest:
+      type: object
+      properties:
+        code:
+          type: string
+    PasswordChangeRequest:
+      type: object
+      properties:
+        newPassword:
+          type: string
+    Role:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        description:
+          type: string
+    Tenant:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        code:
+          type: string
+        name:
+          type: string
+        ownerId:
+          $ref: "#/components/schemas/UUID"
+        active:
+          type: boolean
+    UUID:
+      type: string
+      format: uuid
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    User:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        id:
+          $ref: "#/components/schemas/UUID"
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        keycloakId:
+          type: string
+        active:
+          type: boolean
+        lastLoginAt:
+          $ref: "#/components/schemas/Instant"
+        role:
+          $ref: "#/components/schemas/Role"
+        phone:
+          type: string
+        jobTitle:
+          type: string
+        bio:
+          type: string
+        timezone:
+          type: string
+        websiteUrl:
+          type: string
+        avatarUrl:
+          type: string
+        mfaSecret:
+          type: string
+        mfaEnabled:
+          type: boolean
+  securitySchemes:
+    SecurityScheme:
+      type: openIdConnect
+      openIdConnectUrl: http://localhost:8181/realms/v-erp-lite/.well-known/openid-configuration
+      description: Authentication
+paths:
+  /api/admin/tenants/{tenantId}/users:
+    get:
+      operationId: listTenantUsers
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List Tenant Users
+      tags:
+      - Admin Resource
+      security:
+      - SecurityScheme:
+        - admin
+    post:
+      operationId: createTenantUser
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create Tenant User
+      tags:
+      - Admin Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/admin/tenants/{tenantId}/users/{id}:
+    put:
+      operationId: updateTenantUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update Tenant User
+      tags:
+      - Admin Resource
+      security:
+      - SecurityScheme:
+        - admin
+    delete:
+      operationId: deleteTenantUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete Tenant User
+      tags:
+      - Admin Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/auth/mfa/disable:
+    post:
+      operationId: disableMfa
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Disable Mfa
+      tags:
+      - Auth Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/auth/mfa/setup:
+    get:
+      operationId: setupMfa
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Setup Mfa
+      tags:
+      - Auth Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/auth/mfa/status:
+    get:
+      operationId: mfaStatus
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Mfa Status
+      tags:
+      - Auth Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/auth/mfa/verify:
+    post:
+      operationId: verifyMfa
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaVerifyRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Verify Mfa
+      tags:
+      - Auth Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/auth/password:
+    put:
+      operationId: changePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChangeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Change Password
+      tags:
+      - Auth Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/business:
+    get:
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Business"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Business Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Business"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Business Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/business/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Business"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Business"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Business Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Business"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Business Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Business Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/customers:
+    get:
+      operationId: list
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Customer Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Customer Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/customers/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Customer Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Customer Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Customer Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+      summary: Health
+      tags:
+      - Health Resource
+  /api/i18n/{locale}/{namespace}:
+    get:
+      operationId: getTranslations
+      parameters:
+      - name: locale
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: namespace
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Get Translations
+      tags:
+      - I 18n Resource
+  /api/sync/keycloak:
+    post:
+      operationId: syncAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Sync All
+      tags:
+      - Sync Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/sync/keycloak/tenants/{code}:
+    post:
+      operationId: syncTenant
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Sync Tenant
+      tags:
+      - Sync Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/tenant-settings:
+    put:
+      operationId: putTenantSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Put Tenant Settings
+      tags:
+      - Tenant Config Resource
+      security:
+      - SecurityScheme:
+        - admin
+    get:
+      operationId: getTenantSettings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Tenant Settings
+      tags:
+      - Tenant Config Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/tenant-settings/effective:
+    get:
+      operationId: getEffectiveSettings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Effective Settings
+      tags:
+      - Tenant Config Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/tenant-settings/user:
+    put:
+      operationId: putUserSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Put User Settings
+      tags:
+      - Tenant Config Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: getUserSettings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get User Settings
+      tags:
+      - Tenant Config Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/tenants:
+    get:
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tenant"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Tenant Resource
+      security:
+      - SecurityScheme:
+        - admin
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Tenant"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Tenant Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/tenants/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Tenant"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Tenant Resource
+      security:
+      - SecurityScheme:
+        - admin
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Tenant Resource
+      security:
+      - SecurityScheme:
+        - admin
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Tenant Resource
+      security:
+      - SecurityScheme:
+        - admin
+  /api/users:
+    get:
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/users/me:
+    put:
+      operationId: updateMe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update Me
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Me
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/users/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+info:
+  title: v-erp-lite API
+  version: 1.0-SNAPSHOT

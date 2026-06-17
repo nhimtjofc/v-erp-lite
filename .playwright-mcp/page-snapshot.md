@@ -1,0 +1,57 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - link "V V-ERP Lite" [ref=e6] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=e8]: V
+      - generic [ref=e9]: V-ERP Lite
+    - navigation [ref=e10]:
+      - link "Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e12]
+        - text: Dashboard
+      - link "Customers" [ref=e17] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e18]
+        - text: Customers
+      - link "Business" [ref=e23] [cursor=pointer]:
+        - /url: /business
+        - img [ref=e24]
+        - text: Business
+      - link "Administration" [ref=e28] [cursor=pointer]:
+        - /url: /admin/tenants
+        - img [ref=e29]
+        - text: Administration
+      - button "Profile" [ref=e33]:
+        - img [ref=e34]
+        - generic [ref=e38]: Profile
+        - img [ref=e39]
+      - button "Settings" [ref=e42]:
+        - img [ref=e43]
+        - generic [ref=e46]: Settings
+        - img [ref=e47]
+  - generic [ref=e49]:
+    - banner [ref=e50]:
+      - button "AU admin@v-erp.com" [ref=e52]:
+        - generic [ref=e54]: AU
+        - generic [ref=e55]: admin@v-erp.com
+    - main [ref=e56]:
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - heading "Dashboard" [level=1] [ref=e59]
+          - paragraph [ref=e60]: Welcome
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - heading "System Status" [level=3] [ref=e64]
+            - generic [ref=e65]:
+              - generic [ref=e66]: UP
+              - paragraph [ref=e67]: v-erp-lite
+          - generic [ref=e68]:
+            - heading "Customers" [level=3] [ref=e70]
+            - generic [ref=e71]:
+              - generic [ref=e72]: "0"
+              - paragraph [ref=e73]: customersCount
+          - generic [ref=e74]:
+            - heading "Tenant" [level=3] [ref=e76]
+            - generic [ref=e77]:
+              - generic [ref=e78]: default
+              - paragraph [ref=e79]: Active tenant
