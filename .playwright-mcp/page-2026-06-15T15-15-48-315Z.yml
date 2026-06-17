@@ -1,5 +1,0 @@
-- generic [ref=e4]:
-  - generic [ref=e5]:
-    - generic [ref=e6]: V-ERP Lite
-    - generic [ref=e7]: Sign in with your Keycloak account
-  - button "Sign in with Keycloak" [ref=e9] [cursor=pointer]

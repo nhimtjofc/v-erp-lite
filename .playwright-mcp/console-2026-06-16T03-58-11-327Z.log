@@ -1,6 +1,0 @@
-[      88ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=85c01ede:20102
-[   36595ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8081/api/admin/tenants/acme-corp/users:0
-[   36595ms] [ERROR] {objectName: User, attributeName: role.id, line: 1, column: 75, value: admin} @ http://localhost:5174/src/pages/admin/tenant-detail-page.tsx?t=1781582094986:91
-[  119444ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:8081/api/admin/tenants/acme-corp/users:0
-[  119444ms] [ERROR] {objectName: User, attributeName: role.id, line: 1, column: 75, value: admin} @ http://localhost:5174/src/pages/admin/tenant-detail-page.tsx?t=1781582094986:91
-[  168883ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=85c01ede:20102

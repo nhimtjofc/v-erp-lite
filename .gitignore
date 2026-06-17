@@ -25,5 +25,11 @@ bin/
 # TanStack router temp files
 .tanstack/
 
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Local env overrides
 .env.local
