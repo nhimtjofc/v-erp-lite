@@ -17,18 +17,22 @@ const userManager = new UserManager({
   automaticSilentRenew: false,
 })
 
+import { useAuthStore } from '../store/auth-store'
+
 // Mirror tokens to plain localStorage keys so the hey-api client can read them synchronously
 userManager.events.addUserLoaded((user) => {
   localStorage.setItem('access_token', user.access_token)
   if (user.refresh_token) {
     localStorage.setItem('refresh_token', user.refresh_token)
   }
+  useAuthStore.getState().setUser(user)
 })
 
 // Clear mirrored tokens on logout
 userManager.events.addUserUnloaded(() => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
+  useAuthStore.getState().setUser(null)
 })
 
 // Bootstrap: if a user session already exists, mirror its tokens now
@@ -38,7 +42,9 @@ userManager.getUser().then((user) => {
     if (user.refresh_token) {
       localStorage.setItem('refresh_token', user.refresh_token)
     }
+    useAuthStore.getState().setUser(user)
   }
+  useAuthStore.getState().setInitialized(true)
 })
 
 export { userManager }

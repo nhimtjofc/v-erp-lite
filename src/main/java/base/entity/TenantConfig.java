@@ -24,7 +24,7 @@ public class TenantConfig extends PanacheEntityBase {
     private String tenantId;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = false)
+    @Column(columnDefinition = "json", nullable = false)
     private Map<String, Object> settings = new HashMap<>();
 
     @UpdateTimestamp
