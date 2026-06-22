@@ -13,9 +13,9 @@ CREATE TABLE role (
 );
 
 INSERT INTO role (id, name, description) VALUES
-    (gen_random_uuid(), 'admin', 'Full system access'),
-    (gen_random_uuid(), 'operator', 'Operational access'),
-    (gen_random_uuid(), 'businessOwner', 'Tenant owner');
+    (UUID(), 'admin', 'Full system access'),
+    (UUID(), 'operator', 'Operational access'),
+    (UUID(), 'businessOwner', 'Tenant owner');
 
 CREATE TABLE users (
     id              UUID PRIMARY KEY,
@@ -26,10 +26,10 @@ CREATE TABLE users (
     keycloak_id     VARCHAR(255) NOT NULL,
     role_id         UUID REFERENCES role(id),
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    last_login_at   TIMESTAMP WITH TIME ZONE,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_login_at   TIMESTAMP NULL DEFAULT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by      UUID,
-    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by      UUID,
     UNIQUE (tenant_id, email),
     UNIQUE (tenant_id, keycloak_id)
@@ -46,9 +46,9 @@ CREATE TABLE customer (
     birth_date      DATE,
     notes           TEXT,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by      UUID,
-    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by      UUID
 );
 
@@ -62,8 +62,8 @@ CREATE TABLE business (
     tax_id          VARCHAR(64),
     logo_url        VARCHAR(512),
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by      UUID,
-    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by      UUID
 );

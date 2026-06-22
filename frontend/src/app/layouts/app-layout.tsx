@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useRouter } from '@tanstack/react-router'
-import { logout, getUser } from '@/shared/auth'
+import { logout } from '@/shared/auth'
 import { useMeQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { navGroups, profileGroup, type NavGroup } from '@/app/nav-registry'
 import { Button } from '@/shared/ui/button'
@@ -21,18 +21,16 @@ import type { User } from 'oidc-client-ts'
 import { useTheme } from '@/shared/hooks/use-theme'
 import { getInitials } from '@/shared/utils/user'
 
+import { useAuthStore } from '@/shared/store/auth-store'
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const { user } = useAuthStore()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { isDark, setIsDark } = useTheme()
   const { t } = useTranslation()
   const { data: me } = useMeQuery()
   const isAdmin = me?.role?.name === 'admin'
-
-  useEffect(() => {
-    getUser().then(setUser)
-  }, [])
 
   const initials = getInitials(user)
 
