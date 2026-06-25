@@ -4,7 +4,7 @@ import { type DefaultError, queryOptions, useMutation, type UseMutationOptions, 
 
 import { client } from '../client.gen';
 import { changePassword, create, create2, create3, create4, createTenantUser, delete_, delete2, delete3, delete4, deleteTenantUser, disableMfa, get, get2, get3, get4, getEffectiveSettings, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, setupMfa, syncAll, syncTenant, update, update2, update3, update4, updateMe, updateTenantUser, verifyMfa } from '../sdk.gen';
-import type { ChangePasswordData, Create2Data, Create3Data, Create4Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, GetData, GetEffectiveSettingsData, GetResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateTenantUserData, UpdateTenantUserResponse, VerifyMfaData } from '../types.gen';
+import type { ChangePasswordData, Create2Data, Create3Data, Create4Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, GetData, GetEffectiveSettingsData, GetResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateTenantUserData, UpdateTenantUserResponse, VerifyMfaData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -917,8 +917,8 @@ export const useGet4Query = (options: Options<Get4Data>) => useQuery(get4Options
 /**
  * Update
  */
-export const update4Mutation = (options?: Partial<Options<Update4Data>>): UseMutationOptions<unknown, DefaultError, Options<Update4Data>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Update4Data>> = {
+export const update4Mutation = (options?: Partial<Options<Update4Data>>): UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>> => {
+    const mutationOptions: UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await update4({
                 ...options,
@@ -934,4 +934,4 @@ export const update4Mutation = (options?: Partial<Options<Update4Data>>): UseMut
 /**
  * Update
  */
-export const useUpdate4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Update4Data>>, 'mutationFn'>>) => useMutation({ ...update4Mutation(), ...mutationOptions });
+export const useUpdate4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>>, 'mutationFn'>>) => useMutation({ ...update4Mutation(), ...mutationOptions });

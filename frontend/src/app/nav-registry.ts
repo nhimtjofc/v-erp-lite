@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  Package,
   Building2,
   Settings,
   User,
@@ -31,6 +32,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard },
       { labelKey: 'nav:customers', to: '/customers', icon: Users },
+      { labelKey: 'nav:products', to: '/products', icon: Package },
     ],
   },
   {

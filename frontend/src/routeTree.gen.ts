@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedBusinessRouteImport } from './routes/_authenticated/business'
@@ -21,6 +22,7 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthAuthCallbackRouteImport } from './routes/_auth/auth-callback'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
+import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
 import { Route as AuthenticatedSettingsSecurityRouteImport } from './routes/_authenticated/settings/security'
 import { Route as AuthenticatedSettingsRegionalRouteImport } from './routes/_authenticated/settings/regional'
@@ -29,6 +31,8 @@ import { Route as AuthenticatedSettingsCurrencyRouteImport } from './routes/_aut
 import { Route as AuthenticatedSettingsCommunicationRouteImport } from './routes/_authenticated/settings/communication'
 import { Route as AuthenticatedProfileSecurityRouteImport } from './routes/_authenticated/profile/security'
 import { Route as AuthenticatedProfilePreferencesRouteImport } from './routes/_authenticated/profile/preferences'
+import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
+import { Route as AuthenticatedProductsIdRouteImport } from './routes/_authenticated/products/$id'
 import { Route as AuthenticatedCustomersNewRouteImport } from './routes/_authenticated/customers/new'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers/$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin/tenants'
@@ -56,6 +60,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -94,6 +103,12 @@ const AuthenticatedProfileIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedProfileRoute,
+  } as any)
+const AuthenticatedProductsIndexRoute =
+  AuthenticatedProductsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedCustomersIndexRoute =
   AuthenticatedCustomersIndexRouteImport.update({
@@ -143,6 +158,17 @@ const AuthenticatedProfilePreferencesRoute =
     path: '/preferences',
     getParentRoute: () => AuthenticatedProfileRoute,
   } as any)
+const AuthenticatedProductsNewRoute =
+  AuthenticatedProductsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
+const AuthenticatedProductsIdRoute = AuthenticatedProductsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedProductsRoute,
+} as any)
 const AuthenticatedCustomersNewRoute =
   AuthenticatedCustomersNewRouteImport.update({
     id: '/new',
@@ -181,11 +207,14 @@ export interface FileRoutesByFullPath {
   '/business': typeof AuthenticatedBusinessRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
+  '/products/$id': typeof AuthenticatedProductsIdRoute
+  '/products/new': typeof AuthenticatedProductsNewRoute
   '/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
   '/profile/security': typeof AuthenticatedProfileSecurityRoute
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
@@ -194,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/products/': typeof AuthenticatedProductsIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
@@ -207,6 +237,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
+  '/products/$id': typeof AuthenticatedProductsIdRoute
+  '/products/new': typeof AuthenticatedProductsNewRoute
   '/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
   '/profile/security': typeof AuthenticatedProfileSecurityRoute
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
@@ -215,6 +247,7 @@ export interface FileRoutesByTo {
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
+  '/products': typeof AuthenticatedProductsIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
@@ -229,12 +262,15 @@ export interface FileRoutesById {
   '/_authenticated/business': typeof AuthenticatedBusinessRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/customers/new': typeof AuthenticatedCustomersNewRoute
+  '/_authenticated/products/$id': typeof AuthenticatedProductsIdRoute
+  '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
   '/_authenticated/profile/security': typeof AuthenticatedProfileSecurityRoute
   '/_authenticated/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
@@ -243,6 +279,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/_authenticated/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
@@ -257,11 +294,14 @@ export interface FileRouteTypes {
     | '/business'
     | '/customers'
     | '/dashboard'
+    | '/products'
     | '/profile'
     | '/settings'
     | '/admin/tenants'
     | '/customers/$id'
     | '/customers/new'
+    | '/products/$id'
+    | '/products/new'
     | '/profile/preferences'
     | '/profile/security'
     | '/settings/communication'
@@ -270,6 +310,7 @@ export interface FileRouteTypes {
     | '/settings/regional'
     | '/settings/security'
     | '/customers/'
+    | '/products/'
     | '/profile/'
     | '/settings/'
     | '/admin/tenants/$id'
@@ -283,6 +324,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/customers/$id'
     | '/customers/new'
+    | '/products/$id'
+    | '/products/new'
     | '/profile/preferences'
     | '/profile/security'
     | '/settings/communication'
@@ -291,6 +334,7 @@ export interface FileRouteTypes {
     | '/settings/regional'
     | '/settings/security'
     | '/customers'
+    | '/products'
     | '/profile'
     | '/settings'
     | '/admin/tenants/$id'
@@ -304,12 +348,15 @@ export interface FileRouteTypes {
     | '/_authenticated/business'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/settings'
     | '/_authenticated/'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/customers/$id'
     | '/_authenticated/customers/new'
+    | '/_authenticated/products/$id'
+    | '/_authenticated/products/new'
     | '/_authenticated/profile/preferences'
     | '/_authenticated/profile/security'
     | '/_authenticated/settings/communication'
@@ -318,6 +365,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/regional'
     | '/_authenticated/settings/security'
     | '/_authenticated/customers/'
+    | '/_authenticated/products/'
     | '/_authenticated/profile/'
     | '/_authenticated/settings/'
     | '/_authenticated/admin/tenants/$id'
@@ -364,6 +412,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -414,6 +469,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/'
       preLoaderRoute: typeof AuthenticatedProfileIndexRouteImport
       parentRoute: typeof AuthenticatedProfileRoute
+    }
+    '/_authenticated/products/': {
+      id: '/_authenticated/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/customers/': {
       id: '/_authenticated/customers/'
@@ -470,6 +532,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/preferences'
       preLoaderRoute: typeof AuthenticatedProfilePreferencesRouteImport
       parentRoute: typeof AuthenticatedProfileRoute
+    }
+    '/_authenticated/products/new': {
+      id: '/_authenticated/products/new'
+      path: '/new'
+      fullPath: '/products/new'
+      preLoaderRoute: typeof AuthenticatedProductsNewRouteImport
+      parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/products/$id': {
+      id: '/_authenticated/products/$id'
+      path: '/$id'
+      fullPath: '/products/$id'
+      preLoaderRoute: typeof AuthenticatedProductsIdRouteImport
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/customers/new': {
       id: '/_authenticated/customers/new'
@@ -539,6 +615,23 @@ const AuthenticatedCustomersRouteWithChildren =
     AuthenticatedCustomersRouteChildren,
   )
 
+interface AuthenticatedProductsRouteChildren {
+  AuthenticatedProductsIdRoute: typeof AuthenticatedProductsIdRoute
+  AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
+  AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
+}
+
+const AuthenticatedProductsRouteChildren: AuthenticatedProductsRouteChildren = {
+  AuthenticatedProductsIdRoute: AuthenticatedProductsIdRoute,
+  AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
+  AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
+}
+
+const AuthenticatedProductsRouteWithChildren =
+  AuthenticatedProductsRoute._addFileChildren(
+    AuthenticatedProductsRouteChildren,
+  )
+
 interface AuthenticatedProfileRouteChildren {
   AuthenticatedProfilePreferencesRoute: typeof AuthenticatedProfilePreferencesRoute
   AuthenticatedProfileSecurityRoute: typeof AuthenticatedProfileSecurityRoute
@@ -598,6 +691,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedBusinessRoute: typeof AuthenticatedBusinessRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -608,6 +702,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBusinessRoute: AuthenticatedBusinessRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

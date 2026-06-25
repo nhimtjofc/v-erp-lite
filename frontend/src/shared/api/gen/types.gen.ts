@@ -10,6 +10,7 @@ export type Business = {
     createdBy?: Uuid;
     updatedAt?: Instant;
     updatedBy?: Uuid;
+    version?: number;
     id?: Uuid;
     name?: string;
     address?: string;
@@ -32,6 +33,7 @@ export type Customer = {
     createdBy?: Uuid;
     updatedAt?: Instant;
     updatedBy?: Uuid;
+    version?: number;
     id?: Uuid;
     firstName?: string;
     lastName?: string;
@@ -77,6 +79,7 @@ export type User = {
     createdBy?: Uuid;
     updatedAt?: Instant;
     updatedBy?: Uuid;
+    version?: number;
     id?: Uuid;
     email?: string;
     firstName?: string;
@@ -354,7 +357,7 @@ export type ListData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/business';
+    url: '/api/businesses';
 };
 
 export type ListErrors = {
@@ -381,7 +384,7 @@ export type CreateData = {
     body: Business;
     path?: never;
     query?: never;
-    url: '/api/business';
+    url: '/api/businesses';
 };
 
 export type CreateErrors = {
@@ -412,7 +415,7 @@ export type DeleteData = {
         id: Uuid;
     };
     query?: never;
-    url: '/api/business/{id}';
+    url: '/api/businesses/{id}';
 };
 
 export type DeleteErrors = {
@@ -439,7 +442,7 @@ export type GetData = {
         id: Uuid;
     };
     query?: never;
-    url: '/api/business/{id}';
+    url: '/api/businesses/{id}';
 };
 
 export type GetErrors = {
@@ -468,7 +471,7 @@ export type UpdateData = {
         id: Uuid;
     };
     query?: never;
-    url: '/api/business/{id}';
+    url: '/api/businesses/{id}';
 };
 
 export type UpdateErrors = {
@@ -1205,5 +1208,7 @@ export type Update4Responses = {
     /**
      * OK
      */
-    200: unknown;
+    200: User;
 };
+
+export type Update4Response = Update4Responses[keyof Update4Responses];

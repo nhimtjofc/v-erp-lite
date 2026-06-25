@@ -15,6 +15,9 @@ components:
           $ref: "#/components/schemas/Instant"
         updatedBy:
           $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
         id:
           $ref: "#/components/schemas/UUID"
         name:
@@ -50,6 +53,9 @@ components:
           $ref: "#/components/schemas/Instant"
         updatedBy:
           $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
         id:
           $ref: "#/components/schemas/UUID"
         firstName:
@@ -127,6 +133,9 @@ components:
           $ref: "#/components/schemas/Instant"
         updatedBy:
           $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
         id:
           $ref: "#/components/schemas/UUID"
         email:
@@ -414,7 +423,7 @@ paths:
         - admin
         - operator
         - businessOwner
-  /api/business:
+  /api/businesses:
     get:
       operationId: list
       responses:
@@ -466,7 +475,7 @@ paths:
         - admin
         - operator
         - businessOwner
-  /api/business/{id}:
+  /api/businesses/{id}:
     put:
       operationId: update
       parameters:
@@ -1151,7 +1160,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/User"
         "401":
           description: Not Authorized
         "403":

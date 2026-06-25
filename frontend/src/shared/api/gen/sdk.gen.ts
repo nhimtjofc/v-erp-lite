@@ -120,7 +120,7 @@ export const changePassword = <ThrowOnError extends boolean = false>(options: Op
  */
 export const list = <ThrowOnError extends boolean = false>(options?: Options<ListData, ThrowOnError>): RequestResult<ListResponses, ListErrors, ThrowOnError> => (options?.client ?? client).get<ListResponses, ListErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/business',
+    url: '/api/businesses',
     ...options
 });
 
@@ -129,7 +129,7 @@ export const list = <ThrowOnError extends boolean = false>(options?: Options<Lis
  */
 export const create = <ThrowOnError extends boolean = false>(options: Options<CreateData, ThrowOnError>): RequestResult<CreateResponses, CreateErrors, ThrowOnError> => (options.client ?? client).post<CreateResponses, CreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/business',
+    url: '/api/businesses',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ export const create = <ThrowOnError extends boolean = false>(options: Options<Cr
  */
 export const delete_ = <ThrowOnError extends boolean = false>(options: Options<DeleteData, ThrowOnError>): RequestResult<DeleteResponses, DeleteErrors, ThrowOnError> => (options.client ?? client).delete<DeleteResponses, DeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/business/{id}',
+    url: '/api/businesses/{id}',
     ...options
 });
 
@@ -151,7 +151,7 @@ export const delete_ = <ThrowOnError extends boolean = false>(options: Options<D
  */
 export const get = <ThrowOnError extends boolean = false>(options: Options<GetData, ThrowOnError>): RequestResult<GetResponses, GetErrors, ThrowOnError> => (options.client ?? client).get<GetResponses, GetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/business/{id}',
+    url: '/api/businesses/{id}',
     ...options
 });
 
@@ -160,7 +160,7 @@ export const get = <ThrowOnError extends boolean = false>(options: Options<GetDa
  */
 export const update = <ThrowOnError extends boolean = false>(options: Options<UpdateData, ThrowOnError>): RequestResult<UpdateResponses, UpdateErrors, ThrowOnError> => (options.client ?? client).put<UpdateResponses, UpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/business/{id}',
+    url: '/api/businesses/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

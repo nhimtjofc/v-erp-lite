@@ -24,7 +24,7 @@ public class TenantConfigService {
     private static Map<String, Object> defaults() {
         Map<String, Object> regional = new LinkedHashMap<>();
         regional.put("timezone", "UTC");
-        regional.put("language", "en");
+        regional.put("language", "vi");
         regional.put("dateFormat", "YYYY-MM-DD");
         regional.put("timeFormat", "24h");
         regional.put("firstDayOfWeek", "monday");

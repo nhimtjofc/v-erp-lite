@@ -1,6 +1,6 @@
 # Phân tích Thiết kế Module E-Commerce cho V-ERP Lite
 
-Dựa trên kiến trúc hiện tại của dự án **V-ERP Lite** (Backend: Quarkus, Frontend: React/Vite, Database: PostgreSQL, Auth: Keycloak), đây là bản thiết kế để tích hợp thêm các tính năng E-Commerce (Thương mại điện tử / Quản lý đơn hàng) mà vẫn đảm bảo tính "lite" và chuẩn Multi-tenant của hệ thống.
+Dựa trên kiến trúc hiện tại của dự án **V-ERP Lite** (Backend: Quarkus, Frontend: React/Vite, Database: MariaDB, Auth: Keycloak), đây là bản thiết kế để tích hợp thêm các tính năng E-Commerce (Thương mại điện tử / Quản lý đơn hàng) mà vẫn đảm bảo tính "lite" và chuẩn Multi-tenant của hệ thống.
 
 > [!IMPORTANT]
 > **Phương pháp tiếp cận (Monolith vs Microservices):**
