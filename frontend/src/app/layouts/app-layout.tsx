@@ -178,7 +178,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </DropdownMenuLinkItem>
                 <DropdownMenuLinkItem
                   className="cursor-pointer"
-                  onClick={() => router.navigate({ to: '/business' })}
+                  onClick={() => router.navigate({ to: '/businesses' })}
                 >
                   <Building2 className="h-4 w-4" />
                   {t('nav:business')}

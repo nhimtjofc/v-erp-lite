@@ -22,5 +22,7 @@
   "systemAdmin": "Quản trị hệ thống",
   "admin": "Quản trị",
   "administration": "Quản trị",
-  "tenants": "Đơn vị"
+  "tenants": "Đơn vị",
+  "cart": "Giỏ hàng",
+  "orders": "Đơn hàng"
 }
