@@ -2,6 +2,8 @@ package base.rest;
 
 import base.entity.Category;
 import base.entity.Product;
+import base.entity.ProductVariant;
+import base.entity.Tag;
 import base.security.CallerContext;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -12,13 +14,18 @@ import jakarta.ws.rs.core.Response;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
+@RolesAllowed({ "admin", "operator", "businessOwner" })
 public class ProductResource {
 
     @Inject
@@ -27,27 +34,36 @@ public class ProductResource {
     @GET
     public List<Product> list(
             @QueryParam("search") String search,
-            @QueryParam("categoryId") UUID categoryId
-    ) {
+            @QueryParam("categoryId") UUID categoryId,
+            @QueryParam("tagId") UUID tagId) {
         String tenantCode = caller.tenantCode();
-        if (search != null && !search.isBlank() && categoryId != null) {
-            String escaped = escapeLike(search);
-            return Product.find(
-                    "tenantId = ?1 AND category.id = ?2 AND (LOWER(name) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(sku) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
-                    tenantCode, categoryId, escaped
-            ).list();
+        StringBuilder query = new StringBuilder("SELECT DISTINCT p FROM Product p");
+        if (tagId != null) {
+            query.append(" JOIN p.tags t");
         }
+        query.append(" WHERE p.tenantId = :tenantId");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tenantId", tenantCode);
+
+        if (categoryId != null) {
+            query.append(" AND p.category.id = :categoryId");
+            params.put("categoryId", categoryId);
+        }
+
+        if (tagId != null) {
+            query.append(" AND t.id = :tagId");
+            params.put("tagId", tagId);
+        }
+
         if (search != null && !search.isBlank()) {
             String escaped = escapeLike(search);
-            return Product.find(
-                    "tenantId = ?1 AND (LOWER(name) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(sku) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
-                    tenantCode, escaped
-            ).list();
+            query.append(
+                    " AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '\\' OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '\\')");
+            params.put("search", escaped);
         }
-        if (categoryId != null) {
-            return Product.find("tenantId = ?1 AND category.id = ?2", tenantCode, categoryId).list();
-        }
-        return Product.list("tenantId", tenantCode);
+
+        return Product.find(query.toString(), params).list();
     }
 
     @GET
@@ -68,6 +84,17 @@ public class ProductResource {
         product.setTenantId(caller.tenantCode());
         product.setCreatedBy(caller.userId());
         product.setCategory(resolveCategory(product));
+        product.setTags(resolveTags(product));
+
+        if (product.getVariants() != null) {
+            for (ProductVariant variant : product.getVariants()) {
+                variant.setId(UUID.randomUUID());
+                variant.setProduct(product);
+                variant.setTenantId(caller.tenantCode());
+                variant.setCreatedBy(caller.userId());
+            }
+        }
+
         product.persist();
         return Response.created(URI.create("/api/products/" + product.getId())).entity(product).build();
     }
@@ -82,6 +109,7 @@ public class ProductResource {
             throw new NotFoundException("Product not found");
         }
         product.setCategory(resolveCategory(updated));
+        product.setTags(resolveTags(updated));
         product.setSku(updated.getSku());
         product.setName(updated.getName());
         product.setDescription(updated.getDescription());
@@ -91,7 +119,49 @@ public class ProductResource {
         product.setSaleStartsAt(updated.getSaleStartsAt());
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
+        product.setStockQuantity(updated.getStockQuantity());
+        product.setOptions(updated.getOptions());
         product.setUpdatedBy(caller.userId());
+
+        // Sync variants safely
+        Map<String, ProductVariant> existingVariants = new HashMap<>();
+        if (product.getVariants() != null) {
+            for (ProductVariant v : product.getVariants()) {
+                existingVariants.put(v.getSku(), v);
+            }
+        }
+
+        List<ProductVariant> newVariants = new ArrayList<>();
+        if (updated.getVariants() != null) {
+            for (ProductVariant updatedVar : updated.getVariants()) {
+                ProductVariant var = existingVariants.get(updatedVar.getSku());
+                if (var != null) {
+                    var.setPrice(updatedVar.getPrice());
+                    var.setStockQuantity(updatedVar.getStockQuantity());
+                    var.setOptionValues(updatedVar.getOptionValues());
+                    var.setUpdatedBy(caller.userId());
+                    newVariants.add(var);
+                } else {
+                    ProductVariant newVar = new ProductVariant();
+                    newVar.setId(UUID.randomUUID());
+                    newVar.setProduct(product);
+                    newVar.setSku(updatedVar.getSku());
+                    newVar.setPrice(updatedVar.getPrice());
+                    newVar.setStockQuantity(updatedVar.getStockQuantity());
+                    newVar.setOptionValues(updatedVar.getOptionValues());
+                    newVar.setTenantId(caller.tenantCode());
+                    newVar.setCreatedBy(caller.userId());
+                    newVariants.add(newVar);
+                }
+            }
+        }
+
+        if (product.getVariants() == null) {
+            product.setVariants(new ArrayList<>());
+        }
+        product.getVariants().clear();
+        product.getVariants().addAll(newVariants);
+
         return product;
     }
 
@@ -123,6 +193,20 @@ public class ProductResource {
                 && product.getSaleEndsAt().isBefore(product.getSaleStartsAt())) {
             throw new BadRequestException("Sale end time must be after sale start time");
         }
+
+        if (product.getVariants() != null) {
+            for (ProductVariant variant : product.getVariants()) {
+                if (variant.getSku() == null || variant.getSku().isBlank()) {
+                    throw new BadRequestException("Variant SKU is required");
+                }
+                if (variant.getPrice() == null || variant.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BadRequestException("Variant price must be zero or greater");
+                }
+                if (variant.getStockQuantity() < 0) {
+                    throw new BadRequestException("Variant stock quantity must be zero or greater");
+                }
+            }
+        }
     }
 
     private Category resolveCategory(Product product) {
@@ -131,12 +215,35 @@ public class ProductResource {
         }
         Category category = Category.find(
                 "id = ?1 and tenantId = ?2",
-                product.getCategory().getId(), caller.tenantCode()
-        ).firstResult();
+                product.getCategory().getId(), caller.tenantCode()).firstResult();
         if (category == null) {
             throw new BadRequestException("Category not found");
         }
         return category;
+    }
+
+    private Set<Tag> resolveTags(Product product) {
+        Set<Tag> resolvedTags = new HashSet<>();
+        if (product.getTags() == null || product.getTags().isEmpty()) {
+            return resolvedTags;
+        }
+        for (Tag tagInput : product.getTags()) {
+            if (tagInput.getName() == null || tagInput.getName().isBlank()) {
+                continue;
+            }
+            String tagName = tagInput.getName().trim();
+            Tag tag = Tag.find("name = ?1 and tenantId = ?2", tagName, caller.tenantCode()).firstResult();
+            if (tag == null) {
+                tag = new Tag();
+                tag.setId(UUID.randomUUID());
+                tag.setName(tagName);
+                tag.setTenantId(caller.tenantCode());
+                tag.setCreatedBy(caller.userId());
+                tag.persist();
+            }
+            resolvedTags.add(tag);
+        }
+        return resolvedTags;
     }
 
     private String escapeLike(String value) {

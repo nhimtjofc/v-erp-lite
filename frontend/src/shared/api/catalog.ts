@@ -10,6 +10,30 @@ export interface Category {
   version?: number
 }
 
+export interface Tag {
+  id?: string
+  tenantId?: string
+  name: string
+  active?: boolean
+  createdAt?: string
+  updatedAt?: string
+  version?: number
+}
+
+export interface ProductOption {
+  name: string
+  values: string[]
+}
+
+export interface ProductVariant {
+  id?: string
+  tenantId?: string
+  sku: string
+  price: number
+  stockQuantity: number
+  optionValues: Record<string, string>
+}
+
 export interface Product {
   id?: string
   tenantId?: string
@@ -26,11 +50,16 @@ export interface Product {
   createdAt?: string
   updatedAt?: string
   version?: number
+  stockQuantity?: number
+  options?: ProductOption[]
+  variants?: ProductVariant[]
+  tags?: Tag[]
 }
 
 interface ProductFilters {
   search?: string
   categoryId?: string
+  tagId?: string
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
@@ -74,7 +103,7 @@ export const catalogApi = {
     body: JSON.stringify(category),
   }),
   listProducts: (filters: ProductFilters = {}) => request<Product[]>(
-    withQuery('/products', { search: filters.search, categoryId: filters.categoryId })
+    withQuery('/products', { search: filters.search, categoryId: filters.categoryId, tagId: filters.tagId })
   ),
   getProduct: (id: string) => request<Product>(`/products/${id}`),
   createProduct: (product: Partial<Product>) => request<Product>('/products', {
@@ -88,4 +117,13 @@ export const catalogApi = {
   deleteProduct: (id: string) => request<void>(`/products/${id}`, {
     method: 'DELETE',
   }),
+  listTags: (search?: string) => request<Tag[]>(withQuery('/tags', { search })),
+  createTag: (tag: Partial<Tag>) => request<Tag>('/tags', {
+    method: 'POST',
+    body: JSON.stringify(tag),
+  }),
+  deleteTag: (id: string) => request<void>(`/tags/${id}`, {
+    method: 'DELETE',
+  }),
 }
+
