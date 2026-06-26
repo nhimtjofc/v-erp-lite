@@ -34,6 +34,32 @@ components:
           type: string
         active:
           type: boolean
+    Category:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        description:
+          type: string
+        parent:
+          $ref: "#/components/schemas/Category"
+        active:
+          type: boolean
     ConfigRequest:
       type: object
       properties:
@@ -94,6 +120,118 @@ components:
       properties:
         newPassword:
           type: string
+    Product:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        category:
+          $ref: "#/components/schemas/Category"
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        basePrice:
+          type: number
+        salePrice:
+          type: number
+        saleStartsAt:
+          $ref: "#/components/schemas/Instant"
+        saleEndsAt:
+          $ref: "#/components/schemas/Instant"
+        active:
+          type: boolean
+        stockQuantity:
+          type: integer
+          format: int32
+        lowStockThreshold:
+          type: integer
+          format: int32
+        reservedQuantity:
+          type: integer
+          format: int32
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOption"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductVariant"
+        tags:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Tag"
+        availableQuantity:
+          type: integer
+          format: int32
+    ProductOption:
+      type: object
+      properties:
+        name:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+    ProductVariant:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        product:
+          $ref: "#/components/schemas/Product"
+        sku:
+          type: string
+        price:
+          type: number
+        stockQuantity:
+          type: integer
+          format: int32
+        lowStockThreshold:
+          type: integer
+          format: int32
+        reservedQuantity:
+          type: integer
+          format: int32
+        optionValues:
+          type: object
+          additionalProperties:
+            type: string
+        availableQuantity:
+          type: integer
+          format: int32
     Role:
       type: object
       properties:
@@ -103,6 +241,28 @@ components:
           type: string
         description:
           type: string
+    Tag:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        active:
+          type: boolean
     Tenant:
       type: object
       properties:
@@ -564,6 +724,152 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/categories:
+    get:
+      operationId: list
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Category Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Category"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Category Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/categories/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Category"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Category Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Category Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Category Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
   /api/customers:
     get:
       operationId: list
@@ -747,6 +1053,160 @@ paths:
       summary: Get Translations
       tags:
       - I 18n Resource
+  /api/products:
+    get:
+      operationId: list
+      parameters:
+      - name: categoryId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: tagId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Product Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Product Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/products/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Product Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Product Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Product Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
   /api/sync/keycloak:
     post:
       operationId: syncAll
@@ -791,6 +1251,117 @@ paths:
       security:
       - SecurityScheme:
         - admin
+  /api/tags:
+    get:
+      operationId: list
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Tag Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Tag"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Tag Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/tags/{id}:
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Tag Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Tag Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
   /api/tenant-settings:
     put:
       operationId: putTenantSettings

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, Create2Data, Create2Errors, Create2Responses, Create3Data, Create3Errors, Create3Responses, Create4Data, Create4Errors, Create4Responses, CreateData, CreateErrors, CreateResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, Delete2Data, Delete2Errors, Delete2Responses, Delete3Data, Delete3Errors, Delete3Responses, Delete4Data, Delete4Errors, Delete4Responses, DeleteData, DeleteErrors, DeleteResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, Get2Data, Get2Errors, Get2Responses, Get3Data, Get3Errors, Get3Responses, Get4Data, Get4Errors, Get4Responses, GetData, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetErrors, GetResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, HealthData, HealthResponses, List2Data, List2Errors, List2Responses, List3Data, List3Errors, List3Responses, List4Data, List4Errors, List4Responses, ListData, ListErrors, ListResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, Update2Data, Update2Errors, Update2Responses, Update3Data, Update3Errors, Update3Responses, Update4Data, Update4Errors, Update4Responses, UpdateData, UpdateErrors, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
+import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, Create2Data, Create2Errors, Create2Responses, Create3Data, Create3Errors, Create3Responses, Create4Data, Create4Errors, Create4Responses, Create5Data, Create5Errors, Create5Responses, Create6Data, Create6Errors, Create6Responses, Create7Data, Create7Errors, Create7Responses, CreateData, CreateErrors, CreateResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, Delete2Data, Delete2Errors, Delete2Responses, Delete3Data, Delete3Errors, Delete3Responses, Delete4Data, Delete4Errors, Delete4Responses, Delete5Data, Delete5Errors, Delete5Responses, Delete6Data, Delete6Errors, Delete6Responses, Delete7Data, Delete7Errors, Delete7Responses, DeleteData, DeleteErrors, DeleteResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, Get2Data, Get2Errors, Get2Responses, Get3Data, Get3Errors, Get3Responses, Get4Data, Get4Errors, Get4Responses, Get5Data, Get5Errors, Get5Responses, Get6Data, Get6Errors, Get6Responses, Get7Data, Get7Errors, Get7Responses, GetData, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetErrors, GetResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, HealthData, HealthResponses, List2Data, List2Errors, List2Responses, List3Data, List3Errors, List3Responses, List4Data, List4Errors, List4Responses, List5Data, List5Errors, List5Responses, List6Data, List6Errors, List6Responses, List7Data, List7Errors, List7Responses, ListData, ListErrors, ListResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, Update2Data, Update2Errors, Update2Responses, Update3Data, Update3Errors, Update3Responses, Update4Data, Update4Errors, Update4Responses, Update5Data, Update5Errors, Update5Responses, Update6Data, Update6Errors, Update6Responses, UpdateData, UpdateErrors, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -173,7 +173,7 @@ export const update = <ThrowOnError extends boolean = false>(options: Options<Up
  */
 export const list2 = <ThrowOnError extends boolean = false>(options?: Options<List2Data, ThrowOnError>): RequestResult<List2Responses, List2Errors, ThrowOnError> => (options?.client ?? client).get<List2Responses, List2Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/customers',
+    url: '/api/categories',
     ...options
 });
 
@@ -182,7 +182,7 @@ export const list2 = <ThrowOnError extends boolean = false>(options?: Options<Li
  */
 export const create2 = <ThrowOnError extends boolean = false>(options: Options<Create2Data, ThrowOnError>): RequestResult<Create2Responses, Create2Errors, ThrowOnError> => (options.client ?? client).post<Create2Responses, Create2Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/customers',
+    url: '/api/categories',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ export const create2 = <ThrowOnError extends boolean = false>(options: Options<C
  */
 export const delete2 = <ThrowOnError extends boolean = false>(options: Options<Delete2Data, ThrowOnError>): RequestResult<Delete2Responses, Delete2Errors, ThrowOnError> => (options.client ?? client).delete<Delete2Responses, Delete2Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/customers/{id}',
+    url: '/api/categories/{id}',
     ...options
 });
 
@@ -204,7 +204,7 @@ export const delete2 = <ThrowOnError extends boolean = false>(options: Options<D
  */
 export const get2 = <ThrowOnError extends boolean = false>(options: Options<Get2Data, ThrowOnError>): RequestResult<Get2Responses, Get2Errors, ThrowOnError> => (options.client ?? client).get<Get2Responses, Get2Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/customers/{id}',
+    url: '/api/categories/{id}',
     ...options
 });
 
@@ -212,6 +212,59 @@ export const get2 = <ThrowOnError extends boolean = false>(options: Options<Get2
  * Update
  */
 export const update2 = <ThrowOnError extends boolean = false>(options: Options<Update2Data, ThrowOnError>): RequestResult<Update2Responses, Update2Errors, ThrowOnError> => (options.client ?? client).put<Update2Responses, Update2Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/categories/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List
+ */
+export const list3 = <ThrowOnError extends boolean = false>(options?: Options<List3Data, ThrowOnError>): RequestResult<List3Responses, List3Errors, ThrowOnError> => (options?.client ?? client).get<List3Responses, List3Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/customers',
+    ...options
+});
+
+/**
+ * Create
+ */
+export const create3 = <ThrowOnError extends boolean = false>(options: Options<Create3Data, ThrowOnError>): RequestResult<Create3Responses, Create3Errors, ThrowOnError> => (options.client ?? client).post<Create3Responses, Create3Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/customers',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete
+ */
+export const delete3 = <ThrowOnError extends boolean = false>(options: Options<Delete3Data, ThrowOnError>): RequestResult<Delete3Responses, Delete3Errors, ThrowOnError> => (options.client ?? client).delete<Delete3Responses, Delete3Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/customers/{id}',
+    ...options
+});
+
+/**
+ * Get
+ */
+export const get3 = <ThrowOnError extends boolean = false>(options: Options<Get3Data, ThrowOnError>): RequestResult<Get3Responses, Get3Errors, ThrowOnError> => (options.client ?? client).get<Get3Responses, Get3Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/customers/{id}',
+    ...options
+});
+
+/**
+ * Update
+ */
+export const update3 = <ThrowOnError extends boolean = false>(options: Options<Update3Data, ThrowOnError>): RequestResult<Update3Responses, Update3Errors, ThrowOnError> => (options.client ?? client).put<Update3Responses, Update3Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/customers/{id}',
     ...options,
@@ -232,6 +285,59 @@ export const health = <ThrowOnError extends boolean = false>(options?: Options<H
 export const getTranslations = <ThrowOnError extends boolean = false>(options: Options<GetTranslationsData, ThrowOnError>): RequestResult<GetTranslationsResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetTranslationsResponses, unknown, ThrowOnError>({ url: '/api/i18n/{locale}/{namespace}', ...options });
 
 /**
+ * List
+ */
+export const list4 = <ThrowOnError extends boolean = false>(options?: Options<List4Data, ThrowOnError>): RequestResult<List4Responses, List4Errors, ThrowOnError> => (options?.client ?? client).get<List4Responses, List4Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products',
+    ...options
+});
+
+/**
+ * Create
+ */
+export const create4 = <ThrowOnError extends boolean = false>(options: Options<Create4Data, ThrowOnError>): RequestResult<Create4Responses, Create4Errors, ThrowOnError> => (options.client ?? client).post<Create4Responses, Create4Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete
+ */
+export const delete4 = <ThrowOnError extends boolean = false>(options: Options<Delete4Data, ThrowOnError>): RequestResult<Delete4Responses, Delete4Errors, ThrowOnError> => (options.client ?? client).delete<Delete4Responses, Delete4Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products/{id}',
+    ...options
+});
+
+/**
+ * Get
+ */
+export const get4 = <ThrowOnError extends boolean = false>(options: Options<Get4Data, ThrowOnError>): RequestResult<Get4Responses, Get4Errors, ThrowOnError> => (options.client ?? client).get<Get4Responses, Get4Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products/{id}',
+    ...options
+});
+
+/**
+ * Update
+ */
+export const update4 = <ThrowOnError extends boolean = false>(options: Options<Update4Data, ThrowOnError>): RequestResult<Update4Responses, Update4Errors, ThrowOnError> => (options.client ?? client).put<Update4Responses, Update4Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Sync All
  */
 export const syncAll = <ThrowOnError extends boolean = false>(options?: Options<SyncAllData, ThrowOnError>): RequestResult<SyncAllResponses, SyncAllErrors, ThrowOnError> => (options?.client ?? client).post<SyncAllResponses, SyncAllErrors, ThrowOnError>({
@@ -246,6 +352,46 @@ export const syncAll = <ThrowOnError extends boolean = false>(options?: Options<
 export const syncTenant = <ThrowOnError extends boolean = false>(options: Options<SyncTenantData, ThrowOnError>): RequestResult<SyncTenantResponses, SyncTenantErrors, ThrowOnError> => (options.client ?? client).post<SyncTenantResponses, SyncTenantErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/sync/keycloak/tenants/{code}',
+    ...options
+});
+
+/**
+ * List
+ */
+export const list5 = <ThrowOnError extends boolean = false>(options?: Options<List5Data, ThrowOnError>): RequestResult<List5Responses, List5Errors, ThrowOnError> => (options?.client ?? client).get<List5Responses, List5Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/tags',
+    ...options
+});
+
+/**
+ * Create
+ */
+export const create5 = <ThrowOnError extends boolean = false>(options: Options<Create5Data, ThrowOnError>): RequestResult<Create5Responses, Create5Errors, ThrowOnError> => (options.client ?? client).post<Create5Responses, Create5Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/tags',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete
+ */
+export const delete5 = <ThrowOnError extends boolean = false>(options: Options<Delete5Data, ThrowOnError>): RequestResult<Delete5Responses, Delete5Errors, ThrowOnError> => (options.client ?? client).delete<Delete5Responses, Delete5Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/tags/{id}',
+    ...options
+});
+
+/**
+ * Get
+ */
+export const get5 = <ThrowOnError extends boolean = false>(options: Options<Get5Data, ThrowOnError>): RequestResult<Get5Responses, Get5Errors, ThrowOnError> => (options.client ?? client).get<Get5Responses, Get5Errors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/tags/{id}',
     ...options
 });
 
@@ -305,7 +451,7 @@ export const putUserSettings = <ThrowOnError extends boolean = false>(options: O
 /**
  * List
  */
-export const list3 = <ThrowOnError extends boolean = false>(options?: Options<List3Data, ThrowOnError>): RequestResult<List3Responses, List3Errors, ThrowOnError> => (options?.client ?? client).get<List3Responses, List3Errors, ThrowOnError>({
+export const list6 = <ThrowOnError extends boolean = false>(options?: Options<List6Data, ThrowOnError>): RequestResult<List6Responses, List6Errors, ThrowOnError> => (options?.client ?? client).get<List6Responses, List6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants',
     ...options
@@ -314,7 +460,7 @@ export const list3 = <ThrowOnError extends boolean = false>(options?: Options<Li
 /**
  * Create
  */
-export const create3 = <ThrowOnError extends boolean = false>(options: Options<Create3Data, ThrowOnError>): RequestResult<Create3Responses, Create3Errors, ThrowOnError> => (options.client ?? client).post<Create3Responses, Create3Errors, ThrowOnError>({
+export const create6 = <ThrowOnError extends boolean = false>(options: Options<Create6Data, ThrowOnError>): RequestResult<Create6Responses, Create6Errors, ThrowOnError> => (options.client ?? client).post<Create6Responses, Create6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants',
     ...options,
@@ -327,7 +473,7 @@ export const create3 = <ThrowOnError extends boolean = false>(options: Options<C
 /**
  * Delete
  */
-export const delete3 = <ThrowOnError extends boolean = false>(options: Options<Delete3Data, ThrowOnError>): RequestResult<Delete3Responses, Delete3Errors, ThrowOnError> => (options.client ?? client).delete<Delete3Responses, Delete3Errors, ThrowOnError>({
+export const delete6 = <ThrowOnError extends boolean = false>(options: Options<Delete6Data, ThrowOnError>): RequestResult<Delete6Responses, Delete6Errors, ThrowOnError> => (options.client ?? client).delete<Delete6Responses, Delete6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants/{id}',
     ...options
@@ -336,7 +482,7 @@ export const delete3 = <ThrowOnError extends boolean = false>(options: Options<D
 /**
  * Get
  */
-export const get3 = <ThrowOnError extends boolean = false>(options: Options<Get3Data, ThrowOnError>): RequestResult<Get3Responses, Get3Errors, ThrowOnError> => (options.client ?? client).get<Get3Responses, Get3Errors, ThrowOnError>({
+export const get6 = <ThrowOnError extends boolean = false>(options: Options<Get6Data, ThrowOnError>): RequestResult<Get6Responses, Get6Errors, ThrowOnError> => (options.client ?? client).get<Get6Responses, Get6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants/{id}',
     ...options
@@ -345,7 +491,7 @@ export const get3 = <ThrowOnError extends boolean = false>(options: Options<Get3
 /**
  * Update
  */
-export const update3 = <ThrowOnError extends boolean = false>(options: Options<Update3Data, ThrowOnError>): RequestResult<Update3Responses, Update3Errors, ThrowOnError> => (options.client ?? client).put<Update3Responses, Update3Errors, ThrowOnError>({
+export const update5 = <ThrowOnError extends boolean = false>(options: Options<Update5Data, ThrowOnError>): RequestResult<Update5Responses, Update5Errors, ThrowOnError> => (options.client ?? client).put<Update5Responses, Update5Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants/{id}',
     ...options,
@@ -358,7 +504,7 @@ export const update3 = <ThrowOnError extends boolean = false>(options: Options<U
 /**
  * List
  */
-export const list4 = <ThrowOnError extends boolean = false>(options?: Options<List4Data, ThrowOnError>): RequestResult<List4Responses, List4Errors, ThrowOnError> => (options?.client ?? client).get<List4Responses, List4Errors, ThrowOnError>({
+export const list7 = <ThrowOnError extends boolean = false>(options?: Options<List7Data, ThrowOnError>): RequestResult<List7Responses, List7Errors, ThrowOnError> => (options?.client ?? client).get<List7Responses, List7Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users',
     ...options
@@ -367,7 +513,7 @@ export const list4 = <ThrowOnError extends boolean = false>(options?: Options<Li
 /**
  * Create
  */
-export const create4 = <ThrowOnError extends boolean = false>(options: Options<Create4Data, ThrowOnError>): RequestResult<Create4Responses, Create4Errors, ThrowOnError> => (options.client ?? client).post<Create4Responses, Create4Errors, ThrowOnError>({
+export const create7 = <ThrowOnError extends boolean = false>(options: Options<Create7Data, ThrowOnError>): RequestResult<Create7Responses, Create7Errors, ThrowOnError> => (options.client ?? client).post<Create7Responses, Create7Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users',
     ...options,
@@ -402,7 +548,7 @@ export const updateMe = <ThrowOnError extends boolean = false>(options: Options<
 /**
  * Delete
  */
-export const delete4 = <ThrowOnError extends boolean = false>(options: Options<Delete4Data, ThrowOnError>): RequestResult<Delete4Responses, Delete4Errors, ThrowOnError> => (options.client ?? client).delete<Delete4Responses, Delete4Errors, ThrowOnError>({
+export const delete7 = <ThrowOnError extends boolean = false>(options: Options<Delete7Data, ThrowOnError>): RequestResult<Delete7Responses, Delete7Errors, ThrowOnError> => (options.client ?? client).delete<Delete7Responses, Delete7Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/{id}',
     ...options
@@ -411,7 +557,7 @@ export const delete4 = <ThrowOnError extends boolean = false>(options: Options<D
 /**
  * Get
  */
-export const get4 = <ThrowOnError extends boolean = false>(options: Options<Get4Data, ThrowOnError>): RequestResult<Get4Responses, Get4Errors, ThrowOnError> => (options.client ?? client).get<Get4Responses, Get4Errors, ThrowOnError>({
+export const get7 = <ThrowOnError extends boolean = false>(options: Options<Get7Data, ThrowOnError>): RequestResult<Get7Responses, Get7Errors, ThrowOnError> => (options.client ?? client).get<Get7Responses, Get7Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/{id}',
     ...options
@@ -420,7 +566,7 @@ export const get4 = <ThrowOnError extends boolean = false>(options: Options<Get4
 /**
  * Update
  */
-export const update4 = <ThrowOnError extends boolean = false>(options: Options<Update4Data, ThrowOnError>): RequestResult<Update4Responses, Update4Errors, ThrowOnError> => (options.client ?? client).put<Update4Responses, Update4Errors, ThrowOnError>({
+export const update6 = <ThrowOnError extends boolean = false>(options: Options<Update6Data, ThrowOnError>): RequestResult<Update6Responses, Update6Errors, ThrowOnError> => (options.client ?? client).put<Update6Responses, Update6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/{id}',
     ...options,

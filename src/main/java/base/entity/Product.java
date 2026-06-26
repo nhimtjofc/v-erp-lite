@@ -59,6 +59,17 @@ public class Product extends BaseEntity {
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
 
+    @Column(name = "low_stock_threshold", nullable = false)
+    private int lowStockThreshold = 0;
+
+    @Column(name = "reserved_quantity", nullable = false)
+    private int reservedQuantity = 0;
+
+    @Transient
+    public int getAvailableQuantity() {
+        return Math.max(0, this.stockQuantity - this.reservedQuantity);
+    }
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
     private List<ProductOption> options = new ArrayList<>();

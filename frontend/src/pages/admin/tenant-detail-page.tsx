@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useRouter } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useGet3Query, useDelete3Mutation } from '@/shared/api'
+import { useGet6Query, useDelete6Mutation } from '@/shared/api'
 import {
   listTenantUsers,
   useCreateTenantUserMutation,
@@ -39,8 +39,8 @@ export function TenantDetailPage() {
   const { t } = useTranslation('admin')
 
   // Tenant data
-  const { data: tenant, isLoading: tenantLoading } = useGet3Query({ path: { id } })
-  const deleteTenantMutation = useDelete3Mutation()
+  const { data: tenant, isLoading: tenantLoading } = useGet6Query({ path: { id } })
+  const deleteTenantMutation = useDelete6Mutation()
   const queryClient = useQueryClient()
 
   // Users in this tenant — only fetch when tenant code is available
@@ -129,7 +129,7 @@ export function TenantDetailPage() {
     if (!confirm(t('confirmDeleteTenant'))) return
     try {
       await deleteTenantMutation.mutateAsync({ path: { id } })
-      queryClient.invalidateQueries({ queryKey: ['list3'] })
+      queryClient.invalidateQueries({ queryKey: ['list6'] })
       router.navigate({ to: '/admin/tenants' })
     } catch (err) {
       console.error(err)

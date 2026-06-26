@@ -255,13 +255,40 @@ export function ProductsPage() {
                       <TableCell>{formatMoney(product.salePrice, i18n.language)}</TableCell>
                       <TableCell>
                         {(() => {
-                          const totalStock = product.variants && product.variants.length > 0
-                            ? product.variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)
+                          const hasVariants = Boolean(product.variants && product.variants.length > 0)
+                          const totalStock = hasVariants
+                            ? product.variants!.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)
                             : (product.stockQuantity || 0)
+                          const isLow = hasVariants
+                            ? product.variants!.some(
+                                (v) => (v.lowStockThreshold ?? 0) > 0
+                                  && (v.stockQuantity || 0) > 0
+                                  && (v.stockQuantity || 0) <= (v.lowStockThreshold ?? 0),
+                              )
+                            : (product.lowStockThreshold ?? 0) > 0
+                              && totalStock > 0
+                              && totalStock <= (product.lowStockThreshold ?? 0)
                           return (
-                            <span className={totalStock === 0 ? "text-destructive font-semibold" : "font-medium"}>
-                              {totalStock}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={
+                                  totalStock === 0
+                                    ? 'text-destructive font-semibold'
+                                    : isLow
+                                      ? 'font-semibold text-amber-600 dark:text-amber-500'
+                                      : 'font-medium'
+                                }
+                              >
+                                {totalStock}
+                              </span>
+                              {totalStock === 0 ? (
+                                <Badge variant="destructive" className="text-[10px]">{t('outOfStock')}</Badge>
+                              ) : isLow ? (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30">
+                                  {t('lowStock')}
+                                </span>
+                              ) : null}
+                            </div>
                           )
                         })()}
                       </TableCell>

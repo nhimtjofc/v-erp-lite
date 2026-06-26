@@ -51,7 +51,11 @@
   "variantSku": "Variant SKU",
   "variantPrice": "Variant Price",
   "variantStock": "Variant Stock",
+  "variantLowStock": "Low Stock Threshold",
   "stockQuantity": "Stock Quantity",
+  "lowStockThreshold": "Low Stock Threshold",
+  "lowStock": "Low Stock",
+  "outOfStock": "Out of Stock",
   "variantCount": "{{count}} variants",
   "priceFrom": "From {{price}}"
 }

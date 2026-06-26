@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, useMutation, type UseMutationOptions, useQuery } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, create, create2, create3, create4, createTenantUser, delete_, delete2, delete3, delete4, deleteTenantUser, disableMfa, get, get2, get3, get4, getEffectiveSettings, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, setupMfa, syncAll, syncTenant, update, update2, update3, update4, updateMe, updateTenantUser, verifyMfa } from '../sdk.gen';
-import type { ChangePasswordData, Create2Data, Create3Data, Create4Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, GetData, GetEffectiveSettingsData, GetResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateTenantUserData, UpdateTenantUserResponse, VerifyMfaData } from '../types.gen';
+import { changePassword, create, create2, create3, create4, create5, create6, create7, createTenantUser, delete_, delete2, delete3, delete4, delete5, delete6, delete7, deleteTenantUser, disableMfa, get, get2, get3, get4, get5, get6, get7, getEffectiveSettings, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, list5, list6, list7, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, setupMfa, syncAll, syncTenant, update, update2, update3, update4, update5, update6, updateMe, updateTenantUser, verifyMfa } from '../sdk.gen';
+import type { ChangePasswordData, Create2Data, Create3Data, Create4Data, Create5Data, Create6Data, Create7Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, Delete5Data, Delete6Data, Delete7Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, Get5Data, Get5Response, Get6Data, Get6Response, Get7Data, Get7Response, GetData, GetEffectiveSettingsData, GetResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, List5Data, List5Response, List6Data, List6Response, List7Data, List7Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, Update5Data, Update5Response, Update6Data, Update6Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateTenantUserData, UpdateTenantUserResponse, VerifyMfaData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -352,7 +352,7 @@ export const updateMutation = (options?: Partial<Options<UpdateData>>): UseMutat
  */
 export const useUpdateMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateResponse, DefaultError, Options<UpdateData>>, 'mutationFn'>>) => useMutation({ ...updateMutation(), ...mutationOptions });
 
-export const list2QueryKey = (options?: Options<List2Data>) => createQueryKey('list2', options, false, ['Customer Resource']);
+export const list2QueryKey = (options?: Options<List2Data>) => createQueryKey('list2', options, false, ['Category Resource']);
 
 /**
  * List
@@ -419,7 +419,7 @@ export const delete2Mutation = (options?: Partial<Options<Delete2Data>>): UseMut
  */
 export const useDelete2Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete2Data>>, 'mutationFn'>>) => useMutation({ ...delete2Mutation(), ...mutationOptions });
 
-export const get2QueryKey = (options: Options<Get2Data>) => createQueryKey('get2', options, false, ['Customer Resource']);
+export const get2QueryKey = (options: Options<Get2Data>) => createQueryKey('get2', options, false, ['Category Resource']);
 
 /**
  * Get
@@ -463,6 +463,118 @@ export const update2Mutation = (options?: Partial<Options<Update2Data>>): UseMut
  * Update
  */
 export const useUpdate2Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update2Response, DefaultError, Options<Update2Data>>, 'mutationFn'>>) => useMutation({ ...update2Mutation(), ...mutationOptions });
+
+export const list3QueryKey = (options?: Options<List3Data>) => createQueryKey('list3', options, false, ['Customer Resource']);
+
+/**
+ * List
+ */
+export const list3Options = (options?: Options<List3Data>) => queryOptions<List3Response, DefaultError, List3Response, ReturnType<typeof list3QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await list3({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: list3QueryKey(options)
+});
+
+/**
+ * List
+ */
+export const useList3Query = (options?: Options<List3Data>) => useQuery(list3Options(options));
+
+/**
+ * Create
+ */
+export const create3Mutation = (options?: Partial<Options<Create3Data>>): UseMutationOptions<unknown, DefaultError, Options<Create3Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create3Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await create3({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Create
+ */
+export const useCreate3Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create3Data>>, 'mutationFn'>>) => useMutation({ ...create3Mutation(), ...mutationOptions });
+
+/**
+ * Delete
+ */
+export const delete3Mutation = (options?: Partial<Options<Delete3Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete3Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete3Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await delete3({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete
+ */
+export const useDelete3Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete3Data>>, 'mutationFn'>>) => useMutation({ ...delete3Mutation(), ...mutationOptions });
+
+export const get3QueryKey = (options: Options<Get3Data>) => createQueryKey('get3', options, false, ['Customer Resource']);
+
+/**
+ * Get
+ */
+export const get3Options = (options: Options<Get3Data>) => queryOptions<Get3Response, DefaultError, Get3Response, ReturnType<typeof get3QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await get3({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: get3QueryKey(options)
+});
+
+/**
+ * Get
+ */
+export const useGet3Query = (options: Options<Get3Data>) => useQuery(get3Options(options));
+
+/**
+ * Update
+ */
+export const update3Mutation = (options?: Partial<Options<Update3Data>>): UseMutationOptions<Update3Response, DefaultError, Options<Update3Data>> => {
+    const mutationOptions: UseMutationOptions<Update3Response, DefaultError, Options<Update3Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await update3({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update
+ */
+export const useUpdate3Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update3Response, DefaultError, Options<Update3Data>>, 'mutationFn'>>) => useMutation({ ...update3Mutation(), ...mutationOptions });
 
 export const healthQueryKey = (options?: Options<HealthData>) => createQueryKey('health', options, false, ['Health Resource']);
 
@@ -510,6 +622,118 @@ export const getTranslationsOptions = (options: Options<GetTranslationsData>) =>
  */
 export const useGetTranslationsQuery = (options: Options<GetTranslationsData>) => useQuery(getTranslationsOptions(options));
 
+export const list4QueryKey = (options?: Options<List4Data>) => createQueryKey('list4', options, false, ['Product Resource']);
+
+/**
+ * List
+ */
+export const list4Options = (options?: Options<List4Data>) => queryOptions<List4Response, DefaultError, List4Response, ReturnType<typeof list4QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await list4({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: list4QueryKey(options)
+});
+
+/**
+ * List
+ */
+export const useList4Query = (options?: Options<List4Data>) => useQuery(list4Options(options));
+
+/**
+ * Create
+ */
+export const create4Mutation = (options?: Partial<Options<Create4Data>>): UseMutationOptions<unknown, DefaultError, Options<Create4Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create4Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await create4({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Create
+ */
+export const useCreate4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create4Data>>, 'mutationFn'>>) => useMutation({ ...create4Mutation(), ...mutationOptions });
+
+/**
+ * Delete
+ */
+export const delete4Mutation = (options?: Partial<Options<Delete4Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete4Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete4Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await delete4({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete
+ */
+export const useDelete4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete4Data>>, 'mutationFn'>>) => useMutation({ ...delete4Mutation(), ...mutationOptions });
+
+export const get4QueryKey = (options: Options<Get4Data>) => createQueryKey('get4', options, false, ['Product Resource']);
+
+/**
+ * Get
+ */
+export const get4Options = (options: Options<Get4Data>) => queryOptions<Get4Response, DefaultError, Get4Response, ReturnType<typeof get4QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await get4({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: get4QueryKey(options)
+});
+
+/**
+ * Get
+ */
+export const useGet4Query = (options: Options<Get4Data>) => useQuery(get4Options(options));
+
+/**
+ * Update
+ */
+export const update4Mutation = (options?: Partial<Options<Update4Data>>): UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>> => {
+    const mutationOptions: UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await update4({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update
+ */
+export const useUpdate4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>>, 'mutationFn'>>) => useMutation({ ...update4Mutation(), ...mutationOptions });
+
 /**
  * Sync All
  */
@@ -553,6 +777,96 @@ export const syncTenantMutation = (options?: Partial<Options<SyncTenantData>>): 
  * Sync Tenant
  */
 export const useSyncTenantMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<SyncTenantData>>, 'mutationFn'>>) => useMutation({ ...syncTenantMutation(), ...mutationOptions });
+
+export const list5QueryKey = (options?: Options<List5Data>) => createQueryKey('list5', options, false, ['Tag Resource']);
+
+/**
+ * List
+ */
+export const list5Options = (options?: Options<List5Data>) => queryOptions<List5Response, DefaultError, List5Response, ReturnType<typeof list5QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await list5({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: list5QueryKey(options)
+});
+
+/**
+ * List
+ */
+export const useList5Query = (options?: Options<List5Data>) => useQuery(list5Options(options));
+
+/**
+ * Create
+ */
+export const create5Mutation = (options?: Partial<Options<Create5Data>>): UseMutationOptions<unknown, DefaultError, Options<Create5Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create5Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await create5({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Create
+ */
+export const useCreate5Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create5Data>>, 'mutationFn'>>) => useMutation({ ...create5Mutation(), ...mutationOptions });
+
+/**
+ * Delete
+ */
+export const delete5Mutation = (options?: Partial<Options<Delete5Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete5Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete5Data>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await delete5({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete
+ */
+export const useDelete5Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete5Data>>, 'mutationFn'>>) => useMutation({ ...delete5Mutation(), ...mutationOptions });
+
+export const get5QueryKey = (options: Options<Get5Data>) => createQueryKey('get5', options, false, ['Tag Resource']);
+
+/**
+ * Get
+ */
+export const get5Options = (options: Options<Get5Data>) => queryOptions<Get5Response, DefaultError, Get5Response, ReturnType<typeof get5QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await get5({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: get5QueryKey(options)
+});
+
+/**
+ * Get
+ */
+export const useGet5Query = (options: Options<Get5Data>) => useQuery(get5Options(options));
 
 export const getTenantSettingsQueryKey = (options?: Options<GetTenantSettingsData>) => createQueryKey('getTenantSettings', options, false, ['Tenant Config Resource']);
 
@@ -667,14 +981,14 @@ export const putUserSettingsMutation = (options?: Partial<Options<PutUserSetting
  */
 export const usePutUserSettingsMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<PutUserSettingsData>>, 'mutationFn'>>) => useMutation({ ...putUserSettingsMutation(), ...mutationOptions });
 
-export const list3QueryKey = (options?: Options<List3Data>) => createQueryKey('list3', options, false, ['Tenant Resource']);
+export const list6QueryKey = (options?: Options<List6Data>) => createQueryKey('list6', options, false, ['Tenant Resource']);
 
 /**
  * List
  */
-export const list3Options = (options?: Options<List3Data>) => queryOptions<List3Response, DefaultError, List3Response, ReturnType<typeof list3QueryKey>>({
+export const list6Options = (options?: Options<List6Data>) => queryOptions<List6Response, DefaultError, List6Response, ReturnType<typeof list6QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await list3({
+        const { data } = await list6({
             ...options,
             ...queryKey[0],
             signal,
@@ -682,21 +996,21 @@ export const list3Options = (options?: Options<List3Data>) => queryOptions<List3
         });
         return data;
     },
-    queryKey: list3QueryKey(options)
+    queryKey: list6QueryKey(options)
 });
 
 /**
  * List
  */
-export const useList3Query = (options?: Options<List3Data>) => useQuery(list3Options(options));
+export const useList6Query = (options?: Options<List6Data>) => useQuery(list6Options(options));
 
 /**
  * Create
  */
-export const create3Mutation = (options?: Partial<Options<Create3Data>>): UseMutationOptions<unknown, DefaultError, Options<Create3Data>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create3Data>> = {
+export const create6Mutation = (options?: Partial<Options<Create6Data>>): UseMutationOptions<unknown, DefaultError, Options<Create6Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create6Data>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await create3({
+            const { data } = await create6({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -710,15 +1024,15 @@ export const create3Mutation = (options?: Partial<Options<Create3Data>>): UseMut
 /**
  * Create
  */
-export const useCreate3Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create3Data>>, 'mutationFn'>>) => useMutation({ ...create3Mutation(), ...mutationOptions });
+export const useCreate6Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create6Data>>, 'mutationFn'>>) => useMutation({ ...create6Mutation(), ...mutationOptions });
 
 /**
  * Delete
  */
-export const delete3Mutation = (options?: Partial<Options<Delete3Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete3Data>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete3Data>> = {
+export const delete6Mutation = (options?: Partial<Options<Delete6Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete6Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete6Data>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await delete3({
+            const { data } = await delete6({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -732,16 +1046,16 @@ export const delete3Mutation = (options?: Partial<Options<Delete3Data>>): UseMut
 /**
  * Delete
  */
-export const useDelete3Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete3Data>>, 'mutationFn'>>) => useMutation({ ...delete3Mutation(), ...mutationOptions });
+export const useDelete6Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete6Data>>, 'mutationFn'>>) => useMutation({ ...delete6Mutation(), ...mutationOptions });
 
-export const get3QueryKey = (options: Options<Get3Data>) => createQueryKey('get3', options, false, ['Tenant Resource']);
+export const get6QueryKey = (options: Options<Get6Data>) => createQueryKey('get6', options, false, ['Tenant Resource']);
 
 /**
  * Get
  */
-export const get3Options = (options: Options<Get3Data>) => queryOptions<Get3Response, DefaultError, Get3Response, ReturnType<typeof get3QueryKey>>({
+export const get6Options = (options: Options<Get6Data>) => queryOptions<Get6Response, DefaultError, Get6Response, ReturnType<typeof get6QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await get3({
+        const { data } = await get6({
             ...options,
             ...queryKey[0],
             signal,
@@ -749,21 +1063,21 @@ export const get3Options = (options: Options<Get3Data>) => queryOptions<Get3Resp
         });
         return data;
     },
-    queryKey: get3QueryKey(options)
+    queryKey: get6QueryKey(options)
 });
 
 /**
  * Get
  */
-export const useGet3Query = (options: Options<Get3Data>) => useQuery(get3Options(options));
+export const useGet6Query = (options: Options<Get6Data>) => useQuery(get6Options(options));
 
 /**
  * Update
  */
-export const update3Mutation = (options?: Partial<Options<Update3Data>>): UseMutationOptions<Update3Response, DefaultError, Options<Update3Data>> => {
-    const mutationOptions: UseMutationOptions<Update3Response, DefaultError, Options<Update3Data>> = {
+export const update5Mutation = (options?: Partial<Options<Update5Data>>): UseMutationOptions<Update5Response, DefaultError, Options<Update5Data>> => {
+    const mutationOptions: UseMutationOptions<Update5Response, DefaultError, Options<Update5Data>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await update3({
+            const { data } = await update5({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -777,16 +1091,16 @@ export const update3Mutation = (options?: Partial<Options<Update3Data>>): UseMut
 /**
  * Update
  */
-export const useUpdate3Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update3Response, DefaultError, Options<Update3Data>>, 'mutationFn'>>) => useMutation({ ...update3Mutation(), ...mutationOptions });
+export const useUpdate5Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update5Response, DefaultError, Options<Update5Data>>, 'mutationFn'>>) => useMutation({ ...update5Mutation(), ...mutationOptions });
 
-export const list4QueryKey = (options?: Options<List4Data>) => createQueryKey('list4', options, false, ['User Resource']);
+export const list7QueryKey = (options?: Options<List7Data>) => createQueryKey('list7', options, false, ['User Resource']);
 
 /**
  * List
  */
-export const list4Options = (options?: Options<List4Data>) => queryOptions<List4Response, DefaultError, List4Response, ReturnType<typeof list4QueryKey>>({
+export const list7Options = (options?: Options<List7Data>) => queryOptions<List7Response, DefaultError, List7Response, ReturnType<typeof list7QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await list4({
+        const { data } = await list7({
             ...options,
             ...queryKey[0],
             signal,
@@ -794,21 +1108,21 @@ export const list4Options = (options?: Options<List4Data>) => queryOptions<List4
         });
         return data;
     },
-    queryKey: list4QueryKey(options)
+    queryKey: list7QueryKey(options)
 });
 
 /**
  * List
  */
-export const useList4Query = (options?: Options<List4Data>) => useQuery(list4Options(options));
+export const useList7Query = (options?: Options<List7Data>) => useQuery(list7Options(options));
 
 /**
  * Create
  */
-export const create4Mutation = (options?: Partial<Options<Create4Data>>): UseMutationOptions<unknown, DefaultError, Options<Create4Data>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create4Data>> = {
+export const create7Mutation = (options?: Partial<Options<Create7Data>>): UseMutationOptions<unknown, DefaultError, Options<Create7Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Create7Data>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await create4({
+            const { data } = await create7({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -822,7 +1136,7 @@ export const create4Mutation = (options?: Partial<Options<Create4Data>>): UseMut
 /**
  * Create
  */
-export const useCreate4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create4Data>>, 'mutationFn'>>) => useMutation({ ...create4Mutation(), ...mutationOptions });
+export const useCreate7Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Create7Data>>, 'mutationFn'>>) => useMutation({ ...create7Mutation(), ...mutationOptions });
 
 export const meQueryKey = (options?: Options<MeData>) => createQueryKey('me', options, false, ['User Resource']);
 
@@ -872,10 +1186,10 @@ export const useUpdateMeMutation = (mutationOptions?: Partial<Omit<UseMutationOp
 /**
  * Delete
  */
-export const delete4Mutation = (options?: Partial<Options<Delete4Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete4Data>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete4Data>> = {
+export const delete7Mutation = (options?: Partial<Options<Delete7Data>>): UseMutationOptions<unknown, DefaultError, Options<Delete7Data>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<Delete7Data>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await delete4({
+            const { data } = await delete7({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -889,16 +1203,16 @@ export const delete4Mutation = (options?: Partial<Options<Delete4Data>>): UseMut
 /**
  * Delete
  */
-export const useDelete4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete4Data>>, 'mutationFn'>>) => useMutation({ ...delete4Mutation(), ...mutationOptions });
+export const useDelete7Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<Delete7Data>>, 'mutationFn'>>) => useMutation({ ...delete7Mutation(), ...mutationOptions });
 
-export const get4QueryKey = (options: Options<Get4Data>) => createQueryKey('get4', options, false, ['User Resource']);
+export const get7QueryKey = (options: Options<Get7Data>) => createQueryKey('get7', options, false, ['User Resource']);
 
 /**
  * Get
  */
-export const get4Options = (options: Options<Get4Data>) => queryOptions<Get4Response, DefaultError, Get4Response, ReturnType<typeof get4QueryKey>>({
+export const get7Options = (options: Options<Get7Data>) => queryOptions<Get7Response, DefaultError, Get7Response, ReturnType<typeof get7QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await get4({
+        const { data } = await get7({
             ...options,
             ...queryKey[0],
             signal,
@@ -906,21 +1220,21 @@ export const get4Options = (options: Options<Get4Data>) => queryOptions<Get4Resp
         });
         return data;
     },
-    queryKey: get4QueryKey(options)
+    queryKey: get7QueryKey(options)
 });
 
 /**
  * Get
  */
-export const useGet4Query = (options: Options<Get4Data>) => useQuery(get4Options(options));
+export const useGet7Query = (options: Options<Get7Data>) => useQuery(get7Options(options));
 
 /**
  * Update
  */
-export const update4Mutation = (options?: Partial<Options<Update4Data>>): UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>> => {
-    const mutationOptions: UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>> = {
+export const update6Mutation = (options?: Partial<Options<Update6Data>>): UseMutationOptions<Update6Response, DefaultError, Options<Update6Data>> => {
+    const mutationOptions: UseMutationOptions<Update6Response, DefaultError, Options<Update6Data>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await update4({
+            const { data } = await update6({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -934,4 +1248,4 @@ export const update4Mutation = (options?: Partial<Options<Update4Data>>): UseMut
 /**
  * Update
  */
-export const useUpdate4Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update4Response, DefaultError, Options<Update4Data>>, 'mutationFn'>>) => useMutation({ ...update4Mutation(), ...mutationOptions });
+export const useUpdate6Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update6Response, DefaultError, Options<Update6Data>>, 'mutationFn'>>) => useMutation({ ...update6Mutation(), ...mutationOptions });

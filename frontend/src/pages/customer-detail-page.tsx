@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useRouter } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { useGet2Query, useUpdate2Mutation, useDelete2Mutation } from '@/shared/api'
+import { useGet3Query, useUpdate3Mutation, useDelete3Mutation } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -14,9 +14,9 @@ export function CustomerDetailPage() {
   const { t } = useTranslation()
   const { id } = useParams({ from: '/_authenticated/customers/$id' })
   const router = useRouter()
-  const { data: customer, isLoading } = useGet2Query({ path: { id } })
-  const updateMutation = useUpdate2Mutation()
-  const deleteMutation = useDelete2Mutation()
+  const { data: customer, isLoading } = useGet3Query({ path: { id } })
+  const updateMutation = useUpdate3Mutation()
+  const deleteMutation = useDelete3Mutation()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<Customer>>({})
@@ -31,7 +31,7 @@ export function CustomerDetailPage() {
     try {
       await updateMutation.mutateAsync({ path: { id }, body: form })
       setEditing(false)
-      queryClient.invalidateQueries({ queryKey: ['list2'] })
+      queryClient.invalidateQueries({ queryKey: ['list3'] })
     } catch (err) {
       console.error(err)
     } finally {

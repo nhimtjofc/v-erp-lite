@@ -28,9 +28,10 @@ interface ProductFormState {
   saleEndsAt: string
   active: boolean
   stockQuantity: string
+  lowStockThreshold: string
   hasVariants: boolean
   options: { name: string; values: string }[]
-  variants: { sku: string; price: string; stockQuantity: string; optionValues: Record<string, string> }[]
+  variants: { sku: string; price: string; stockQuantity: string; lowStockThreshold: string; optionValues: Record<string, string> }[]
   tagsInput: string
 }
 
@@ -46,6 +47,7 @@ const emptyForm: ProductFormState = {
   saleEndsAt: '',
   active: true,
   stockQuantity: '0',
+  lowStockThreshold: '0',
   hasVariants: false,
   options: [],
   variants: [],
@@ -75,6 +77,7 @@ function productToForm(product: Product): ProductFormState {
     sku: v.sku,
     price: v.price.toString(),
     stockQuantity: v.stockQuantity.toString(),
+    lowStockThreshold: (v.lowStockThreshold ?? 0).toString(),
     optionValues: v.optionValues,
   }))
 
@@ -92,6 +95,7 @@ function productToForm(product: Product): ProductFormState {
     saleEndsAt: toLocalInputValue(product.saleEndsAt),
     active: product.active ?? true,
     stockQuantity: product.stockQuantity?.toString() || '0',
+    lowStockThreshold: product.lowStockThreshold?.toString() || '0',
     hasVariants,
     options,
     variants,
@@ -120,6 +124,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
         sku: v.sku.trim(),
         price: Number(v.price || 0),
         stockQuantity: Number(v.stockQuantity || 0),
+        lowStockThreshold: Number(v.lowStockThreshold || 0),
         optionValues: v.optionValues,
       }))
     : []
@@ -136,6 +141,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
     saleEndsAt: fromLocalInputValue(form.saleEndsAt),
     active: form.active,
     stockQuantity: form.hasVariants ? 0 : Number(form.stockQuantity || 0),
+    lowStockThreshold: form.hasVariants ? 0 : Number(form.lowStockThreshold || 0),
     options,
     variants,
     tags,
@@ -209,6 +215,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         sku: defaultSku,
         price: form.basePrice || '0',
         stockQuantity: '0',
+        lowStockThreshold: '0',
         optionValues: comb,
       }
     })
@@ -275,6 +282,9 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         errors.stockQuantity = t('requiredField')
       } else if (Number(form.stockQuantity) < 0) {
         errors.stockQuantity = t('nonNegativeField')
+      }
+      if (form.lowStockThreshold.trim() && Number(form.lowStockThreshold) < 0) {
+        errors.lowStockThreshold = t('nonNegativeField')
       }
     } else {
       form.variants.forEach((v, idx) => {
@@ -469,17 +479,31 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
             </div>
 
             {!form.hasVariants && (
-              <div className="space-y-2">
-                <Label htmlFor="stockQuantity">{t('stockQuantity')}</Label>
-                <Input
-                  id="stockQuantity"
-                  type="number"
-                  min="0"
-                  value={form.stockQuantity}
-                  onChange={(event) => updateField('stockQuantity', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.stockQuantity)}
-                />
-                {fieldErrors.stockQuantity && <p className="text-sm text-destructive">{fieldErrors.stockQuantity}</p>}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="stockQuantity">{t('stockQuantity')}</Label>
+                  <Input
+                    id="stockQuantity"
+                    type="number"
+                    min="0"
+                    value={form.stockQuantity}
+                    onChange={(event) => updateField('stockQuantity', event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.stockQuantity)}
+                  />
+                  {fieldErrors.stockQuantity && <p className="text-sm text-destructive">{fieldErrors.stockQuantity}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lowStockThreshold">{t('lowStockThreshold')}</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    min="0"
+                    value={form.lowStockThreshold}
+                    onChange={(event) => updateField('lowStockThreshold', event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.lowStockThreshold)}
+                  />
+                  {fieldErrors.lowStockThreshold && <p className="text-sm text-destructive">{fieldErrors.lowStockThreshold}</p>}
+                </div>
               </div>
             )}
 
@@ -570,6 +594,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                             <TableHead className="min-w-[150px]">{t('sku')}</TableHead>
                             <TableHead className="min-w-[100px]">{t('variantPrice')}</TableHead>
                             <TableHead className="min-w-[100px]">{t('variantStock')}</TableHead>
+                            <TableHead className="min-w-[120px]">{t('variantLowStock')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -611,6 +636,18 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                                     onChange={(e) => {
                                       const next = [...form.variants]
                                       next[i].stockQuantity = e.target.value
+                                      updateField('variants', next)
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={v.lowStockThreshold}
+                                    onChange={(e) => {
+                                      const next = [...form.variants]
+                                      next[i].lowStockThreshold = e.target.value
                                       updateField('variants', next)
                                     }}
                                   />

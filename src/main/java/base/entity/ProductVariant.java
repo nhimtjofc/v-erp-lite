@@ -36,6 +36,17 @@ public class ProductVariant extends BaseEntity {
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
 
+    @Column(name = "low_stock_threshold", nullable = false)
+    private int lowStockThreshold = 0;
+
+    @Column(name = "reserved_quantity", nullable = false)
+    private int reservedQuantity = 0;
+
+    @Transient
+    public int getAvailableQuantity() {
+        return Math.max(0, this.stockQuantity - this.reservedQuantity);
+    }
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "option_values", columnDefinition = "json", nullable = false)
     private Map<String, String> optionValues = new HashMap<>();

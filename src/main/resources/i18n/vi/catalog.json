@@ -51,7 +51,11 @@
   "variantSku": "SKU biến thể",
   "variantPrice": "Giá biến thể",
   "variantStock": "Tồn kho biến thể",
+  "variantLowStock": "Ngưỡng tồn kho thấp",
   "stockQuantity": "Số lượng tồn kho",
+  "lowStockThreshold": "Ngưỡng tồn kho thấp",
+  "lowStock": "Sắp hết",
+  "outOfStock": "Hết hàng",
   "variantCount": "{{count}} biến thể",
   "priceFrom": "Từ {{price}}"
 }

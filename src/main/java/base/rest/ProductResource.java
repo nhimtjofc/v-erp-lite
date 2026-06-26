@@ -120,6 +120,7 @@ public class ProductResource {
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
         product.setStockQuantity(updated.getStockQuantity());
+        product.setLowStockThreshold(updated.getLowStockThreshold());
         product.setOptions(updated.getOptions());
         product.setUpdatedBy(caller.userId());
 
@@ -138,6 +139,7 @@ public class ProductResource {
                 if (var != null) {
                     var.setPrice(updatedVar.getPrice());
                     var.setStockQuantity(updatedVar.getStockQuantity());
+                    var.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     var.setOptionValues(updatedVar.getOptionValues());
                     var.setUpdatedBy(caller.userId());
                     newVariants.add(var);
@@ -148,6 +150,7 @@ public class ProductResource {
                     newVar.setSku(updatedVar.getSku());
                     newVar.setPrice(updatedVar.getPrice());
                     newVar.setStockQuantity(updatedVar.getStockQuantity());
+                    newVar.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     newVar.setOptionValues(updatedVar.getOptionValues());
                     newVar.setTenantId(caller.tenantCode());
                     newVar.setCreatedBy(caller.userId());
