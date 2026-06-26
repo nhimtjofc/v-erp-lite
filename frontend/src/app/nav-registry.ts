@@ -15,6 +15,8 @@ export interface NavItem {
   labelKey: string
   to: string
   icon: LucideIcon
+  /** Nested submenu items (mechanism preserved for future use) */
+  children?: NavItem[]
 }
 
 export interface NavGroup {
