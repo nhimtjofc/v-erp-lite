@@ -205,7 +205,9 @@ export function VouchersPage() {
                 {voucherList.map((voucher) => {
                   const val = Number(voucher.discountValue)
                   const isPercent = voucher.discountType === 'PERCENTAGE'
-                  const discountFormatted = isPercent ? `${val}%` : `${val.toLocaleString()} VND`
+                  const discountFormatted = isPercent 
+                    ? `${val}%` 
+                    : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
                   
                   return (
                     <TableRow key={voucher.id!}>
@@ -214,7 +216,7 @@ export function VouchersPage() {
                       </TableCell>
                       <TableCell className="font-medium">{voucher.name}</TableCell>
                       <TableCell className="font-medium">{discountFormatted}</TableCell>
-                      <TableCell>{Number(voucher.minOrderValue).toLocaleString()} VND</TableCell>
+                      <TableCell>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(voucher.minOrderValue))}</TableCell>
                       <TableCell>
                         {voucher.usedCount} / {voucher.usageLimit ?? '∞'}
                       </TableCell>
@@ -292,7 +294,7 @@ export function VouchersPage() {
                   onChange={(e) => setDiscountType(e.target.value)}
                 >
                   <option value="PERCENTAGE">Percentage (%)</option>
-                  <option value="FIXED_AMOUNT">Fixed Amount (VND)</option>
+                  <option value="FIXED_AMOUNT">Fixed Amount (USD)</option>
                 </select>
               </div>
 

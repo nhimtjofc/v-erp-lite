@@ -237,10 +237,10 @@ export function OrderDetailPage() {
 
                       <div className="text-right">
                         <div className="text-sm font-semibold">
-                          {(Number(item.unitPrice) * (item.quantity ?? 0)).toLocaleString()} VND
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(item.unitPrice) * (item.quantity ?? 0))}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {Number(item.unitPrice).toLocaleString()} VND × {item.quantity ?? 0}
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(item.unitPrice))} × {item.quantity ?? 0}
                         </div>
                       </div>
                     </div>
@@ -388,7 +388,7 @@ export function OrderDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{Number(order.subtotalAmount).toLocaleString()} VND</span>
+                  <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.subtotalAmount))}</span>
                 </div>
 
                 {Number(order.discountAmount) > 0 && (
@@ -397,7 +397,7 @@ export function OrderDetailPage() {
                       <Tag className="h-3.5 w-3.5" />
                       Discount {order.voucher?.code && `(${order.voucher.code})`}
                     </span>
-                    <span>-{Number(order.discountAmount).toLocaleString()} VND</span>
+                    <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.discountAmount))}</span>
                   </div>
                 )}
 
@@ -405,20 +405,20 @@ export function OrderDetailPage() {
                   <span className="text-muted-foreground">Shipping Fee</span>
                   <span>
                     {Number(order.shippingFee) > 0
-                      ? `${Number(order.shippingFee).toLocaleString()} VND`
+                      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.shippingFee))
                       : <span className="text-success font-medium">Free</span>}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{Number(order.taxAmount).toLocaleString()} VND</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.taxAmount))}</span>
                 </div>
 
                 <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                   <span>Grand Total</span>
                   <span className="text-primary text-lg">
-                    {Number(order.finalAmount).toLocaleString()} VND
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.finalAmount))}
                   </span>
                 </div>
               </div>

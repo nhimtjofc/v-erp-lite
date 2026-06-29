@@ -39,8 +39,8 @@ interface CartLine {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const FREE_SHIPPING_THRESHOLD = 500_000
-const FLAT_SHIPPING_FEE = 30_000
+const FREE_SHIPPING_THRESHOLD = 50
+const FLAT_SHIPPING_FEE = 5
 const VAT_RATE = 0.10
 const NEW_PRODUCT_DAYS = 14
 
@@ -70,7 +70,7 @@ function getAvailableStock(product: Product, variant?: ProductVariant | null): n
 }
 
 function fmt(n: number): string {
-    return n.toLocaleString('vi-VN')
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
                             : isLowStock ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
                             : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     }`}>
-                        {isOutOfStock ? 'Hết' : isLowStock ? `Còn ${avail}` : `${avail} còn`}
+                        {isOutOfStock ? 'Out of stock' : isLowStock ? `${avail} left` : `${avail} in stock`}
                     </div>
                 </div>
 
@@ -200,7 +200,7 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
                     }}
                 >
                     <ShoppingCart className="h-3.5 w-3.5" />
-                    {isOutOfStock ? 'Hết hàng' : hasVariants ? 'Chọn phiên bản' : 'Thêm vào giỏ'}
+                    {isOutOfStock ? 'Out of stock' : hasVariants ? 'Choose variant' : 'Add to cart'}
                 </Button>
             </div>
         </div>
@@ -278,7 +278,7 @@ function CartDrawer({
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
                     <div className="flex items-center gap-2">
                         <ShoppingCart className="h-5 w-5 text-primary" />
-                        <h2 className="font-bold text-base">Giỏ hàng</h2>
+                        <h2 className="font-bold text-base">Cart</h2>
                         {totalQty > 0 && (
                             <span className="bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                                 {totalQty}
@@ -289,7 +289,7 @@ function CartDrawer({
                         {cart.length > 0 && (
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive text-xs h-8" onClick={onClearCart}>
                                 <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                Xóa tất cả
+                                Clear all
                             </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
