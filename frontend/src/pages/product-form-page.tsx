@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { ArrowLeft, Save, Trash2, Plus, UploadCloud, X as XIcon, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Plus, Upload, X, ImageIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
 import type { Product, Category, ProductOption, ProductVariant } from '@/shared/api/catalog'
@@ -156,27 +156,6 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
   const [form, setForm] = useState<ProductFormState>(emptyForm)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof ProductFormState, string>>>({})
   const [error, setError] = useState<string | null>(null)
-  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'error'>('idle')
-  const [uploadError, setUploadError] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    setUploadState('uploading')
-    setUploadError('')
-    try {
-      const result = await catalogApi.uploadImage(file)
-      updateField('imageUrl', result.url)
-      setUploadState('idle')
-    } catch (err) {
-      setUploadState('error')
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
-    } finally {
-      // reset file input so same file can be re-uploaded
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
@@ -435,78 +414,59 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('imageUrl')}</Label>
-              {/* Image upload widget */}
-              <div className="flex flex-col gap-3">
-                {form.imageUrl ? (
-                  <div className="relative group w-40 h-40 rounded-lg border overflow-hidden bg-muted">
-                    <img
-                      src={form.imageUrl.startsWith('/api/')
-                        ? `${import.meta.env.VITE_API_BASE_URL || ''}${form.imageUrl}`
-                        : form.imageUrl}
-                      alt="Product"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateField('imageUrl', '')}
-                      className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <XIcon className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadState === 'uploading'}
-                    className="flex flex-col items-center justify-center w-40 h-40 rounded-lg border-2 border-dashed border-input bg-muted/40 hover:bg-muted/70 hover:border-primary/50 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {uploadState === 'uploading' ? (
-                      <>
-                        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mb-2" />
-                        <span className="text-xs text-muted-foreground">Uploading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-xs text-muted-foreground font-medium">Click to upload</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">JPG, PNG, WEBP</span>
-                      </>
-                    )}
-                  </button>
-                )}
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadState === 'uploading'}
-                  >
-                    {uploadState === 'uploading' ? (
-                      <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Uploading...</>
-                    ) : (
-                      <><UploadCloud className="h-3.5 w-3.5 mr-1.5" /> {form.imageUrl ? 'Change image' : 'Upload image'}</>
-                    )}
-                  </Button>
-                  {form.imageUrl && (
-                    <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => updateField('imageUrl', '')}>
-                      <XIcon className="h-3.5 w-3.5 mr-1.5" /> Remove
-                    </Button>
+              <Label>Product Image</Label>
+              <div className="flex items-start gap-4">
+                <div className="h-24 w-24 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  {form.imageUrl ? (
+                    <img src={form.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
                   )}
                 </div>
-                {uploadError && (
-                  <p className="text-sm text-destructive">{uploadError}</p>
-                )}
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-                  className="hidden"
-                  onChange={handleImageFileChange}
-                />
+                <div className="flex-1 space-y-2">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+                    <Upload className="h-4 w-4" />
+                    Upload Image
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const formData = new FormData()
+                        formData.append('file', file)
+                        try {
+                          const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+                          const token = localStorage.getItem('access_token')
+                          const res = await fetch(`${baseUrl}/api/images/upload`, {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            body: formData,
+                          })
+                          if (res.ok) {
+                            const data = await res.json()
+                            updateField('imageUrl', data.url)
+                          }
+                        } catch (err) {
+                          console.error('Upload failed', err)
+                        }
+                      }}
+                    />
+                  </label>
+                  {form.imageUrl && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate max-w-[200px]">{form.imageUrl}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateField('imageUrl', '')}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

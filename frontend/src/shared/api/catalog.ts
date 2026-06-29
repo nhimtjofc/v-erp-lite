@@ -127,20 +127,5 @@ export const catalogApi = {
   deleteTag: (id: string) => request<void>(`/tags/${id}`, {
     method: 'DELETE',
   }),
-  uploadImage: async (file: File): Promise<{ url: string }> => {
-    const token = localStorage.getItem('access_token')
-    const formData = new FormData()
-    formData.append('file', file)
-    const response = await fetch(`${API_BASE}/api/uploads/image`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    })
-    if (!response.ok) {
-      const message = await response.text()
-      throw new Error(message || `Upload failed with ${response.status}`)
-    }
-    return response.json()
-  },
 }
 

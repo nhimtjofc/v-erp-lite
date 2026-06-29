@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
 import { Link } from '@tanstack/react-router'
+import { formatUSD } from '@/shared/utils/currency'
 import {
     Plus, Search, Eye, TrendingUp, ShoppingBag, Clock, CheckCircle2,
     Package, ChevronRight, Truck, XCircle, Filter, RotateCcw,
@@ -176,7 +177,7 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
                 </div>
                 <div className="text-right">
                     <div className="font-bold text-foreground">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.finalAmount))}
+                        {formatUSD(Number(order.finalAmount))}
                     </div>
                     <div className="text-xs text-muted-foreground">Total</div>
                 </div>
@@ -255,7 +256,7 @@ export function OrdersPage() {
     const orderList = orders ?? []
 
     const totalRevenue = stats?.totalRevenue ?? 0
-    const revenueStr = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalRevenue)
+    const revenueStr = formatUSD(totalRevenue)
 
     return (
         <div className="space-y-5">
@@ -263,15 +264,15 @@ export function OrdersPage() {
             {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Đơn hàng</h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
-                        Manage and track all sales orders
+                        Quản lý và theo dõi toàn bộ đơn hàng bán ra
                     </p>
                 </div>
                 <Link to="/orders/new">
                     <Button className="gap-2 shadow-sm">
                         <Plus className="h-4 w-4" />
-                        New Order
+                        Tạo đơn mới
                     </Button>
                 </Link>
             </div>
@@ -280,30 +281,30 @@ export function OrdersPage() {
             {stats && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard
-                        label="Revenue"
+                        label="Doanh thu"
                         value={revenueStr}
                         icon={TrendingUp}
                         gradient="from-violet-500 to-purple-600"
-                        trend="All time total"
+                        trend="Tổng tích lũy"
                     />
                     <StatCard
-                        label="Total Orders"
+                        label="Tổng đơn"
                         value={stats.totalOrders.toString()}
-                        sub={`${stats.countByStatus.COMPLETED ?? 0} completed`}
+                        sub={`${stats.countByStatus.COMPLETED ?? 0} hoàn thành`}
                         icon={ShoppingBag}
                         gradient="from-blue-500 to-cyan-600"
                     />
                     <StatCard
-                        label="Pending"
+                        label="Chờ xử lý"
                         value={((stats.countByStatus.PENDING ?? 0) + (stats.countByStatus.CONFIRMED ?? 0)).toString()}
-                        sub="Needs attention"
+                        sub="Cần hành động"
                         icon={Clock}
                         gradient="from-amber-500 to-orange-600"
                     />
                     <StatCard
-                        label="Completed"
+                        label="Hoàn thành"
                         value={(stats.countByStatus.COMPLETED ?? 0).toString()}
-                        sub={`${stats.countByStatus.CANCELLED ?? 0} cancelled`}
+                        sub={`${stats.countByStatus.CANCELLED ?? 0} đã hủy`}
                         icon={CheckCircle2}
                         gradient="from-emerald-500 to-teal-600"
                     />
@@ -317,7 +318,7 @@ export function OrdersPage() {
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search orders, customer name, phone..."
+                            placeholder="Tìm kiếm đơn hàng, tên KH, số điện thoại..."
                             className="pl-8 h-9"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -408,18 +409,18 @@ export function OrdersPage() {
                                 <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
                             </div>
                             <div>
-                                <p className="font-semibold text-foreground">No orders found</p>
+                                <p className="font-semibold text-foreground">Không tìm thấy đơn hàng</p>
                                 <p className="text-sm text-muted-foreground mt-1">
                                     {activeStatus
-                                        ? `No orders with status "${getStatusCfg(activeStatus).label}"`
-                                        : 'No orders yet. Create the first one!'
+                                        ? `Không có đơn hàng nào ở trạng thái "${getStatusCfg(activeStatus).label}"`
+                                        : 'Chưa có đơn hàng nào. Hãy tạo đơn đầu tiên!'
                                     }
                                 </p>
                             </div>
                             {!activeStatus && (
                                 <Link to="/orders/new">
                                     <Button size="sm" className="mt-1 gap-2">
-                                        <Plus className="h-4 w-4" /> New Order
+                                        <Plus className="h-4 w-4" /> Tạo đơn mới
                                     </Button>
                                 </Link>
                             )}
@@ -468,7 +469,7 @@ export function OrdersPage() {
                                             {cfg.label}
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="font-bold text-sm">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.finalAmount))}</div>
+                                            <div className="font-bold text-sm">{formatUSD(Number(order.finalAmount))}</div>
                                         </div>
                                         <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </div>
@@ -481,13 +482,13 @@ export function OrdersPage() {
                 {/* Footer */}
                 {orderList.length > 0 && (
                     <div className="px-4 py-2.5 border-t border-border bg-muted/30 text-xs text-muted-foreground flex items-center justify-between">
-                        <span>Showing {orderList.length} orders</span>
+                        <span>Hiển thị {orderList.length} đơn hàng</span>
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
                                 className="text-primary hover:underline"
                             >
-                                Clear filter
+                                Xóa bộ lọc
                             </button>
                         )}
                     </div>
