@@ -21,6 +21,12 @@ export type Business = {
     active?: boolean;
 };
 
+export type CartItem = {
+    productId?: Uuid;
+    productVariantId?: Uuid;
+    quantity?: number;
+};
+
 export type Category = {
     tenantId?: string;
     createdAt?: Instant;
@@ -33,6 +39,16 @@ export type Category = {
     description?: string;
     parent?: Category;
     active?: boolean;
+};
+
+export type CheckoutRequest = {
+    customerId?: Uuid;
+    voucherCode?: string;
+    shippingName?: string;
+    shippingPhone?: string;
+    shippingAddress?: string;
+    shippingNote?: string;
+    items?: Array<CartItem>;
 };
 
 export type ConfigRequest = {
@@ -65,6 +81,58 @@ export type LocalDate = string;
 
 export type MfaVerifyRequest = {
     code?: string;
+};
+
+export type Order = {
+    tenantId?: string;
+    createdAt?: Instant;
+    createdBy?: Uuid;
+    updatedAt?: Instant;
+    updatedBy?: Uuid;
+    version?: number;
+    id?: Uuid;
+    customer?: Customer;
+    voucher?: Voucher;
+    orderNumber?: string;
+    orderDate?: Instant;
+    status?: string;
+    shippingName?: string;
+    shippingPhone?: string;
+    shippingAddress?: string;
+    shippingNote?: string;
+    subtotalAmount?: number;
+    discountAmount?: number;
+    shippingFee?: number;
+    taxAmount?: number;
+    finalAmount?: number;
+    items?: Array<OrderItem>;
+};
+
+export type OrderHistory = {
+    id?: Uuid;
+    order?: Order;
+    tenantId?: string;
+    oldStatus?: string;
+    newStatus?: string;
+    note?: string;
+    createdAt?: Instant;
+    createdBy?: Uuid;
+};
+
+export type OrderItem = {
+    tenantId?: string;
+    createdAt?: Instant;
+    createdBy?: Uuid;
+    updatedAt?: Instant;
+    updatedBy?: Uuid;
+    version?: number;
+    id?: Uuid;
+    order?: Order;
+    product?: Product;
+    productVariant?: ProductVariant;
+    quantity?: number;
+    unitPrice?: number;
+    subtotalAmount?: number;
 };
 
 export type PasswordChangeRequest = {
@@ -129,6 +197,11 @@ export type Role = {
     description?: string;
 };
 
+export type StatusUpdateRequest = {
+    status?: string;
+    note?: string;
+};
+
 export type Tag = {
     tenantId?: string;
     createdAt?: Instant;
@@ -174,6 +247,27 @@ export type User = {
     avatarUrl?: string;
     mfaSecret?: string;
     mfaEnabled?: boolean;
+};
+
+export type Voucher = {
+    tenantId?: string;
+    createdAt?: Instant;
+    createdBy?: Uuid;
+    updatedAt?: Instant;
+    updatedBy?: Uuid;
+    version?: number;
+    id?: Uuid;
+    code?: string;
+    name?: string;
+    discountType?: string;
+    discountValue?: number;
+    minOrderValue?: number;
+    maxDiscountAmount?: number;
+    startTime?: Instant;
+    endTime?: Instant;
+    usageLimit?: number;
+    usedCount?: number;
+    active?: boolean;
 };
 
 export type ListTenantUsersData = {
@@ -585,17 +679,6 @@ export type List2Data = {
     url: '/api/categories';
 };
 
-export type List2Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
 export type List2Responses = {
     /**
      * OK
@@ -668,17 +751,6 @@ export type Get2Data = {
     };
     query?: never;
     url: '/api/categories/{id}';
-};
-
-export type Get2Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
 };
 
 export type Get2Responses = {
@@ -905,15 +977,46 @@ export type GetTranslationsResponses = {
     200: unknown;
 };
 
+export type UploadImageData = {
+    body: {
+        file?: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/images/upload';
+};
+
+export type UploadImageResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetImageData = {
+    body?: never;
+    path: {
+        filename: string;
+    };
+    query?: never;
+    url: '/api/images/{filename}';
+};
+
+export type GetImageResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type List4Data = {
     body?: never;
     path?: never;
     query?: {
-        categoryId?: Uuid;
         search?: string;
-        tagId?: Uuid;
+        status?: string;
     };
-    url: '/api/products';
+    url: '/api/orders';
 };
 
 export type List4Errors = {
@@ -931,10 +1034,190 @@ export type List4Responses = {
     /**
      * OK
      */
-    200: Array<Product>;
+    200: Array<Order>;
 };
 
 export type List4Response = List4Responses[keyof List4Responses];
+
+export type CheckoutData = {
+    body: CheckoutRequest;
+    path?: never;
+    query?: never;
+    url: '/api/orders/checkout';
+};
+
+export type CheckoutErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type CheckoutResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetStatsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/orders/stats';
+};
+
+export type GetStatsErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetStatsResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetStatsResponse = GetStatsResponses[keyof GetStatsResponses];
+
+export type Get4Data = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/orders/{id}';
+};
+
+export type Get4Errors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type Get4Responses = {
+    /**
+     * OK
+     */
+    200: Order;
+};
+
+export type Get4Response = Get4Responses[keyof Get4Responses];
+
+export type GetHistoryData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/orders/{id}/history';
+};
+
+export type GetHistoryErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetHistoryResponses = {
+    /**
+     * OK
+     */
+    200: Array<OrderHistory>;
+};
+
+export type GetHistoryResponse = GetHistoryResponses[keyof GetHistoryResponses];
+
+export type UpdateStatusData = {
+    body: StatusUpdateRequest;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/orders/{id}/status';
+};
+
+export type UpdateStatusErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type UpdateStatusResponses = {
+    /**
+     * OK
+     */
+    200: Order;
+};
+
+export type UpdateStatusResponse = UpdateStatusResponses[keyof UpdateStatusResponses];
+
+export type List5Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        categoryId?: Uuid;
+        search?: string;
+        tagId?: Uuid;
+    };
+    url: '/api/products';
+};
+
+export type List5Errors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type List5Responses = {
+    /**
+     * OK
+     */
+    200: Array<Product>;
+};
+
+export type List5Response = List5Responses[keyof List5Responses];
 
 export type Create4Data = {
     body: Product;
@@ -992,7 +1275,7 @@ export type Delete4Responses = {
     200: unknown;
 };
 
-export type Get4Data = {
+export type Get5Data = {
     body?: never;
     path: {
         id: Uuid;
@@ -1001,25 +1284,14 @@ export type Get4Data = {
     url: '/api/products/{id}';
 };
 
-export type Get4Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type Get4Responses = {
+export type Get5Responses = {
     /**
      * OK
      */
     200: Product;
 };
 
-export type Get4Response = Get4Responses[keyof Get4Responses];
+export type Get5Response = Get5Responses[keyof Get5Responses];
 
 export type Update4Data = {
     body: Product;
@@ -1106,7 +1378,7 @@ export type SyncTenantResponses = {
     200: unknown;
 };
 
-export type List5Data = {
+export type List6Data = {
     body?: never;
     path?: never;
     query?: {
@@ -1115,25 +1387,14 @@ export type List5Data = {
     url: '/api/tags';
 };
 
-export type List5Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type List5Responses = {
+export type List6Responses = {
     /**
      * OK
      */
     200: Array<Tag>;
 };
 
-export type List5Response = List5Responses[keyof List5Responses];
+export type List6Response = List6Responses[keyof List6Responses];
 
 export type Create5Data = {
     body: Tag;
@@ -1191,7 +1452,7 @@ export type Delete5Responses = {
     200: unknown;
 };
 
-export type Get5Data = {
+export type Get6Data = {
     body?: never;
     path: {
         id: Uuid;
@@ -1200,25 +1461,14 @@ export type Get5Data = {
     url: '/api/tags/{id}';
 };
 
-export type Get5Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type Get5Responses = {
+export type Get6Responses = {
     /**
      * OK
      */
     200: Tag;
 };
 
-export type Get5Response = Get5Responses[keyof Get5Responses];
+export type Get6Response = Get6Responses[keyof Get6Responses];
 
 export type GetTenantSettingsData = {
     body?: never;
@@ -1353,14 +1603,14 @@ export type PutUserSettingsResponses = {
     200: unknown;
 };
 
-export type List6Data = {
+export type List7Data = {
     body?: never;
     path?: never;
     query?: never;
     url: '/api/tenants';
 };
 
-export type List6Errors = {
+export type List7Errors = {
     /**
      * Not Authorized
      */
@@ -1371,14 +1621,14 @@ export type List6Errors = {
     403: unknown;
 };
 
-export type List6Responses = {
+export type List7Responses = {
     /**
      * OK
      */
     200: Array<Tenant>;
 };
 
-export type List6Response = List6Responses[keyof List6Responses];
+export type List7Response = List7Responses[keyof List7Responses];
 
 export type Create6Data = {
     body: Tenant;
@@ -1436,7 +1686,7 @@ export type Delete6Responses = {
     200: unknown;
 };
 
-export type Get6Data = {
+export type Get7Data = {
     body?: never;
     path: {
         id: Uuid;
@@ -1445,7 +1695,7 @@ export type Get6Data = {
     url: '/api/tenants/{id}';
 };
 
-export type Get6Errors = {
+export type Get7Errors = {
     /**
      * Not Authorized
      */
@@ -1456,14 +1706,14 @@ export type Get6Errors = {
     403: unknown;
 };
 
-export type Get6Responses = {
+export type Get7Responses = {
     /**
      * OK
      */
     200: Tenant;
 };
 
-export type Get6Response = Get6Responses[keyof Get6Responses];
+export type Get7Response = Get7Responses[keyof Get7Responses];
 
 export type Update5Data = {
     body: Tenant;
@@ -1498,14 +1748,14 @@ export type Update5Responses = {
 
 export type Update5Response = Update5Responses[keyof Update5Responses];
 
-export type List7Data = {
+export type List8Data = {
     body?: never;
     path?: never;
     query?: never;
     url: '/api/users';
 };
 
-export type List7Errors = {
+export type List8Errors = {
     /**
      * Not Authorized
      */
@@ -1516,14 +1766,14 @@ export type List7Errors = {
     403: unknown;
 };
 
-export type List7Responses = {
+export type List8Responses = {
     /**
      * OK
      */
     200: Array<User>;
 };
 
-export type List7Response = List7Responses[keyof List7Responses];
+export type List8Response = List8Responses[keyof List8Responses];
 
 export type Create7Data = {
     body: User;
@@ -1561,17 +1811,6 @@ export type MeData = {
     url: '/api/users/me';
 };
 
-export type MeErrors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
 export type MeResponses = {
     /**
      * OK
@@ -1593,14 +1832,6 @@ export type UpdateMeErrors = {
      * Bad Request
      */
     400: unknown;
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
 };
 
 export type UpdateMeResponses = {
@@ -1639,7 +1870,7 @@ export type Delete7Responses = {
     200: unknown;
 };
 
-export type Get7Data = {
+export type Get8Data = {
     body?: never;
     path: {
         id: Uuid;
@@ -1648,7 +1879,7 @@ export type Get7Data = {
     url: '/api/users/{id}';
 };
 
-export type Get7Errors = {
+export type Get8Errors = {
     /**
      * Not Authorized
      */
@@ -1659,14 +1890,14 @@ export type Get7Errors = {
     403: unknown;
 };
 
-export type Get7Responses = {
+export type Get8Responses = {
     /**
      * OK
      */
     200: User;
 };
 
-export type Get7Response = Get7Responses[keyof Get7Responses];
+export type Get8Response = Get8Responses[keyof Get8Responses];
 
 export type Update6Data = {
     body: User;
@@ -1700,3 +1931,145 @@ export type Update6Responses = {
 };
 
 export type Update6Response = Update6Responses[keyof Update6Responses];
+
+export type List9Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        search?: string;
+    };
+    url: '/api/vouchers';
+};
+
+export type List9Responses = {
+    /**
+     * OK
+     */
+    200: Array<Voucher>;
+};
+
+export type List9Response = List9Responses[keyof List9Responses];
+
+export type Create8Data = {
+    body: Voucher;
+    path?: never;
+    query?: never;
+    url: '/api/vouchers';
+};
+
+export type Create8Errors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type Create8Responses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type ValidateVoucherData = {
+    body?: never;
+    path?: never;
+    query?: {
+        code?: string;
+        subtotal?: number;
+    };
+    url: '/api/vouchers/validate';
+};
+
+export type ValidateVoucherResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type Delete8Data = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/vouchers/{id}';
+};
+
+export type Delete8Errors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type Delete8Responses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type Get9Data = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/vouchers/{id}';
+};
+
+export type Get9Responses = {
+    /**
+     * OK
+     */
+    200: Voucher;
+};
+
+export type Get9Response = Get9Responses[keyof Get9Responses];
+
+export type Update7Data = {
+    body: Voucher;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/vouchers/{id}';
+};
+
+export type Update7Errors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type Update7Responses = {
+    /**
+     * OK
+     */
+    200: Voucher;
+};
+
+export type Update7Response = Update7Responses[keyof Update7Responses];

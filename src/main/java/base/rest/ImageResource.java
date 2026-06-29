@@ -2,6 +2,7 @@ package base.rest;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
@@ -11,7 +12,6 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class ImageResource {
 
-    private static final Path UPLOAD_DIR = Paths.get("uploads");
+    private static final java.nio.file.Path UPLOAD_DIR = Paths.get("uploads");
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
     private static final java.util.Set<String> ALLOWED_TYPES = java.util.Set.of(
         "image/jpeg", "image/png", "image/gif", "image/webp"
@@ -64,7 +64,7 @@ public class ImageResource {
         }
 
         String filename = UUID.randomUUID().toString() + extension;
-        Path targetPath = UPLOAD_DIR.resolve(filename);
+        java.nio.file.Path targetPath = UPLOAD_DIR.resolve(filename);
 
         try (InputStream in = Files.newInputStream(file.filePath())) {
             Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
@@ -83,7 +83,7 @@ public class ImageResource {
     @Path("/{filename}")
     @PermitAll
     public Response getImage(@PathParam("filename") String filename) {
-        Path filePath = UPLOAD_DIR.resolve(filename).normalize();
+        java.nio.file.Path filePath = UPLOAD_DIR.resolve(filename).normalize();
         if (!filePath.startsWith(UPLOAD_DIR)) {
             throw new NotFoundException("Invalid path");
         }

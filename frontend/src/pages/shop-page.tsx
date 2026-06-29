@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { catalogApi } from '@/shared/api/catalog'
-import type { Product } from '@/shared/api/catalog'
-import { useList5Query, validateVoucher, useCheckoutMutation, useList3Query } from '@/shared/api'
+import { useList5Query, validateVoucher, useCheckoutMutation, useList3Query, useList2Query, type Product } from '@/shared/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUSD } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
@@ -41,10 +39,7 @@ export function ShopPage() {
   const queryClient = useQueryClient()
   const { data: products } = useList5Query()
   const { data: customers } = useList3Query()
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => catalogApi.listCategories(),
-  })
+  const { data: categories } = useList2Query()
   const { data: allVouchers } = useQuery({
     queryKey: ['activeVouchers'],
     queryFn: async () => {
