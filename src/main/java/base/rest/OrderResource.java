@@ -325,7 +325,7 @@ public class OrderResource {
             throw new NotFoundException("Order not found");
         }
 
-        String oldStatus = order.getStatus();
+        String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
         String newStatus = request.status.trim().toUpperCase();
 
         if (oldStatus.equals(newStatus)) {
@@ -335,6 +335,10 @@ public class OrderResource {
         // Valid statuses: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
         if (!List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
+        }
+
+        if (!isAllowedStatusTransition(oldStatus, newStatus)) {
+            throw new BadRequestException("Cannot change order status from " + oldStatus + " to " + newStatus);
         }
 
         UUID userId = caller.userId();
@@ -408,5 +412,18 @@ public class OrderResource {
         history.setNote(note);
         history.setCreatedBy(userId);
         history.persist();
+    }
+
+    private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
+        if ("PENDING".equals(oldStatus)) {
+            return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
+        }
+        if ("CONFIRMED".equals(oldStatus)) {
+            return "SHIPPED".equals(newStatus);
+        }
+        if ("SHIPPED".equals(oldStatus)) {
+            return "COMPLETED".equals(newStatus);
+        }
+        return false;
     }
 }

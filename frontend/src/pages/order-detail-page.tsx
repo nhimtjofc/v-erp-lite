@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from '@/shared/ui/label'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
-  User, Truck, Tag, Receipt, Clock, ChevronRight, Printer,
+  User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
 } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,47 +58,65 @@ export function OrderDetailPage() {
   const { id } = useParams({ from: '/_authenticated/orders/$id' })
   const queryClient = useQueryClient()
 
-  const [history, setHistory] = useState<OrderHistoryEntry[]>([])
-  const [historyLoaded, setHistoryLoaded] = useState(false)
-
   // Dialog state
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
   const [statusNote, setStatusNote] = useState('')
+  const [statusError, setStatusError] = useState<string | null>(null)
 
-  const { data: order, isLoading, error } = useGet4Query({
+  const {
+    data: order,
+    isLoading,
+    isFetching: isOrderFetching,
+    error: orderError,
+    refetch: refetchOrder,
+  } = useGet4Query({
     path: { id },
   })
 
-  // Load history once after order is fetched
-  useEffect(() => {
-    if (order && !historyLoaded) {
-      fetchOrderHistory(id).then(h => {
-        setHistory(h)
-        setHistoryLoaded(true)
-      })
-    }
-  }, [order, historyLoaded, id])
+  const historyQuery = useQuery({
+    queryKey: ['order-history', id],
+    queryFn: () => fetchOrderHistory(id),
+    enabled: Boolean(order),
+  })
+
+  const history = historyQuery.data ?? []
+  const isRefreshing = isOrderFetching || historyQuery.isFetching
+
+  const refreshOrderPage = async () => {
+    await Promise.all([
+      refetchOrder(),
+      historyQuery.refetch(),
+    ])
+  }
 
   const updateStatusMutation = useUpdateStatusMutation({
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['get4', { path: { id } }] })
-      queryClient.invalidateQueries({ queryKey: ['list4'] })
-      // Refresh history
-      const h = await fetchOrderHistory(id)
-      setHistory(h)
+      await refreshOrderPage()
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'object' && key !== null && '_id' in key && key._id === 'list4'
+        },
+      })
       setShowStatusDialog(false)
       setStatusNote('')
+      setStatusError(null)
+    },
+    onError: (err) => {
+      setStatusError(err instanceof Error ? err.message : 'Unable to update order status.')
     },
   })
 
   const openStatusDialog = (newStatus: string) => {
     setPendingStatus(newStatus)
     setStatusNote('')
+    setStatusError(null)
     setShowStatusDialog(true)
   }
 
   const handleConfirmStatus = () => {
+    setStatusError(null)
     updateStatusMutation.mutate({
       path: { id },
       body: { status: pendingStatus, note: statusNote || undefined } as any,
@@ -109,7 +127,7 @@ export function OrderDetailPage() {
     return <div className="text-center py-10 text-muted-foreground">Loading order details...</div>
   }
 
-  if (error || !order) {
+  if (orderError || !order) {
     return (
       <div className="text-center py-10 space-y-4">
         <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
@@ -156,6 +174,10 @@ export function OrderDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={refreshOrderPage} disabled={isRefreshing || updateStatusMutation.isPending}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+
           {/* Print button */}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-1.5" /> Print
@@ -175,24 +197,14 @@ export function OrderDetailPage() {
                 </>
               )}
               {isConfirmed && (
-                <>
-                  <Button onClick={() => openStatusDialog('SHIPPED')} className="font-semibold">
-                    <Truck className="h-4 w-4 mr-1.5" /> Ship Order
-                  </Button>
-                  <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                    <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-                  </Button>
-                </>
+                <Button onClick={() => openStatusDialog('SHIPPED')} className="font-semibold">
+                  <Truck className="h-4 w-4 mr-1.5" /> Ship Order
+                </Button>
               )}
               {isShipped && (
-                <>
-                  <Button onClick={() => openStatusDialog('COMPLETED')} variant="default" className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
-                    <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
-                  </Button>
-                  <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                    <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-                  </Button>
-                </>
+                <Button onClick={() => openStatusDialog('COMPLETED')} variant="default" className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
+                </Button>
               )}
             </>
           )}
@@ -315,9 +327,9 @@ export function OrderDetailPage() {
 
                           {/* Content */}
                           <div className={`pb-6 flex-1 ${isLast ? '' : ''}`}>
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
                                   {entry.oldStatus && (
                                     <>
                                       <Badge variant={getStatusConfig(entry.oldStatus).color as any} className="text-xs py-0">
@@ -334,7 +346,7 @@ export function OrderDetailPage() {
                                   <p className="text-xs text-muted-foreground mt-1 italic">"{entry.note}"</p>
                                 )}
                               </div>
-                              <time className="text-xs text-muted-foreground shrink-0">
+                              <time className="text-xs text-muted-foreground shrink-0 sm:text-right">
                                 {new Date(entry.createdAt).toLocaleDateString()} {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </time>
                             </div>
@@ -447,6 +459,9 @@ export function OrderDetailPage() {
                 placeholder={`e.g. "Package picked up by GHN" or "Customer requested cancel"`}
               />
             </div>
+            {statusError && (
+              <p className="text-sm text-destructive">{statusError}</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
