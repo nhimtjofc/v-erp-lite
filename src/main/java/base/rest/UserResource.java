@@ -17,7 +17,6 @@ import java.util.UUID;
 @Path("/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
 public class UserResource {
 
     @Inject
@@ -50,12 +49,14 @@ public class UserResource {
     }
 
     @GET
+    @RolesAllowed("admin")
     public List<User> list() {
         return User.list("tenantId", caller.tenantCode());
     }
 
     @GET
     @Path("/{id}")
+    @RolesAllowed("admin")
     public User get(@PathParam("id") UUID id) {
         User user = User.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (user == null) {
@@ -65,6 +66,7 @@ public class UserResource {
     }
 
     @POST
+    @RolesAllowed("admin")
     @Transactional
     public Response create(User user) {
         user.setId(UUID.randomUUID());
@@ -78,6 +80,7 @@ public class UserResource {
 
     @PUT
     @Path("/{id}")
+    @RolesAllowed("admin")
     @Transactional
     public User update(@PathParam("id") UUID id, User updated) {
         User user = User.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
@@ -101,6 +104,7 @@ public class UserResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed("admin")
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = User.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

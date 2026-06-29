@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, useMutation, type UseMutationOptions, useQuery } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, checkout, create, create2, create3, create4, create5, create6, create7, create8, createTenantUser, delete_, delete2, delete3, delete4, delete5, delete6, delete7, delete8, deleteTenantUser, disableMfa, get, get2, get3, get4, get5, get6, get7, get8, get9, getEffectiveSettings, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, list5, list6, list7, list8, list9, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, setupMfa, syncAll, syncTenant, update, update2, update3, update4, update5, update6, update7, updateMe, updateStatus, updateTenantUser, validateVoucher, verifyMfa } from '../sdk.gen';
-import type { ChangePasswordData, CheckoutData, Create2Data, Create3Data, Create4Data, Create5Data, Create6Data, Create7Data, Create8Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, Delete5Data, Delete6Data, Delete7Data, Delete8Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, Get5Data, Get5Response, Get6Data, Get6Response, Get7Data, Get7Response, Get8Data, Get8Response, Get9Data, Get9Response, GetData, GetEffectiveSettingsData, GetResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, List5Data, List5Response, List6Data, List6Response, List7Data, List7Response, List8Data, List8Response, List9Data, List9Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, Update5Data, Update5Response, Update6Data, Update6Response, Update7Data, Update7Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantUserData, UpdateTenantUserResponse, ValidateVoucherData, VerifyMfaData } from '../types.gen';
+import { changePassword, checkout, create, create2, create3, create4, create5, create6, create7, create8, createTenantUser, delete_, delete2, delete3, delete4, delete5, delete6, delete7, delete8, deleteTenantUser, disableMfa, get, get2, get3, get4, get5, get6, get7, get8, get9, getEffectiveSettings, getHistory, getImage, getStats, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, list5, list6, list7, list8, list9, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, setupMfa, syncAll, syncTenant, update, update2, update3, update4, update5, update6, update7, updateMe, updateStatus, updateTenantUser, uploadImage, validateVoucher, verifyMfa } from '../sdk.gen';
+import type { ChangePasswordData, CheckoutData, Create2Data, Create3Data, Create4Data, Create5Data, Create6Data, Create7Data, Create8Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, Delete5Data, Delete6Data, Delete7Data, Delete8Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, Get5Data, Get5Response, Get6Data, Get6Response, Get7Data, Get7Response, Get8Data, Get8Response, Get9Data, Get9Response, GetData, GetEffectiveSettingsData, GetHistoryData, GetHistoryResponse, GetImageData, GetResponse, GetStatsData, GetStatsResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, List5Data, List5Response, List6Data, List6Response, List7Data, List7Response, List8Data, List8Response, List9Data, List9Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, Update5Data, Update5Response, Update6Data, Update6Response, Update7Data, Update7Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantUserData, UpdateTenantUserResponse, UploadImageData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -622,6 +622,51 @@ export const getTranslationsOptions = (options: Options<GetTranslationsData>) =>
  */
 export const useGetTranslationsQuery = (options: Options<GetTranslationsData>) => useQuery(getTranslationsOptions(options));
 
+/**
+ * Upload Image
+ */
+export const uploadImageMutation = (options?: Partial<Options<UploadImageData>>): UseMutationOptions<unknown, DefaultError, Options<UploadImageData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<UploadImageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await uploadImage({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Upload Image
+ */
+export const useUploadImageMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<UploadImageData>>, 'mutationFn'>>) => useMutation({ ...uploadImageMutation(), ...mutationOptions });
+
+export const getImageQueryKey = (options: Options<GetImageData>) => createQueryKey('getImage', options, false, ['Image Resource']);
+
+/**
+ * Get Image
+ */
+export const getImageOptions = (options: Options<GetImageData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getImageQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getImage({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getImageQueryKey(options)
+});
+
+/**
+ * Get Image
+ */
+export const useGetImageQuery = (options: Options<GetImageData>) => useQuery(getImageOptions(options));
+
 export const list4QueryKey = (options?: Options<List4Data>) => createQueryKey('list4', options, false, ['Order Resource']);
 
 /**
@@ -667,6 +712,29 @@ export const checkoutMutation = (options?: Partial<Options<CheckoutData>>): UseM
  */
 export const useCheckoutMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<CheckoutData>>, 'mutationFn'>>) => useMutation({ ...checkoutMutation(), ...mutationOptions });
 
+export const getStatsQueryKey = (options?: Options<GetStatsData>) => createQueryKey('getStats', options, false, ['Order Resource']);
+
+/**
+ * Get Stats
+ */
+export const getStatsOptions = (options?: Options<GetStatsData>) => queryOptions<GetStatsResponse, DefaultError, GetStatsResponse, ReturnType<typeof getStatsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStats({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStatsQueryKey(options)
+});
+
+/**
+ * Get Stats
+ */
+export const useGetStatsQuery = (options?: Options<GetStatsData>) => useQuery(getStatsOptions(options));
+
 export const get4QueryKey = (options: Options<Get4Data>) => createQueryKey('get4', options, false, ['Order Resource']);
 
 /**
@@ -689,6 +757,29 @@ export const get4Options = (options: Options<Get4Data>) => queryOptions<Get4Resp
  * Get
  */
 export const useGet4Query = (options: Options<Get4Data>) => useQuery(get4Options(options));
+
+export const getHistoryQueryKey = (options: Options<GetHistoryData>) => createQueryKey('getHistory', options, false, ['Order Resource']);
+
+/**
+ * Get History
+ */
+export const getHistoryOptions = (options: Options<GetHistoryData>) => queryOptions<GetHistoryResponse, DefaultError, GetHistoryResponse, ReturnType<typeof getHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getHistory({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getHistoryQueryKey(options)
+});
+
+/**
+ * Get History
+ */
+export const useGetHistoryQuery = (options: Options<GetHistoryData>) => useQuery(getHistoryOptions(options));
 
 /**
  * Update Status

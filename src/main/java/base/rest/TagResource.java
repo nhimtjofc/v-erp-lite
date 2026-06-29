@@ -16,7 +16,6 @@ import java.util.UUID;
 @Path("/tags")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
 public class TagResource {
 
     @Inject
@@ -46,6 +45,7 @@ public class TagResource {
     }
 
     @POST
+    @RolesAllowed("admin")
     @Transactional
     public Response create(Tag tag) {
         validate(tag);
@@ -62,6 +62,7 @@ public class TagResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed("admin")
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Tag.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

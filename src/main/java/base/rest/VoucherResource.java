@@ -19,7 +19,6 @@ import java.util.UUID;
 @Path("/vouchers")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
 public class VoucherResource {
 
     @Inject
@@ -90,6 +89,7 @@ public class VoucherResource {
     }
 
     @POST
+    @RolesAllowed("admin")
     @Transactional
     public Response create(Voucher voucher) {
         validate(voucher);
@@ -109,6 +109,7 @@ public class VoucherResource {
 
     @PUT
     @Path("/{id}")
+    @RolesAllowed("admin")
     @Transactional
     public Voucher update(@PathParam("id") UUID id, Voucher updated) {
         validate(updated);
@@ -141,6 +142,7 @@ public class VoucherResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed("admin")
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

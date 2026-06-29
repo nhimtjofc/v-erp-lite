@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Badge } from '@/shared/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
+import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
@@ -279,10 +280,10 @@ export function OrderDetailPage() {
 
                       <div className="text-right">
                         <div className="text-sm font-semibold">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(item.unitPrice) * (item.quantity ?? 0))}
+                          {formatUSD(Number(item.unitPrice) * (item.quantity ?? 0))}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(item.unitPrice))} × {item.quantity ?? 0}
+                          {formatUSD(Number(item.unitPrice))} × {item.quantity ?? 0}
                         </div>
                       </div>
                     </div>
@@ -430,7 +431,7 @@ export function OrderDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.subtotalAmount))}</span>
+                  <span className="font-medium">{formatUSD(Number(order.subtotalAmount))}</span>
                 </div>
 
                 {Number(order.discountAmount) > 0 && (
@@ -439,7 +440,7 @@ export function OrderDetailPage() {
                       <Tag className="h-3.5 w-3.5" />
                       Discount {order.voucher?.code && `(${order.voucher.code})`}
                     </span>
-                    <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.discountAmount))}</span>
+                    <span>-{formatUSD(Number(order.discountAmount))}</span>
                   </div>
                 )}
 
@@ -447,20 +448,20 @@ export function OrderDetailPage() {
                   <span className="text-muted-foreground">Shipping Fee</span>
                   <span>
                     {Number(order.shippingFee) > 0
-                      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.shippingFee))
+                      ? `${formatUSD(Number(order.shippingFee))}`
                       : <span className="text-success font-medium">Free</span>}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.taxAmount))}</span>
+                  <span>{formatUSD(Number(order.taxAmount))}</span>
                 </div>
 
                 <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                   <span>Grand Total</span>
                   <span className="text-primary text-lg">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.finalAmount))}
+                    {formatUSD(Number(order.finalAmount))}
                   </span>
                 </div>
               </div>
