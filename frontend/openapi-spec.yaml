@@ -34,6 +34,16 @@ components:
           type: string
         active:
           type: boolean
+    CartItem:
+      type: object
+      properties:
+        productId:
+          $ref: "#/components/schemas/UUID"
+        productVariantId:
+          $ref: "#/components/schemas/UUID"
+        quantity:
+          type: integer
+          format: int32
     Category:
       type: object
       properties:
@@ -60,6 +70,25 @@ components:
           $ref: "#/components/schemas/Category"
         active:
           type: boolean
+    CheckoutRequest:
+      type: object
+      properties:
+        customerId:
+          $ref: "#/components/schemas/UUID"
+        voucherCode:
+          type: string
+        shippingName:
+          type: string
+        shippingPhone:
+          type: string
+        shippingAddress:
+          type: string
+        shippingNote:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
     ConfigRequest:
       type: object
       properties:
@@ -115,6 +144,87 @@ components:
       properties:
         code:
           type: string
+    Order:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        customer:
+          $ref: "#/components/schemas/Customer"
+        voucher:
+          $ref: "#/components/schemas/Voucher"
+        orderNumber:
+          type: string
+        orderDate:
+          $ref: "#/components/schemas/Instant"
+        status:
+          type: string
+        shippingName:
+          type: string
+        shippingPhone:
+          type: string
+        shippingAddress:
+          type: string
+        shippingNote:
+          type: string
+        subtotalAmount:
+          type: number
+        discountAmount:
+          type: number
+        shippingFee:
+          type: number
+        taxAmount:
+          type: number
+        finalAmount:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+    OrderItem:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        order:
+          $ref: "#/components/schemas/Order"
+        product:
+          $ref: "#/components/schemas/Product"
+        productVariant:
+          $ref: "#/components/schemas/ProductVariant"
+        quantity:
+          type: integer
+          format: int32
+        unitPrice:
+          type: number
+        subtotalAmount:
+          type: number
     PasswordChangeRequest:
       type: object
       properties:
@@ -241,6 +351,11 @@ components:
           type: string
         description:
           type: string
+    StatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
     Tag:
       type: object
       properties:
@@ -327,6 +442,48 @@ components:
         mfaSecret:
           type: string
         mfaEnabled:
+          type: boolean
+    Voucher:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        updatedBy:
+          $ref: "#/components/schemas/UUID"
+        version:
+          type: integer
+          format: int64
+        id:
+          $ref: "#/components/schemas/UUID"
+        code:
+          type: string
+        name:
+          type: string
+        discountType:
+          type: string
+        discountValue:
+          type: number
+        minOrderValue:
+          type: number
+        maxDiscountAmount:
+          type: number
+        startTime:
+          $ref: "#/components/schemas/Instant"
+        endTime:
+          $ref: "#/components/schemas/Instant"
+        usageLimit:
+          type: integer
+          format: int32
+        usedCount:
+          type: integer
+          format: int32
+        active:
           type: boolean
   securitySchemes:
     SecurityScheme:
@@ -1053,6 +1210,128 @@ paths:
       summary: Get Translations
       tags:
       - I 18n Resource
+  /api/orders:
+    get:
+      operationId: list
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/orders/checkout:
+    post:
+      operationId: checkout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Checkout
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/orders/{id}:
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/orders/{id}/status:
+    put:
+      operationId: updateStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update Status
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
   /api/products:
     get:
       operationId: list
@@ -1795,6 +2074,182 @@ paths:
       summary: Delete
       tags:
       - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/vouchers:
+    get:
+      operationId: list
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Voucher"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Voucher"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/vouchers/validate:
+    get:
+      operationId: validateVoucher
+      parameters:
+      - name: code
+        in: query
+        schema:
+          type: string
+      - name: subtotal
+        in: query
+        schema:
+          type: number
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Validate Voucher
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/vouchers/{id}:
+    put:
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Voucher"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Voucher"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    get:
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Voucher"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    delete:
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete
+      tags:
+      - Voucher Resource
       security:
       - SecurityScheme:
         - admin

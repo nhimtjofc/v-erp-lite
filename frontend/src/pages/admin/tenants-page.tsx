@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useList6Query, useCreate6Mutation, useUpdate6Mutation, useDelete6Mutation } from '@/shared/api'
+import { useList7Query, useCreate6Mutation, useUpdate5Mutation, useDelete6Mutation } from '@/shared/api'
 import type { Tenant } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
@@ -15,9 +15,9 @@ import { useTranslation } from 'react-i18next'
 export function TenantsPage() {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
-  const { data: tenants, isLoading } = useList6Query()
+  const { data: tenants, isLoading } = useList7Query()
   const createMutation = useCreate6Mutation()
-  const updateMutation = useUpdate6Mutation()
+  const updateMutation = useUpdate5Mutation()
   const deleteMutation = useDelete6Mutation()
 
   const tenantList = tenants ?? []
@@ -49,7 +49,7 @@ export function TenantsPage() {
         await createMutation.mutateAsync({ body: form })
       }
       setDialogOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['list6'] })
+      queryClient.invalidateQueries({ queryKey: ['list7'] })
     } catch (err) {
       console.error(err)
     } finally {
@@ -61,7 +61,7 @@ export function TenantsPage() {
     if (!confirm(t('confirmDeleteTenant'))) return
     try {
       await deleteMutation.mutateAsync({ path: { id: tenant.id! } })
-      queryClient.invalidateQueries({ queryKey: ['list6'] })
+      queryClient.invalidateQueries({ queryKey: ['list7'] })
     } catch (err) {
       console.error(err)
     }

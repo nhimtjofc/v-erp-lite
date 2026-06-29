@@ -1,13 +1,15 @@
 import {
   LayoutDashboard,
   Users,
-  Package,
   Building2,
   Settings,
   User,
   Shield,
   Sun,
   Building,
+  ShoppingBag,
+  Receipt,
+  Tag,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -16,6 +18,8 @@ export interface NavItem {
   labelKey: string
   to: string
   icon: LucideIcon
+  /** Nested submenu items (mechanism preserved for future use) */
+  children?: NavItem[]
 }
 
 export interface NavGroup {
@@ -32,7 +36,9 @@ export const navGroups: NavGroup[] = [
     items: [
       { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard },
       { labelKey: 'nav:customers', to: '/customers', icon: Users },
-      { labelKey: 'nav:products', to: '/products', icon: Package },
+      { labelKey: 'nav:products', to: '/products', icon: ShoppingBag },
+      { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
+      { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag },
     ],
   },
   {
