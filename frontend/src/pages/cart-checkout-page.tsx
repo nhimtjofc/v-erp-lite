@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { formatUSD } from '@/shared/utils/currency'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,8 +40,8 @@ interface CartLine {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const FREE_SHIPPING_THRESHOLD = 50
-const FLAT_SHIPPING_FEE = 5
+const FREE_SHIPPING_THRESHOLD = 100
+const FLAT_SHIPPING_FEE = 10
 const VAT_RATE = 0.10
 const NEW_PRODUCT_DAYS = 14
 
@@ -70,7 +71,7 @@ function getAvailableStock(product: Product, variant?: ProductVariant | null): n
 }
 
 function fmt(n: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+    return formatUSD(n)
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
@@ -161,11 +162,11 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
                 <div className="flex items-end justify-between mb-2.5">
                     <div>
                         <div className={`font-bold text-base ${sale ? 'text-red-500' : 'text-foreground'}`}>
-                            {fmt(Number(displayPrice))}₫
+                            {fmt(Number(displayPrice))}
                         </div>
                         {sale && (
                             <div className="text-[10px] line-through text-muted-foreground">
-                                {fmt(Number(product.basePrice))}₫
+                                {fmt(Number(product.basePrice))}
                             </div>
                         )}
                     </div>
@@ -174,7 +175,7 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
                             : isLowStock ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
                             : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     }`}>
-                        {isOutOfStock ? 'Out of stock' : isLowStock ? `${avail} left` : `${avail} in stock`}
+                        {isOutOfStock ? 'Hết' : isLowStock ? `Còn ${avail}` : `${avail} còn`}
                     </div>
                 </div>
 
@@ -200,7 +201,7 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
                     }}
                 >
                     <ShoppingCart className="h-3.5 w-3.5" />
-                    {isOutOfStock ? 'Out of stock' : hasVariants ? 'Choose variant' : 'Add to cart'}
+                    {isOutOfStock ? 'Hết hàng' : hasVariants ? 'Chọn phiên bản' : 'Thêm vào giỏ'}
                 </Button>
             </div>
         </div>
@@ -278,7 +279,7 @@ function CartDrawer({
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
                     <div className="flex items-center gap-2">
                         <ShoppingCart className="h-5 w-5 text-primary" />
-                        <h2 className="font-bold text-base">Cart</h2>
+                        <h2 className="font-bold text-base">Giỏ hàng</h2>
                         {totalQty > 0 && (
                             <span className="bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                                 {totalQty}
@@ -289,7 +290,7 @@ function CartDrawer({
                         {cart.length > 0 && (
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive text-xs h-8" onClick={onClearCart}>
                                 <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                Clear all
+                                Xóa tất cả
                             </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
@@ -341,7 +342,7 @@ function CartDrawer({
                                                     {variantName && <p className="text-xs text-muted-foreground">{variantName}</p>}
                                                     {line.isSalePrice && (
                                                         <div className="flex items-center gap-1 mt-0.5">
-                                                            <span className="text-[10px] line-through text-muted-foreground">{fmt(line.originalPrice)}₫</span>
+                                                            <span className="text-[10px] line-through text-muted-foreground">{fmt(line.originalPrice)}</span>
                                                             <Badge variant="destructive" className="text-[9px] px-1 py-0">
                                                                 <Zap className="h-2 w-2 mr-0.5" /> Sale
                                                             </Badge>
@@ -377,7 +378,7 @@ function CartDrawer({
                                                         <Plus className="h-3 w-3" />
                                                     </button>
                                                 </div>
-                                                <span className="font-bold text-sm text-foreground">{fmt(itemSub)}₫</span>
+                                                <span className="font-bold text-sm text-foreground">{fmt(itemSub)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -393,7 +394,7 @@ function CartDrawer({
                                 {freeShipGap > 0 ? (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                                         <Truck className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                        Thêm <span className="font-bold text-foreground mx-1">{fmt(freeShipGap)}₫</span> để được <span className="text-primary font-semibold ml-1">miễn phí ship!</span>
+                                        Thêm <span className="font-bold text-foreground mx-1">{fmt(freeShipGap)}</span> để được <span className="text-primary font-semibold ml-1">miễn phí ship!</span>
                                     </p>
                                 ) : (
                                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
@@ -420,7 +421,7 @@ function CartDrawer({
                                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                             <div>
                                                 <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 font-mono">{appliedVoucher}</div>
-                                                <div className="text-[10px] text-muted-foreground">Tiết kiệm {fmt(discountAmount)}₫</div>
+                                                <div className="text-[10px] text-muted-foreground">Tiết kiệm {fmt(discountAmount)}</div>
                                             </div>
                                         </div>
                                         <Button variant="ghost" size="sm" onClick={onRemoveVoucher} className="text-xs text-destructive hover:text-destructive h-7 px-2">
@@ -518,30 +519,30 @@ function CartDrawer({
                                 <div className="space-y-1.5 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Tạm tính ({cart.reduce((s, i) => s + i.quantity, 0)} sản phẩm)</span>
-                                        <span className="font-medium">{fmt(subtotal)}₫</span>
+                                        <span className="font-medium">{fmt(subtotal)}</span>
                                     </div>
                                     {discountAmount > 0 && (
                                         <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                                             <span>Giảm giá ({appliedVoucher})</span>
-                                            <span>-{fmt(discountAmount)}₫</span>
+                                            <span>-{fmt(discountAmount)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Phí vận chuyển</span>
                                         <span>
                                             {shippingFee > 0
-                                                ? `${fmt(shippingFee)}₫`
+                                                ? `${fmt(shippingFee)}`
                                                 : <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Miễn phí</span>
                                             }
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">VAT (10%)</span>
-                                        <span>{fmt(taxAmount)}₫</span>
+                                        <span>{fmt(taxAmount)}</span>
                                     </div>
                                     <div className="border-t border-border/60 pt-2 mt-1 flex justify-between text-base font-bold">
                                         <span>Tổng thanh toán</span>
-                                        <span className="text-primary text-lg">{fmt(finalAmount)}₫</span>
+                                        <span className="text-primary text-lg">{fmt(finalAmount)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -564,7 +565,7 @@ function CartDrawer({
                                 </>
                             ) : (
                                 <>
-                                    Đặt hàng · {fmt(finalAmount)}₫
+                                    Đặt hàng · {fmt(finalAmount)}
                                     <ChevronRight className="h-4 w-4" />
                                 </>
                             )}
@@ -641,7 +642,7 @@ function VariantPickerDialog({ product, open, onClose, onConfirm }: VariantPicke
                                             <div className="flex items-center justify-between">
                                                 <span>{opts}</span>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-primary">{fmt(Number(v.price))}₫</div>
+                                                    <div className="font-bold text-primary">{fmt(Number(v.price))}</div>
                                                     <div className={`text-[10px] ${vAvail <= 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                                                         {vAvail <= 0 ? 'Hết hàng' : `${vAvail} còn lại`}
                                                     </div>
@@ -678,7 +679,7 @@ function VariantPickerDialog({ product, open, onClose, onConfirm }: VariantPicke
 
                     <div className="flex justify-between items-center bg-muted/50 rounded-lg px-3 py-2">
                         <span className="text-sm text-muted-foreground">Giá</span>
-                        <span className="font-bold text-primary text-base">{fmt(Number(displayPrice))}₫</span>
+                        <span className="font-bold text-primary text-base">{fmt(Number(displayPrice))}</span>
                     </div>
                 </div>
 
@@ -918,7 +919,7 @@ export function CartCheckoutPage() {
             if (result.valid) {
                 setAppliedVoucher(codeToApply)
                 setDiscountAmount(Number(result.discountAmount))
-                setVoucherSuccess(`Voucher "${codeToApply}" — tiết kiệm ${fmt(Number(result.discountAmount))}₫!`)
+                setVoucherSuccess(`Voucher "${codeToApply}" — tiết kiệm ${fmt(Number(result.discountAmount))}!`)
                 setVoucherError('')
             } else {
                 setAppliedVoucher(null)
@@ -1145,7 +1146,7 @@ export function CartCheckoutPage() {
                 >
                     <ShoppingCart className="h-5 w-5" />
                     <span className="font-bold text-sm">
-                        {cart.length === 0 ? 'Giỏ hàng' : `${fmt(finalAmount)}₫`}
+                        {cart.length === 0 ? 'Giỏ hàng' : `${fmt(finalAmount)}`}
                     </span>
                     {totalCartQty > 0 && (
                         <span className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-bounce">
@@ -1231,7 +1232,7 @@ export function CartCheckoutPage() {
                                         {line.variant && ` (${Object.values(line.variant.optionValues ?? {}).join('/')})`}
                                         × {line.quantity}
                                     </span>
-                                    <span className="font-medium ml-2 shrink-0">{fmt(line.price * line.quantity)}₫</span>
+                                    <span className="font-medium ml-2 shrink-0">{fmt(line.price * line.quantity)}</span>
                                 </div>
                             ))}
                         </div>
@@ -1240,19 +1241,19 @@ export function CartCheckoutPage() {
                         <div className="border-t border-border pt-3 space-y-1 text-sm">
                             {discountAmount > 0 && (
                                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400 text-xs">
-                                    <span>Giảm giá</span><span>-{fmt(discountAmount)}₫</span>
+                                    <span>Giảm giá</span><span>-{fmt(discountAmount)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Phí ship</span>
-                                <span>{shippingFee > 0 ? `${fmt(shippingFee)}₫` : 'Miễn phí'}</span>
+                                <span>{shippingFee > 0 ? `${fmt(shippingFee)}` : 'Miễn phí'}</span>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>VAT 10%</span><span>{fmt(taxAmount)}₫</span>
+                                <span>VAT 10%</span><span>{fmt(taxAmount)}</span>
                             </div>
                             <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
                                 <span>Tổng cộng</span>
-                                <span className="text-primary">{fmt(finalAmount)}₫</span>
+                                <span className="text-primary">{fmt(finalAmount)}</span>
                             </div>
                         </div>
                     </div>

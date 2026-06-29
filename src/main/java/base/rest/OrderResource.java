@@ -2,6 +2,7 @@ package base.rest;
 
 import base.entity.*;
 import base.security.CallerContext;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -22,7 +23,6 @@ import java.util.UUID;
 @Path("/orders")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
 public class OrderResource {
 
     @Inject
@@ -54,6 +54,7 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
+    @RolesAllowed({"admin", "operator", "businessOwner"})
     public List<Order> list(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
@@ -87,6 +88,7 @@ public class OrderResource {
 
     @GET
     @Path("/stats")
+    @RolesAllowed({"admin", "operator", "businessOwner"})
     public Map<String, Object> getStats() {
         String tenantCode = caller.tenantCode();
 
@@ -122,6 +124,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
+    @RolesAllowed({"admin", "operator", "businessOwner"})
     public Order get(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (order == null) {
@@ -136,6 +139,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
+    @RolesAllowed({"admin", "operator", "businessOwner"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
         Order order = Order.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
@@ -151,6 +155,7 @@ public class OrderResource {
 
     @POST
     @Path("/checkout")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     @Transactional
     public Response checkout(CheckoutRequest request) {
         if (request.customerId == null) {
@@ -269,11 +274,11 @@ public class OrderResource {
             voucher.setUpdatedBy(userId);
         }
 
-        // 5. Calculate Shipping Fee
-        // Flat rate: 30,000 VND. Free shipping if subtotal - discount >= 500,000 VND.
+        // 5. Calculate Shipping Fee (USD)
+        // Flat rate: $10. Free shipping if subtotal - discount >= $100.
         BigDecimal orderAfterDiscount = subtotal.subtract(discount);
-        BigDecimal shippingFee = BigDecimal.valueOf(30000);
-        if (orderAfterDiscount.compareTo(BigDecimal.valueOf(500000)) >= 0) {
+        BigDecimal shippingFee = BigDecimal.valueOf(10);
+        if (orderAfterDiscount.compareTo(BigDecimal.valueOf(100)) >= 0) {
             shippingFee = BigDecimal.ZERO;
         }
 
@@ -313,6 +318,7 @@ public class OrderResource {
 
     @PUT
     @Path("/{id}/status")
+    @RolesAllowed("admin")
     @Transactional
     public Order updateStatus(@PathParam("id") UUID id, StatusUpdateRequest request) {
         if (request.status == null || request.status.isBlank()) {
@@ -325,7 +331,7 @@ public class OrderResource {
             throw new NotFoundException("Order not found");
         }
 
-        String oldStatus = order.getStatus();
+        String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
         String newStatus = request.status.trim().toUpperCase();
 
         if (oldStatus.equals(newStatus)) {
@@ -335,6 +341,10 @@ public class OrderResource {
         // Valid statuses: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
         if (!List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
+        }
+
+        if (!isAllowedStatusTransition(oldStatus, newStatus)) {
+            throw new BadRequestException("Cannot change order status from " + oldStatus + " to " + newStatus);
         }
 
         UUID userId = caller.userId();
@@ -408,5 +418,18 @@ public class OrderResource {
         history.setNote(note);
         history.setCreatedBy(userId);
         history.persist();
+    }
+
+    private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
+        if ("PENDING".equals(oldStatus)) {
+            return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
+        }
+        if ("CONFIRMED".equals(oldStatus)) {
+            return "SHIPPED".equals(newStatus);
+        }
+        if ("SHIPPED".equals(oldStatus)) {
+            return "COMPLETED".equals(newStatus);
+        }
+        return false;
     }
 }

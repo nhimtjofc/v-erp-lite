@@ -35,6 +35,7 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav:businessFeatures',
     items: [
       { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard },
+      { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag },
       { labelKey: 'nav:customers', to: '/customers', icon: Users },
       { labelKey: 'nav:products', to: '/products', icon: ShoppingBag },
       { labelKey: 'nav:orders', to: '/orders', icon: Receipt },

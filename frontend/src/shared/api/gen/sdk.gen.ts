@@ -2,7 +2,11 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
+<<<<<<< HEAD
 import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckoutData, CheckoutErrors, CheckoutResponses, Create2Data, Create2Errors, Create2Responses, Create3Data, Create3Errors, Create3Responses, Create4Data, Create4Errors, Create4Responses, Create5Data, Create5Errors, Create5Responses, Create6Data, Create6Errors, Create6Responses, Create7Data, Create7Errors, Create7Responses, Create8Data, Create8Errors, Create8Responses, CreateData, CreateErrors, CreateResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, Delete2Data, Delete2Errors, Delete2Responses, Delete3Data, Delete3Errors, Delete3Responses, Delete4Data, Delete4Errors, Delete4Responses, Delete5Data, Delete5Errors, Delete5Responses, Delete6Data, Delete6Errors, Delete6Responses, Delete7Data, Delete7Errors, Delete7Responses, Delete8Data, Delete8Errors, Delete8Responses, DeleteData, DeleteErrors, DeleteResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, Get2Data, Get2Errors, Get2Responses, Get3Data, Get3Errors, Get3Responses, Get4Data, Get4Errors, Get4Responses, Get5Data, Get5Errors, Get5Responses, Get6Data, Get6Errors, Get6Responses, Get7Data, Get7Errors, Get7Responses, Get8Data, Get8Errors, Get8Responses, Get9Data, Get9Errors, Get9Responses, GetData, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetErrors, GetHistoryData, GetHistoryErrors, GetHistoryResponses, GetResponses, GetStatsData, GetStatsErrors, GetStatsResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, HealthData, HealthResponses, List2Data, List2Errors, List2Responses, List3Data, List3Errors, List3Responses, List4Data, List4Errors, List4Responses, List5Data, List5Errors, List5Responses, List6Data, List6Errors, List6Responses, List7Data, List7Errors, List7Responses, List8Data, List8Errors, List8Responses, List9Data, List9Errors, List9Responses, ListData, ListErrors, ListResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, ServeImageData, ServeImageResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, Update2Data, Update2Errors, Update2Responses, Update3Data, Update3Errors, Update3Responses, Update4Data, Update4Errors, Update4Responses, Update5Data, Update5Errors, Update5Responses, Update6Data, Update6Errors, Update6Responses, Update7Data, Update7Errors, Update7Responses, UpdateData, UpdateErrors, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateResponses, UpdateStatusData, UpdateStatusErrors, UpdateStatusResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, UploadImageData, UploadImageErrors, UploadImageResponses, ValidateVoucherData, ValidateVoucherErrors, ValidateVoucherResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
+=======
+import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckoutData, CheckoutErrors, CheckoutResponses, Create2Data, Create2Errors, Create2Responses, Create3Data, Create3Errors, Create3Responses, Create4Data, Create4Errors, Create4Responses, Create5Data, Create5Errors, Create5Responses, Create6Data, Create6Errors, Create6Responses, Create7Data, Create7Errors, Create7Responses, Create8Data, Create8Errors, Create8Responses, CreateData, CreateErrors, CreateResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, Delete2Data, Delete2Errors, Delete2Responses, Delete3Data, Delete3Errors, Delete3Responses, Delete4Data, Delete4Errors, Delete4Responses, Delete5Data, Delete5Errors, Delete5Responses, Delete6Data, Delete6Errors, Delete6Responses, Delete7Data, Delete7Errors, Delete7Responses, Delete8Data, Delete8Errors, Delete8Responses, DeleteData, DeleteErrors, DeleteResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, Get2Data, Get2Responses, Get3Data, Get3Errors, Get3Responses, Get4Data, Get4Errors, Get4Responses, Get5Data, Get5Responses, Get6Data, Get6Responses, Get7Data, Get7Errors, Get7Responses, Get8Data, Get8Errors, Get8Responses, Get9Data, Get9Responses, GetData, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetErrors, GetHistoryData, GetHistoryErrors, GetHistoryResponses, GetImageData, GetImageResponses, GetResponses, GetStatsData, GetStatsErrors, GetStatsResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, HealthData, HealthResponses, List2Data, List2Responses, List3Data, List3Errors, List3Responses, List4Data, List4Errors, List4Responses, List5Data, List5Errors, List5Responses, List6Data, List6Responses, List7Data, List7Errors, List7Responses, List8Data, List8Errors, List8Responses, List9Data, List9Responses, ListData, ListErrors, ListResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, MeData, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, Update2Data, Update2Errors, Update2Responses, Update3Data, Update3Errors, Update3Responses, Update4Data, Update4Errors, Update4Responses, Update5Data, Update5Errors, Update5Responses, Update6Data, Update6Errors, Update6Responses, Update7Data, Update7Errors, Update7Responses, UpdateData, UpdateErrors, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateResponses, UpdateStatusData, UpdateStatusErrors, UpdateStatusResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, UploadImageData, UploadImageResponses, ValidateVoucherData, ValidateVoucherResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -171,11 +175,7 @@ export const update = <ThrowOnError extends boolean = false>(options: Options<Up
 /**
  * List
  */
-export const list2 = <ThrowOnError extends boolean = false>(options?: Options<List2Data, ThrowOnError>): RequestResult<List2Responses, List2Errors, ThrowOnError> => (options?.client ?? client).get<List2Responses, List2Errors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/categories',
-    ...options
-});
+export const list2 = <ThrowOnError extends boolean = false>(options?: Options<List2Data, ThrowOnError>): RequestResult<List2Responses, unknown, ThrowOnError> => (options?.client ?? client).get<List2Responses, unknown, ThrowOnError>({ url: '/api/categories', ...options });
 
 /**
  * Create
@@ -202,11 +202,7 @@ export const delete2 = <ThrowOnError extends boolean = false>(options: Options<D
 /**
  * Get
  */
-export const get2 = <ThrowOnError extends boolean = false>(options: Options<Get2Data, ThrowOnError>): RequestResult<Get2Responses, Get2Errors, ThrowOnError> => (options.client ?? client).get<Get2Responses, Get2Errors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/categories/{id}',
-    ...options
-});
+export const get2 = <ThrowOnError extends boolean = false>(options: Options<Get2Data, ThrowOnError>): RequestResult<Get2Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get2Responses, unknown, ThrowOnError>({ url: '/api/categories/{id}', ...options });
 
 /**
  * Update
@@ -283,6 +279,24 @@ export const health = <ThrowOnError extends boolean = false>(options?: Options<H
  * Get Translations
  */
 export const getTranslations = <ThrowOnError extends boolean = false>(options: Options<GetTranslationsData, ThrowOnError>): RequestResult<GetTranslationsResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetTranslationsResponses, unknown, ThrowOnError>({ url: '/api/i18n/{locale}/{namespace}', ...options });
+
+/**
+ * Upload Image
+ */
+export const uploadImage = <ThrowOnError extends boolean = false>(options: Options<UploadImageData, ThrowOnError>): RequestResult<UploadImageResponses, unknown, ThrowOnError> => (options.client ?? client).post<UploadImageResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
+    url: '/api/images/upload',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Get Image
+ */
+export const getImage = <ThrowOnError extends boolean = false>(options: Options<GetImageData, ThrowOnError>): RequestResult<GetImageResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetImageResponses, unknown, ThrowOnError>({ url: '/api/images/{filename}', ...options });
 
 /**
  * List
@@ -380,11 +394,15 @@ export const delete4 = <ThrowOnError extends boolean = false>(options: Options<D
 /**
  * Get
  */
+<<<<<<< HEAD
 export const get5 = <ThrowOnError extends boolean = false>(options: Options<Get5Data, ThrowOnError>): RequestResult<Get5Responses, Get5Errors, ThrowOnError> => (options.client ?? client).get<Get5Responses, Get5Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/products/{id}',
     ...options
 });
+=======
+export const get5 = <ThrowOnError extends boolean = false>(options: Options<Get5Data, ThrowOnError>): RequestResult<Get5Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get5Responses, unknown, ThrowOnError>({ url: '/api/products/{id}', ...options });
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 /**
  * Update
@@ -420,11 +438,15 @@ export const syncTenant = <ThrowOnError extends boolean = false>(options: Option
 /**
  * List
  */
+<<<<<<< HEAD
 export const list6 = <ThrowOnError extends boolean = false>(options?: Options<List6Data, ThrowOnError>): RequestResult<List6Responses, List6Errors, ThrowOnError> => (options?.client ?? client).get<List6Responses, List6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tags',
     ...options
 });
+=======
+export const list6 = <ThrowOnError extends boolean = false>(options?: Options<List6Data, ThrowOnError>): RequestResult<List6Responses, unknown, ThrowOnError> => (options?.client ?? client).get<List6Responses, unknown, ThrowOnError>({ url: '/api/tags', ...options });
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 /**
  * Create
@@ -451,11 +473,15 @@ export const delete5 = <ThrowOnError extends boolean = false>(options: Options<D
 /**
  * Get
  */
+<<<<<<< HEAD
 export const get6 = <ThrowOnError extends boolean = false>(options: Options<Get6Data, ThrowOnError>): RequestResult<Get6Responses, Get6Errors, ThrowOnError> => (options.client ?? client).get<Get6Responses, Get6Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tags/{id}',
     ...options
 });
+=======
+export const get6 = <ThrowOnError extends boolean = false>(options: Options<Get6Data, ThrowOnError>): RequestResult<Get6Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get6Responses, unknown, ThrowOnError>({ url: '/api/tags/{id}', ...options });
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 /**
  * Get Tenant Settings
@@ -607,17 +633,12 @@ export const create7 = <ThrowOnError extends boolean = false>(options: Options<C
 /**
  * Me
  */
-export const me = <ThrowOnError extends boolean = false>(options?: Options<MeData, ThrowOnError>): RequestResult<MeResponses, MeErrors, ThrowOnError> => (options?.client ?? client).get<MeResponses, MeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/users/me',
-    ...options
-});
+export const me = <ThrowOnError extends boolean = false>(options?: Options<MeData, ThrowOnError>): RequestResult<MeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<MeResponses, unknown, ThrowOnError>({ url: '/api/users/me', ...options });
 
 /**
  * Update Me
  */
 export const updateMe = <ThrowOnError extends boolean = false>(options: Options<UpdateMeData, ThrowOnError>): RequestResult<UpdateMeResponses, UpdateMeErrors, ThrowOnError> => (options.client ?? client).put<UpdateMeResponses, UpdateMeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/me',
     ...options,
     headers: {
@@ -660,11 +681,15 @@ export const update6 = <ThrowOnError extends boolean = false>(options: Options<U
 /**
  * List
  */
+<<<<<<< HEAD
 export const list9 = <ThrowOnError extends boolean = false>(options?: Options<List9Data, ThrowOnError>): RequestResult<List9Responses, List9Errors, ThrowOnError> => (options?.client ?? client).get<List9Responses, List9Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers',
     ...options
 });
+=======
+export const list9 = <ThrowOnError extends boolean = false>(options?: Options<List9Data, ThrowOnError>): RequestResult<List9Responses, unknown, ThrowOnError> => (options?.client ?? client).get<List9Responses, unknown, ThrowOnError>({ url: '/api/vouchers', ...options });
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 /**
  * Create
@@ -682,11 +707,15 @@ export const create8 = <ThrowOnError extends boolean = false>(options: Options<C
 /**
  * Validate Voucher
  */
+<<<<<<< HEAD
 export const validateVoucher = <ThrowOnError extends boolean = false>(options?: Options<ValidateVoucherData, ThrowOnError>): RequestResult<ValidateVoucherResponses, ValidateVoucherErrors, ThrowOnError> => (options?.client ?? client).get<ValidateVoucherResponses, ValidateVoucherErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers/validate',
     ...options
 });
+=======
+export const validateVoucher = <ThrowOnError extends boolean = false>(options?: Options<ValidateVoucherData, ThrowOnError>): RequestResult<ValidateVoucherResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ValidateVoucherResponses, unknown, ThrowOnError>({ url: '/api/vouchers/validate', ...options });
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 /**
  * Delete
@@ -700,11 +729,15 @@ export const delete8 = <ThrowOnError extends boolean = false>(options: Options<D
 /**
  * Get
  */
+<<<<<<< HEAD
 export const get9 = <ThrowOnError extends boolean = false>(options: Options<Get9Data, ThrowOnError>): RequestResult<Get9Responses, Get9Errors, ThrowOnError> => (options.client ?? client).get<Get9Responses, Get9Errors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers/{id}',
     ...options
 });
+=======
+export const get9 = <ThrowOnError extends boolean = false>(options: Options<Get9Data, ThrowOnError>): RequestResult<Get9Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get9Responses, unknown, ThrowOnError>({ url: '/api/vouchers/{id}', ...options });
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 /**
  * Update

@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
+import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
@@ -60,6 +61,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
   id: '/vouchers',
   path: '/vouchers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedShopRoute = AuthenticatedShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/business': typeof AuthenticatedBusinessRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/_authenticated/shop': typeof AuthenticatedShopRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/profile'
     | '/settings'
+    | '/shop'
     | '/vouchers'
     | '/admin/tenants'
     | '/customers/$id'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/business'
     | '/dashboard'
+    | '/shop'
     | '/vouchers'
     | '/customers/$id'
     | '/customers/new'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/settings'
+    | '/_authenticated/shop'
     | '/_authenticated/vouchers'
     | '/_authenticated/'
     | '/_authenticated/admin/tenants'
@@ -464,6 +476,13 @@ declare module '@tanstack/react-router' {
       path: '/vouchers'
       fullPath: '/vouchers'
       preLoaderRoute: typeof AuthenticatedVouchersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/shop': {
+      id: '/_authenticated/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof AuthenticatedShopRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -804,6 +823,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
+  AuthenticatedShopRoute: typeof AuthenticatedShopRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRouteWithChildren
@@ -817,6 +837,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
+  AuthenticatedShopRoute: AuthenticatedShopRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRouteWithChildren,

@@ -9,11 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Badge } from '@/shared/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
+import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
-  User, Truck, Tag, Receipt, Clock, ChevronRight, Printer,
+  User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
 } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,16 +29,46 @@ interface OrderHistoryEntry {
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PENDING:   { label: 'Pending',   color: 'warning',     icon: Clock },
-  CONFIRMED: { label: 'Confirmed', color: 'info',        icon: CheckCircle2 },
-  SHIPPED:   { label: 'Shipped',   color: 'primary',     icon: Truck },
-  COMPLETED: { label: 'Completed', color: 'success',     icon: CheckCircle2 },
-  CANCELLED: { label: 'Cancelled', color: 'destructive', icon: XCircle },
+const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClass: string; icon: React.ElementType }> = {
+  PENDING: {
+    label: 'Pending',
+    badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white',
+    icon: Clock,
+  },
+  CONFIRMED: {
+    label: 'Confirmed',
+    badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    dotClass: 'border-sky-400 bg-sky-500 text-white',
+    icon: CheckCircle2,
+  },
+  SHIPPED: {
+    label: 'Shipped',
+    badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    dotClass: 'border-orange-400 bg-orange-500 text-white',
+    icon: Truck,
+  },
+  COMPLETED: {
+    label: 'Completed',
+    badgeClass: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    dotClass: 'border-emerald-400 bg-emerald-500 text-white',
+    icon: CheckCircle2,
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
+    dotClass: 'border-red-400 bg-red-500 text-white',
+    icon: XCircle,
+  },
 }
 
 function getStatusConfig(status: string) {
-  return STATUS_CONFIG[status?.toUpperCase()] ?? { label: status, color: 'secondary', icon: Clock }
+  return STATUS_CONFIG[status?.toUpperCase()] ?? {
+    label: status,
+    badgeClass: 'border-border bg-muted text-muted-foreground',
+    dotClass: 'border-border bg-muted text-muted-foreground',
+    icon: Clock,
+  }
 }
 
 // ─── Order History via fetch (not in SDK yet — new endpoint) ─────────────────
@@ -58,47 +89,65 @@ export function OrderDetailPage() {
   const { id } = useParams({ from: '/_authenticated/orders/$id' })
   const queryClient = useQueryClient()
 
-  const [history, setHistory] = useState<OrderHistoryEntry[]>([])
-  const [historyLoaded, setHistoryLoaded] = useState(false)
-
   // Dialog state
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
   const [statusNote, setStatusNote] = useState('')
+  const [statusError, setStatusError] = useState<string | null>(null)
 
-  const { data: order, isLoading, error } = useGet4Query({
+  const {
+    data: order,
+    isLoading,
+    isFetching: isOrderFetching,
+    error: orderError,
+    refetch: refetchOrder,
+  } = useGet4Query({
     path: { id },
   })
 
-  // Load history once after order is fetched
-  useEffect(() => {
-    if (order && !historyLoaded) {
-      fetchOrderHistory(id).then(h => {
-        setHistory(h)
-        setHistoryLoaded(true)
-      })
-    }
-  }, [order, historyLoaded, id])
+  const historyQuery = useQuery({
+    queryKey: ['order-history', id],
+    queryFn: () => fetchOrderHistory(id),
+    enabled: Boolean(order),
+  })
+
+  const history = historyQuery.data ?? []
+  const isRefreshing = isOrderFetching || historyQuery.isFetching
+
+  const refreshOrderPage = async () => {
+    await Promise.all([
+      refetchOrder(),
+      historyQuery.refetch(),
+    ])
+  }
 
   const updateStatusMutation = useUpdateStatusMutation({
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['get4', { path: { id } }] })
-      queryClient.invalidateQueries({ queryKey: ['list4'] })
-      // Refresh history
-      const h = await fetchOrderHistory(id)
-      setHistory(h)
+      await refreshOrderPage()
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'object' && key !== null && '_id' in key && key._id === 'list4'
+        },
+      })
       setShowStatusDialog(false)
       setStatusNote('')
+      setStatusError(null)
+    },
+    onError: (err) => {
+      setStatusError(err instanceof Error ? err.message : 'Unable to update order status.')
     },
   })
 
   const openStatusDialog = (newStatus: string) => {
     setPendingStatus(newStatus)
     setStatusNote('')
+    setStatusError(null)
     setShowStatusDialog(true)
   }
 
   const handleConfirmStatus = () => {
+    setStatusError(null)
     updateStatusMutation.mutate({
       path: { id },
       body: { status: pendingStatus, note: statusNote || undefined } as any,
@@ -109,7 +158,7 @@ export function OrderDetailPage() {
     return <div className="text-center py-10 text-muted-foreground">Loading order details...</div>
   }
 
-  if (error || !order) {
+  if (orderError || !order) {
     return (
       <div className="text-center py-10 space-y-4">
         <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
@@ -145,7 +194,7 @@ export function OrderDetailPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-3xl font-bold tracking-tight">{order.orderNumber}</h1>
-            <Badge variant={statusCfg.color as any} className="text-sm px-2.5 py-0.5">
+            <Badge variant="outline" className={`text-sm px-2.5 py-0.5 ${statusCfg.badgeClass}`}>
               {statusCfg.label}
             </Badge>
           </div>
@@ -156,6 +205,10 @@ export function OrderDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={refreshOrderPage} disabled={isRefreshing || updateStatusMutation.isPending}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+
           {/* Print button */}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-1.5" /> Print
@@ -175,24 +228,14 @@ export function OrderDetailPage() {
                 </>
               )}
               {isConfirmed && (
-                <>
-                  <Button onClick={() => openStatusDialog('SHIPPED')} className="font-semibold">
-                    <Truck className="h-4 w-4 mr-1.5" /> Ship Order
-                  </Button>
-                  <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                    <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-                  </Button>
-                </>
+                <Button onClick={() => openStatusDialog('SHIPPED')} className="font-semibold">
+                  <Truck className="h-4 w-4 mr-1.5" /> Ship Order
+                </Button>
               )}
               {isShipped && (
-                <>
-                  <Button onClick={() => openStatusDialog('COMPLETED')} variant="default" className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
-                    <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
-                  </Button>
-                  <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                    <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-                  </Button>
-                </>
+                <Button onClick={() => openStatusDialog('COMPLETED')} variant="default" className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
+                </Button>
               )}
             </>
           )}
@@ -237,10 +280,10 @@ export function OrderDetailPage() {
 
                       <div className="text-right">
                         <div className="text-sm font-semibold">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(item.unitPrice) * (item.quantity ?? 0))}
+                          {formatUSD(Number(item.unitPrice) * (item.quantity ?? 0))}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(item.unitPrice))} × {item.quantity ?? 0}
+                          {formatUSD(Number(item.unitPrice))} × {item.quantity ?? 0}
                         </div>
                       </div>
                     </div>
@@ -308,25 +351,25 @@ export function OrderDetailPage() {
                         <li key={entry.id} className="flex gap-4 relative">
                           {/* Dot */}
                           <div className={`relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                            isLast ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground'
+                            isLast ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
                           }`}>
                             <Icon className="h-3 w-3" />
                           </div>
 
                           {/* Content */}
                           <div className={`pb-6 flex-1 ${isLast ? '' : ''}`}>
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
                                   {entry.oldStatus && (
                                     <>
-                                      <Badge variant={getStatusConfig(entry.oldStatus).color as any} className="text-xs py-0">
+                                      <Badge variant="outline" className={`text-xs py-0 ${getStatusConfig(entry.oldStatus).badgeClass}`}>
                                         {entry.oldStatus}
                                       </Badge>
                                       <ChevronRight className="h-3 w-3 text-muted-foreground" />
                                     </>
                                   )}
-                                  <Badge variant={cfg.color as any} className="text-xs py-0">
+                                  <Badge variant="outline" className={`text-xs py-0 ${cfg.badgeClass}`}>
                                     {entry.newStatus}
                                   </Badge>
                                 </div>
@@ -334,7 +377,7 @@ export function OrderDetailPage() {
                                   <p className="text-xs text-muted-foreground mt-1 italic">"{entry.note}"</p>
                                 )}
                               </div>
-                              <time className="text-xs text-muted-foreground shrink-0">
+                              <time className="text-xs text-muted-foreground shrink-0 sm:text-right">
                                 {new Date(entry.createdAt).toLocaleDateString()} {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </time>
                             </div>
@@ -388,7 +431,7 @@ export function OrderDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.subtotalAmount))}</span>
+                  <span className="font-medium">{formatUSD(Number(order.subtotalAmount))}</span>
                 </div>
 
                 {Number(order.discountAmount) > 0 && (
@@ -397,7 +440,7 @@ export function OrderDetailPage() {
                       <Tag className="h-3.5 w-3.5" />
                       Discount {order.voucher?.code && `(${order.voucher.code})`}
                     </span>
-                    <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.discountAmount))}</span>
+                    <span>-{formatUSD(Number(order.discountAmount))}</span>
                   </div>
                 )}
 
@@ -405,20 +448,20 @@ export function OrderDetailPage() {
                   <span className="text-muted-foreground">Shipping Fee</span>
                   <span>
                     {Number(order.shippingFee) > 0
-                      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.shippingFee))
+                      ? `${formatUSD(Number(order.shippingFee))}`
                       : <span className="text-success font-medium">Free</span>}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.taxAmount))}</span>
+                  <span>{formatUSD(Number(order.taxAmount))}</span>
                 </div>
 
                 <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                   <span>Grand Total</span>
                   <span className="text-primary text-lg">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.finalAmount))}
+                    {formatUSD(Number(order.finalAmount))}
                   </span>
                 </div>
               </div>
@@ -447,6 +490,9 @@ export function OrderDetailPage() {
                 placeholder={`e.g. "Package picked up by GHN" or "Customer requested cancel"`}
               />
             </div>
+            {statusError && (
+              <p className="text-sm text-destructive">{statusError}</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
