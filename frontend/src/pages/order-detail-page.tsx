@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useParams, Link, useNavigate } from '@tanstack/react-router'
 import {
   useGet4Query, // order detail
   useUpdateStatusMutation,
+  useMeQuery,
 } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
@@ -13,8 +14,9 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
+  Trash2,
 } from 'lucide-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,17 +85,35 @@ async function fetchOrderHistory(orderId: string): Promise<OrderHistoryEntry[]> 
   return res.json()
 }
 
+async function deleteOrder(orderId: string): Promise<void> {
+  const token = localStorage.getItem('access_token')
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+  const res = await fetch(`${baseUrl}/api/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!res.ok) {
+    const message = await res.text()
+    throw new Error(message || 'Unable to delete order')
+  }
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function OrderDetailPage() {
   const { id } = useParams({ from: '/_authenticated/orders/$id' })
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { data: me } = useMeQuery()
+  const isAdmin = me?.role?.name === 'admin'
 
   // Dialog state
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
   const [statusNote, setStatusNote] = useState('')
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const {
     data: order,
@@ -139,6 +159,22 @@ export function OrderDetailPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteOrder,
+    onSuccess: async () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'object' && key !== null && '_id' in key && key._id === 'list4'
+        },
+      })
+      await navigate({ to: '/orders' })
+    },
+    onError: (err) => {
+      setDeleteError(err instanceof Error ? err.message : 'Unable to delete order.')
+    },
+  })
+
   const openStatusDialog = (newStatus: string) => {
     setPendingStatus(newStatus)
     setStatusNote('')
@@ -178,8 +214,16 @@ export function OrderDetailPage() {
   const isConfirmed = status === 'CONFIRMED'
   const isShipped = status === 'SHIPPED'
   const isFinal = status === 'COMPLETED' || status === 'CANCELLED'
+  const canDelete = isAdmin && isFinal
 
   const statusCfg = getStatusConfig(status)
+
+  const handleDeleteOrder = () => {
+    setDeleteError(null)
+    if (!canDelete) return
+    if (!window.confirm('Delete this completed/cancelled order?')) return
+    deleteMutation.mutate(id)
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -214,6 +258,18 @@ export function OrderDetailPage() {
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
 
+          {canDelete && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteOrder}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          )}
+
           {/* Status action buttons */}
           {!isFinal && (
             <>
@@ -241,6 +297,12 @@ export function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {deleteError && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+          {deleteError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 

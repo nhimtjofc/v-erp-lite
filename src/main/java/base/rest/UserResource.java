@@ -3,6 +3,7 @@ package base.rest;
 import base.entity.Role;
 import base.entity.User;
 import base.security.CallerContext;
+import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -24,12 +25,14 @@ public class UserResource {
 
     @GET
     @Path("/me")
+    @Authenticated
     public User me() {
         return resolveMe();
     }
 
     @PUT
     @Path("/me")
+    @Authenticated
     @Transactional
     public User updateMe(User updated) {
         User user = resolveMe();

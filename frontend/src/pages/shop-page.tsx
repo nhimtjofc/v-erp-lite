@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { useList5Query, validateVoucher, useCheckoutMutation, useList3Query, useList2Query, type Product } from '@/shared/api'
+import { useList5Query, validateVoucher, useCheckoutMutation, useList3Query, useList2Query, useMeQuery, type Product } from '@/shared/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUSD } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
@@ -40,6 +40,9 @@ export function ShopPage() {
   const { data: products } = useList5Query()
   const { data: customers } = useList3Query()
   const { data: categories } = useList2Query()
+  const { data: me } = useMeQuery()
+  const role = me?.role?.name
+  const canUseOrders = role === 'admin' || role === 'businessOwner'
   const { data: allVouchers } = useQuery({
     queryKey: ['activeVouchers'],
     queryFn: async () => {
@@ -59,6 +62,7 @@ export function ShopPage() {
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const activeProducts = useMemo(() => {
     if (!products) return []
@@ -87,6 +91,8 @@ export function ShopPage() {
   const cartTotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart])
 
   function addToCart(product: Product) {
+    if (!canUseOrders) return
+
     const hasVariants = (product.variants?.length ?? 0) > 0
     if (hasVariants) return
     const sale = isOnSale(product)
@@ -122,8 +128,10 @@ export function ShopPage() {
       setCart([])
       setShowCart(false)
       setShowCheckout(false)
+      setError('')
+      setSuccess('Order placed successfully.')
       const order = data?.data
-      if (order?.id) {
+      if (order?.id && role !== 'customer' && role !== 'user') {
         navigate({ to: '/orders/$id', params: { id: order.id } })
       }
     },
@@ -139,8 +147,15 @@ export function ShopPage() {
   const [shippingNote, setShippingNote] = useState('')
 
   async function handleCheckout() {
+    if (!canUseOrders) {
+      setError('You do not have permission to use orders')
+      setSuccess('')
+      return
+    }
+
     if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
       setError('Please fill in name, phone, and address')
+      setSuccess('')
       return
     }
 
@@ -173,16 +188,25 @@ export function ShopPage() {
           <h1 className="text-2xl font-bold tracking-tight">Shop</h1>
           <p className="text-sm text-muted-foreground">Browse products and place orders</p>
         </div>
-        <Button variant="outline" className="relative" onClick={() => setShowCart(true)}>
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Cart
-          {cart.length > 0 && (
-            <span className="ml-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full">
-              {cart.reduce((s, i) => s + i.quantity, 0)}
-            </span>
-          )}
-        </Button>
+        {canUseOrders && (
+          <Button variant="outline" className="relative" onClick={() => setShowCart(true)}>
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Cart
+            {cart.length > 0 && (
+              <span className="ml-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full">
+                {cart.reduce((s, i) => s + i.quantity, 0)}
+              </span>
+            )}
+          </Button>
+        )}
       </div>
+
+      {success && (
+        <div className="text-sm font-semibold text-emerald-700 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 flex items-start gap-2">
+          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+          <div>{success}</div>
+        </div>
+      )}
 
       {error && (
         <div className="text-sm font-semibold text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20 flex items-start gap-2">
@@ -220,10 +244,12 @@ export function ShopPage() {
                       <span className="font-bold text-sm text-red-500">{formatUSD(Number(product.salePrice))}</span>
                       <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePrice))}</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2 h-8 text-xs" disabled={avail <= 0} onClick={() => addToCart(product)}>
-                      <ShoppingCart className="h-3 w-3 mr-1" />
-                      {avail <= 0 ? 'Sold Out' : 'Add to Cart'}
-                    </Button>
+                    {canUseOrders && (
+                      <Button size="sm" className="w-full mt-2 h-8 text-xs" disabled={avail <= 0} onClick={() => addToCart(product)}>
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        {avail <= 0 ? 'Sold Out' : 'Add to Cart'}
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )
@@ -311,9 +337,11 @@ export function ShopPage() {
                     <span className={`text-[10px] ${avail <= 3 ? 'text-amber-500' : 'text-muted-foreground'}`}>
                       {avail <= 0 ? 'Sold Out' : `${avail} left`}
                     </span>
-                    <Button size="sm" className="h-7 text-xs px-2" disabled={avail <= 0} onClick={() => addToCart(product)}>
-                      <Plus className="h-3 w-3" />
-                    </Button>
+                    {canUseOrders && (
+                      <Button size="sm" className="h-7 text-xs px-2" disabled={avail <= 0} onClick={() => addToCart(product)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -330,7 +358,7 @@ export function ShopPage() {
       </div>
 
       {/* Cart Drawer */}
-      {showCart && (
+      {showCart && canUseOrders && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowCart(false)} />
           <div className="fixed top-0 right-0 h-full z-50 w-full sm:w-96 bg-background border-l border-border shadow-2xl flex flex-col">
@@ -388,7 +416,7 @@ export function ShopPage() {
       )}
 
       {/* Checkout Dialog */}
-      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+      <Dialog open={showCheckout && canUseOrders} onOpenChange={setShowCheckout}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Checkout</DialogTitle>
