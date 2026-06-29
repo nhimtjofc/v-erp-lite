@@ -55,9 +55,9 @@ const STATUS_CONFIG: Record<string, {
         icon: CheckCircle2, badgeVariant: 'info',
     },
     SHIPPED: {
-        label: 'Shipped', color: 'text-violet-600 dark:text-violet-400',
-        bg: 'bg-violet-50 dark:bg-violet-900/20', dot: 'bg-violet-500',
-        icon: Truck, badgeVariant: 'primary',
+        label: 'Shipped', color: 'text-orange-600 dark:text-orange-400',
+        bg: 'bg-orange-50 dark:bg-orange-900/20', dot: 'bg-orange-500',
+        icon: Truck, badgeVariant: 'orange',
     },
     COMPLETED: {
         label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400',

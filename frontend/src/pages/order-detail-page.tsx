@@ -28,16 +28,46 @@ interface OrderHistoryEntry {
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PENDING:   { label: 'Pending',   color: 'warning',     icon: Clock },
-  CONFIRMED: { label: 'Confirmed', color: 'info',        icon: CheckCircle2 },
-  SHIPPED:   { label: 'Shipped',   color: 'primary',     icon: Truck },
-  COMPLETED: { label: 'Completed', color: 'success',     icon: CheckCircle2 },
-  CANCELLED: { label: 'Cancelled', color: 'destructive', icon: XCircle },
+const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClass: string; icon: React.ElementType }> = {
+  PENDING: {
+    label: 'Pending',
+    badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white',
+    icon: Clock,
+  },
+  CONFIRMED: {
+    label: 'Confirmed',
+    badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    dotClass: 'border-sky-400 bg-sky-500 text-white',
+    icon: CheckCircle2,
+  },
+  SHIPPED: {
+    label: 'Shipped',
+    badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    dotClass: 'border-orange-400 bg-orange-500 text-white',
+    icon: Truck,
+  },
+  COMPLETED: {
+    label: 'Completed',
+    badgeClass: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    dotClass: 'border-emerald-400 bg-emerald-500 text-white',
+    icon: CheckCircle2,
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
+    dotClass: 'border-red-400 bg-red-500 text-white',
+    icon: XCircle,
+  },
 }
 
 function getStatusConfig(status: string) {
-  return STATUS_CONFIG[status?.toUpperCase()] ?? { label: status, color: 'secondary', icon: Clock }
+  return STATUS_CONFIG[status?.toUpperCase()] ?? {
+    label: status,
+    badgeClass: 'border-border bg-muted text-muted-foreground',
+    dotClass: 'border-border bg-muted text-muted-foreground',
+    icon: Clock,
+  }
 }
 
 // ─── Order History via fetch (not in SDK yet — new endpoint) ─────────────────
@@ -163,7 +193,7 @@ export function OrderDetailPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-3xl font-bold tracking-tight">{order.orderNumber}</h1>
-            <Badge variant={statusCfg.color as any} className="text-sm px-2.5 py-0.5">
+            <Badge variant="outline" className={`text-sm px-2.5 py-0.5 ${statusCfg.badgeClass}`}>
               {statusCfg.label}
             </Badge>
           </div>
@@ -320,7 +350,7 @@ export function OrderDetailPage() {
                         <li key={entry.id} className="flex gap-4 relative">
                           {/* Dot */}
                           <div className={`relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                            isLast ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground'
+                            isLast ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
                           }`}>
                             <Icon className="h-3 w-3" />
                           </div>
@@ -332,13 +362,13 @@ export function OrderDetailPage() {
                                 <div className="flex flex-wrap items-center gap-2">
                                   {entry.oldStatus && (
                                     <>
-                                      <Badge variant={getStatusConfig(entry.oldStatus).color as any} className="text-xs py-0">
+                                      <Badge variant="outline" className={`text-xs py-0 ${getStatusConfig(entry.oldStatus).badgeClass}`}>
                                         {entry.oldStatus}
                                       </Badge>
                                       <ChevronRight className="h-3 w-3 text-muted-foreground" />
                                     </>
                                   )}
-                                  <Badge variant={cfg.color as any} className="text-xs py-0">
+                                  <Badge variant="outline" className={`text-xs py-0 ${cfg.badgeClass}`}>
                                     {entry.newStatus}
                                   </Badge>
                                 </div>
