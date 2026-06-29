@@ -2,7 +2,14 @@ package base.rest;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -13,7 +20,6 @@ import base.security.CallerContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
@@ -23,7 +29,7 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class UploadResource {
 
-    private static final Path UPLOAD_DIR = Paths.get(System.getProperty("user.dir"), "uploads");
+    private static final java.nio.file.Path UPLOAD_DIR = Paths.get(System.getProperty("user.dir"), "uploads");
 
     @Inject
     CallerContext caller;
@@ -44,7 +50,6 @@ public class UploadResource {
             extension = originalName.substring(dotIdx).toLowerCase();
         }
 
-        // Only allow common image types
         if (!extension.equals(".jpg") && !extension.equals(".jpeg")
                 && !extension.equals(".png") && !extension.equals(".gif")
                 && !extension.equals(".webp") && !extension.equals(".svg")) {
@@ -54,7 +59,7 @@ public class UploadResource {
         Files.createDirectories(UPLOAD_DIR);
 
         String filename = UUID.randomUUID().toString() + extension;
-        Path dest = UPLOAD_DIR.resolve(filename);
+        java.nio.file.Path dest = UPLOAD_DIR.resolve(filename);
 
         try (InputStream in = Files.newInputStream(file.filePath())) {
             Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
@@ -68,12 +73,11 @@ public class UploadResource {
     @Path("/image/{filename}")
     @Produces("*/*")
     public Response serveImage(@PathParam("filename") String filename) throws IOException {
-        // Security: prevent path traversal
         if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
             throw new BadRequestException("Invalid filename");
         }
 
-        Path file = UPLOAD_DIR.resolve(filename);
+        java.nio.file.Path file = UPLOAD_DIR.resolve(filename);
         if (!Files.exists(file)) {
             throw new NotFoundException("Image not found");
         }

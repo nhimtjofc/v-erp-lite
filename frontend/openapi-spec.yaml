@@ -194,6 +194,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OrderItem"
+    OrderHistory:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        order:
+          $ref: "#/components/schemas/Order"
+        tenantId:
+          type: string
+        oldStatus:
+          type: string
+        newStatus:
+          type: string
+        note:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
     OrderItem:
       type: object
       properties:
@@ -355,6 +374,8 @@ components:
       type: object
       properties:
         status:
+          type: string
+        note:
           type: string
     Tag:
       type: object
@@ -1218,6 +1239,10 @@ paths:
         in: query
         schema:
           type: string
+      - name: status
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -1268,6 +1293,29 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/orders/stats:
+    get:
+      operationId: getStats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Stats
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
   /api/orders/{id}:
     get:
       operationId: get
@@ -1289,6 +1337,36 @@ paths:
         "403":
           description: Not Allowed
       summary: Get
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/orders/{id}/history:
+    get:
+      operationId: getHistory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderHistory"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get History
       tags:
       - Order Resource
       security:
@@ -1887,6 +1965,54 @@ paths:
       security:
       - SecurityScheme:
         - admin
+  /api/uploads/image:
+    post:
+      operationId: uploadImage
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Upload Image
+      tags:
+      - Upload Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/uploads/image/{filename}:
+    get:
+      operationId: serveImage
+      parameters:
+      - name: filename
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*': {}
+      summary: Serve Image
+      tags:
+      - Upload Resource
   /api/users:
     get:
       operationId: list
