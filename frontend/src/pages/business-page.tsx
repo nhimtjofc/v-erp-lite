@@ -33,7 +33,8 @@ export function BusinessPage() {
       const created = await createMutation.mutateAsync({ body: { name: 'My Business' } as Business }) as Business
       setBusiness(created)
       setForm(created)
-      queryClient.invalidateQueries({ queryKey: ['list'] })
+      await queryClient.invalidateQueries({ queryKey: ['list'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list'], type: 'active' })
       setEditing(true)
     } catch (err) {
       console.error(err)
@@ -49,7 +50,8 @@ export function BusinessPage() {
       const updated = await updateMutation.mutateAsync({ path: { id: business.id! }, body: form })
       setBusiness(updated)
       setEditing(false)
-      queryClient.invalidateQueries({ queryKey: ['list'] })
+      await queryClient.invalidateQueries({ queryKey: ['list'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list'], type: 'active' })
     } catch (err) {
       console.error(err)
     } finally {

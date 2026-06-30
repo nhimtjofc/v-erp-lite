@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
-import { useList4Query, type Order } from '@/shared/api'
+import { useMutation } from '@tanstack/react-query'
+import { useList4Query, useMeQuery, type Order } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
@@ -10,7 +11,7 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
     Plus, Search, Eye, TrendingUp, ShoppingBag, Clock, CheckCircle2,
     Package, ChevronRight, Truck, XCircle, Filter, RotateCcw,
-    ArrowUpRight,
+    ArrowUpRight, Trash2,
 } from 'lucide-react'
 
 // ─── Stats via direct fetch ────────────────────────────────────────────────────
@@ -32,6 +33,20 @@ async function fetchOrderStats(): Promise<OrderStats | null> {
         return res.json()
     } catch {
         return null
+    }
+}
+
+async function deleteOrder(orderId: string): Promise<void> {
+    const token = localStorage.getItem('access_token')
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+    const res = await fetch(`${baseUrl}/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+
+    if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to delete order')
     }
 }
 
@@ -112,7 +127,19 @@ function getAvatarColor(name: string): string {
 
 // ─── Order Card Component ──────────────────────────────────────────────────────
 
-function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
+function OrderCard({
+    order,
+    onClick,
+    onDelete,
+    canDelete,
+    isDeleting,
+}: {
+    order: Order
+    onClick: () => void
+    onDelete: () => void
+    canDelete: boolean
+    isDeleting: boolean
+}) {
     const customerFirst = order.customer?.firstName ?? ''
     const customerLast = order.customer?.lastName ?? ''
     const customerName = [customerFirst, customerLast].filter(Boolean).join(' ') || 'Unnamed'
@@ -185,7 +212,23 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
 
             {/* Hover arrow */}
             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ChevronRight className="h-4 w-4 text-primary" />
+                {canDelete ? (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        disabled={isDeleting}
+                        onClick={(event) => {
+                            event.stopPropagation()
+                            onDelete()
+                        }}
+                        title="Delete order"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                ) : (
+                    <ChevronRight className="h-4 w-4 text-primary" />
+                )}
             </div>
         </div>
     )
@@ -230,12 +273,16 @@ function StatCard({
 export function OrdersPage() {
     const { t } = useTranslation()
     const navigate = useNavigate()
+    const { data: me } = useMeQuery()
+    const isAdmin = me?.role?.name === 'admin'
 
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [activeStatus, setActiveStatus] = useState('')
     const [stats, setStats] = useState<OrderStats | null>(null)
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+    const [deleteError, setDeleteError] = useState('')
+    const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
 
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -250,13 +297,43 @@ export function OrdersPage() {
     if (debouncedSearch) queryParams.search = debouncedSearch
     if (activeStatus) queryParams.status = activeStatus
 
-    const { data: orders, isLoading } = useList4Query(
+    const { data: orders, isLoading, refetch } = useList4Query(
         Object.keys(queryParams).length > 0 ? { query: queryParams } : undefined
     )
     const orderList = orders ?? []
 
+    const deleteMutation = useMutation({
+        mutationFn: deleteOrder,
+        onMutate: (orderId) => {
+            setDeletingOrderId(orderId)
+            setDeleteError('')
+        },
+        onSuccess: async () => {
+            await refetch()
+            const nextStats = await fetchOrderStats()
+            setStats(nextStats)
+        },
+        onError: (err) => {
+            setDeleteError(err instanceof Error ? err.message : 'Unable to delete order')
+        },
+        onSettled: () => {
+            setDeletingOrderId(null)
+        },
+    })
+
     const totalRevenue = stats?.totalRevenue ?? 0
     const revenueStr = formatUSD(totalRevenue)
+
+    const canDeleteOrder = (order: Order) => {
+        const status = order.status?.toUpperCase()
+        return isAdmin && (status === 'COMPLETED' || status === 'CANCELLED')
+    }
+
+    const handleDeleteOrder = (order: Order) => {
+        if (!order.id || !canDeleteOrder(order)) return
+        if (!window.confirm('Delete this completed/cancelled order?')) return
+        deleteMutation.mutate(order.id)
+    }
 
     return (
         <div className="space-y-5">
@@ -276,6 +353,12 @@ export function OrdersPage() {
                     </Button>
                 </Link>
             </div>
+
+            {deleteError && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+                    {deleteError}
+                </div>
+            )}
 
             {/* ── Stats ── */}
             {stats && (
@@ -432,6 +515,9 @@ export function OrdersPage() {
                                     key={order.id!}
                                     order={order}
                                     onClick={() => navigate({ to: '/orders/$id', params: { id: order.id! } })}
+                                    onDelete={() => handleDeleteOrder(order)}
+                                    canDelete={canDeleteOrder(order)}
+                                    isDeleting={deletingOrderId === order.id}
                                 />
                             ))}
                         </div>
@@ -471,7 +557,23 @@ export function OrdersPage() {
                                         <div className="text-right shrink-0">
                                             <div className="font-bold text-sm">{formatUSD(Number(order.finalAmount))}</div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        {canDeleteOrder(order) ? (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                                disabled={deletingOrderId === order.id}
+                                                onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    handleDeleteOrder(order)
+                                                }}
+                                                title="Delete order"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        ) : (
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        )}
                                     </div>
                                 )
                             })}

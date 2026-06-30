@@ -1752,7 +1752,11 @@ export type List8Data = {
     body?: never;
     path?: never;
     query?: never;
+<<<<<<< HEAD
     url: '/api/users';
+=======
+    url: '/api/uploads/image';
+>>>>>>> cfb3ba756740784cec893f667aa4e82edcfe7640
 };
 
 export type List8Errors = {

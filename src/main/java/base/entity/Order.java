@@ -65,6 +65,9 @@ public class Order extends BaseEntity {
     @Column(name = "final_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal finalAmount;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<OrderItem> items = new ArrayList<>();

@@ -239,10 +239,15 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
       }
       return catalogApi.createProduct(payload)
     },
-    onSuccess: (product) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
+    onSuccess: async (product) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['product', product.id], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['products'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['product', product.id], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['tags'], type: 'active' }),
+      ])
       router.navigate({ to: '/products/$id', params: { id: product.id! } })
     },
     onError: (err) => setError(err instanceof Error ? err.message : t('saveFailed')),
@@ -250,8 +255,9 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
 
   const deleteMutation = useMutation({
     mutationFn: () => catalogApi.deleteProduct(productId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['products'], type: 'active' })
       router.navigate({ to: '/products' })
     },
   })

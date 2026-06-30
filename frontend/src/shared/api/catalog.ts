@@ -31,6 +31,7 @@ export interface ProductVariant {
   sku: string
   price: number
   stockQuantity: number
+  reservedQuantity?: number
   lowStockThreshold?: number
   optionValues: Record<string, string>
 }
@@ -52,6 +53,7 @@ export interface Product {
   updatedAt?: string
   version?: number
   stockQuantity?: number
+  reservedQuantity?: number
   lowStockThreshold?: number
   options?: ProductOption[]
   variants?: ProductVariant[]

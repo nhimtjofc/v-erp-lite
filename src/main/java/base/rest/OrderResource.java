@@ -1,15 +1,5 @@
 package base.rest;
 
-import base.entity.*;
-import base.security.CallerContext;
-import jakarta.annotation.security.PermitAll;
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -19,6 +9,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import base.entity.Customer;
+import base.entity.Order;
+import base.entity.OrderHistory;
+import base.entity.OrderItem;
+import base.entity.Product;
+import base.entity.ProductVariant;
+import base.entity.Voucher;
+import base.security.CallerContext;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 @Path("/orders")
 @Produces(MediaType.APPLICATION_JSON)
@@ -54,7 +69,7 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public List<Order> list(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
@@ -66,20 +81,20 @@ public class OrderResource {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             String upperStatus = status.trim().toUpperCase();
             return Order.find(
-                    "tenantId = ?1 AND status = ?2 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
+                    "tenantId = ?1 AND deletedAt IS NULL AND status = ?2 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
                     tenantCode, upperStatus, escaped
             ).list();
         } else if (hasSearch) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             return Order.find(
-                    "tenantId = ?1 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
+                    "tenantId = ?1 AND deletedAt IS NULL AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
                     tenantCode, escaped
             ).list();
         } else if (hasStatus) {
-            return Order.list("tenantId = ?1 AND status = ?2 ORDER BY orderDate DESC", tenantCode, status.trim().toUpperCase());
+            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, status.trim().toUpperCase());
         }
 
-        return Order.list("tenantId = ?1 ORDER BY orderDate DESC", tenantCode);
+        return Order.list("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -88,14 +103,14 @@ public class OrderResource {
 
     @GET
     @Path("/stats")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public Map<String, Object> getStats() {
         String tenantCode = caller.tenantCode();
 
         // Count per status
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED")) {
-            long count = Order.count("tenantId = ?1 AND status = ?2", tenantCode, s);
+            long count = Order.count("tenantId = ?1 AND deletedAt IS NULL AND status = ?2", tenantCode, s);
             countByStatus.put(s, count);
         }
 
@@ -106,7 +121,7 @@ public class OrderResource {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Recent 5 orders
-        List<Order> recentOrders = Order.find("tenantId = ?1 ORDER BY orderDate DESC", tenantCode)
+        List<Order> recentOrders = Order.find("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode)
                 .page(0, 5)
                 .list();
 
@@ -124,9 +139,9 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public Order get(@PathParam("id") UUID id) {
-        Order order = Order.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
@@ -139,10 +154,10 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
-        Order order = Order.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
@@ -155,7 +170,7 @@ public class OrderResource {
 
     @POST
     @Path("/checkout")
-    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response checkout(CheckoutRequest request) {
         if (request.customerId == null) {
@@ -326,7 +341,7 @@ public class OrderResource {
         }
 
         String tenantCode = caller.tenantCode();
-        Order order = Order.find("id = ?1 and tenantId = ?2", id, tenantCode).firstResult();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
@@ -407,6 +422,28 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
     // Private Helper
     // ─────────────────────────────────────────────────────────────────────────
+
+    @DELETE
+    @Path("/{id}")
+    @RolesAllowed("admin")
+    @Transactional
+    public Response delete(@PathParam("id") UUID id) {
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!List.of("COMPLETED", "CANCELLED").contains(status)) {
+            throw new BadRequestException("Only completed or cancelled orders can be deleted");
+        }
+
+        order.setDeletedAt(Instant.now());
+        order.setUpdatedBy(caller.userId());
+
+        return Response.noContent().build();
+    }
 
     private void persistHistory(Order order, String oldStatus, String newStatus, String note, UUID userId, String tenantCode) {
         OrderHistory history = new OrderHistory();

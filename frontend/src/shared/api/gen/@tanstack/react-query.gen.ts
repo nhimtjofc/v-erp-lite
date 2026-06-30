@@ -1277,7 +1277,7 @@ export const useUpdate5Mutation = (mutationOptions?: Partial<Omit<UseMutationOpt
 export const list8QueryKey = (options?: Options<List8Data>) => createQueryKey('list8', options, false, ['User Resource']);
 
 /**
- * List
+ * Upload Image
  */
 export const list8Options = (options?: Options<List8Data>) => queryOptions<List8Response, DefaultError, List8Response, ReturnType<typeof list8QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
