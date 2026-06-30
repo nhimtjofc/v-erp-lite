@@ -3,8 +3,13 @@
 import { type DefaultError, queryOptions, useMutation, type UseMutationOptions, useQuery } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
+<<<<<<< HEAD
+import { changePassword, checkout, create, create2, create3, create4, create5, create6, create7, create8, createTenantUser, delete_, delete2, delete3, delete4, delete5, delete6, delete7, delete8, deleteTenantUser, disableMfa, get, get2, get3, get4, get5, get6, get7, get8, get9, getEffectiveSettings, getHistory, getStats, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, list5, list6, list7, list8, list9, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, serveImage, setupMfa, syncAll, syncTenant, update, update2, update3, update4, update5, update6, update7, updateMe, updateStatus, updateTenantUser, uploadImage, validateVoucher, verifyMfa } from '../sdk.gen';
+import type { ChangePasswordData, CheckoutData, Create2Data, Create3Data, Create4Data, Create5Data, Create6Data, Create7Data, Create8Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, Delete5Data, Delete6Data, Delete7Data, Delete8Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, Get5Data, Get5Response, Get6Data, Get6Response, Get7Data, Get7Response, Get8Data, Get8Response, Get9Data, Get9Response, GetData, GetEffectiveSettingsData, GetHistoryData, GetHistoryResponse, GetResponse, GetStatsData, GetStatsResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, List5Data, List5Response, List6Data, List6Response, List7Data, List7Response, List8Data, List8Response, List9Data, List9Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, ServeImageData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, Update5Data, Update5Response, Update6Data, Update6Response, Update7Data, Update7Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantUserData, UpdateTenantUserResponse, UploadImageData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
+=======
 import { changePassword, checkout, create, create2, create3, create4, create5, create6, create7, create8, createTenantUser, delete_, delete2, delete3, delete4, delete5, delete6, delete7, delete8, deleteTenantUser, disableMfa, get, get2, get3, get4, get5, get6, get7, get8, get9, getEffectiveSettings, getHistory, getImage, getStats, getTenantSettings, getTranslations, getUserSettings, health, list, list2, list3, list4, list5, list6, list7, list8, list9, listTenantUsers, me, mfaStatus, type Options, putTenantSettings, putUserSettings, setupMfa, syncAll, syncTenant, update, update2, update3, update4, update5, update6, update7, updateMe, updateStatus, updateTenantUser, uploadImage, validateVoucher, verifyMfa } from '../sdk.gen';
 import type { ChangePasswordData, CheckoutData, Create2Data, Create3Data, Create4Data, Create5Data, Create6Data, Create7Data, Create8Data, CreateData, CreateTenantUserData, Delete2Data, Delete3Data, Delete4Data, Delete5Data, Delete6Data, Delete7Data, Delete8Data, DeleteData, DeleteTenantUserData, DisableMfaData, Get2Data, Get2Response, Get3Data, Get3Response, Get4Data, Get4Response, Get5Data, Get5Response, Get6Data, Get6Response, Get7Data, Get7Response, Get8Data, Get8Response, Get9Data, Get9Response, GetData, GetEffectiveSettingsData, GetHistoryData, GetHistoryResponse, GetImageData, GetResponse, GetStatsData, GetStatsResponse, GetTenantSettingsData, GetTranslationsData, GetUserSettingsData, HealthData, HealthResponse, List2Data, List2Response, List3Data, List3Response, List4Data, List4Response, List5Data, List5Response, List6Data, List6Response, List7Data, List7Response, List8Data, List8Response, List9Data, List9Response, ListData, ListResponse, ListTenantUsersData, ListTenantUsersResponse, MeData, MeResponse, MfaStatusData, PutTenantSettingsData, PutUserSettingsData, SetupMfaData, SyncAllData, SyncTenantData, Update2Data, Update2Response, Update3Data, Update3Response, Update4Data, Update4Response, Update5Data, Update5Response, Update6Data, Update6Response, Update7Data, Update7Response, UpdateData, UpdateMeData, UpdateMeResponse, UpdateResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantUserData, UpdateTenantUserResponse, UploadImageData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -622,6 +627,8 @@ export const getTranslationsOptions = (options: Options<GetTranslationsData>) =>
  */
 export const useGetTranslationsQuery = (options: Options<GetTranslationsData>) => useQuery(getTranslationsOptions(options));
 
+<<<<<<< HEAD
+=======
 /**
  * Upload Image
  */
@@ -667,6 +674,7 @@ export const getImageOptions = (options: Options<GetImageData>) => queryOptions<
  */
 export const useGetImageQuery = (options: Options<GetImageData>) => useQuery(getImageOptions(options));
 
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export const list4QueryKey = (options?: Options<List4Data>) => createQueryKey('list4', options, false, ['Order Resource']);
 
 /**
@@ -1274,6 +1282,62 @@ export const update5Mutation = (options?: Partial<Options<Update5Data>>): UseMut
  */
 export const useUpdate5Mutation = (mutationOptions?: Partial<Omit<UseMutationOptions<Update5Response, DefaultError, Options<Update5Data>>, 'mutationFn'>>) => useMutation({ ...update5Mutation(), ...mutationOptions });
 
+<<<<<<< HEAD
+/**
+ * Upload Image
+ */
+export const uploadImageMutation = (options?: Partial<Options<UploadImageData>>): UseMutationOptions<unknown, DefaultError, Options<UploadImageData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<UploadImageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await uploadImage({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+=======
+export const list8QueryKey = (options?: Options<List8Data>) => createQueryKey('list8', options, false, ['User Resource']);
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
+
+/**
+ * Upload Image
+ */
+<<<<<<< HEAD
+export const useUploadImageMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<UploadImageData>>, 'mutationFn'>>) => useMutation({ ...uploadImageMutation(), ...mutationOptions });
+
+export const serveImageQueryKey = (options: Options<ServeImageData>) => createQueryKey('serveImage', options, false, ['Upload Resource']);
+
+/**
+ * Serve Image
+ */
+export const serveImageOptions = (options: Options<ServeImageData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof serveImageQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await serveImage({
+=======
+export const list8Options = (options?: Options<List8Data>) => queryOptions<List8Response, DefaultError, List8Response, ReturnType<typeof list8QueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await list8({
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+<<<<<<< HEAD
+    queryKey: serveImageQueryKey(options)
+});
+
+/**
+ * Serve Image
+ */
+export const useServeImageQuery = (options: Options<ServeImageData>) => useQuery(serveImageOptions(options));
+
 export const list8QueryKey = (options?: Options<List8Data>) => createQueryKey('list8', options, false, ['User Resource']);
 
 /**
@@ -1289,6 +1353,8 @@ export const list8Options = (options?: Options<List8Data>) => queryOptions<List8
         });
         return data;
     },
+=======
+>>>>>>> c7019449591460cc680f282c70d0b415673eeeca
     queryKey: list8QueryKey(options)
 });
 
