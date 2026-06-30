@@ -1309,10 +1309,7 @@ paths:
         - admin
         - operator
         - businessOwner
-<<<<<<< HEAD
-=======
         - customer
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
   /api/orders/stats:
     get:
       operationId: getStats
@@ -1947,54 +1944,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-  /api/uploads/image:
-    post:
-      operationId: uploadImage
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-        "401":
-          description: Not Authorized
-        "403":
-          description: Not Allowed
-      summary: Upload Image
-      tags:
-      - Upload Resource
-      security:
-      - SecurityScheme:
-        - admin
-        - operator
-        - businessOwner
-  /api/uploads/image/{filename}:
-    get:
-      operationId: serveImage
-      parameters:
-      - name: filename
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*': {}
-      summary: Serve Image
-      tags:
-      - Upload Resource
   /api/users:
     get:
       operationId: list
