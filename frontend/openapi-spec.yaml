@@ -1309,10 +1309,7 @@ paths:
         - admin
         - operator
         - businessOwner
-<<<<<<< HEAD
-=======
         - customer
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
   /api/orders/stats:
     get:
       operationId: getStats
