@@ -69,7 +69,7 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public List<Order> list(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
@@ -103,7 +103,7 @@ public class OrderResource {
 
     @GET
     @Path("/stats")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public Map<String, Object> getStats() {
         String tenantCode = caller.tenantCode();
 
@@ -139,7 +139,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public Order get(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
@@ -154,7 +154,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();

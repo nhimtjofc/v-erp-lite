@@ -36,7 +36,8 @@ export function CustomerFormPage() {
     setError(null)
     try {
       const customer = await createMutation.mutateAsync({ body: form }) as Customer
-      queryClient.invalidateQueries({ queryKey: ['list3'] })
+      await queryClient.invalidateQueries({ queryKey: ['list3'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list3'], type: 'active' })
       router.navigate({ to: '/customers/$id', params: { id: customer.id! } })
     } catch (err) {
       setError(t('common:error', 'Failed to create customer'))

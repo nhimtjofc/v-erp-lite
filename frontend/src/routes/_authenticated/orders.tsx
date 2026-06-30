@@ -5,8 +5,11 @@ export const Route = createFileRoute('/_authenticated/orders')({
   component: () => {
     const router = useRouter()
     const { data: me } = useMeQuery()
+    const role = me?.role?.name
 
-    if (me?.role?.name === 'operator') {
+    if (!role) return null
+
+    if (role !== 'admin' && role !== 'businessOwner') {
       router.navigate({ to: '/dashboard', replace: true })
       return null
     }

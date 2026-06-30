@@ -36,24 +36,27 @@ export function VouchersPage() {
   const voucherList = vouchers ?? []
 
   const createMutation = useCreate8Mutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['list9'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['list9'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list9'], type: 'active' })
       setIsDialogOpen(false)
       resetForm()
     },
   })
 
   const updateMutation = useUpdate7Mutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['list9'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['list9'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list9'], type: 'active' })
       setIsDialogOpen(false)
       resetForm()
     },
   })
 
   const deleteMutation = useDelete8Mutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['list9'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['list9'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list9'], type: 'active' })
     },
   })
 

@@ -5,6 +5,7 @@ import { PackagePlus, Plus, Search, Tags } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
 import type { Category } from '@/shared/api/catalog'
+import { useMeQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -20,6 +21,10 @@ function formatMoney(value?: number | null, language?: string) {
 export function ProductsPage() {
   const { t, i18n } = useTranslation(['catalog', 'common'])
   const queryClient = useQueryClient()
+  const { data: me } = useMeQuery()
+  const role = me?.role?.name
+  const canManageProducts = role === 'admin' || role === 'businessOwner'
+  const canManageTaxonomy = role === 'admin'
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -59,26 +64,32 @@ export function ProductsPage() {
         active: true,
         parent: data.parentId ? { id: data.parentId, name: '' } : null,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       setNewCategory('')
       setNewCategoryParentId('')
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['categories'], type: 'active' })
+      await queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['products'], type: 'active' })
     },
   })
 
   const createTag = useMutation({
     mutationFn: (name: string) => catalogApi.createTag({ name, active: true }),
-    onSuccess: () => {
+    onSuccess: async () => {
       setNewTag('')
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      await queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['tags'], type: 'active' })
     },
   })
 
   const deleteTag = useMutation({
     mutationFn: (id: string) => catalogApi.deleteTag(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['tags'], type: 'active' })
+      await queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['products'], type: 'active' })
     },
   })
 
@@ -116,12 +127,14 @@ export function ProductsPage() {
           <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="mt-1 text-muted-foreground">{t('description')}</p>
         </div>
-        <Link to="/products/new">
-          <Button>
-            <PackagePlus className="h-4 w-4" />
-            {t('newProduct')}
-          </Button>
-        </Link>
+        {canManageProducts && (
+          <Link to="/products/new">
+            <Button>
+              <PackagePlus className="h-4 w-4" />
+              {t('newProduct')}
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -177,7 +190,7 @@ export function ProductsPage() {
                     <TableHead>{t('salePrice')}</TableHead>
                     <TableHead>{t('stockQuantity')}</TableHead>
                     <TableHead>{t('status')}</TableHead>
-                    <TableHead></TableHead>
+                    {canManageProducts && <TableHead></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -259,35 +272,46 @@ export function ProductsPage() {
                           const totalStock = hasVariants
                             ? product.variants!.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)
                             : (product.stockQuantity || 0)
+                          const reservedStock = hasVariants
+                            ? product.variants!.reduce((sum, v) => sum + (v.reservedQuantity || 0), 0)
+                            : (product.reservedQuantity || 0)
+                          const availableStock = Math.max(0, totalStock - reservedStock)
                           const isLow = hasVariants
                             ? product.variants!.some(
                                 (v) => (v.lowStockThreshold ?? 0) > 0
-                                  && (v.stockQuantity || 0) > 0
-                                  && (v.stockQuantity || 0) <= (v.lowStockThreshold ?? 0),
+                                  && Math.max(0, (v.stockQuantity || 0) - (v.reservedQuantity || 0)) > 0
+                                  && Math.max(0, (v.stockQuantity || 0) - (v.reservedQuantity || 0)) <= (v.lowStockThreshold ?? 0),
                               )
                             : (product.lowStockThreshold ?? 0) > 0
-                              && totalStock > 0
-                              && totalStock <= (product.lowStockThreshold ?? 0)
+                              && availableStock > 0
+                              && availableStock <= (product.lowStockThreshold ?? 0)
                           return (
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={
-                                  totalStock === 0
-                                    ? 'text-destructive font-semibold'
-                                    : isLow
-                                      ? 'font-semibold text-amber-600 dark:text-amber-500'
-                                      : 'font-medium'
-                                }
-                              >
-                                {totalStock}
-                              </span>
-                              {totalStock === 0 ? (
-                                <Badge variant="destructive" className="text-[10px]">{t('outOfStock')}</Badge>
-                              ) : isLow ? (
-                                <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30">
-                                  {t('lowStock')}
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={
+                                    availableStock === 0
+                                      ? 'text-destructive font-semibold'
+                                      : isLow
+                                        ? 'font-semibold text-amber-600 dark:text-amber-500'
+                                        : 'font-medium'
+                                  }
+                                >
+                                  {availableStock}
                                 </span>
-                              ) : null}
+                                {availableStock === 0 ? (
+                                  <Badge variant="destructive" className="text-[10px]">{t('outOfStock')}</Badge>
+                                ) : isLow ? (
+                                  <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30">
+                                    {t('lowStock')}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {reservedStock > 0 && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {t('totalStock')}: {totalStock} · {t('reservedStock')}: {reservedStock}
+                                </p>
+                              )}
                             </div>
                           )
                         })()}
@@ -297,11 +321,13 @@ export function ProductsPage() {
                           {product.active ? t('active') : t('inactive')}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Link to="/products/$id" params={{ id: product.id! }}>
-                          <Button variant="ghost" size="sm">{t('common:edit')}</Button>
-                        </Link>
-                      </TableCell>
+                      {canManageProducts && (
+                        <TableCell>
+                          <Link to="/products/$id" params={{ id: product.id! }}>
+                            <Button variant="ghost" size="sm">{t('common:edit')}</Button>
+                          </Link>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -316,38 +342,40 @@ export function ProductsPage() {
               <CardTitle className="text-base">{t('categories')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <form className="space-y-3" onSubmit={handleCreateCategory}>
-                <div className="space-y-1">
-                  <Label htmlFor="new-category-parent" className="text-xs text-muted-foreground">{t('parentCategory')}</Label>
-                  <select
-                    id="new-category-parent"
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                    value={newCategoryParentId}
-                    onChange={(event) => setNewCategoryParentId(event.target.value)}
-                  >
-                    <option value="">{t('none')}</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {formatCategoryName(cat, categories)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1 space-y-1">
-                    <Label htmlFor="new-category" className="sr-only">{t('categoryName')}</Label>
-                    <Input
-                      id="new-category"
-                      placeholder={t('newCategory')}
-                      value={newCategory}
-                      onChange={(event) => setNewCategory(event.target.value)}
-                    />
+              {canManageTaxonomy && (
+                <form className="space-y-3" onSubmit={handleCreateCategory}>
+                  <div className="space-y-1">
+                    <Label htmlFor="new-category-parent" className="text-xs text-muted-foreground">{t('parentCategory')}</Label>
+                    <select
+                      id="new-category-parent"
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                      value={newCategoryParentId}
+                      onChange={(event) => setNewCategoryParentId(event.target.value)}
+                    >
+                      <option value="">{t('none')}</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {formatCategoryName(cat, categories)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <Button type="submit" size="icon" disabled={createCategory.isPending}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor="new-category" className="sr-only">{t('categoryName')}</Label>
+                      <Input
+                        id="new-category"
+                        placeholder={t('newCategory')}
+                        value={newCategory}
+                        onChange={(event) => setNewCategory(event.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" size="icon" disabled={createCategory.isPending}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </form>
+              )}
 
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                 {categoriesQuery.isLoading ? (
@@ -373,20 +401,22 @@ export function ProductsPage() {
               <CardTitle className="text-base">{t('tags')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <form className="flex gap-2" onSubmit={handleCreateTag}>
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor="new-tag" className="sr-only">{t('tagName')}</Label>
-                  <Input
-                    id="new-tag"
-                    placeholder={t('newTag')}
-                    value={newTag}
-                    onChange={(event) => setNewTag(event.target.value)}
-                  />
-                </div>
-                <Button type="submit" size="icon" disabled={createTag.isPending}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </form>
+              {canManageTaxonomy && (
+                <form className="flex gap-2" onSubmit={handleCreateTag}>
+                  <div className="flex-1 space-y-1">
+                    <Label htmlFor="new-tag" className="sr-only">{t('tagName')}</Label>
+                    <Input
+                      id="new-tag"
+                      placeholder={t('newTag')}
+                      value={newTag}
+                      onChange={(event) => setNewTag(event.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" size="icon" disabled={createTag.isPending}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </form>
+              )}
 
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                 {tagsQuery.isLoading ? (
@@ -397,15 +427,17 @@ export function ProductsPage() {
                   tags.map((tag) => (
                     <div key={tag.id} className="flex items-center justify-between rounded-md border px-3 py-2">
                       <span className="text-sm font-medium">#{tag.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteTag.mutate(tag.id!)}
-                        disabled={deleteTag.isPending}
-                      >
-                        <Plus className="h-4 w-4 rotate-45" />
-                      </Button>
+                      {canManageTaxonomy && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => deleteTag.mutate(tag.id!)}
+                          disabled={deleteTag.isPending}
+                        >
+                          <Plus className="h-4 w-4 rotate-45" />
+                        </Button>
+                      )}
                     </div>
                   ))
                 )}
