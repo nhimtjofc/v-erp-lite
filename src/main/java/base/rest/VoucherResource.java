@@ -151,7 +151,7 @@ public class VoucherResource {
     }
 
     @POST
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response create(Voucher voucher) {
         validate(voucher);
@@ -171,7 +171,7 @@ public class VoucherResource {
 
     @PUT
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Voucher update(@PathParam("id") UUID id, Voucher updated) {
         validate(updated);
@@ -204,7 +204,7 @@ public class VoucherResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

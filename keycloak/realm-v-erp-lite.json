@@ -6,13 +6,15 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "registrationAllowed": false,
+  "resetPasswordAllowed": true,
   "organizationsEnabled": true,
 
   "roles": {
     "realm": [
       { "name": "admin",         "description": "Full system access" },
       { "name": "operator",      "description": "Operational access" },
-      { "name": "businessOwner", "description": "Tenant owner" }
+      { "name": "businessOwner", "description": "Tenant owner" },
+      { "name": "customer",      "description": "Customer - can browse products and place orders" }
     ]
   },
 
@@ -119,8 +121,8 @@
       "linkOnly": false,
       "firstBrokerLoginFlowAlias": "first broker login",
       "config": {
-        "clientId": "YOUR_GOOGLE_CLIENT_ID",
-        "clientSecret": "YOUR_GOOGLE_CLIENT_SECRET",
+        "clientId": "REDACTED_GOOGLE_OAUTH_CLIENT_ID",
+        "clientSecret": "REDACTED_GOOGLE_OAUTH_CLIENT_SECRET",
         "useJwksUrl": "true"
       }
     }

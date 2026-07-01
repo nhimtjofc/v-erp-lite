@@ -129,6 +129,15 @@ components:
           type: string
         active:
           type: boolean
+        cardNumber:
+          type: string
+        points:
+          type: integer
+          format: int32
+        totalSpend:
+          type: number
+        tier:
+          type: string
     Instant:
       type: string
       format: date-time
@@ -674,6 +683,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/mfa/setup:
     get:
       operationId: setupMfa
@@ -695,6 +705,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/mfa/status:
     get:
       operationId: mfaStatus
@@ -716,6 +727,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/mfa/verify:
     post:
       operationId: verifyMfa
@@ -745,6 +757,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/password:
     put:
       operationId: changePassword
@@ -774,6 +787,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/register:
     post:
       operationId: register
@@ -981,6 +995,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/categories/{id}:
     put:
       operationId: update
@@ -1015,6 +1031,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
     get:
       operationId: get
       parameters:
@@ -1057,6 +1075,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/customers:
     get:
       operationId: list
@@ -1493,6 +1513,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/products:
     get:
       operationId: list
@@ -1557,6 +1579,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/products/{id}:
     put:
       operationId: update
@@ -1591,6 +1615,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
     get:
       operationId: get
       parameters:
@@ -1633,6 +1659,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/sync/keycloak:
     post:
       operationId: syncAll
@@ -1723,6 +1751,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/tags/{id}:
     get:
       operationId: get
@@ -1766,6 +1796,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/tenant-settings:
     put:
       operationId: putTenantSettings
@@ -1793,6 +1825,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     get:
       operationId: getTenantSettings
       responses:
@@ -1811,6 +1844,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
   /api/tenant-settings/effective:
     get:
       operationId: getEffectiveSettings
@@ -1832,6 +1866,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/tenant-settings/user:
     put:
       operationId: putUserSettings
@@ -1861,6 +1896,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
     get:
       operationId: getUserSettings
       responses:
@@ -1881,6 +1917,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/tenants:
     get:
       operationId: list
@@ -2034,6 +2071,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     post:
       operationId: create
       requestBody:
@@ -2060,6 +2098,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
   /api/users/me:
     put:
       operationId: updateMe
@@ -2147,6 +2186,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     get:
       operationId: get
       parameters:
@@ -2172,6 +2212,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     delete:
       operationId: delete
       parameters:
@@ -2196,6 +2237,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
   /api/vouchers:
     get:
       operationId: list
@@ -2252,6 +2294,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/vouchers/my:
     get:
       operationId: myVouchers
@@ -2348,6 +2392,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
     get:
       operationId: get
       parameters:
@@ -2400,6 +2446,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/vouchers/{id}/collect:
     post:
       operationId: collect

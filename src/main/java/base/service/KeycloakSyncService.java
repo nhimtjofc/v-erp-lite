@@ -1,5 +1,6 @@
 package base.service;
 
+import base.entity.Role;
 import base.entity.Tenant;
 import base.entity.User;
 import io.quarkus.runtime.StartupEvent;
@@ -80,8 +81,10 @@ public class KeycloakSyncService {
 
     public SyncResult syncAll() {
         SyncResult result = new SyncResult();
+        ensureRealmSettings(result);
         ensureProtocolMapper(result);
         ensureUserProfile(result);
+        ensureRolesAndDefaults(result);
         syncOrganizations(result);
         syncUsers(result);
         syncOrgMemberships(result);
@@ -90,13 +93,31 @@ public class KeycloakSyncService {
 
     public SyncResult syncTenant(String tenantCode) {
         SyncResult result = new SyncResult();
+        ensureRealmSettings(result);
         ensureProtocolMapper(result);
         ensureUserProfile(result);
+        ensureRolesAndDefaults(result);
         List<User> users = User.list("tenantId", tenantCode);
         for (User user : users) {
             syncUser(user, result);
         }
         return result;
+    }
+
+    // ── realm level settings ──────────────────────────────────────────
+
+    void ensureRealmSettings(SyncResult result) {
+        try {
+            RealmRepresentation realmRep = keycloak.realm(REALM).toRepresentation();
+            if (realmRep != null && !Boolean.TRUE.equals(realmRep.isResetPasswordAllowed())) {
+                realmRep.setResetPasswordAllowed(true);
+                keycloak.realm(REALM).update(realmRep);
+                log.info("Enabled 'resetPasswordAllowed' on realm '{}' dynamically", REALM);
+            }
+        } catch (Exception e) {
+            result.errors.add("Failed to ensure realm resetPasswordAllowed setting: " + e.getMessage());
+            log.warn("Failed to update realm settings", e);
+        }
     }
 
     // ── protocol mapper on the v-erp-app client ──────────────────────
@@ -234,6 +255,44 @@ public class KeycloakSyncService {
         } catch (Exception e) {
             result.errors.add("User profile update failed: " + e.getMessage());
             log.warn("User profile update failed", e);
+        }
+    }
+
+    void ensureRolesAndDefaults(SyncResult result) {
+        try {
+            // 1. Ensure all database roles exist in Keycloak
+            List<Role> dbRoles = Role.listAll();
+            for (Role dbRole : dbRoles) {
+                try {
+                    keycloak.realm(REALM).roles().get(dbRole.getName()).toRepresentation();
+                } catch (NotFoundException e) {
+                    RoleRepresentation r = new RoleRepresentation();
+                    r.setName(dbRole.getName());
+                    r.setDescription(dbRole.getDescription());
+                    keycloak.realm(REALM).roles().create(r);
+                    log.info("Created missing realm role '{}' in Keycloak", dbRole.getName());
+                }
+            }
+
+            // 2. Ensure "customer" is in the default roles composite (default-roles-v-erp-lite)
+            try {
+                var defaultRoleResource = keycloak.realm(REALM).roles().get("default-roles-v-erp-lite");
+                RoleRepresentation defaultRole = defaultRoleResource.toRepresentation();
+                if (Boolean.TRUE.equals(defaultRole.isComposite())) {
+                    var composites = defaultRoleResource.getRoleComposites();
+                    boolean hasCustomer = composites.stream().anyMatch(r -> "customer".equals(r.getName()));
+                    if (!hasCustomer) {
+                        RoleRepresentation customerRole = keycloak.realm(REALM).roles().get("customer").toRepresentation();
+                        defaultRoleResource.addComposites(List.of(customerRole));
+                        log.info("Added 'customer' role as a composite of default-roles-v-erp-lite in Keycloak");
+                    }
+                }
+            } catch (NotFoundException e) {
+                log.warn("Default role 'default-roles-v-erp-lite' not found in Keycloak");
+            }
+        } catch (Exception e) {
+            result.errors.add("Failed to ensure default roles in Keycloak: " + e.getMessage());
+            log.warn("Failed to ensure default roles in Keycloak", e);
         }
     }
 

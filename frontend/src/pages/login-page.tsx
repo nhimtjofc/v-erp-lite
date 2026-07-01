@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getUser, login, loginWithGoogle } from '@/shared/auth'
+import { getUser, login, loginWithGoogle, forgotPassword } from '@/shared/auth'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { useRouter } from '@tanstack/react-router'
@@ -201,6 +201,15 @@ export function LoginPage() {
         <Button className="w-full h-11 text-base font-bold shadow-lg cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white" size="lg" onClick={() => login()}>
           {t('common:signIn', 'Sign in with Keycloak')}
         </Button>
+        <div className="text-center -mt-2 mb-1">
+          <button
+            type="button"
+            onClick={() => forgotPassword()}
+            className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors hover:underline cursor-pointer"
+          >
+            Quên mật khẩu?
+          </button>
+        </div>
         <Button
           variant="outline"
           className="w-full h-11 text-sm font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 border-border hover:bg-muted"

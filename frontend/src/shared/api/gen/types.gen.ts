@@ -73,6 +73,10 @@ export type Customer = {
     birthDate?: LocalDate;
     notes?: string;
     active?: boolean;
+    cardNumber?: string;
+    points?: number;
+    totalSpend?: number;
+    tier?: string;
 };
 
 export type Instant = string;

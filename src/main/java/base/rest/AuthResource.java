@@ -45,7 +45,7 @@ public class AuthResource {
     @PUT
     @Path("/password")
     @Transactional
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response changePassword(PasswordChangeRequest request) {
         if (request.newPassword == null || request.newPassword.length() < 8) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -77,7 +77,7 @@ public class AuthResource {
     @GET
     @Path("/mfa/setup")
     @Transactional
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response setupMfa() {
         User user = caller.resolveUser();
 
@@ -103,7 +103,7 @@ public class AuthResource {
     @POST
     @Path("/mfa/verify")
     @Transactional
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response verifyMfa(MfaVerifyRequest request) {
         if (request.code == null || request.code.length() != 6) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -136,7 +136,7 @@ public class AuthResource {
     @POST
     @Path("/mfa/disable")
     @Transactional
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response disableMfa() {
         User user = caller.resolveUser();
         user.setMfaSecret(null);
@@ -150,7 +150,7 @@ public class AuthResource {
      */
     @GET
     @Path("/mfa/status")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response mfaStatus() {
         User user = caller.resolveUser();
         return Response.ok(Map.of(

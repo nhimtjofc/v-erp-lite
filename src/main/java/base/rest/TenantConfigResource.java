@@ -21,22 +21,22 @@ public class TenantConfigResource {
     @Inject
     CallerContext caller;
 
-    // ── Tenant-level config (admin only) ──
+    // ── Tenant-level config (admin / businessOwner) ──
 
     /**
-     * Get the tenant-level settings (admin only).
+     * Get the tenant-level settings (admin / businessOwner).
      */
     @GET
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     public Response getTenantSettings() {
         return Response.ok(Map.of("settings", service.getTenantSettings(caller.tenantCode()))).build();
     }
 
     /**
-     * Update the tenant-level settings (admin only, full replace).
+     * Update the tenant-level settings (admin / businessOwner, full replace).
      */
     @PUT
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     public Response putTenantSettings(ConfigRequest request) {
         service.putTenantSettings(
                 caller.tenantCode(),
@@ -54,7 +54,7 @@ public class TenantConfigResource {
      */
     @GET
     @Path("/effective")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response getEffectiveSettings() {
         return Response.ok(
                 service.getEffectiveSettings(caller.tenantCode(), caller.userId())
@@ -68,7 +68,7 @@ public class TenantConfigResource {
      */
     @GET
     @Path("/user")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response getUserSettings() {
         return Response.ok(Map.of("settings", service.getUserSettings(caller.userId()))).build();
     }
@@ -78,7 +78,7 @@ public class TenantConfigResource {
      */
     @PUT
     @Path("/user")
-    @RolesAllowed({"admin", "operator", "businessOwner"})
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response putUserSettings(ConfigRequest request) {
         service.putUserSettings(
                 caller.userId(),

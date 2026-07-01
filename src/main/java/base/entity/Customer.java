@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -40,4 +41,34 @@ public class Customer extends BaseEntity {
 
     @Column(name = "is_active")
     private boolean active = true;
+
+    @Column(name = "card_number", unique = true)
+    private String cardNumber;
+
+    @Column(name = "points", nullable = false)
+    private int points = 0;
+
+    @Column(name = "total_spend", nullable = false)
+    private BigDecimal totalSpend = BigDecimal.ZERO;
+
+    @Column(name = "tier", nullable = false)
+    private String tier = "SILVER";
+
+    @PrePersist
+    public void prePersist() {
+        if (cardNumber == null || cardNumber.isBlank()) {
+            cardNumber = generateCardNumber();
+        }
+        if (totalSpend == null) {
+            totalSpend = BigDecimal.ZERO;
+        }
+        if (tier == null || tier.isBlank()) {
+            tier = "SILVER";
+        }
+    }
+
+    private String generateCardNumber() {
+        long rand = Math.abs(java.util.UUID.randomUUID().getMostSignificantBits() % 100000000L);
+        return "MEM-" + String.format("%04d-%04d", rand / 10000, rand % 10000);
+    }
 }

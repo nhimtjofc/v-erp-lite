@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getUser } from '@/shared/auth'
-import { useMeQuery, useUpdateMeMutation } from '@/shared/api'
+import { useMeQuery, useUpdateMeMutation, useGetMyCustomerProfileQuery } from '@/shared/api'
 import { Badge } from '@/shared/ui/badge'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -9,6 +9,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Separator } from '@/shared/ui/separator'
 import type { User as OidcUser } from 'oidc-client-ts'
+import QRCode from 'qrcode'
 import {
   Briefcase,
   Link,
@@ -21,6 +22,11 @@ import {
   X,
   AlertTriangle,
   Shield,
+  Crown,
+  Star,
+  Sparkles,
+  QrCode,
+  CreditCard,
 } from 'lucide-react'
 
 const TIMEZONES = [
@@ -64,6 +70,24 @@ export function PersonalInfoPage() {
   const { data: profile, isLoading } = useMeQuery()
   const updateMeMutation = useUpdateMeMutation()
   const { t } = useTranslation()
+
+  const [flipped, setFlipped] = useState(false)
+  const [cardQrUrl, setCardQrUrl] = useState('')
+  const { data: customerProfile } = useGetMyCustomerProfileQuery()
+
+  useEffect(() => {
+    if (!customerProfile?.cardNumber) return
+    QRCode.toDataURL(customerProfile.cardNumber, {
+      width: 140,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      }
+    })
+      .then(setCardQrUrl)
+      .catch((err) => console.error('Card QR generation failed:', err))
+  }, [customerProfile?.cardNumber])
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -142,6 +166,65 @@ export function PersonalInfoPage() {
   const initials = getInitials(oidcUser)
   const displayName = getDisplayName(oidcUser)
 
+  // Card customization helpers & variables
+  const totalSpend = customerProfile?.totalSpend ?? 0
+  const points = customerProfile?.points ?? 0
+  const tier = customerProfile?.tier ?? 'SILVER'
+  const cardNumber = customerProfile?.cardNumber ?? 'MEM-0000-0000'
+
+  let nextTier = ''
+  let spendNeeded = 0
+  let progressPercent = 0
+  let progressText = ''
+
+  if (tier === 'SILVER') {
+    nextTier = 'GOLD'
+    spendNeeded = Math.max(0, 200 - totalSpend)
+    progressPercent = Math.min(100, (totalSpend / 200) * 100)
+    progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng VÀNG`
+  } else if (tier === 'GOLD') {
+    nextTier = 'PLATINUM'
+    spendNeeded = Math.max(0, 1000 - totalSpend)
+    progressPercent = Math.min(100, ((totalSpend - 200) / (1000 - 200)) * 100)
+    progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng BẠCH KIM`
+  } else if (tier === 'PLATINUM') {
+    nextTier = 'DIAMOND'
+    spendNeeded = Math.max(0, 3000 - totalSpend)
+    progressPercent = Math.min(100, ((totalSpend - 1000) / (3000 - 1000)) * 100)
+    progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng KIM CƯƠNG`
+  } else {
+    progressPercent = 100
+    progressText = 'Chúc mừng! Bạn đã đạt hạng thẻ cao nhất VIP KIM CƯƠNG.'
+  }
+
+  const getCardBg = () => {
+    switch (tier) {
+      case 'GOLD':
+        return 'from-amber-400 via-amber-500 to-yellow-600 shadow-amber-500/20'
+      case 'PLATINUM':
+        return 'from-cyan-600 via-sky-700 to-slate-900 shadow-cyan-500/20'
+      case 'DIAMOND':
+        return 'from-neutral-900 via-slate-950 to-indigo-950 shadow-indigo-950/40 border-indigo-900/30'
+      case 'SILVER':
+      default:
+        return 'from-slate-400 via-slate-500 to-slate-600 shadow-slate-500/20'
+    }
+  }
+
+  const getTierBadgeColor = () => {
+    switch (tier) {
+      case 'GOLD':
+        return 'bg-amber-400/20 text-amber-200 border-amber-400/30'
+      case 'PLATINUM':
+        return 'bg-cyan-400/20 text-cyan-200 border-cyan-400/30'
+      case 'DIAMOND':
+        return 'bg-purple-400/20 text-purple-200 border-purple-400/30'
+      case 'SILVER':
+      default:
+        return 'bg-slate-400/20 text-slate-200 border-slate-400/30'
+    }
+  }
+
   if (isLoading) {
     return (
       <p className="text-muted-foreground py-12 text-center">Loading profile...</p>
@@ -170,6 +253,251 @@ export function PersonalInfoPage() {
           </Button>
         )}
       </div>
+
+      {/* Style for 3D flip card and styling */}
+      <style>{`
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+        .preserve-3d {
+          transform-style: preserve-3d;
+        }
+        .backface-hidden {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+          transform: rotateY(180deg);
+        }
+      `}</style>
+
+      {/* Membership Card Section */}
+      {customerProfile && (
+        <section className="mb-8 border-b border-border/50 pb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold tracking-tight">Thẻ hội viên VIP điện tử</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            {/* 3D Rotating Card Container */}
+            <div className="flex justify-center">
+              <div 
+                className="w-[340px] h-[210px] cursor-pointer perspective-1000 group relative"
+                onClick={() => setFlipped(!flipped)}
+              >
+                <div className={`w-full h-full duration-700 preserve-3d relative ${flipped ? 'rotate-y-180' : ''}`}>
+                  
+                  {/* Card Front Side */}
+                  <div className={`absolute inset-0 w-full h-full rounded-2xl p-6 flex flex-col justify-between backface-hidden shadow-xl transition-all border ${getCardBg()}`}>
+                    {/* Glossy overlay effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
+                    
+                    {/* Top Row: App Logo and Tier Badge */}
+                    <div className="flex justify-between items-start z-10">
+                      <div>
+                        <p className="text-xs uppercase tracking-widest font-black opacity-80">V-ERP Lite</p>
+                        <p className="text-[9px] uppercase tracking-widest font-semibold opacity-60">Loyalty Program</p>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${getTierBadgeColor()} flex items-center gap-1 backdrop-blur-md`}>
+                        {tier === 'DIAMOND' && <Crown className="h-3 w-3 shrink-0" />}
+                        {(tier === 'GOLD' || tier === 'PLATINUM') && <Star className="h-3 w-3 shrink-0" />}
+                        {tier === 'SILVER' && <Sparkles className="h-3 w-3 shrink-0" />}
+                        {tier} VIP
+                      </span>
+                    </div>
+
+                    {/* Middle Row: Chip & Contactless wave */}
+                    <div className="flex items-center gap-3 z-10">
+                      {/* NFC Gold Chip */}
+                      <div className="w-10 h-7 bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-500 rounded-md border border-amber-600/30 relative overflow-hidden flex flex-col justify-between p-1 shadow-inner">
+                        <div className="h-[1px] bg-amber-800/30 w-full mt-1.5" />
+                        <div className="h-[1px] bg-amber-800/30 w-full mb-1.5" />
+                        <div className="absolute inset-y-0 left-1/2 w-[1px] bg-amber-800/30" />
+                        <div className="absolute inset-y-0 left-1/3 w-[1px] bg-amber-800/30" />
+                        <div className="absolute inset-y-0 right-1/3 w-[1px] bg-amber-800/30" />
+                      </div>
+                      
+                      {/* Sideways Contactless waves */}
+                      <svg className="w-5 h-5 text-white/50 rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M5 8c2-2 5-2 7 0" />
+                        <path d="M3 5c3.5-3.5 8.5-3.5 12 0" />
+                        <path d="M1 2c5-5 12-5 17 0" />
+                      </svg>
+                    </div>
+
+                    {/* Bottom Row: Card number, Name, and helper label */}
+                    <div className="space-y-1.5 z-10">
+                      <p className="font-mono text-lg tracking-[0.18em] font-semibold text-center select-all">
+                        {cardNumber}
+                      </p>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider opacity-50">Chủ thẻ</p>
+                          <p className="text-sm font-bold tracking-wide truncate max-w-[200px]">
+                            {[customerProfile.firstName, customerProfile.lastName].filter(Boolean).join(' ') || 'MEMBER'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] uppercase tracking-wider opacity-40">Mã chi nhánh</p>
+                          <p className="text-xs font-mono font-medium opacity-80">{customerProfile.tenantId}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Back Side */}
+                  <div className="absolute inset-0 w-full h-full rounded-2xl bg-slate-900 border border-slate-800 text-white flex flex-col justify-between py-4 px-5 backface-hidden rotate-y-180 shadow-2xl">
+                    {/* Magnetic Strip */}
+                    <div className="absolute top-4 left-0 w-full h-9 bg-slate-950" />
+                    
+                    {/* QR Code holder and details */}
+                    <div className="flex gap-4 items-center mt-9 z-10">
+                      <div className="bg-white p-1 rounded-lg shadow-md shrink-0 flex items-center justify-center">
+                        {cardQrUrl ? (
+                          <img src={cardQrUrl} alt="Card QR" className="w-[100px] h-[100px]" />
+                        ) : (
+                          <div className="w-[100px] h-[100px] bg-slate-200 animate-pulse rounded" />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-bold tracking-wide text-indigo-400">TÍCH ĐIỂM THÀNH VIÊN</p>
+                        <p className="text-[9px] leading-relaxed text-slate-400">
+                          Đưa mã QR này cho nhân viên khi thanh toán tại quầy để tích lũy điểm thưởng và nhận chiết khấu VIP.
+                        </p>
+                        <p className="text-[10px] font-mono text-slate-300 font-bold select-all bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800 inline-block mt-1">
+                          {cardNumber}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Back Bottom Text */}
+                    <div className="flex justify-between items-center text-[8px] text-slate-500 border-t border-slate-800/60 pt-2 z-10">
+                      <span>V-ERP Lite Loyalty System v1.0</span>
+                      <span>Chạm thẻ để lật lại</span>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+            </div>
+
+            {/* Right side: Detailed Stats, Progress & Benefits */}
+            <div className="space-y-5">
+              <div className="flex gap-4">
+                <div className="bg-accent/40 rounded-xl p-3 flex-1 border border-border/40 text-center">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Điểm tích lũy</p>
+                  <p className="text-2xl font-black text-primary mt-1">{points.toLocaleString()} pts</p>
+                </div>
+                <div className="bg-accent/40 rounded-xl p-3 flex-1 border border-border/40 text-center">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Tổng chi tiêu</p>
+                  <p className="text-2xl font-black text-foreground mt-1">
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSpend)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Tier Progress bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-muted-foreground">Tiến trình hạng thẻ</span>
+                  <span className="text-primary">{tier === 'DIAMOND' ? 'Tối đa' : `${progressPercent.toFixed(0)}%`}</span>
+                </div>
+                
+                {/* Visual Progress bar */}
+                <div className="w-full bg-accent h-2.5 rounded-full overflow-hidden border border-border/30">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-1000 ${
+                      tier === 'DIAMOND' ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]' :
+                      tier === 'PLATINUM' ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]' :
+                      tier === 'GOLD' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-slate-400'
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground italic">{progressText}</p>
+              </div>
+
+              {/* VIP Benefits List */}
+              <div className="rounded-xl border border-border/60 p-4 bg-card">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" /> Quyền lợi hạng thẻ {tier} VIP
+                </h4>
+                <ul className="space-y-2">
+                  {tier === 'SILVER' && (
+                    <>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Tích lũy 1% điểm thưởng trên mỗi đơn hàng.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Được quy đổi điểm lấy Voucher quà tặng đặc biệt.
+                      </li>
+                    </>
+                  )}
+                  {tier === 'GOLD' && (
+                    <>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        <strong>Giảm giá trực tiếp 5%</strong> khi mua hàng.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Tích lũy 2% điểm thưởng trên mỗi đơn hàng.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Quà tặng nhân dịp sinh nhật của bạn.
+                      </li>
+                    </>
+                  )}
+                  {tier === 'PLATINUM' && (
+                    <>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        <strong>Giảm giá trực tiếp 10%</strong> trên mọi hóa đơn.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Tích lũy 3% điểm thưởng trên mỗi đơn hàng.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Hỗ trợ chăm sóc khách hàng VIP ưu tiên 24/7.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Quà sinh nhật cao cấp và Voucher sinh nhật đặc biệt.
+                      </li>
+                    </>
+                  )}
+                  {tier === 'DIAMOND' && (
+                    <>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        <strong>Giảm giá trực tiếp 15%</strong> trên mọi hóa đơn.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Tích lũy 5% điểm thưởng trên mỗi đơn hàng.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Miễn phí vận chuyển cho tất cả các đơn hàng.
+                      </li>
+                      <li className="text-xs flex items-center gap-2 text-foreground/95">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        Quà tặng VIP đặc quyền cuối năm và đặc quyền ưu tiên.
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Identity */}
       <section className="border-b border-border/50 pb-7 mb-7">

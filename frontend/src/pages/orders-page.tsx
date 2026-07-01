@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
-import { useList4Query, type Order } from '@/shared/api'
+import { useList4Query, type Order, useMeQuery } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
@@ -230,6 +230,9 @@ function StatCard({
 export function OrdersPage() {
     const { t } = useTranslation()
     const navigate = useNavigate()
+    const { data: me, isLoading: isMeLoading } = useMeQuery()
+    const roleName = me?.role?.name
+    const isCustomer = roleName === 'customer'
 
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -257,6 +260,21 @@ export function OrdersPage() {
 
     const totalRevenue = stats?.totalRevenue ?? 0
     const revenueStr = formatUSD(totalRevenue)
+
+    if (isMeLoading) {
+        return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
+    }
+
+    if (!roleName || isCustomer) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+                <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+                <p className="text-muted-foreground max-w-md">
+                    Only staff members are allowed to view orders.
+                </p>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-5">

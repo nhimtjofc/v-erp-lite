@@ -40,17 +40,17 @@ export const navGroups: NavGroup[] = [
     items: [
       { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard },
       { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag },
-      { labelKey: 'nav:customers', to: '/customers', icon: Users },
-      { labelKey: 'nav:products', to: '/products', icon: ShoppingBag },
-      { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
+      { labelKey: 'nav:customers', to: '/customers', icon: Users, hideForRoles: ['customer'] },
+      { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
+      { labelKey: 'nav:orders', to: '/orders', icon: Receipt, hideForRoles: ['customer'] },
       { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
     ],
   },
   {
     labelKey: 'nav:businessAdmin',
     items: [
-      { labelKey: 'nav:business', to: '/business', icon: Building2 },
-      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings },
+      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
+      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
     ],
   },
   {

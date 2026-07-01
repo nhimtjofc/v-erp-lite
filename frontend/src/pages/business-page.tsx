@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useListQuery, useCreateMutation, useUpdateMutation } from '@/shared/api'
+import { useListQuery, useCreateMutation, useUpdateMutation, useMeQuery } from '@/shared/api'
 import type { Business } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -10,6 +10,10 @@ import { Label } from '@/shared/ui/label'
 
 export function BusinessPage() {
   const { t } = useTranslation()
+  const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const roleName = me?.role?.name
+  const isCustomer = roleName === 'customer'
+
   const { data: businesses, isLoading } = useListQuery()
   const createMutation = useCreateMutation()
   const updateMutation = useUpdateMutation()
@@ -57,8 +61,19 @@ export function BusinessPage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || isMeLoading) {
     return <p className="text-muted-foreground py-8 text-center">{t('common:loading', 'Loading...')}</p>
+  }
+
+  if (!roleName || isCustomer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">
+          Only staff members are allowed to view business details.
+        </p>
+      </div>
+    )
   }
 
   if (!business) {

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { useMeQuery } from '@/shared/api'
 
 function formatMoney(value?: number | null, language?: string) {
   if (value === null || value === undefined) return '-'
@@ -19,6 +20,10 @@ function formatMoney(value?: number | null, language?: string) {
 
 export function ProductsPage() {
   const { t, i18n } = useTranslation(['catalog', 'common'])
+  const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const roleName = me?.role?.name
+  const isCustomer = roleName === 'customer'
+
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -85,6 +90,21 @@ export function ProductsPage() {
   const categories = categoriesQuery.data ?? []
   const tags = tagsQuery.data ?? []
   const products = productsQuery.data ?? []
+
+  if (isMeLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
+  }
+
+  if (!roleName || isCustomer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">
+          Only staff members are allowed to view products.
+        </p>
+      </div>
+    )
+  }
 
   const formatCategoryName = (cat: Category, allCats: Category[]): string => {
     if (!cat.parent) return cat.name

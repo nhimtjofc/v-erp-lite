@@ -325,7 +325,7 @@ public class OrderResource {
 
     @PUT
     @Path("/{id}/status")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Order updateStatus(@PathParam("id") UUID id, StatusUpdateRequest request) {
         if (request.status == null || request.status.isBlank()) {
@@ -413,6 +413,35 @@ public class OrderResource {
                         order.getCustomer().getId(), v.getId(), tenantCode).firstResult();
                 if (cv != null) {
                     cv.setUsed(false);
+                }
+            }
+        }
+
+        // Award points & update membership tier upon order completion
+        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+            Customer customer = order.getCustomer();
+            if (customer != null) {
+                BigDecimal amount = order.getFinalAmount();
+                if (amount != null) {
+                    if (customer.getTotalSpend() == null) {
+                        customer.setTotalSpend(BigDecimal.ZERO);
+                    }
+                    customer.setTotalSpend(customer.getTotalSpend().add(amount));
+                    // 1 point per 1 unit of currency (rounded down)
+                    int earnedPoints = amount.setScale(0, RoundingMode.DOWN).intValue();
+                    customer.setPoints(customer.getPoints() + earnedPoints);
+
+                    // Update tier dynamically based on new totalSpend
+                    BigDecimal totalSpend = customer.getTotalSpend();
+                    if (totalSpend.compareTo(BigDecimal.valueOf(3000)) >= 0) {
+                        customer.setTier("DIAMOND");
+                    } else if (totalSpend.compareTo(BigDecimal.valueOf(1000)) >= 0) {
+                        customer.setTier("PLATINUM");
+                    } else if (totalSpend.compareTo(BigDecimal.valueOf(200)) >= 0) {
+                        customer.setTier("GOLD");
+                    } else {
+                        customer.setTier("SILVER");
+                    }
                 }
             }
         }
