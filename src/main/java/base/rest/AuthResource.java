@@ -1,8 +1,12 @@
 package base.rest;
 
+import base.entity.Customer;
+import base.entity.Role;
 import base.entity.User;
 import base.security.CallerContext;
 import base.security.TotpUtil;
+import base.service.KeycloakSyncService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -13,6 +17,7 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -24,6 +29,9 @@ public class AuthResource {
 
     @Inject
     Keycloak keycloak;
+
+    @Inject
+    KeycloakSyncService keycloakSync;
 
     private static final String KEYCLOAK_REALM = "v-erp-lite";
 
@@ -156,4 +164,86 @@ public class AuthResource {
     public record PasswordChangeRequest(String newPassword) {}
 
     public record MfaVerifyRequest(String code) {}
+
+    public static class RegisterRequest {
+        public String email;
+        public String password;
+        public String firstName;
+        public String lastName;
+        public String phone;
+    }
+
+    @POST
+    @Path("/register")
+    @PermitAll
+    @Transactional
+    public Response register(RegisterRequest request) {
+        if (request.email == null || request.email.isBlank()) {
+            throw new BadRequestException("Email is required");
+        }
+        if (request.password == null || request.password.length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters");
+        }
+        if (request.firstName == null || request.firstName.isBlank()) {
+            throw new BadRequestException("First name is required");
+        }
+        if (request.lastName == null || request.lastName.isBlank()) {
+            throw new BadRequestException("Last name is required");
+        }
+
+        String tenantCode = "v-erp-app"; // Default tenant
+
+        // Check if user already exists
+        long exists = User.count("email = ?1 and tenantId = ?2", request.email, tenantCode);
+        if (exists > 0) {
+            throw new BadRequestException("User with email " + request.email + " already exists");
+        }
+
+        // Resolve customer role
+        Role role = Role.find("name", "customer").firstResult();
+        if (role == null) {
+            throw new BadRequestException("Customer role not found in system");
+        }
+
+        // 1. Create and persist User locally
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setTenantId(tenantCode);
+        user.setEmail(request.email);
+        user.setFirstName(request.firstName);
+        user.setLastName(request.lastName);
+        user.setPhone(request.phone);
+        user.setRole(role);
+        user.setActive(true);
+        user.persist();
+
+        // 2. Create customer profile locally immediately
+        Customer customer = new Customer();
+        customer.setId(UUID.randomUUID());
+        customer.setTenantId(tenantCode);
+        customer.setEmail(request.email);
+        customer.setFirstName(request.firstName);
+        customer.setLastName(request.lastName);
+        customer.setPhone(request.phone);
+        customer.setActive(true);
+        customer.persist();
+
+        // 3. Sync to Keycloak
+        try {
+            String kcId = keycloakSync.createUserInKeycloak(user);
+            if (kcId != null) {
+                user.setKeycloakId(kcId);
+                user.persist();
+                
+                // Override password with user's password
+                keycloakSync.setPassword(kcId, request.password);
+            } else {
+                throw new BadRequestException("Failed to register user in Keycloak");
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to sync user to authentication service: " + e.getMessage());
+        }
+
+        return Response.ok(Map.of("message", "User registered successfully")).build();
+    }
 }

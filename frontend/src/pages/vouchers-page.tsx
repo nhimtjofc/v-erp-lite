@@ -5,6 +5,8 @@ import {
   useCreate8Mutation,
   useUpdate7Mutation,
   useDelete8Mutation,
+  list9QueryKey,
+  useMeQuery,
   type Voucher,
 } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
@@ -21,6 +23,10 @@ import { useQueryClient } from '@tanstack/react-query'
 export function VouchersPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const roleName = me?.role?.name
+  const isAdmin = roleName === 'admin'
+  const isCustomer = roleName === 'customer'
   
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -35,29 +41,7 @@ export function VouchersPage() {
   )
   const voucherList = vouchers ?? []
 
-  const createMutation = useCreate8Mutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['list9'] })
-      setIsDialogOpen(false)
-      resetForm()
-    },
-  })
-
-  const updateMutation = useUpdate7Mutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['list9'] })
-      setIsDialogOpen(false)
-      resetForm()
-    },
-  })
-
-  const deleteMutation = useDelete8Mutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['list9'] })
-    },
-  })
-
-  // Dialog & Form states
+  // Dialog & Form states (all hooks declared before early returns)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null)
   const [code, setCode] = useState('')
@@ -85,6 +69,61 @@ export function VouchersPage() {
     setUsageLimit(undefined)
     setActive(true)
     setFormError('')
+  }
+
+  const invalidateVoucherQueries = () => {
+    queryClient.invalidateQueries({ queryKey: list9QueryKey() })
+    queryClient.invalidateQueries({ queryKey: ['activeVouchers'] })
+  }
+
+  const createMutation = useCreate8Mutation({
+    onSuccess: () => {
+      invalidateVoucherQueries()
+      setIsDialogOpen(false)
+      resetForm()
+    },
+    onError: (error: any) => {
+      console.error('Create voucher error', error)
+      const msg = error?.response?.data?.message || error?.message || 'Failed to create voucher'
+      // Simply display the error message; retry logic removed because 'payload' is out of scope
+      setFormError(msg)
+    },
+  })
+
+  const updateMutation = useUpdate7Mutation({
+    onSuccess: () => {
+      invalidateVoucherQueries()
+      setIsDialogOpen(false)
+      resetForm()
+    },
+    onError: (error: any) => {
+      console.error('Update voucher error', error)
+      const msg = error?.response?.data?.message || error?.message || 'Failed to update voucher'
+      // Simply display the error message; retry logic removed because 'payload' is out of scope
+      setFormError(msg)
+    },
+  })
+
+  const deleteMutation = useDelete8Mutation({
+    onSuccess: () => {
+      invalidateVoucherQueries()
+    },
+  })
+
+  // Early returns (MUST be after all hooks)
+  if (isMeLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
+  }
+
+  if (!roleName || isCustomer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">
+          Only staff members are allowed to view vouchers.
+        </p>
+      </div>
+    )
   }
 
   const handleOpenCreate = () => {
@@ -164,10 +203,12 @@ export function VouchersPage() {
             Manage your store discount codes and promotion vouchers.
           </p>
         </div>
-        <Button onClick={handleOpenCreate}>
-          <Plus className="h-4 w-4" />
-          Create Voucher
-        </Button>
+        {isAdmin && (
+          <Button onClick={handleOpenCreate}>
+            <Plus className="h-4 w-4" />
+            Create Voucher
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -199,7 +240,7 @@ export function VouchersPage() {
                   <TableHead>Min Order Value</TableHead>
                   <TableHead>Usage Limit</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
+                  {isAdmin && <TableHead></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -224,16 +265,18 @@ export function VouchersPage() {
                           {voucher.active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(voucher)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(voucher.id!)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(voucher)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(voucher.id!)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })}
@@ -263,7 +306,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="code" className="text-right">Code *</Label>
                 <Input
-                  id="code"
+                  id="code" name="code"
                   className="col-span-2 font-mono uppercase"
                   placeholder="WELCOME10"
                   value={code}
@@ -275,7 +318,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name *</Label>
                 <Input
-                  id="name"
+                  id="name" name="name"
                   className="col-span-2"
                   placeholder="10% off for new customers"
                   value={name}
@@ -300,7 +343,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="discountValue" className="text-right">Discount Value *</Label>
                 <Input
-                  id="discountValue"
+                  id="discountValue" name="discountValue"
                   type="number"
                   step="any"
                   className="col-span-2"
@@ -314,7 +357,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="minOrderValue" className="text-right">Min Order Value</Label>
                 <Input
-                  id="minOrderValue"
+                  id="minOrderValue" name="minOrderValue"
                   type="number"
                   className="col-span-2"
                   value={minOrderValue}
@@ -326,7 +369,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="maxDiscount" className="text-right">Max Discount Amount</Label>
                 <Input
-                  id="maxDiscount"
+                  id="maxDiscount" name="maxDiscount"
                   type="number"
                   className="col-span-2"
                   placeholder="Optional limit for % type"
@@ -339,7 +382,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="startTime" className="text-right">Starts At</Label>
                 <Input
-                  id="startTime"
+                  id="startTime" name="startTime"
                   type="datetime-local"
                   className="col-span-2"
                   value={startTime}
@@ -350,7 +393,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="endTime" className="text-right">Ends At</Label>
                 <Input
-                  id="endTime"
+                  id="endTime" name="endTime"
                   type="datetime-local"
                   className="col-span-2"
                   value={endTime}
@@ -361,7 +404,7 @@ export function VouchersPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <Label htmlFor="usageLimit" className="text-right">Usage Limit</Label>
                 <Input
-                  id="usageLimit"
+                  id="usageLimit" name="usageLimit"
                   type="number"
                   className="col-span-2"
                   placeholder="Infinite if empty"
@@ -376,7 +419,7 @@ export function VouchersPage() {
                 <div className="col-span-2 flex items-center">
                   <input
                     type="checkbox"
-                    id="active"
+                    id="active" name="active"
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     checked={active}
                     onChange={(e) => setActive(e.target.checked)}

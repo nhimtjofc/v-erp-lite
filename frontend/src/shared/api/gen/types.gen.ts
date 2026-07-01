@@ -191,6 +191,14 @@ export type ProductVariant = {
     availableQuantity?: number;
 };
 
+export type RegisterRequest = {
+    email?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+};
+
 export type Role = {
     id?: Uuid;
     name?: string;
@@ -525,6 +533,27 @@ export type ChangePasswordResponses = {
     200: unknown;
 };
 
+export type RegisterData = {
+    body: RegisterRequest;
+    path?: never;
+    query?: never;
+    url: '/api/auth/register';
+};
+
+export type RegisterErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type RegisterResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type ListData = {
     body?: never;
     path?: never;
@@ -853,6 +882,33 @@ export type Create3Responses = {
     200: unknown;
 };
 
+export type GetMyCustomerProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/customers/me';
+};
+
+export type GetMyCustomerProfileErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetMyCustomerProfileResponses = {
+    /**
+     * OK
+     */
+    200: Customer;
+};
+
+export type GetMyCustomerProfileResponse = GetMyCustomerProfileResponses[keyof GetMyCustomerProfileResponses];
+
 export type Delete3Data = {
     body?: never;
     path: {
@@ -941,6 +997,20 @@ export type Update3Responses = {
 };
 
 export type Update3Response = Update3Responses[keyof Update3Responses];
+
+export type DebugCallerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/debug-db/caller';
+};
+
+export type DebugCallerResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type HealthData = {
     body?: never;
@@ -1284,20 +1354,6 @@ export type Get5Data = {
     url: '/api/products/{id}';
 };
 
-<<<<<<< HEAD
-export type Get5Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type Get5Responses = {
     /**
      * OK
@@ -1401,20 +1457,6 @@ export type List6Data = {
     url: '/api/tags';
 };
 
-<<<<<<< HEAD
-export type List6Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type List6Responses = {
     /**
      * OK
@@ -1489,20 +1531,6 @@ export type Get6Data = {
     url: '/api/tags/{id}';
 };
 
-<<<<<<< HEAD
-export type Get6Errors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type Get6Responses = {
     /**
      * OK
@@ -1790,59 +1818,6 @@ export type Update5Responses = {
 
 export type Update5Response = Update5Responses[keyof Update5Responses];
 
-<<<<<<< HEAD
-export type UploadImageData = {
-    body: {
-        file?: Blob | File;
-    };
-=======
-export type List8Data = {
-    body?: never;
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
-    path?: never;
-    query?: never;
-    url: '/api/uploads/image';
-};
-
-<<<<<<< HEAD
-export type UploadImageErrors = {
-=======
-export type List8Errors = {
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-<<<<<<< HEAD
-export type UploadImageResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type ServeImageData = {
-    body?: never;
-    path: {
-        filename: string;
-    };
-    query?: never;
-    url: '/api/uploads/image/{filename}';
-};
-
-export type ServeImageResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
 export type List8Data = {
     body?: never;
     path?: never;
@@ -1861,8 +1836,6 @@ export type List8Errors = {
     403: unknown;
 };
 
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type List8Responses = {
     /**
      * OK
@@ -1908,6 +1881,17 @@ export type MeData = {
     url: '/api/users/me';
 };
 
+export type MeErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
 export type MeResponses = {
     /**
      * OK
@@ -1929,6 +1913,14 @@ export type UpdateMeErrors = {
      * Bad Request
      */
     400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
 };
 
 export type UpdateMeResponses = {
@@ -2038,7 +2030,6 @@ export type List9Data = {
     url: '/api/vouchers';
 };
 
-<<<<<<< HEAD
 export type List9Errors = {
     /**
      * Not Authorized
@@ -2050,8 +2041,6 @@ export type List9Errors = {
     403: unknown;
 };
 
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type List9Responses = {
     /**
      * OK
@@ -2090,6 +2079,37 @@ export type Create8Responses = {
     200: unknown;
 };
 
+export type MyVouchersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customerId?: Uuid;
+    };
+    url: '/api/vouchers/my';
+};
+
+export type MyVouchersErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type MyVouchersResponses = {
+    /**
+     * OK
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type MyVouchersResponse = MyVouchersResponses[keyof MyVouchersResponses];
+
 export type ValidateVoucherData = {
     body?: never;
     path?: never;
@@ -2100,7 +2120,6 @@ export type ValidateVoucherData = {
     url: '/api/vouchers/validate';
 };
 
-<<<<<<< HEAD
 export type ValidateVoucherErrors = {
     /**
      * Not Authorized
@@ -2112,8 +2131,6 @@ export type ValidateVoucherErrors = {
     403: unknown;
 };
 
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type ValidateVoucherResponses = {
     /**
      * OK
@@ -2157,7 +2174,6 @@ export type Get9Data = {
     url: '/api/vouchers/{id}';
 };
 
-<<<<<<< HEAD
 export type Get9Errors = {
     /**
      * Not Authorized
@@ -2169,8 +2185,6 @@ export type Get9Errors = {
     403: unknown;
 };
 
-=======
->>>>>>> c7019449591460cc680f282c70d0b415673eeeca
 export type Get9Responses = {
     /**
      * OK
@@ -2212,3 +2226,32 @@ export type Update7Responses = {
 };
 
 export type Update7Response = Update7Responses[keyof Update7Responses];
+
+export type CollectData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: {
+        customerId?: Uuid;
+    };
+    url: '/api/vouchers/{id}/collect';
+};
+
+export type CollectErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type CollectResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};

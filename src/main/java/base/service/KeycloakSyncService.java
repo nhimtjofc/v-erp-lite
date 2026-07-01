@@ -453,6 +453,18 @@ public class KeycloakSyncService {
         }
     }
 
+    public void setPassword(String userId, String password) {
+        try {
+            CredentialRepresentation cred = new CredentialRepresentation();
+            cred.setType(CredentialRepresentation.PASSWORD);
+            cred.setValue(password);
+            cred.setTemporary(false);
+            keycloak.realm(REALM).users().get(userId).resetPassword(cred);
+        } catch (Exception e) {
+            log.warn("Failed to set password for user {}: {}", userId, e.getMessage());
+        }
+    }
+
     private void assignRealmRole(String userId, String roleName) {
         try {
             RoleRepresentation role = keycloak.realm(REALM).roles()

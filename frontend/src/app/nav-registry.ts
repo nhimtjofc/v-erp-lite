@@ -20,6 +20,10 @@ export interface NavItem {
   icon: LucideIcon
   /** Nested submenu items (mechanism preserved for future use) */
   children?: NavItem[]
+  /** If true, only shown to admin */
+  adminOnly?: boolean
+  /** List of roles that cannot see this item */
+  hideForRoles?: string[]
 }
 
 export interface NavGroup {
@@ -39,7 +43,7 @@ export const navGroups: NavGroup[] = [
       { labelKey: 'nav:customers', to: '/customers', icon: Users },
       { labelKey: 'nav:products', to: '/products', icon: ShoppingBag },
       { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
-      { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag },
+      { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
     ],
   },
   {

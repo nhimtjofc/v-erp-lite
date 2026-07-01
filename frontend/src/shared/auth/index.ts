@@ -59,6 +59,12 @@ export async function login(): Promise<void> {
   await userManager.signinRedirect()
 }
 
+export async function loginWithGoogle(): Promise<void> {
+  await userManager.signinRedirect({
+    extraQueryParams: { kc_idp_hint: 'google' },
+  })
+}
+
 export async function handleCallback(): Promise<User> {
   const user = await userManager.signinRedirectCallback()
   return user

@@ -1,6 +1,7 @@
 package base.security;
 
 import base.entity.User;
+import base.service.UserProvisioningService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -31,6 +32,9 @@ public class CallerContext {
 
     @Inject
     SecurityIdentity securityIdentity;
+
+    @Inject
+    UserProvisioningService userProvisioningService;
 
     // ── where ──
 
@@ -113,7 +117,19 @@ public class CallerContext {
         String tenantCode = tenantCode();
         User user = User.find("email = ?1 and tenantId = ?2", email, tenantCode).firstResult();
         if (user == null) {
-            throw new NotFoundException("User not found for authenticated caller");
+            // Check if we have an authenticated user and email in the JWT, then auto-provision
+            if (isAuthenticated() && email != null && !email.isBlank()) {
+                String kcId = jwt.getSubject();
+                String firstName = jwt.getClaim("given_name");
+                String lastName = jwt.getClaim("family_name");
+                if (firstName == null) {
+                    firstName = jwt.getClaim("name"); // fallback
+                }
+                String avatarUrl = jwt.getClaim("picture");
+                user = userProvisioningService.provisionUser(email, tenantCode, kcId, firstName, lastName, avatarUrl);
+            } else {
+                throw new NotFoundException("User not found for authenticated caller");
+            }
         }
         return user;
     }

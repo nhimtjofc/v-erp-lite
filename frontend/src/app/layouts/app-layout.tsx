@@ -46,6 +46,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
         <div className="space-y-0.5">
           {group.items.map((item) => {
+            if (item.adminOnly && !isAdmin) return null
+            if (item.hideForRoles && me?.role?.name && item.hideForRoles.includes(me.role.name)) return null
             const Icon = item.icon
             return (
               <Link

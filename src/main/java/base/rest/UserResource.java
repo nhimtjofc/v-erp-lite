@@ -24,12 +24,14 @@ public class UserResource {
 
     @GET
     @Path("/me")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public User me() {
         return resolveMe();
     }
 
     @PUT
     @Path("/me")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     @Transactional
     public User updateMe(User updated) {
         User user = resolveMe();

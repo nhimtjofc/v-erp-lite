@@ -272,6 +272,13 @@ public class OrderResource {
             discount = voucher.calculateDiscount(subtotal);
             voucher.setUsedCount(voucher.getUsedCount() + 1);
             voucher.setUpdatedBy(userId);
+
+            // Mark customer's collected voucher as used
+            CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3 and isUsed = false", 
+                    request.customerId, voucher.getId(), tenantCode).firstResult();
+            if (cv != null) {
+                cv.setUsed(true);
+            }
         }
 
         // 5. Calculate Shipping Fee (USD)
@@ -391,6 +398,21 @@ public class OrderResource {
                     Product product = item.getProduct();
                     product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
                     product.setUpdatedBy(userId);
+                }
+            }
+        }
+
+        // Reactivate voucher if order is cancelled
+        if ("CANCELLED".equals(newStatus)) {
+            if (order.getVoucher() != null) {
+                Voucher v = order.getVoucher();
+                v.setUsedCount(Math.max(0, v.getUsedCount() - 1));
+                v.setUpdatedBy(userId);
+
+                CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3",
+                        order.getCustomer().getId(), v.getId(), tenantCode).firstResult();
+                if (cv != null) {
+                    cv.setUsed(false);
                 }
             }
         }

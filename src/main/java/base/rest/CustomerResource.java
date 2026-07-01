@@ -23,6 +23,34 @@ public class CustomerResource {
     CallerContext caller;
 
     @GET
+    @Path("/me")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    @Transactional
+    public Customer getMyCustomerProfile() {
+        String email = caller.userEmail();
+        String tenantCode = caller.tenantCode();
+        Customer customer = Customer.find("email = ?1 and tenantId = ?2", email, tenantCode).firstResult();
+        if (customer == null) {
+            customer = new Customer();
+            customer.setId(UUID.randomUUID());
+            customer.setTenantId(tenantCode);
+            customer.setEmail(email);
+            String preferredUsername = caller.preferredUsername();
+            if (preferredUsername != null && !preferredUsername.isBlank()) {
+                customer.setFirstName(preferredUsername);
+                customer.setLastName("");
+            } else {
+                customer.setFirstName("Customer");
+                customer.setLastName("");
+            }
+            customer.setActive(true);
+            customer.setCreatedBy(caller.userId());
+            customer.persist();
+        }
+        return customer;
+    }
+
+    @GET
     public List<Customer> list(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
