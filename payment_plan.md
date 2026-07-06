@@ -106,7 +106,122 @@ Các thuật ngữ tài chính/kỹ thuật khó đọc sẽ ghi kèm tiếng An
 
 ## 2. Thiết Kế Database Schema (Flyway Migration V16)
 
-Để hiện thực hóa mô hình Multi-vendor, ta cần bổ sung mối quan hệ giữa sản phẩm với người bán (Business) và thiết lập hệ thống Ví/Giao dịch. ERD được lưu riêng tại `docs/diagrams/payment-data-model.mmd`.
+Để hiện thực hóa mô hình Multi-vendor, ta cần bổ sung mối quan hệ giữa sản phẩm với người bán (Business) và thiết lập hệ thống Ví/Giao dịch:
+
+erDiagram
+    business ||--o{ products : "owns"
+    business ||--o{ orders : "receives"
+    business ||--|| wallets : "has"
+    wallets ||--o{ wallet_transactions : "records"
+    wallets ||--o{ ledger_checkpoints : "snapshots"
+    orders ||--o{ escrow_records : "secures"
+    orders ||--o{ payment_intents : "initiates"
+    payment_intents ||--o{ payment_transactions : "attempts"
+    wallets ||--o{ payout_requests : "requests"
+    
+    products {
+        UUID id PK
+        string tenant_id
+        UUID business_id FK
+        string sku
+        string name
+        long base_price_minor
+        string currency
+    }
+    
+    orders {
+        UUID id PK
+        string tenant_id
+        UUID customer_id FK
+        UUID business_id FK
+        string order_number
+        string status
+        long final_amount_minor
+        string currency
+    }
+    
+    wallets {
+        UUID id PK
+        string tenant_id
+        string owner_type
+        UUID owner_id
+        long available_balance_minor
+        long pending_balance_minor
+        string currency
+        long version
+    }
+    
+    wallet_transactions {
+        UUID id PK
+        string tenant_id
+        UUID wallet_id FK
+        long amount_minor
+        string type
+        string transaction_type
+        string reference_type
+        UUID reference_id
+        UUID correction_of_transaction_id
+        long sequence_no
+        string description
+        timestamp created_at
+    }
+
+    ledger_checkpoints {
+        UUID id PK
+        string tenant_id
+        UUID wallet_id FK
+        UUID last_transaction_id FK
+        long last_sequence_no
+        long available_balance_minor
+        long pending_balance_minor
+        timestamp checkpointed_at
+    }
+    
+    escrow_records {
+        UUID id PK
+        string tenant_id
+        UUID order_id FK
+        UUID seller_wallet_id FK
+        long amount_minor
+        string currency
+        string status
+        timestamp release_due_at
+    }
+
+    payment_intents {
+        UUID id PK
+        string tenant_id
+        UUID order_id FK
+        UUID customer_id FK
+        long amount_minor
+        string currency
+        string status
+        string idempotency_key
+        timestamp expires_at
+    }
+    
+    payment_transactions {
+        UUID id PK
+        string tenant_id
+        UUID payment_intent_id FK
+        string gateway
+        string gateway_transaction_id
+        long amount_minor
+        string currency
+        string status
+    }
+    
+    payout_requests {
+        UUID id PK
+        string tenant_id
+        UUID wallet_id FK
+        long amount_minor
+        string currency
+        string status
+        string bank_name
+        string bank_account_number
+        string bank_account_holder
+    }
 
 **Ràng buộc schema bắt buộc:**
 * Các cột tiền dùng `BIGINT *_minor` và `currency CHAR(3)`, không dùng `FLOAT`/`DOUBLE`.
