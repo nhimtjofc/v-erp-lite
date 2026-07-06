@@ -75,7 +75,7 @@ public class PayoutService {
     public PayoutRequest getPayout(String tenantId, UUID payoutId) {
         PayoutRequest payout = PayoutRequest.find("id = ?1 and tenantId = ?2", payoutId, tenantId).firstResult();
         if (payout == null) {
-            throw new NotFoundException("Payout request not found");
+            throw new NotFoundException("Không tìm thấy yêu cầu rút tiền");
         }
         return payout;
     }
@@ -87,7 +87,7 @@ public class PayoutService {
             return payout;
         }
         if (!"PENDING".equals(payout.getStatus())) {
-            throw new BadRequestException("Only pending payouts can be approved");
+            throw new BadRequestException("Chỉ duyệt yêu cầu rút tiền đang chờ xử lý");
         }
 
         walletService.debitAvailable(
@@ -98,7 +98,7 @@ public class PayoutService {
                 "PAYOUT_REQUEST",
                 payout.getId(),
                 actorId,
-                "Payout approved"
+                "Yêu cầu rút tiền đã được duyệt"
         );
         payout.setStatus("APPROVED");
         payout.setUpdatedBy(actorId);
@@ -112,7 +112,7 @@ public class PayoutService {
             return payout;
         }
         if (!"PENDING".equals(payout.getStatus())) {
-            throw new BadRequestException("Only pending payouts can be rejected");
+            throw new BadRequestException("Chỉ từ chối yêu cầu rút tiền đang chờ xử lý");
         }
         payout.setStatus("REJECTED");
         payout.setUpdatedBy(actorId);
@@ -121,26 +121,26 @@ public class PayoutService {
 
     private PayoutRequest payoutForUpdate(String tenantId, UUID payoutId) {
         if (payoutId == null) {
-            throw new BadRequestException("Payout id is required");
+            throw new BadRequestException("Vui lòng nhập id yêu cầu rút tiền");
         }
         PayoutRequest payout = PayoutRequest.find("id = ?1 and tenantId = ?2", payoutId, tenantId)
                 .withLock(LockModeType.PESSIMISTIC_WRITE)
                 .firstResult();
         if (payout == null) {
-            throw new NotFoundException("Payout request not found");
+            throw new NotFoundException("Không tìm thấy yêu cầu rút tiền");
         }
         return payout;
     }
 
     private void validateBankDetails(String bankName, String bankAccountNumber, String bankAccountHolder) {
         if (bankName == null || bankName.isBlank()) {
-            throw new BadRequestException("Bank name is required");
+            throw new BadRequestException("Vui lòng nhập tên ngân hàng");
         }
         if (bankAccountNumber == null || bankAccountNumber.isBlank()) {
-            throw new BadRequestException("Bank account number is required");
+            throw new BadRequestException("Vui lòng nhập số tài khoản ngân hàng");
         }
         if (bankAccountHolder == null || bankAccountHolder.isBlank()) {
-            throw new BadRequestException("Bank account holder is required");
+            throw new BadRequestException("Vui lòng nhập tên chủ tài khoản");
         }
     }
 }

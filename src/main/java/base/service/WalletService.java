@@ -34,7 +34,7 @@ public class WalletService {
         String normalizedOwnerType = normalizeOwnerType(ownerType);
         String normalizedCurrency = moneyService.normalizeCurrency(currency);
         if (ownerId == null) {
-            throw new BadRequestException("Owner id is required");
+            throw new BadRequestException("Vui lòng nhập mã chủ ví");
         }
 
         Wallet wallet = Wallet.find(
@@ -62,7 +62,7 @@ public class WalletService {
     public Wallet getWallet(String tenantId, UUID walletId) {
         Wallet wallet = Wallet.find("id = ?1 and tenantId = ?2", walletId, tenantId).firstResult();
         if (wallet == null) {
-            throw new NotFoundException("Wallet not found");
+            throw new NotFoundException("Không tìm thấy ví");
         }
         return wallet;
     }
@@ -135,7 +135,7 @@ public class WalletService {
             return new WalletMutation(wallet, existing);
         }
         if (wallet.getAvailableBalanceMinor() < amount.getAmountMinor()) {
-            throw new BadRequestException("Insufficient available balance");
+            throw new BadRequestException("Số dư khả dụng không đủ");
         }
 
         wallet.setAvailableBalanceMinor(wallet.getAvailableBalanceMinor() - amount.getAmountMinor());
@@ -192,7 +192,7 @@ public class WalletService {
             return new WalletMutation(wallet, existing);
         }
         if (wallet.getPendingBalanceMinor() < amount.getAmountMinor()) {
-            throw new BadRequestException("Insufficient pending balance");
+            throw new BadRequestException("Số dư tạm giữ không đủ");
         }
 
         wallet.setPendingBalanceMinor(wallet.getPendingBalanceMinor() - amount.getAmountMinor());
@@ -223,7 +223,7 @@ public class WalletService {
             return new WalletMutation(wallet, existing);
         }
         if (wallet.getPendingBalanceMinor() < amount.getAmountMinor()) {
-            throw new BadRequestException("Insufficient pending balance");
+            throw new BadRequestException("Số dư tạm giữ không đủ");
         }
 
         wallet.setPendingBalanceMinor(wallet.getPendingBalanceMinor() - amount.getAmountMinor());
@@ -265,13 +265,13 @@ public class WalletService {
 
     private Wallet walletForUpdate(String tenantId, UUID walletId) {
         if (walletId == null) {
-            throw new BadRequestException("Wallet id is required");
+            throw new BadRequestException("Vui lòng nhập mã ví");
         }
         Wallet wallet = Wallet.find("id = ?1 and tenantId = ?2", walletId, tenantId)
                 .withLock(LockModeType.PESSIMISTIC_WRITE)
                 .firstResult();
         if (wallet == null) {
-            throw new NotFoundException("Wallet not found");
+            throw new NotFoundException("Không tìm thấy ví");
         }
         return wallet;
     }
@@ -323,14 +323,14 @@ public class WalletService {
 
     private String normalizeOwnerType(String ownerType) {
         if (ownerType == null || ownerType.isBlank()) {
-            throw new BadRequestException("Owner type is required");
+            throw new BadRequestException("Vui lòng nhập loại chủ ví");
         }
         return ownerType.trim().toUpperCase(Locale.ROOT);
     }
 
     private String normalizeTransactionType(String transactionType) {
         if (transactionType == null || transactionType.isBlank()) {
-            throw new BadRequestException("Transaction type is required");
+            throw new BadRequestException("Vui lòng nhập loại giao dịch");
         }
         return transactionType.trim().toUpperCase(Locale.ROOT);
     }
