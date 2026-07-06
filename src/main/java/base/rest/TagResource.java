@@ -45,7 +45,7 @@ public class TagResource {
     }
 
     @POST
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response create(Tag tag) {
         validate(tag);
@@ -62,7 +62,7 @@ public class TagResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Tag.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

@@ -11,6 +11,10 @@ const KC_CLIENT = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'v-erp-app'
 
 client.interceptors.request.use((request) => {
   retryClones.set(request, request.clone())
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    request.headers.set('Authorization', `Bearer ${token}`)
+  }
   return request
 })
 

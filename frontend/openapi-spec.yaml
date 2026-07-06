@@ -129,6 +129,15 @@ components:
           type: string
         active:
           type: boolean
+        cardNumber:
+          type: string
+        points:
+          type: integer
+          format: int32
+        totalSpend:
+          type: number
+        tier:
+          type: string
     Instant:
       type: string
       format: date-time
@@ -361,6 +370,19 @@ components:
         availableQuantity:
           type: integer
           format: int32
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
     Role:
       type: object
       properties:
@@ -661,6 +683,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/mfa/setup:
     get:
       operationId: setupMfa
@@ -682,6 +705,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/mfa/status:
     get:
       operationId: mfaStatus
@@ -703,6 +727,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/mfa/verify:
     post:
       operationId: verifyMfa
@@ -732,6 +757,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/auth/password:
     put:
       operationId: changePassword
@@ -761,6 +787,27 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
+  /api/auth/register:
+    post:
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Register
+      tags:
+      - Auth Resource
   /api/businesses:
     get:
       operationId: list
@@ -948,6 +995,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/categories/{id}:
     put:
       operationId: update
@@ -982,6 +1031,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
     get:
       operationId: get
       parameters:
@@ -1024,6 +1075,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/customers:
     get:
       operationId: list
@@ -1081,6 +1134,29 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/customers/me:
+    get:
+      operationId: getMyCustomerProfile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get My Customer Profile
+      tags:
+      - Customer Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
   /api/customers/{id}:
     put:
       operationId: update
@@ -1170,6 +1246,18 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/debug-db/caller:
+    get:
+      operationId: debugCaller
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Debug Caller
+      tags:
+      - Debug Db Resource
   /api/health:
     get:
       operationId: health
@@ -1425,6 +1513,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/products:
     get:
       operationId: list
@@ -1489,6 +1579,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/products/{id}:
     put:
       operationId: update
@@ -1523,6 +1615,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
     get:
       operationId: get
       parameters:
@@ -1565,6 +1659,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/sync/keycloak:
     post:
       operationId: syncAll
@@ -1655,6 +1751,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/tags/{id}:
     get:
       operationId: get
@@ -1698,6 +1796,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
   /api/tenant-settings:
     put:
       operationId: putTenantSettings
@@ -1725,6 +1825,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     get:
       operationId: getTenantSettings
       responses:
@@ -1743,6 +1844,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
   /api/tenant-settings/effective:
     get:
       operationId: getEffectiveSettings
@@ -1764,6 +1866,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/tenant-settings/user:
     put:
       operationId: putUserSettings
@@ -1793,6 +1896,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
     get:
       operationId: getUserSettings
       responses:
@@ -1813,6 +1917,7 @@ paths:
         - admin
         - operator
         - businessOwner
+        - customer
   /api/tenants:
     get:
       operationId: list
@@ -1966,6 +2071,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     post:
       operationId: create
       requestBody:
@@ -1992,6 +2098,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
   /api/users/me:
     put:
       operationId: updateMe
@@ -2008,11 +2115,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
         "400":
           description: Bad Request
       summary: Update Me
       tags:
       - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
     get:
       operationId: me
       responses:
@@ -2022,9 +2139,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       summary: Me
       tags:
       - User Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
   /api/users/{id}:
     put:
       operationId: update
@@ -2059,6 +2186,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     get:
       operationId: get
       parameters:
@@ -2084,6 +2212,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
     delete:
       operationId: delete
       parameters:
@@ -2108,6 +2237,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
   /api/vouchers:
     get:
       operationId: list
@@ -2125,9 +2255,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Voucher"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       summary: List
       tags:
       - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
     post:
       operationId: create
       requestBody:
@@ -2154,6 +2294,39 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
+  /api/vouchers/my:
+    get:
+      operationId: myVouchers
+      parameters:
+      - name: customerId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: My Vouchers
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
   /api/vouchers/validate:
     get:
       operationId: validateVoucher
@@ -2172,9 +2345,19 @@ paths:
           content:
             application/json:
               schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       summary: Validate Voucher
       tags:
       - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
   /api/vouchers/{id}:
     put:
       operationId: update
@@ -2209,6 +2392,8 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
     get:
       operationId: get
       parameters:
@@ -2224,9 +2409,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Voucher"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       summary: Get
       tags:
       - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
     delete:
       operationId: delete
       parameters:
@@ -2251,6 +2446,40 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+        - operator
+  /api/vouchers/{id}/collect:
+    post:
+      operationId: collect
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: customerId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Collect
+      tags:
+      - Voucher Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+        - customer
 info:
   title: v-erp-lite API
   version: 1.0-SNAPSHOT

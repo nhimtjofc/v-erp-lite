@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import base.entity.Customer;
+import base.entity.CustomerVoucher;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.OrderItem;
@@ -287,6 +288,13 @@ public class OrderResource {
             discount = voucher.calculateDiscount(subtotal);
             voucher.setUsedCount(voucher.getUsedCount() + 1);
             voucher.setUpdatedBy(userId);
+
+            // Mark customer's collected voucher as used
+            CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3 and isUsed = false", 
+                    request.customerId, voucher.getId(), tenantCode).firstResult();
+            if (cv != null) {
+                cv.setUsed(true);
+            }
         }
 
         // 5. Calculate Shipping Fee (USD)
@@ -333,7 +341,7 @@ public class OrderResource {
 
     @PUT
     @Path("/{id}/status")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Order updateStatus(@PathParam("id") UUID id, StatusUpdateRequest request) {
         if (request.status == null || request.status.isBlank()) {
@@ -406,6 +414,50 @@ public class OrderResource {
                     Product product = item.getProduct();
                     product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
                     product.setUpdatedBy(userId);
+                }
+            }
+        }
+
+        // Reactivate voucher if order is cancelled
+        if ("CANCELLED".equals(newStatus)) {
+            if (order.getVoucher() != null) {
+                Voucher v = order.getVoucher();
+                v.setUsedCount(Math.max(0, v.getUsedCount() - 1));
+                v.setUpdatedBy(userId);
+
+                CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3",
+                        order.getCustomer().getId(), v.getId(), tenantCode).firstResult();
+                if (cv != null) {
+                    cv.setUsed(false);
+                }
+            }
+        }
+
+        // Award points & update membership tier upon order completion
+        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+            Customer customer = order.getCustomer();
+            if (customer != null) {
+                BigDecimal amount = order.getFinalAmount();
+                if (amount != null) {
+                    if (customer.getTotalSpend() == null) {
+                        customer.setTotalSpend(BigDecimal.ZERO);
+                    }
+                    customer.setTotalSpend(customer.getTotalSpend().add(amount));
+                    // 1 point per 1 unit of currency (rounded down)
+                    int earnedPoints = amount.setScale(0, RoundingMode.DOWN).intValue();
+                    customer.setPoints(customer.getPoints() + earnedPoints);
+
+                    // Update tier dynamically based on new totalSpend
+                    BigDecimal totalSpend = customer.getTotalSpend();
+                    if (totalSpend.compareTo(BigDecimal.valueOf(3000)) >= 0) {
+                        customer.setTier("DIAMOND");
+                    } else if (totalSpend.compareTo(BigDecimal.valueOf(1000)) >= 0) {
+                        customer.setTier("PLATINUM");
+                    } else if (totalSpend.compareTo(BigDecimal.valueOf(200)) >= 0) {
+                        customer.setTier("GOLD");
+                    } else {
+                        customer.setTier("SILVER");
+                    }
                 }
             }
         }

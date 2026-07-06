@@ -78,7 +78,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => {
     const renderGroup = (group: NavGroup) => {
-      const items = group.items.filter((item) => canSeeRole(item.roles))
+      const items = group.items.filter((item) => {
+        if (item.adminOnly && !isAdmin) return false
+        if (item.hideForRoles && me?.role?.name && item.hideForRoles.includes(me.role.name)) return false
+        return canSeeRole(item.roles)
+      })
       if (items.length === 0) return null
 
       return (
