@@ -19,6 +19,7 @@ import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.Voucher;
 import base.security.CallerContext;
+import base.service.EscrowService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -43,6 +44,9 @@ public class OrderResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    EscrowService escrowService;
 
     public static class CartItem {
         public UUID productId;
@@ -460,6 +464,11 @@ public class OrderResource {
                     }
                 }
             }
+            escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
+        }
+
+        if ("CANCELLED".equals(newStatus) && !"CANCELLED".equals(oldStatus)) {
+            escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
         }
 
         order.setStatus(newStatus);
