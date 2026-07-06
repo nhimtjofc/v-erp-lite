@@ -50,6 +50,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/products') ||
       pathname.startsWith('/orders') ||
       pathname.startsWith('/vouchers') ||
+      pathname.startsWith('/shop') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =

@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
-import { useMeQuery } from '@/shared/api'
 
 function formatMoney(value?: number | null, language?: string) {
   if (value === null || value === undefined) return '-'
@@ -26,10 +25,8 @@ export function ProductsPage() {
   const isCustomer = roleName === 'customer'
 
   const queryClient = useQueryClient()
-  const { data: me } = useMeQuery()
-  const role = me?.role?.name
-  const canManageProducts = role === 'admin' || role === 'businessOwner'
-  const canManageTaxonomy = role === 'admin'
+  const canManageProducts = roleName === 'admin' || roleName === 'businessOwner'
+  const canManageTaxonomy = roleName === 'admin'
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
