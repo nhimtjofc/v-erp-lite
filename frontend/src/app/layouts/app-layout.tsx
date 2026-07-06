@@ -78,7 +78,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => {
     const renderGroup = (group: NavGroup) => {
-      const items = group.items.filter((item) => canSeeRole(item.roles))
+      const items = group.items.filter((item) => {
+        if (item.adminOnly && !isAdmin) return false
+        if (item.hideForRoles && me?.role?.name && item.hideForRoles.includes(me.role.name)) return false
+        return canSeeRole(item.roles)
+      })
       if (items.length === 0) return null
 
       return (
@@ -107,30 +111,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
             })}
           </div>
         </div>
-        <div className="space-y-0.5">
-          {group.items.map((item) => {
-            if (item.adminOnly && !isAdmin) return null
-            if (item.hideForRoles && me?.role?.name && item.hideForRoles.includes(me.role.name)) return null
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                activeProps={{
-                  className:
-                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium bg-sidebar-accent text-sidebar-accent-foreground transition-colors',
-                }}
-                onClick={onNavigate}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {t(item.labelKey)}
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-    )
+      )
+    }
 
     return (
       <nav className="flex flex-1 flex-col p-3">
