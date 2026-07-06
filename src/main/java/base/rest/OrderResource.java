@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import base.entity.Customer;
+import base.entity.CustomerVoucher;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.OrderItem;
