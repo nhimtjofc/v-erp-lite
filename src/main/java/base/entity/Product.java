@@ -26,6 +26,10 @@ public class Product extends BaseEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "business_id")
+    private Business business;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     private Category category;
 

@@ -22,6 +22,10 @@ public class Order extends BaseEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "business_id")
+    private Business business;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
