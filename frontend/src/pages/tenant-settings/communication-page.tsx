@@ -25,7 +25,7 @@ export function CommunicationPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
 
   const [communication, setCommunication] = useState<CommunicationSettings>({})
   const [savedCommunication, setSavedCommunication] = useState<CommunicationSettings>({})
@@ -171,6 +171,7 @@ export function CommunicationPage() {
             }
             options={NOTIFICATION_CHANNELS}
             placeholder={t('common:select')}
+            disabled={!isAdmin}
           />
           {effective?.communication?.defaultNotificationChannel && !communication.defaultNotificationChannel && (
             <p className="text-xs text-muted-foreground">

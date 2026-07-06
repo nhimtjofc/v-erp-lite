@@ -1,5 +1,7 @@
 package base.rest;
 
+import base.entity.Customer;
+import base.entity.CustomerVoucher;
 import base.entity.Voucher;
 import base.security.CallerContext;
 import jakarta.annotation.security.RolesAllowed;
@@ -8,9 +10,11 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +27,10 @@ public class VoucherResource {
 
     @Inject
     CallerContext caller;
+    private static final Logger LOG = Logger.getLogger(VoucherResource.class);
 
     @GET
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public List<Voucher> list(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
@@ -39,6 +45,7 @@ public class VoucherResource {
 
     @GET
     @Path("/{id}")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Voucher get(@PathParam("id") UUID id) {
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
@@ -49,6 +56,7 @@ public class VoucherResource {
 
     @GET
     @Path("/validate")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public Response validateVoucher(@QueryParam("code") String code, @QueryParam("subtotal") BigDecimal subtotal) {
         if (code == null || code.isBlank()) {
             throw new BadRequestException("Voucher code is required");
@@ -88,8 +96,62 @@ public class VoucherResource {
         return Response.ok(result).build();
     }
 
+    @GET
+    @Path("/my")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    public List<Map<String, Object>> myVouchers(@QueryParam("customerId") UUID customerId) {
+        String tenantCode = caller.tenantCode();
+        Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
+        if (customer == null) {
+            throw new NotFoundException("Customer not found");
+        }
+        List<CustomerVoucher> cvs = CustomerVoucher.find("customerId = ?1 and isUsed = false and tenantId = ?2", customerId, tenantCode).list();
+        return cvs.stream().map(cv -> {
+            Voucher v = Voucher.findById(cv.getVoucherId());
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", cv.getId());
+            m.put("voucherId", cv.getVoucherId());
+            m.put("collectedAt", cv.getCollectedAt());
+            m.put("isUsed", cv.isUsed());
+            m.put("voucher", v);
+            return m;
+        }).toList();
+    }
+
     @POST
-    @RolesAllowed("admin")
+    @Path("/{id}/collect")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    @Transactional
+    public Response collect(@PathParam("id") UUID voucherId, @QueryParam("customerId") UUID customerId) {
+        String tenantCode = caller.tenantCode();
+        Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", voucherId, tenantCode).firstResult();
+        if (voucher == null) {
+            throw new NotFoundException("Voucher not found");
+        }
+        Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
+        if (customer == null) {
+            throw new NotFoundException("Customer not found");
+        }
+        CustomerVoucher existing = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3", customerId, voucherId, tenantCode).firstResult();
+        if (existing != null) {
+            if (existing.isUsed()) {
+                existing.setUsed(false);
+                existing.setCollectedAt(Instant.now());
+                return Response.ok(existing).build();
+            }
+            return Response.ok(existing).build();
+        }
+        CustomerVoucher cv = new CustomerVoucher();
+        cv.setId(UUID.randomUUID());
+        cv.setCustomerId(customerId);
+        cv.setVoucherId(voucherId);
+        cv.setTenantId(tenantCode);
+        cv.persist();
+        return Response.ok(cv).build();
+    }
+
+    @POST
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response create(Voucher voucher) {
         validate(voucher);
@@ -109,7 +171,7 @@ public class VoucherResource {
 
     @PUT
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Voucher update(@PathParam("id") UUID id, Voucher updated) {
         validate(updated);
@@ -142,7 +204,7 @@ public class VoucherResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

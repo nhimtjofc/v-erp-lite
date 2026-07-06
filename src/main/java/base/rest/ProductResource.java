@@ -77,7 +77,7 @@ public class ProductResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response create(Product product) {
         validate(product);
@@ -102,7 +102,7 @@ public class ProductResource {
 
     @PUT
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Product update(@PathParam("id") UUID id, Product updated) {
         validate(updated);
@@ -172,7 +172,7 @@ public class ProductResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Product.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

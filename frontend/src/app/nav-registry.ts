@@ -21,6 +21,10 @@ export interface NavItem {
   roles?: string[]
   /** Nested submenu items (mechanism preserved for future use) */
   children?: NavItem[]
+  /** If true, only shown to admin */
+  adminOnly?: boolean
+  /** List of roles that cannot see this item */
+  hideForRoles?: string[]
 }
 
 export interface NavGroup {
@@ -36,20 +40,20 @@ export const navGroups: NavGroup[] = [
   {
     labelKey: 'nav:businessFeatures',
     items: [
-      { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'operator', 'businessOwner'] },
-      { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag, roles: ['customer', 'user', 'operator', 'businessOwner'] },
-      { labelKey: 'nav:customers', to: '/customers', icon: Users, roles: ['admin', 'operator', 'businessOwner'] },
-      { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, roles: ['admin', 'operator', 'businessOwner'] },
-      { labelKey: 'nav:orders', to: '/orders', icon: Receipt, roles: ['admin', 'businessOwner'] },
-      { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, roles: ['admin', 'operator', 'businessOwner'] },
+      { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard },
+      { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag },
+      { labelKey: 'nav:customers', to: '/customers', icon: Users, hideForRoles: ['customer'] },
+      { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
+      { labelKey: 'nav:orders', to: '/orders', icon: Receipt, hideForRoles: ['customer'] },
+      { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
     ],
   },
   {
     labelKey: 'nav:businessAdmin',
     roles: ['operator', 'businessOwner'],
     items: [
-      { labelKey: 'nav:business', to: '/business', icon: Building2 },
-      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings },
+      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
+      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
     ],
   },
   {

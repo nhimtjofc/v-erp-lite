@@ -73,6 +73,10 @@ export type Customer = {
     birthDate?: LocalDate;
     notes?: string;
     active?: boolean;
+    cardNumber?: string;
+    points?: number;
+    totalSpend?: number;
+    tier?: string;
 };
 
 export type Instant = string;
@@ -189,6 +193,14 @@ export type ProductVariant = {
         [key: string]: string;
     };
     availableQuantity?: number;
+};
+
+export type RegisterRequest = {
+    email?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
 };
 
 export type Role = {
@@ -525,6 +537,27 @@ export type ChangePasswordResponses = {
     200: unknown;
 };
 
+export type RegisterData = {
+    body: RegisterRequest;
+    path?: never;
+    query?: never;
+    url: '/api/auth/register';
+};
+
+export type RegisterErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type RegisterResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type ListData = {
     body?: never;
     path?: never;
@@ -853,6 +886,33 @@ export type Create3Responses = {
     200: unknown;
 };
 
+export type GetMyCustomerProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/customers/me';
+};
+
+export type GetMyCustomerProfileErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetMyCustomerProfileResponses = {
+    /**
+     * OK
+     */
+    200: Customer;
+};
+
+export type GetMyCustomerProfileResponse = GetMyCustomerProfileResponses[keyof GetMyCustomerProfileResponses];
+
 export type Delete3Data = {
     body?: never;
     path: {
@@ -941,6 +1001,20 @@ export type Update3Responses = {
 };
 
 export type Update3Response = Update3Responses[keyof Update3Responses];
+
+export type DebugCallerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/debug-db/caller';
+};
+
+export type DebugCallerResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type HealthData = {
     body?: never;
@@ -1752,11 +1826,7 @@ export type List8Data = {
     body?: never;
     path?: never;
     query?: never;
-<<<<<<< HEAD
     url: '/api/users';
-=======
-    url: '/api/uploads/image';
->>>>>>> cfb3ba756740784cec893f667aa4e82edcfe7640
 };
 
 export type List8Errors = {
@@ -1815,6 +1885,17 @@ export type MeData = {
     url: '/api/users/me';
 };
 
+export type MeErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
 export type MeResponses = {
     /**
      * OK
@@ -1836,6 +1917,14 @@ export type UpdateMeErrors = {
      * Bad Request
      */
     400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
 };
 
 export type UpdateMeResponses = {
@@ -1945,6 +2034,17 @@ export type List9Data = {
     url: '/api/vouchers';
 };
 
+export type List9Errors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
 export type List9Responses = {
     /**
      * OK
@@ -1983,6 +2083,37 @@ export type Create8Responses = {
     200: unknown;
 };
 
+export type MyVouchersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customerId?: Uuid;
+    };
+    url: '/api/vouchers/my';
+};
+
+export type MyVouchersErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type MyVouchersResponses = {
+    /**
+     * OK
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type MyVouchersResponse = MyVouchersResponses[keyof MyVouchersResponses];
+
 export type ValidateVoucherData = {
     body?: never;
     path?: never;
@@ -1991,6 +2122,17 @@ export type ValidateVoucherData = {
         subtotal?: number;
     };
     url: '/api/vouchers/validate';
+};
+
+export type ValidateVoucherErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
 };
 
 export type ValidateVoucherResponses = {
@@ -2036,6 +2178,17 @@ export type Get9Data = {
     url: '/api/vouchers/{id}';
 };
 
+export type Get9Errors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
 export type Get9Responses = {
     /**
      * OK
@@ -2077,3 +2230,32 @@ export type Update7Responses = {
 };
 
 export type Update7Response = Update7Responses[keyof Update7Responses];
+
+export type CollectData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: {
+        customerId?: Uuid;
+    };
+    url: '/api/vouchers/{id}/collect';
+};
+
+export type CollectErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type CollectResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};

@@ -25,14 +25,14 @@ public class UserResource {
 
     @GET
     @Path("/me")
-    @Authenticated
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public User me() {
         return resolveMe();
     }
 
     @PUT
     @Path("/me")
-    @Authenticated
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     @Transactional
     public User updateMe(User updated) {
         User user = resolveMe();
@@ -52,14 +52,14 @@ public class UserResource {
     }
 
     @GET
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     public List<User> list() {
         return User.list("tenantId", caller.tenantCode());
     }
 
     @GET
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     public User get(@PathParam("id") UUID id) {
         User user = User.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (user == null) {
@@ -69,7 +69,7 @@ public class UserResource {
     }
 
     @POST
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response create(User user) {
         user.setId(UUID.randomUUID());
@@ -83,7 +83,7 @@ public class UserResource {
 
     @PUT
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public User update(@PathParam("id") UUID id, User updated) {
         User user = User.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
@@ -107,7 +107,7 @@ public class UserResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = User.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

@@ -59,6 +59,12 @@ export async function login(): Promise<void> {
   await userManager.signinRedirect()
 }
 
+export async function loginWithGoogle(): Promise<void> {
+  await userManager.signinRedirect({
+    extraQueryParams: { kc_idp_hint: 'google' },
+  })
+}
+
 export async function handleCallback(): Promise<User> {
   const user = await userManager.signinRedirectCallback()
   return user
@@ -71,4 +77,10 @@ export async function logout(): Promise<void> {
 export async function getAccessToken(): Promise<string | null> {
   const user = await userManager.getUser()
   return user?.access_token ?? null
+}
+
+export async function forgotPassword(): Promise<void> {
+  const origin = window.location.origin
+  const redirectUri = encodeURIComponent(`${origin}/login`)
+  window.location.href = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/login-actions/reset-credentials?client_id=${KEYCLOAK_CLIENT_ID}&redirect_uri=${redirectUri}`
 }
