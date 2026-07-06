@@ -344,6 +344,120 @@ erDiagram
 
 ---
 
+### 3.1. Timeline Điều Phối Cho 6 Developer (Code Ownership & Control Plan)
+
+Mục tiêu của timeline này là đảm bảo **cả 6 developer đều trực tiếp code**, nhưng mỗi người có vùng sở hữu riêng để hạn chế conflict và giảm phụ thuộc dây chuyền. Các task nên tách PR nhỏ trong 0.5-1 ngày, merge sớm sau khi compile/test xanh.
+
+> Lưu ý migration: dự án hiện đã có `V16__seed_more_data.sql`, vì vậy khi triển khai thực tế cần đổi payment migration trong kế hoạch thành số tiếp theo, ví dụ `V17__add_payment_and_wallet_tables.sql` và `V18__link_product_and_order_to_business.sql`, không tạo thêm file `V16` mới.
+
+#### Timeline tổng 2 tuần
+
+| Giai đoạn | Mục tiêu kiểm soát | Owner chính | Output bắt buộc |
+|---|---|---|---|
+| Ngày 1 | Chốt schema/API contract, tạo skeleton code | Dev 1, Dev 2, Dev 3 | Migration draft, entity/service/resource skeleton compile |
+| Ngày 2-3 | Code nền tảng độc lập theo ownership | Cả 6 dev | Entity, wallet core, payment intent, mock UI, test skeleton |
+| Ngày 4-5 | Hoàn thành luồng chính | Dev 2, Dev 3, Dev 4, Dev 5 | Checkout -> payment -> escrow -> payout chạy được với mock/real API |
+| Ngày 6-7 | Integration test và sửa lỗi lớn | Dev 6 + cả team | Test invariant/concurrency/idempotency/tenant isolation chạy được |
+| Tuần 2 Ngày 1-2 | Hardening backend payment | Dev 1, Dev 2, Dev 3, Dev 6 | Không double payment, không âm ví, ledger append-only |
+| Tuần 2 Ngày 3 | Hoàn thiện UI, route, role, API binding | Dev 4, Dev 5 | Buyer/Seller/Admin UI gọi API thật |
+| Tuần 2 Ngày 4 | Full regression end-to-end | Dev 6 | Báo cáo lỗi rõ owner, checklist manual pass |
+| Tuần 2 Ngày 5 | Demo, fix cuối, đóng release | Cả team | Release candidate sẵn sàng deploy staging |
+
+#### Dev 1 - DB, Entity, Money Foundation
+
+**Vùng code chính:** `src/main/resources/db/migration/`, `src/main/java/base/entity/`, `src/main/java/base/model/Money.java`.
+
+| Ngày | Công việc | Output kiểm soát |
+|---|---|---|
+| D1 sáng | Rà soát migration hiện tại, chốt tên migration mới `V17`, `V18` | PR schema draft, không trùng version Flyway |
+| D1 chiều | Tạo tables payment/wallet/ledger/checkpoint/escrow/payout/idempotency | Migration chạy được |
+| D2 | Tạo entity JPA tương ứng | Entity compile với Panache/JPA |
+| D3 | Tạo `Money.java`, enum/status constants nếu cần | Unit test money cơ bản |
+| D4 | Thêm index, unique constraint theo tenant | DB review pass |
+| D5 | Fix review, hỗ trợ Dev 2/3 nếu thiếu field | Merge foundation |
+| D6-D7 | Rà soát tenant isolation, append-only constraint, migration validation | Không còn schema blocker |
+
+#### Dev 2 - Wallet, Ledger, Payout Backend
+
+**Vùng code chính:** `WalletService.java`, `MoneyService.java`, `LedgerCheckpointService.java`, `WalletResource.java`, `PayoutResource.java`.
+
+| Ngày | Công việc | Output kiểm soát |
+|---|---|---|
+| D1 | Tạo skeleton service/resource, DTO request/response | API compile |
+| D2 | Code wallet balance với `PESSIMISTIC_WRITE` | Không âm ví trong case đơn |
+| D3 | Code ledger append-only khi cộng/trừ ví | Ledger sinh đúng cho mọi biến động tiền |
+| D4 | Code checkpoint read/write | Query balance nhanh, khớp ledger |
+| D5 | Code payout create/approve/reject | Payout flow chạy local |
+| D6-D7 | Fix theo test Dev 6, chuẩn hóa lỗi API | Backend wallet/payout ổn định |
+| Tuần 2 D1-D2 | Hardening concurrency, rollback, idempotent service call | Không overdraft, không double ledger |
+
+#### Dev 3 - PaymentIntent, Gateway, Webhook
+
+**Vùng code chính:** `PaymentIntentService.java`, `PaymentGatewayService.java`, `IdempotencyService.java`, `PaymentWebhookResource.java`. Chỉ Dev 3 sửa phần payment integration trong `OrderResource.java`.
+
+| Ngày | Công việc | Output kiểm soát |
+|---|---|---|
+| D1 | Tạo PaymentIntent state machine skeleton | State transition rõ ràng |
+| D2 | Code create/confirm/cancel/expire intent | API nội bộ chạy |
+| D3 | Code mock gateway tạo QR/link thanh toán | Checkout mock được |
+| D4 | Code webhook + idempotency | Retry webhook không double |
+| D5 | Gắn payment succeeded -> split/escrow qua Dev 2 service | Payment flow end-to-end |
+| D6-D7 | Gắn order completed/confirm receipt -> release escrow | Escrow release đúng |
+| Tuần 2 D1-D2 | Hardening signature/mock payload, replay attack, late webhook | Webhook an toàn hơn |
+
+#### Dev 4 - Buyer Checkout UX
+
+**Vùng code chính:** `frontend/src/pages/cart-checkout-page.tsx`, `frontend/src/pages/payment-processing-page.tsx`, `frontend/src/pages/order-detail-page.tsx`.
+
+| Ngày | Công việc | Output kiểm soát |
+|---|---|---|
+| D1 | Tách checkout UI theo seller/business, chuẩn bị mock API | UI không cần backend |
+| D2 | Tạo payment processing page QR/status | Route/page chạy |
+| D3 | Gắn create payment intent/mock payment | Buyer flow demo được |
+| D4 | Sửa order detail hiển thị payment/escrow status | Order detail rõ trạng thái |
+| D5 | Thêm nút confirm receipt | Gọi API release |
+| D6-D7 | Gắn API thật sau khi Dev 3 sẵn | Buyer flow thật |
+| Tuần 2 D3 | Polish responsive, loading/error/toast | UX ổn định trên desktop/mobile |
+
+#### Dev 5 - Seller/Admin Wallet Dashboard
+
+**Vùng code chính:** `frontend/src/pages/seller-wallet-page.tsx`, `frontend/src/pages/admin/admin-payouts-page.tsx`, frontend route files, `frontend/src/app/nav-registry.ts`. Chỉ Dev 5 sửa menu/route payment chính để tránh conflict frontend.
+
+| Ngày | Công việc | Output kiểm soát |
+|---|---|---|
+| D1 | Tạo route/menu wallet và payouts | Menu hiện đúng role |
+| D2 | Code seller wallet page: balance, pending, transactions | UI đọc mock/API |
+| D3 | Code payout request form | Seller gửi yêu cầu |
+| D4 | Code admin payouts list | Admin xem pending payouts |
+| D5 | Code approve/reject + reason | Admin xử lý payout |
+| D6-D7 | Gắn API thật, loading/error/empty state | Dashboard dùng được |
+| Tuần 2 D3 | Polish responsive và role guard | Seller/Admin UI sẵn demo |
+
+#### Dev 6 - Test, Automation, Integration Code
+
+**Vùng code chính:** `src/test/java/base/service/`, `src/test/java/base/rest/`, script/checklist automation trong `docs/` nếu cần.
+
+| Ngày | Công việc | Output kiểm soát |
+|---|---|---|
+| D1 | Tạo test skeleton + test data helpers | Test compile |
+| D2 | Code `MoneyServiceTest`, `LedgerInvariantTest` | Bắt lỗi tiền/ledger |
+| D3 | Code `WalletServiceConcurrencyTest` | Bắt race condition |
+| D4 | Code `PaymentIntentServiceTest`, webhook retry test | Bắt double payment |
+| D5 | Code tenant isolation test | Bắt lỗi đọc/ghi chéo tenant |
+| D6-D7 | Chạy full regression, ghi bug theo owner | Báo cáo lỗi rõ người xử lý |
+| Tuần 2 D4-D5 | Performance smoke test, security tampering/replay checklist | Release gate rõ ràng |
+
+#### Checklist kiểm soát hằng ngày
+
+* Mỗi dev mở tối đa 1 PR/ngày, scope nhỏ và có label: `payment-db`, `wallet-core`, `payment-webhook`, `buyer-checkout`, `seller-wallet`, `payment-tests`.
+* Daily check 15 phút theo format: hôm qua xong gì, hôm nay làm gì, đang block ai.
+* Không merge backend nếu test invariant của Dev 6 fail: idempotency, tenant isolation, append-only ledger, no negative balance.
+* Không sửa migration đã merge; nếu cần đổi schema thì tạo migration mới.
+* Chỉ Dev 3 đụng payment integration trong `OrderResource.java`; chỉ Dev 5 đụng route/menu payment chính trên frontend.
+* Frontend Dev 4/5 được dùng mock API trước, nhưng cuối Tuần 2 Ngày 3 phải chuyển sang API thật hoặc generated SDK.
+
+---
+
 ## 4. Chi Tiết File Cần Tạo / Chỉnh Sửa (Detailed WBS)
 
 Dưới đây là danh mục chi tiết các file trong dự án cần được tạo mới hoặc thay đổi, phân chia cụ thể cho từng vị trí Developer để phục vụ cho việc quản lý mã nguồn:
