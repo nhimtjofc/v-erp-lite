@@ -51,6 +51,9 @@ dependencies {
     // Cache
     implementation 'io.quarkus:quarkus-cache'
 
+    // Scheduler (cron-based escrow release)
+    implementation 'io.quarkus:quarkus-scheduler'
+
     // Test
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.quarkus:quarkus-test-security'
