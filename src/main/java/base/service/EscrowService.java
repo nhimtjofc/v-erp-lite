@@ -23,7 +23,7 @@ public class EscrowService {
 
     @Transactional
     public EscrowRecord holdSellerEscrow(String tenantId, UUID orderId, UUID sellerOwnerId, Money amount,
-                                         Instant releaseDueAt, UUID actorId) {
+            Instant releaseDueAt, UUID actorId) {
         if (orderId == null) {
             throw new BadRequestException("Vui lòng nhập mã đơn hàng");
         }
@@ -32,13 +32,13 @@ public class EscrowService {
         }
         moneyService.requirePositive(amount);
 
-        Wallet wallet = walletService.getOrCreateWallet(tenantId, "SELLER", sellerOwnerId, amount.getCurrency(), actorId);
+        Wallet wallet = walletService.getOrCreateWallet(tenantId, "SELLER", sellerOwnerId, amount.getCurrency(),
+                actorId);
         EscrowRecord existing = EscrowRecord.find(
                 "tenantId = ?1 and orderId = ?2 and sellerWallet.id = ?3",
                 tenantId,
                 orderId,
-                wallet.getId()
-        ).firstResult();
+                wallet.getId()).firstResult();
         if (existing != null) {
             return existing;
         }
@@ -50,8 +50,7 @@ public class EscrowService {
                 "ORDER",
                 orderId,
                 actorId,
-                "Tạm giữ tiền đơn hàng"
-        );
+                "Tạm giữ tiền đơn hàng");
 
         EscrowRecord escrow = new EscrowRecord();
         escrow.setId(UUID.randomUUID());
@@ -82,8 +81,7 @@ public class EscrowService {
                     "ORDER",
                     orderId,
                     actorId,
-                    "Giải ngân tiền đơn hàng"
-            );
+                    "Giải ngân tiền đơn hàng");
             record.setStatus("RELEASED");
             record.setUpdatedBy(actorId);
         }
@@ -101,8 +99,7 @@ public class EscrowService {
                     "ORDER",
                     orderId,
                     actorId,
-                    "Hoàn tiền tạm giữ đơn hàng"
-            );
+                    "Hoàn tiền tạm giữ đơn hàng");
             record.setStatus("REFUNDED");
             record.setUpdatedBy(actorId);
         }
@@ -117,7 +114,6 @@ public class EscrowService {
                 "tenantId = ?1 and orderId = ?2 and status = ?3 order by createdAt asc",
                 tenantId,
                 orderId,
-                "HELD"
-        );
+                "HELD");
     }
 }

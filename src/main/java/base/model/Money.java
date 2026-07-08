@@ -37,6 +37,27 @@ public final class Money {
         return BigDecimal.valueOf(amountMinor).movePointLeft(exponent);
     }
 
+    public Money add(Money other) {
+        checkCurrency(other);
+        return new Money(Math.addExact(this.amountMinor, other.amountMinor), this.currency);
+    }
+
+    public Money subtract(Money other) {
+        checkCurrency(other);
+        return new Money(Math.subtractExact(this.amountMinor, other.amountMinor), this.currency);
+    }
+
+    public Money multiply(double multiplier) {
+        BigDecimal decimalAmount = this.toDecimal().multiply(BigDecimal.valueOf(multiplier));
+        return Money.fromDecimal(decimalAmount, this.currency);
+    }
+
+    private void checkCurrency(Money other) {
+        if (!this.currency.equalsIgnoreCase(other.currency)) {
+            throw new IllegalArgumentException("Currency mismatch: " + this.currency + " != " + other.currency);
+        }
+    }
+
     private static int getExponent(String currency) {
         if ("VND".equalsIgnoreCase(currency)) {
             return 0;
