@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-class Dev2WalletServiceTest {
+class WalletServiceTest {
 
     @Inject
     MoneyService moneyService;
@@ -260,7 +260,7 @@ class Dev2WalletServiceTest {
     }
 
     private String tenant() {
-        return "dev2-test-" + UUID.randomUUID();
+        return "test-" + UUID.randomUUID();
     }
 
     private boolean debitAfterStart(CountDownLatch start, String tenantId, UUID walletId) throws Exception {
