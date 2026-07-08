@@ -1,13 +1,15 @@
 import {
   LayoutDashboard,
   Users,
+  Package,
+  ShoppingCart,
+  ShoppingBag,
   Building2,
   Settings,
   User,
   Shield,
   Sun,
   Building,
-  ShoppingBag,
   Receipt,
   Tag,
   type LucideIcon,
@@ -46,12 +48,14 @@ export const navGroups: NavGroup[] = [
       { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
       { labelKey: 'nav:orders', to: '/orders', icon: Receipt, hideForRoles: ['customer'] },
       { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
+      { labelKey: 'nav:cart', to: '/cart', icon: ShoppingCart },
     ],
   },
   {
     labelKey: 'nav:businessAdmin',
     roles: ['operator', 'businessOwner'],
     items: [
+<<<<<<< HEAD
       { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
       { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
     ],

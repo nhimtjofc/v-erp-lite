@@ -7,6 +7,7 @@ import base.security.CallerContext;
 import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -14,12 +15,14 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/wallets")
@@ -136,8 +139,10 @@ public class WalletResource {
 
     @GET
     @Path("/{id}/transactions")
-    public List<WalletTransactionResponse> transactions(@PathParam("id") UUID id) {
-        return walletService.listTransactions(caller.tenantCode(), id)
+    public List<WalletTransactionResponse> transactions(@PathParam("id") UUID id,
+                                                         @QueryParam("limit") @DefaultValue("20") int limit,
+                                                         @QueryParam("offset") @DefaultValue("0") int offset) {
+        return walletService.listTransactions(caller.tenantCode(), id, limit, offset)
                 .stream()
                 .map(WalletTransactionResponse::from)
                 .toList();
@@ -175,6 +180,17 @@ public class WalletResource {
                 request.description
         );
         return WalletResponse.from(mutation.wallet());
+    }
+
+    @POST
+    @Path("/{id}/adjust")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public Response adjust(@PathParam("id") UUID id, Map<String, Object> body) {
+        long adjustmentMinor = body.get("adjustmentMinor") instanceof Number n ? n.longValue() : 0;
+        String reason = body.getOrDefault("reason", "").toString();
+        Wallet wallet = walletService.adjustBalance(caller.tenantCode(), id, adjustmentMinor, reason, caller.userId());
+        return Response.ok(WalletResponse.from(wallet)).build();
     }
 
     private String defaultTransactionType(String transactionType, String fallback) {

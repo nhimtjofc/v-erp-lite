@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @ApplicationScoped
-public class Dev2PaymentTestDataFactory {
+public class PaymentTestDataFactory {
 
     @Transactional
     public SeedOrder seedOrder(String tenantId, BigDecimal finalAmount) {

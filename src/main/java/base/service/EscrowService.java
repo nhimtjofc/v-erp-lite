@@ -5,8 +5,10 @@ import base.entity.Wallet;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -70,6 +72,10 @@ public class EscrowService {
         return EscrowRecord.list("tenantId = ?1 and orderId = ?2 order by createdAt asc", tenantId, orderId);
     }
 
+    public List<EscrowRecord> listByStatus(String tenantId, String status) {
+        return EscrowRecord.list("tenantId = ?1 and status = ?2", tenantId, status.trim().toUpperCase());
+    }
+
     @Transactional
     public List<EscrowRecord> releaseOrderEscrow(String tenantId, UUID orderId, UUID actorId) {
         List<EscrowRecord> records = heldRecords(tenantId, orderId);
@@ -104,6 +110,35 @@ public class EscrowService {
             record.setUpdatedBy(actorId);
         }
         return records;
+    }
+
+    @Transactional
+    public EscrowRecord refundEscrow(String tenantId, UUID escrowId, UUID actorId) {
+        EscrowRecord escrow = EscrowRecord.find("id = ?1 and tenantId = ?2", escrowId, tenantId)
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (escrow == null) {
+            throw new NotFoundException("Không tìm thấy bản ghi ký quỹ");
+        }
+        if (!"HELD".equals(escrow.getStatus())) {
+            throw new BadRequestException("Chỉ hoàn tiền ký quỹ đang giữ");
+        }
+
+        Wallet sellerWallet = escrow.getSellerWallet();
+        Money amount = Money.of(escrow.getAmountMinor(), escrow.getCurrency());
+
+        walletService.settlePendingToAvailable(
+                escrow.getTenantId(), sellerWallet.getId(), amount, actorId
+        );
+        walletService.debitAvailable(
+                escrow.getTenantId(), sellerWallet.getId(), amount,
+                "ESCROW_REFUND", "ORDER", escrow.getOrderId(),
+                actorId, "Hoàn tiền ký quỹ"
+        );
+
+        escrow.setStatus("REFUNDED");
+        escrow.setUpdatedBy(actorId);
+        return escrow;
     }
 
     private List<EscrowRecord> heldRecords(String tenantId, UUID orderId) {

@@ -7,7 +7,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -45,11 +44,14 @@ public class Product extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "base_price", nullable = false, precision = 19, scale = 2)
-    private BigDecimal basePrice;
+    @Column(name = "base_price_minor", nullable = false)
+    private long basePriceMinor;
 
-    @Column(name = "sale_price", precision = 19, scale = 2)
-    private BigDecimal salePrice;
+    @Column(name = "sale_price_minor")
+    private Long salePriceMinor;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
 
     @Column(name = "sale_starts_at")
     private Instant saleStartsAt;

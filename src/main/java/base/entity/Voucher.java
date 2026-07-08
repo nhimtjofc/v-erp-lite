@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -27,14 +26,17 @@ public class Voucher extends BaseEntity {
     @Column(name = "discount_type", nullable = false, length = 50)
     private String discountType; // "FIXED_AMOUNT" or "PERCENTAGE"
 
-    @Column(name = "discount_value", nullable = false, precision = 19, scale = 2)
-    private BigDecimal discountValue;
+    @Column(name = "discount_value", nullable = false)
+    private long discountValue;
 
-    @Column(name = "min_order_value", nullable = false, precision = 19, scale = 2)
-    private BigDecimal minOrderValue = BigDecimal.ZERO;
+    @Column(name = "min_order_value_minor", nullable = false)
+    private long minOrderValueMinor = 0;
 
-    @Column(name = "max_discount_amount", precision = 19, scale = 2)
-    private BigDecimal maxDiscountAmount;
+    @Column(name = "max_discount_amount_minor")
+    private Long maxDiscountAmountMinor;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
 
     @Column(name = "start_time")
     private Instant startTime;
@@ -51,7 +53,7 @@ public class Voucher extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
-    public boolean isValid(BigDecimal orderSubtotal) {
+    public boolean isValid(long orderSubtotal) {
         if (!active) {
             return false;
         }
@@ -65,27 +67,27 @@ public class Voucher extends BaseEntity {
         if (usageLimit != null && usedCount >= usageLimit) {
             return false;
         }
-        if (orderSubtotal != null && orderSubtotal.compareTo(minOrderValue) < 0) {
+        if (orderSubtotal < minOrderValueMinor) {
             return false;
         }
         return true;
     }
 
-    public BigDecimal calculateDiscount(BigDecimal orderSubtotal) {
+    public long calculateDiscount(long orderSubtotal) {
         if (!isValid(orderSubtotal)) {
-            return BigDecimal.ZERO;
+            return 0;
         }
-        BigDecimal discount = BigDecimal.ZERO;
+        long discount = 0;
         if ("PERCENTAGE".equalsIgnoreCase(discountType)) {
-            discount = orderSubtotal.multiply(discountValue).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
-            if (maxDiscountAmount != null && discount.compareTo(maxDiscountAmount) > 0) {
-                discount = maxDiscountAmount;
+            discount = Math.round((double) orderSubtotal * discountValue / 100.0);
+            if (maxDiscountAmountMinor != null && discount > maxDiscountAmountMinor) {
+                discount = maxDiscountAmountMinor;
             }
         } else if ("FIXED_AMOUNT".equalsIgnoreCase(discountType)) {
             discount = discountValue;
         }
         // Discount cannot exceed the subtotal itself
-        if (discount.compareTo(orderSubtotal) > 0) {
+        if (discount > orderSubtotal) {
             discount = orderSubtotal;
         }
         return discount;
