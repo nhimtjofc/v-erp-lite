@@ -78,6 +78,14 @@ public class PaymentGatewayService {
         return expected.equals(signature.trim());
     }
 
+    public boolean verifySignature(String intentId, String gatewayTransactionId, long amountMinor, String signature) {
+        if (signature == null || signature.isBlank()) {
+            return false;
+        }
+        String expected = signPayload(intentId, gatewayTransactionId, amountMinor);
+        return expected.equals(signature.trim());
+    }
+
     public String generateTransactionId(String gateway) {
         String prefix = switch (normalizeGateway(gateway)) {
             case "VNPAY" -> "VNP";
@@ -115,7 +123,7 @@ public class PaymentGatewayService {
         );
     }
 
-    private String signPayload(String intentId, String transactionId, long amountMinor) {
+    public String signPayload(String intentId, String transactionId, long amountMinor) {
         String payload = String.format("%s:%s:%d:%s", intentId, transactionId, amountMinor, MOCK_SECRET);
         return hmacSha256(payload, MOCK_SECRET);
     }
