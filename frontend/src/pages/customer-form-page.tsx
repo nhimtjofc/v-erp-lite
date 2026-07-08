@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCreate3Mutation } from '@/shared/api'
+import { useCreateCustomerMutation } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
@@ -28,7 +28,7 @@ export function CustomerFormPage() {
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
   }
 
-  const createMutation = useCreate3Mutation()
+  const createMutation = useCreateCustomerMutation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

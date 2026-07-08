@@ -29,7 +29,7 @@ export interface ProductVariant {
   id?: string
   tenantId?: string
   sku: string
-  price: number
+  priceMinor: number
   stockQuantity: number
   reservedQuantity?: number
   lowStockThreshold?: number
@@ -44,8 +44,8 @@ export interface Product {
   name: string
   description?: string
   imageUrl?: string
-  basePrice: number
-  salePrice?: number | null
+  basePriceMinor: number
+  salePriceMinor?: number | null
   saleStartsAt?: string | null
   saleEndsAt?: string | null
   active?: boolean

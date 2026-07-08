@@ -34,7 +34,7 @@ export function CartPage() {
   const [error, setError] = useState('')
 
   const [checkoutNotes, setCheckoutNotes] = useState('')
-  const [shippingFee, setShippingFee] = useState('')
+  const [shippingFeeMinor, setShippingFee] = useState('')
   const [discountPercent, setDiscountPercent] = useState('')
   const [vatPercent, setVatPercent] = useState('')
 
@@ -104,7 +104,7 @@ export function CartPage() {
   const checkoutMutation = useMutation({
     mutationFn: () => cartApi.checkoutCart(activeCartQuery.data!.id!, {
       notes: checkoutNotes || undefined,
-      shippingFee: shippingFee ? Number(shippingFee) : undefined,
+      shippingFeeMinor: shippingFeeMinor ? Number(shippingFeeMinor) : undefined,
       discountPercent: discountPercent ? Number(discountPercent) : undefined,
       vatPercent: vatPercent ? Number(vatPercent) : undefined,
     }),
@@ -121,8 +121,8 @@ export function CartPage() {
   const customers = customersQuery.data ?? []
   const products = productsQuery.data ?? []
 
-  const cartTotal = cart?.items?.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) ?? 0
-  const shipping = Number(shippingFee) || 0
+  const cartTotal = cart?.items?.reduce((sum, item) => sum + item.unitPriceMinor * item.quantity, 0) ?? 0
+  const shipping = Number(shippingFeeMinor) || 0
   const discountPct = Math.min(100, Math.max(0, Number(discountPercent) || 0))
   const vatPct = Math.min(100, Math.max(0, Number(vatPercent) || 0))
   const computedDiscount = cartTotal * (discountPct / 100)
@@ -227,13 +227,13 @@ export function CartPage() {
                     <p className="text-sm text-muted-foreground">{t('noProducts')}</p>
                   ) : (
                     products.filter((p) => p.active).map((product) => {
-                      const price = product.salePrice ?? product.basePrice
+                      const priceMinor = product.salePriceMinor ?? product.basePriceMinor
                       return (
                         <div key={product.id} className="flex items-center justify-between rounded-md border px-3 py-2">
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium truncate">{product.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {product.sku} — {formatMoney(price)}
+                              {product.sku} — {formatMoney(priceMinor)}
                             </p>
                             {product.variants && product.variants.length > 0 && (
                               <div className="mt-1 flex flex-wrap gap-1">
@@ -243,9 +243,9 @@ export function CartPage() {
                                     type="button"
                                     className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] hover:bg-muted transition-colors"
                                     onClick={() => handleAddVariant(product.id!, v.id!)}
-                                    title={`${Object.values(v.optionValues).join(' / ')} — ${formatMoney(v.price)}`}
+                                    title={`${Object.values(v.optionValues).join(' / ')} — ${formatMoney(v.priceMinor)}`}
                                   >
-                                    {Object.values(v.optionValues).join(' / ')} {formatMoney(v.price)}
+                                    {Object.values(v.optionValues).join(' / ')} {formatMoney(v.priceMinor)}
                                   </button>
                                 ))}
                               </div>
@@ -279,7 +279,7 @@ export function CartPage() {
                     <TableRow>
                       <TableHead>{t('common:product')}</TableHead>
                       <TableHead>{t('variant')}</TableHead>
-                      <TableHead className="text-right">{t('price')}</TableHead>
+                      <TableHead className="text-right">{t('priceMinor')}</TableHead>
                       <TableHead className="text-right">{t('quantity')}</TableHead>
                       <TableHead className="text-right">{t('subtotal')}</TableHead>
                       <TableHead></TableHead>
@@ -297,7 +297,7 @@ export function CartPage() {
                             <p className="text-xs text-muted-foreground">{item.product.sku}</p>
                           </TableCell>
                           <TableCell>{variantLabel || '-'}</TableCell>
-                          <TableCell className="text-right">{formatMoney(item.unitPrice)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(item.unitPriceMinor)}</TableCell>
                           <TableCell className="text-right">
                             <div className="inline-flex items-center gap-1">
                               <Button
@@ -320,7 +320,7 @@ export function CartPage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatMoney(item.unitPrice * item.quantity)}
+                            {formatMoney(item.unitPriceMinor * item.quantity)}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -355,13 +355,13 @@ export function CartPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingFee')}</Label>
+                  <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingFeeMinor')}</Label>
                   <Input
                     id="shipping"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={shippingFee}
+                    value={shippingFeeMinor}
                     onChange={(e) => setShippingFee(e.target.value)}
                     placeholder="0.00"
                   />
@@ -403,7 +403,7 @@ export function CartPage() {
 
                 <div className="border-t pt-2 space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t('shippingFee')}</span>
+                    <span className="text-muted-foreground">{t('shippingFeeMinor')}</span>
                     <span className="font-medium">{formatMoney(shipping)}</span>
                   </div>
                   <div className="flex justify-between text-sm">

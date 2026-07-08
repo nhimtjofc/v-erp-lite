@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useRouter } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { useGet3Query, useUpdate3Mutation, useDelete3Mutation } from '@/shared/api'
+import { useGetCustomerQuery, useUpdateCustomerMutation, useDeleteCustomerMutation } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -14,9 +14,9 @@ export function CustomerDetailPage() {
   const { t } = useTranslation()
   const { id } = useParams({ from: '/_authenticated/customers/$id' })
   const router = useRouter()
-  const { data: customer, isLoading } = useGet3Query({ path: { id } })
-  const updateMutation = useUpdate3Mutation()
-  const deleteMutation = useDelete3Mutation()
+  const { data: customer, isLoading } = useGetCustomerQuery({ path: { id } })
+  const updateMutation = useUpdateCustomerMutation()
+  const deleteMutation = useDeleteCustomerMutation()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<Customer>>({})
