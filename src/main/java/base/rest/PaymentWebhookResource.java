@@ -6,7 +6,7 @@ import base.service.IdempotencyService;
 import base.service.PaymentGatewayService;
 import base.service.PaymentIntentService;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -44,7 +44,6 @@ public class PaymentWebhookResource {
 
     @POST
     @Path("/{gateway}")
-    @Transactional
     public Response handleWebhook(@PathParam("gateway") String gateway, WebhookPayload payload) {
         String gatewayName = gateway != null ? gateway.trim().toUpperCase() : "UNKNOWN";
         WebhookEvent event = createEvent(gatewayName, payload);
@@ -130,21 +129,25 @@ public class PaymentWebhookResource {
     }
 
     private WebhookEvent createEvent(String gateway, WebhookPayload payload) {
-        WebhookEvent event = new WebhookEvent();
-        event.setId(UUID.randomUUID());
-        event.setGateway(gateway);
-        event.setEventType(payload != null ? payload.status : "UNKNOWN");
-        event.setGatewayTransactionId(payload != null ? payload.gatewayTransactionId : null);
-        event.setStatus("RECEIVED");
-        event.persist();
-        return event;
+        return QuarkusTransaction.requiringNew().call(() -> {
+            WebhookEvent event = new WebhookEvent();
+            event.setId(UUID.randomUUID());
+            event.setGateway(gateway);
+            event.setEventType(payload != null ? payload.status : "UNKNOWN");
+            event.setGatewayTransactionId(payload != null ? payload.gatewayTransactionId : null);
+            event.setStatus("RECEIVED");
+            event.persist();
+            return event;
+        });
     }
 
     private Response failEvent(WebhookEvent event, String message) {
         event.setStatus("FAILED");
         event.setErrorMessage(message);
         event.setProcessedAt(Instant.now());
-        event.persist();
+        QuarkusTransaction.requiringNew().run(() -> {
+            WebhookEvent.getEntityManager().merge(event);
+        });
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", message))
                 .build();
@@ -153,7 +156,9 @@ public class PaymentWebhookResource {
     private Response succeedEvent(WebhookEvent event, String message) {
         event.setStatus("PROCESSED");
         event.setProcessedAt(Instant.now());
-        event.persist();
+        QuarkusTransaction.requiringNew().run(() -> {
+            WebhookEvent.getEntityManager().merge(event);
+        });
         return Response.ok(Map.of("status", "PROCESSED", "message", message))
                 .build();
     }
