@@ -107,7 +107,7 @@ public class WalletResource {
     }
 
     @GET
-    public List<WalletResponse> list(@QueryParam("ownerType") String ownerType,
+    public List<WalletResponse> listWallets(@QueryParam("ownerType") String ownerType,
                                      @QueryParam("ownerId") UUID ownerId,
                                      @QueryParam("currency") String currency) {
         return walletService.listWallets(caller.tenantCode(), ownerType, ownerId, currency)
@@ -133,7 +133,7 @@ public class WalletResource {
 
     @GET
     @Path("/{id}")
-    public WalletResponse get(@PathParam("id") UUID id) {
+    public WalletResponse getWallet(@PathParam("id") UUID id) {
         return WalletResponse.from(walletService.getWallet(caller.tenantCode(), id));
     }
 

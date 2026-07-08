@@ -18,13 +18,13 @@ import java.util.UUID;
 public class TenantResource {
 
     @GET
-    public List<Tenant> list() {
+    public List<Tenant> listTenants() {
         return Tenant.listAll();
     }
 
     @GET
     @Path("/{id}")
-    public Tenant get(@PathParam("id") UUID id) {
+    public Tenant getTenant(@PathParam("id") UUID id) {
         Tenant tenant = Tenant.findById(id);
         if (tenant == null) {
             throw new NotFoundException("Tenant not found");
@@ -34,7 +34,7 @@ public class TenantResource {
 
     @POST
     @Transactional
-    public Response create(Tenant tenant) {
+    public Response createTenant(Tenant tenant) {
         tenant.setId(UUID.randomUUID());
         tenant.persist();
         return Response.created(URI.create("/api/tenants/" + tenant.getId())).entity(tenant).build();
@@ -43,7 +43,7 @@ public class TenantResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Tenant update(@PathParam("id") UUID id, Tenant updated) {
+    public Tenant updateTenant(@PathParam("id") UUID id, Tenant updated) {
         Tenant tenant = Tenant.findById(id);
         if (tenant == null) {
             throw new NotFoundException("Tenant not found");
@@ -58,7 +58,7 @@ public class TenantResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteTenant(@PathParam("id") UUID id) {
         boolean deleted = Tenant.deleteById(id);
         if (!deleted) {
             throw new NotFoundException("Tenant not found");

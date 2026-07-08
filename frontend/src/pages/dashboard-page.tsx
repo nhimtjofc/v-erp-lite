@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getUser } from '@/shared/auth'
-import { useHealthQuery, useList2Query } from '@/shared/api'
+import { useHealthQuery, useListBusinessesQuery } from '@/shared/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import type { User } from 'oidc-client-ts'
 
@@ -9,7 +9,7 @@ export function DashboardPage() {
   const { t } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const { data: healthRaw } = useHealthQuery()
-  const { data: customers } = useList2Query()
+  const { data: customers } = useListBusinessesQuery()
   const health = healthRaw as { status?: string; service?: string } | undefined
   useEffect(() => {
     getUser().then(setUser)

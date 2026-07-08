@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useListQuery, useCreateMutation, useUpdateMutation, useMeQuery } from '@/shared/api'
+import { useListQuery, useCreateBusinessMutation, useUpdateBusinessMutation, useMeQuery } from '@/shared/api'
 import type { Business } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -15,8 +15,8 @@ export function BusinessPage() {
   const isCustomer = roleName === 'customer'
 
   const { data: businesses, isLoading } = useListQuery()
-  const createMutation = useCreateMutation()
-  const updateMutation = useUpdateMutation()
+  const createMutation = useCreateBusinessMutation()
+  const updateMutation = useUpdateBusinessMutation()
   const [business, setBusiness] = useState<Business | null>(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)

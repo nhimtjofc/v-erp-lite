@@ -51,10 +51,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/orders') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
+      pathname.startsWith('/cart') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =
       pathname.startsWith('/shop') ||
+      pathname.startsWith('/cart') ||
       pathname.startsWith('/profile')
 
     if (role === 'admin' && !adminAllowed) {

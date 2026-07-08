@@ -26,7 +26,7 @@ public class CartResource {
     CallerContext caller;
 
     @GET
-    public List<Cart> list(
+    public List<Cart> listCarts(
             @QueryParam("customerId") UUID customerId,
             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
@@ -67,7 +67,7 @@ public class CartResource {
 
     @GET
     @Path("/{id}")
-    public Cart get(@PathParam("id") UUID id) {
+    public Cart getCart(@PathParam("id") UUID id) {
         Cart cart = Cart.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (cart == null) {
             throw new NotFoundException("Cart not found");
@@ -77,7 +77,7 @@ public class CartResource {
 
     @POST
     @Transactional
-    public Response create(Cart cart) {
+    public Response createCart(Cart cart) {
         if (cart.getCustomer() == null || cart.getCustomer().getId() == null) {
             throw new BadRequestException("Customer is required");
         }
@@ -202,7 +202,7 @@ public class CartResource {
     @POST
     @Path("/{id}/checkout")
     @Transactional
-    public Order checkout(@PathParam("id") UUID cartId, CheckoutRequest request) {
+    public Order checkoutCart(@PathParam("id") UUID cartId, CheckoutRequest request) {
         Cart cart = Cart.find("id = ?1 and tenantId = ?2", cartId, caller.tenantCode()).firstResult();
         if (cart == null) {
             throw new NotFoundException("Cart not found");
@@ -297,7 +297,7 @@ public class CartResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteCart(@PathParam("id") UUID id) {
         long deleted = Cart.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Cart not found");

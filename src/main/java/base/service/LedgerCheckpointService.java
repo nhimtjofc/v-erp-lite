@@ -80,12 +80,21 @@ public class LedgerCheckpointService {
         long pendingDiff = 0;
 
         for (WalletTransaction txn : recentTxns) {
-            if ("CREDIT".equals(txn.getType())) {
-                if ("PENDING".equals(txn.getTransactionType())) pendingDiff += txn.getAmountMinor();
-                else availableDiff += txn.getAmountMinor();
-            } else if ("DEBIT".equals(txn.getType())) {
-                if ("PENDING".equals(txn.getTransactionType())) pendingDiff -= txn.getAmountMinor();
-                else availableDiff -= txn.getAmountMinor();
+            String txnType = txn.getTransactionType();
+            if ("ESCROW_HOLD".equals(txnType)) {
+                if ("CREDIT".equals(txn.getType())) pendingDiff += txn.getAmountMinor();
+                else pendingDiff -= txn.getAmountMinor();
+            } else if ("ESCROW_REFUND".equals(txnType)) {
+                if ("DEBIT".equals(txn.getType())) pendingDiff -= txn.getAmountMinor();
+                else pendingDiff += txn.getAmountMinor();
+            } else if ("ESCROW_RELEASE".equals(txnType)) {
+                if ("CREDIT".equals(txn.getType())) {
+                    pendingDiff -= txn.getAmountMinor();
+                    availableDiff += txn.getAmountMinor();
+                }
+            } else {
+                if ("CREDIT".equals(txn.getType())) availableDiff += txn.getAmountMinor();
+                else if ("DEBIT".equals(txn.getType())) availableDiff -= txn.getAmountMinor();
             }
         }
 

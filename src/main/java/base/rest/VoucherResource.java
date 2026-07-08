@@ -30,7 +30,7 @@ public class VoucherResource {
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public List<Voucher> list(@QueryParam("search") String search) {
+    public List<Voucher> listVouchers(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
@@ -45,7 +45,7 @@ public class VoucherResource {
     @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public Voucher get(@PathParam("id") UUID id) {
+    public Voucher getVoucher(@PathParam("id") UUID id) {
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
             throw new NotFoundException("Voucher not found");
@@ -152,7 +152,7 @@ public class VoucherResource {
     @POST
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response create(Voucher voucher) {
+    public Response createVoucher(Voucher voucher) {
         validate(voucher);
         // Check for duplicates
         Voucher existing = Voucher.find("code = ?1 and tenantId = ?2", voucher.getCode().trim(), caller.tenantCode()).firstResult();
@@ -172,7 +172,7 @@ public class VoucherResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Voucher update(@PathParam("id") UUID id, Voucher updated) {
+    public Voucher updateVoucher(@PathParam("id") UUID id, Voucher updated) {
         validate(updated);
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
@@ -205,7 +205,7 @@ public class VoucherResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteVoucher(@PathParam("id") UUID id) {
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Voucher not found");

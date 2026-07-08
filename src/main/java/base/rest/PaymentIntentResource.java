@@ -80,7 +80,7 @@ public class PaymentIntentResource {
     @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "customer"})
-    public PaymentIntent get(@PathParam("id") UUID id) {
+    public PaymentIntent getPaymentIntent(@PathParam("id") UUID id) {
         return paymentIntentService.getIntent(caller.tenantCode(), id);
     }
 

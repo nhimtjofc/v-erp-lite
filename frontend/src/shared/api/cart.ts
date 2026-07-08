@@ -16,7 +16,7 @@ export interface CartItem {
   product: Product
   variant?: ProductVariant | null
   quantity: number
-  unitPrice: number
+  unitPriceMinor: number
 }
 
 export interface Cart {
@@ -36,7 +36,7 @@ export interface OrderItem {
   product: Product
   variant?: ProductVariant | null
   quantity: number
-  unitPrice: number
+  unitPriceMinor: number
   subtotal: number
 }
 
@@ -50,8 +50,8 @@ export interface Order {
   discountAmount: number
   vatPercent: number
   vatAmount: number
-  shippingFee: number
-  finalAmount: number
+  shippingFeeMinor: number
+  finalAmountMinor: number
   notes?: string
   items: OrderItem[]
   createdAt?: string
@@ -116,7 +116,7 @@ export const cartApi = {
     request<Cart>(`/carts/${cartId}/items/${itemId}`, {
       method: 'DELETE',
     }),
-  checkoutCart: (cartId: string, data?: { discountPercent?: number; vatPercent?: number; shippingFee?: number; notes?: string }) =>
+  checkoutCart: (cartId: string, data?: { discountPercent?: number; vatPercent?: number; shippingFeeMinor?: number; notes?: string }) =>
     request<Order>(`/carts/${cartId}/checkout`, {
       method: 'POST',
       body: JSON.stringify(data ?? {}),
@@ -132,7 +132,7 @@ export const cartApi = {
       method: 'PUT',
       body: JSON.stringify({ status }),
     }),
-  updateOrder: (id: string, data: { notes?: string; discountPercent?: number; vatPercent?: number; shippingFee?: number }) =>
+  updateOrder: (id: string, data: { notes?: string; discountPercent?: number; vatPercent?: number; shippingFeeMinor?: number }) =>
     request<Order>(`/orders/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

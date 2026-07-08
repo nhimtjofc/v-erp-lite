@@ -167,7 +167,7 @@ export function PersonalInfoPage() {
   const displayName = getDisplayName(oidcUser)
 
   // Card customization helpers & variables
-  const totalSpend = customerProfile?.totalSpend ?? 0
+  const totalSpendMinor = customerProfile?.totalSpendMinor ?? 0
   const points = customerProfile?.points ?? 0
   const tier = customerProfile?.tier ?? 'SILVER'
   const cardNumber = customerProfile?.cardNumber ?? 'MEM-0000-0000'
@@ -179,18 +179,18 @@ export function PersonalInfoPage() {
 
   if (tier === 'SILVER') {
     nextTier = 'GOLD'
-    spendNeeded = Math.max(0, 200 - totalSpend)
-    progressPercent = Math.min(100, (totalSpend / 200) * 100)
+    spendNeeded = Math.max(0, 200 - totalSpendMinor)
+    progressPercent = Math.min(100, (totalSpendMinor / 200) * 100)
     progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng VÀNG`
   } else if (tier === 'GOLD') {
     nextTier = 'PLATINUM'
-    spendNeeded = Math.max(0, 1000 - totalSpend)
-    progressPercent = Math.min(100, ((totalSpend - 200) / (1000 - 200)) * 100)
+    spendNeeded = Math.max(0, 1000 - totalSpendMinor)
+    progressPercent = Math.min(100, ((totalSpendMinor - 200) / (1000 - 200)) * 100)
     progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng BẠCH KIM`
   } else if (tier === 'PLATINUM') {
     nextTier = 'DIAMOND'
-    spendNeeded = Math.max(0, 3000 - totalSpend)
-    progressPercent = Math.min(100, ((totalSpend - 1000) / (3000 - 1000)) * 100)
+    spendNeeded = Math.max(0, 3000 - totalSpendMinor)
+    progressPercent = Math.min(100, ((totalSpendMinor - 1000) / (3000 - 1000)) * 100)
     progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng KIM CƯƠNG`
   } else {
     progressPercent = 100
@@ -392,7 +392,7 @@ export function PersonalInfoPage() {
                 <div className="bg-accent/40 rounded-xl p-3 flex-1 border border-border/40 text-center">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Tổng chi tiêu</p>
                   <p className="text-2xl font-black text-foreground mt-1">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSpend)}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSpendMinor)}
                   </p>
                 </div>
               </div>

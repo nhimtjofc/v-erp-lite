@@ -271,19 +271,6 @@ public class WalletService {
         return refundPending(tenantId, wallet.getId(), amount, referenceType, referenceId, actorId, description);
     }
 
-    @Transactional
-    public Wallet settlePendingToAvailable(String tenantId, UUID walletId, Money amount, UUID actorId) {
-        Wallet wallet = walletForUpdate(tenantId, walletId);
-        moneyService.requirePositive(amount);
-        moneyService.requireSameCurrency(wallet.getCurrency(), amount.getCurrency());
-        if (wallet.getPendingBalanceMinor() < amount.getAmountMinor()) {
-            throw new BadRequestException("Số dư chờ xử lý không đủ");
-        }
-        wallet.setPendingBalanceMinor(wallet.getPendingBalanceMinor() - amount.getAmountMinor());
-        wallet.setAvailableBalanceMinor(wallet.getAvailableBalanceMinor() + amount.getAmountMinor());
-        wallet.setUpdatedBy(actorId);
-        return wallet;
-    }
 
     @Transactional
     public Wallet adjustBalance(String tenantId, UUID walletId, long adjustmentMinor, String reason, UUID actorId) {

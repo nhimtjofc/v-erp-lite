@@ -22,8 +22,8 @@ interface ProductFormState {
   description: string
   imageUrl: string
   categoryId: string
-  basePrice: string
-  salePrice: string
+  basePriceMinor: string
+  salePriceMinor: string
   saleStartsAt: string
   saleEndsAt: string
   active: boolean
@@ -31,7 +31,7 @@ interface ProductFormState {
   lowStockThreshold: string
   hasVariants: boolean
   options: { name: string; values: string }[]
-  variants: { sku: string; price: string; stockQuantity: string; lowStockThreshold: string; optionValues: Record<string, string> }[]
+  variants: { sku: string; priceMinor: string; stockQuantity: string; lowStockThreshold: string; optionValues: Record<string, string> }[]
   tagsInput: string
 }
 
@@ -41,8 +41,8 @@ const emptyForm: ProductFormState = {
   description: '',
   imageUrl: '',
   categoryId: '',
-  basePrice: '',
-  salePrice: '',
+  basePriceMinor: '',
+  salePriceMinor: '',
   saleStartsAt: '',
   saleEndsAt: '',
   active: true,
@@ -75,7 +75,7 @@ function productToForm(product: Product): ProductFormState {
 
   const variants = (product.variants || []).map(v => ({
     sku: v.sku,
-    price: v.price.toString(),
+    priceMinor: v.priceMinor.toString(),
     stockQuantity: v.stockQuantity.toString(),
     lowStockThreshold: (v.lowStockThreshold ?? 0).toString(),
     optionValues: v.optionValues,
@@ -89,8 +89,8 @@ function productToForm(product: Product): ProductFormState {
     description: product.description || '',
     imageUrl: product.imageUrl || '',
     categoryId: product.category?.id || '',
-    basePrice: product.basePrice?.toString() || '',
-    salePrice: product.salePrice?.toString() || '',
+    basePriceMinor: product.basePriceMinor?.toString() || '',
+    salePriceMinor: product.salePriceMinor?.toString() || '',
     saleStartsAt: toLocalInputValue(product.saleStartsAt),
     saleEndsAt: toLocalInputValue(product.saleEndsAt),
     active: product.active ?? true,
@@ -122,7 +122,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
   const variants = form.hasVariants
     ? form.variants.map(v => ({
         sku: v.sku.trim(),
-        price: Number(v.price || 0),
+        priceMinor: Number(v.priceMinor || 0),
         stockQuantity: Number(v.stockQuantity || 0),
         lowStockThreshold: Number(v.lowStockThreshold || 0),
         optionValues: v.optionValues,
@@ -135,8 +135,8 @@ function buildPayload(form: ProductFormState): Partial<Product> {
     description: form.description.trim() || undefined,
     imageUrl: form.imageUrl.trim() || undefined,
     category: form.categoryId ? { id: form.categoryId, name: '' } : null,
-    basePrice: Number(form.basePrice || 0),
-    salePrice: form.salePrice ? Number(form.salePrice) : null,
+    basePriceMinor: Number(form.basePriceMinor || 0),
+    salePriceMinor: form.salePriceMinor ? Number(form.salePriceMinor) : null,
     saleStartsAt: fromLocalInputValue(form.saleStartsAt),
     saleEndsAt: fromLocalInputValue(form.saleEndsAt),
     active: form.active,
@@ -213,7 +213,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
 
       return {
         sku: defaultSku,
-        price: form.basePrice || '0',
+        priceMinor: form.basePriceMinor || '0',
         stockQuantity: '0',
         lowStockThreshold: '0',
         optionValues: comb,
@@ -271,13 +271,13 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
     const errors: Partial<Record<keyof ProductFormState, string>> = {}
     if (!form.sku.trim()) errors.sku = t('requiredField')
     if (!form.name.trim()) errors.name = t('requiredField')
-    if (!form.basePrice.trim()) {
-      errors.basePrice = t('requiredField')
-    } else if (Number(form.basePrice) < 0) {
-      errors.basePrice = t('nonNegativeField')
+    if (!form.basePriceMinor.trim()) {
+      errors.basePriceMinor = t('requiredField')
+    } else if (Number(form.basePriceMinor) < 0) {
+      errors.basePriceMinor = t('nonNegativeField')
     }
-    if (form.salePrice && Number(form.salePrice) < 0) {
-      errors.salePrice = t('nonNegativeField')
+    if (form.salePriceMinor && Number(form.salePriceMinor) < 0) {
+      errors.salePriceMinor = t('nonNegativeField')
     }
     if (form.saleStartsAt && form.saleEndsAt && new Date(form.saleEndsAt) < new Date(form.saleStartsAt)) {
       errors.saleEndsAt = t('saleWindowInvalid')
@@ -297,7 +297,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         if (!v.sku.trim()) {
           setError(`Biến thể hàng thứ ${idx + 1} thiếu SKU.`)
         }
-        if (Number(v.price) < 0 || Number(v.stockQuantity) < 0) {
+        if (Number(v.priceMinor) < 0 || Number(v.stockQuantity) < 0) {
           setError(`Giá hoặc Tồn kho của biến thể hàng thứ ${idx + 1} không hợp lệ.`)
         }
       })
@@ -478,30 +478,30 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="basePrice">{t('basePrice')}</Label>
+                <Label htmlFor="basePriceMinor">{t('basePriceMinor')}</Label>
                 <Input
-                  id="basePrice"
+                  id="basePriceMinor"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={form.basePrice}
-                  onChange={(event) => updateField('basePrice', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.basePrice)}
+                  value={form.basePriceMinor}
+                  onChange={(event) => updateField('basePriceMinor', event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.basePriceMinor)}
                 />
-                {fieldErrors.basePrice && <p className="text-sm text-destructive">{fieldErrors.basePrice}</p>}
+                {fieldErrors.basePriceMinor && <p className="text-sm text-destructive">{fieldErrors.basePriceMinor}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salePrice">{t('salePrice')}</Label>
+                <Label htmlFor="salePriceMinor">{t('salePriceMinor')}</Label>
                 <Input
-                  id="salePrice"
+                  id="salePriceMinor"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={form.salePrice}
-                  onChange={(event) => updateField('salePrice', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.salePrice)}
+                  value={form.salePriceMinor}
+                  onChange={(event) => updateField('salePriceMinor', event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.salePriceMinor)}
                 />
-                {fieldErrors.salePrice && <p className="text-sm text-destructive">{fieldErrors.salePrice}</p>}
+                {fieldErrors.salePriceMinor && <p className="text-sm text-destructive">{fieldErrors.salePriceMinor}</p>}
               </div>
             </div>
 
@@ -678,10 +678,10 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    value={v.price}
+                                    value={v.priceMinor}
                                     onChange={(e) => {
                                       const next = [...form.variants]
-                                      next[i].price = e.target.value
+                                      next[i].priceMinor = e.target.value
                                       updateField('variants', next)
                                     }}
                                   />

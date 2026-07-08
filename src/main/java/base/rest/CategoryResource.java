@@ -22,7 +22,7 @@ public class CategoryResource {
     CallerContext caller;
 
     @GET
-    public List<Category> list(@QueryParam("search") String search) {
+    public List<Category> listCategories(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
@@ -36,7 +36,7 @@ public class CategoryResource {
 
     @GET
     @Path("/{id}")
-    public Category get(@PathParam("id") UUID id) {
+    public Category getCategory(@PathParam("id") UUID id) {
         Category category = Category.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (category == null) {
             throw new NotFoundException("Category not found");
@@ -47,7 +47,7 @@ public class CategoryResource {
     @POST
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response create(Category category) {
+    public Response createCategory(Category category) {
         validate(category);
         category.setId(UUID.randomUUID());
         category.setTenantId(caller.tenantCode());
@@ -61,7 +61,7 @@ public class CategoryResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Category update(@PathParam("id") UUID id, Category updated) {
+    public Category updateCategory(@PathParam("id") UUID id, Category updated) {
         validate(updated);
         Category category = Category.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (category == null) {
@@ -83,7 +83,7 @@ public class CategoryResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteCategory(@PathParam("id") UUID id) {
         long deleted = Category.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Category not found");

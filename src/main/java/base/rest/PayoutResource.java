@@ -100,7 +100,7 @@ public class PayoutResource {
 
     @GET
     @Path("/{id}")
-    public PayoutResponse get(@PathParam("id") UUID id) {
+    public PayoutResponse getPayout(@PathParam("id") UUID id) {
         return PayoutResponse.from(payoutService.getPayout(caller.tenantCode(), id));
     }
 
