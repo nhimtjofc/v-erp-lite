@@ -21,7 +21,10 @@ public class IdempotencyService {
             throw new BadRequestException("Vui lòng nhập khóa idempotency");
         }
         String key = idempotencyKey.trim();
-        PaymentIdempotency existing = findExisting(tenantId, key);
+        PaymentIdempotency existing = PaymentIdempotency.find(
+                "tenantId = ?1 and idempotencyKey = ?2",
+                tenantId, key
+        ).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
         if (existing != null) {
             if ("PROCESSING".equals(existing.getStatus())) {
                 throw new BadRequestException("Giao dịch đang được xử lý, vui lòng thử lại sau");

@@ -62,7 +62,7 @@ public class PaymentService {
             throw new BadRequestException("Khách hàng của thanh toán không khớp đơn hàng");
         }
 
-        Money finalAmount = Money.fromDecimal(order.getFinalAmount(), intent.getCurrency());
+        Money finalAmount = Money.of(order.getFinalAmountMinor(), order.getCurrency());
         if (finalAmount.getAmountMinor() != intent.getAmountMinor()) {
             throw new BadRequestException("Số tiền thanh toán không khớp đơn hàng");
         }
@@ -112,7 +112,7 @@ public class PaymentService {
     }
 
     private List<SellerAllocation> allocateBySeller(Order order, long totalAmountMinor) {
-        Map<UUID, BigDecimal> subtotalBySeller = new LinkedHashMap<>();
+        Map<UUID, Long> subtotalBySeller = new LinkedHashMap<>();
         for (OrderItem item : order.getItems()) {
             Business seller = item.getProduct() == null ? null : item.getProduct().getBusiness();
             if (seller == null) {
@@ -121,30 +121,30 @@ public class PaymentService {
             if (seller == null) {
                 throw new BadRequestException("Đơn hàng thiếu người bán để chia tiền");
             }
-            subtotalBySeller.merge(seller.getId(), item.getSubtotalAmount(), BigDecimal::add);
+            subtotalBySeller.merge(seller.getId(), item.getSubtotalAmountMinor(), Long::sum);
         }
         if (subtotalBySeller.isEmpty()) {
             throw new BadRequestException("Đơn hàng chưa có sản phẩm để chia tiền");
         }
 
-        BigDecimal subtotal = subtotalBySeller.values().stream()
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (subtotal.compareTo(BigDecimal.ZERO) <= 0) {
+        long subtotal = subtotalBySeller.values().stream()
+                .mapToLong(Long::longValue).sum();
+        if (subtotal <= 0) {
             throw new BadRequestException("Tổng tiền sản phẩm phải lớn hơn 0");
         }
 
-        List<Map.Entry<UUID, BigDecimal>> entries = new ArrayList<>(subtotalBySeller.entrySet());
+        List<Map.Entry<UUID, Long>> entries = new ArrayList<>(subtotalBySeller.entrySet());
         List<SellerAllocation> allocations = new ArrayList<>();
         long allocated = 0;
         for (int i = 0; i < entries.size(); i++) {
-            Map.Entry<UUID, BigDecimal> entry = entries.get(i);
+            Map.Entry<UUID, Long> entry = entries.get(i);
             long amount;
             if (i == entries.size() - 1) {
                 amount = totalAmountMinor - allocated;
             } else {
                 amount = BigDecimal.valueOf(totalAmountMinor)
-                        .multiply(entry.getValue())
-                        .divide(subtotal, 0, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(entry.getValue()))
+                        .divide(BigDecimal.valueOf(subtotal), 0, RoundingMode.HALF_UP)
                         .longValue();
                 allocated += amount;
             }

@@ -54,29 +54,32 @@ public class Order extends BaseEntity {
     @Column(name = "shipping_note", columnDefinition = "TEXT")
     private String shippingNote;
 
-    @Column(name = "subtotal_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal subtotalAmount;
+    @Column(name = "subtotal_amount_minor", nullable = false)
+    private long subtotalAmountMinor;
 
-    @Column(name = "discount_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal discountAmount = BigDecimal.ZERO;
+    @Column(name = "discount_amount_minor", nullable = false)
+    private long discountAmountMinor = 0;
 
     @Column(name = "discount_percent", nullable = false, precision = 5, scale = 2)
     private BigDecimal discountPercent = BigDecimal.ZERO;
 
-    @Column(name = "shipping_fee", nullable = false, precision = 19, scale = 2)
-    private BigDecimal shippingFee = BigDecimal.ZERO;
+    @Column(name = "shipping_fee_minor", nullable = false)
+    private long shippingFeeMinor = 0;
 
-    @Column(name = "tax_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal taxAmount = BigDecimal.ZERO;
+    @Column(name = "tax_amount_minor", nullable = false)
+    private long taxAmountMinor = 0;
 
     @Column(name = "vat_percent", nullable = false, precision = 5, scale = 2)
     private BigDecimal vatPercent = BigDecimal.ZERO;
 
-    @Column(name = "vat_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal vatAmount = BigDecimal.ZERO;
+    @Column(name = "vat_amount_minor", nullable = false)
+    private long vatAmountMinor = 0;
 
-    @Column(name = "final_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal finalAmount;
+    @Column(name = "final_amount_minor", nullable = false)
+    private long finalAmountMinor;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
 
     @Column(columnDefinition = "TEXT")
     private String notes;

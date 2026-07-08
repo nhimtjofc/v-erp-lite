@@ -78,6 +78,14 @@ public class PaymentGatewayService {
         return expected.equals(signature.trim());
     }
 
+    public boolean verifySignature(String intentId, String gatewayTransactionId, long amountMinor, String signature) {
+        if (signature == null || signature.isBlank()) {
+            return false;
+        }
+        String expected = signPayload(intentId, gatewayTransactionId, amountMinor);
+        return expected.equals(signature.trim());
+    }
+
     public String generateTransactionId(String gateway) {
         String prefix = switch (normalizeGateway(gateway)) {
             case "VNPAY" -> "VNP";

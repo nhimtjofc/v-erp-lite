@@ -83,7 +83,7 @@ public class PaymentWebhookResource {
         );
         event.setRawPayload(rawPayload);
 
-        if (!paymentGatewayService.verifySignature(rawPayload, payload.signature)) {
+        if (!paymentGatewayService.verifySignature(payload.paymentIntentId, payload.gatewayTransactionId.trim(), payload.amountMinor != null ? payload.amountMinor : 0, payload.signature)) {
             return failEvent(event, "Invalid webhook signature");
         }
 

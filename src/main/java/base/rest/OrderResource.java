@@ -121,9 +121,9 @@ public class OrderResource {
 
         // Total revenue (COMPLETED orders only)
         List<Order> completed = Order.list("tenantId = ?1 AND status = ?2", tenantCode, "COMPLETED");
-        BigDecimal totalRevenue = completed.stream()
-                .map(Order::getFinalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalRevenue = completed.stream()
+                .mapToLong(Order::getFinalAmountMinor)
+                .sum();
 
         // Recent 5 orders
         List<Order> recentOrders = Order.find("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode)
@@ -207,7 +207,7 @@ public class OrderResource {
         String orderNumber = "ORD-" + Instant.now().getEpochSecond() + "-" + (int)(Math.random() * 900 + 100);
 
         // 3. Process Cart Items and calculate Subtotal
-        BigDecimal subtotal = BigDecimal.ZERO;
+        long subtotal = 0;
         List<OrderItem> orderItems = new ArrayList<>();
         Order order = new Order();
         order.setId(UUID.randomUUID());
@@ -225,7 +225,7 @@ public class OrderResource {
                 throw new BadRequestException("Product not found");
             }
 
-            BigDecimal unitPrice;
+            long unitPrice;
             ProductVariant variant = null;
 
             if (item.productVariantId != null) {
@@ -240,7 +240,7 @@ public class OrderResource {
                     throw new BadRequestException("Product variant " + variant.getSku() + " is out of stock (Available: " + variant.getAvailableQuantity() + ")");
                 }
 
-                unitPrice = variant.getPrice();
+                unitPrice = variant.getPriceMinor();
                 variant.setReservedQuantity(variant.getReservedQuantity() + item.quantity);
                 variant.setUpdatedBy(userId);
             } else {
@@ -251,19 +251,19 @@ public class OrderResource {
 
                 // Check sale price validity
                 Instant now = Instant.now();
-                if (product.getSalePrice() != null && product.getSaleStartsAt() != null && product.getSaleEndsAt() != null
+                if (product.getSalePriceMinor() != null && product.getSaleStartsAt() != null && product.getSaleEndsAt() != null
                         && now.isAfter(product.getSaleStartsAt()) && now.isBefore(product.getSaleEndsAt())) {
-                    unitPrice = product.getSalePrice();
+                    unitPrice = product.getSalePriceMinor();
                 } else {
-                    unitPrice = product.getBasePrice();
+                    unitPrice = product.getBasePriceMinor();
                 }
 
                 product.setReservedQuantity(product.getReservedQuantity() + item.quantity);
                 product.setUpdatedBy(userId);
             }
 
-            BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(item.quantity));
-            subtotal = subtotal.add(itemSubtotal);
+            long itemSubtotal = unitPrice * item.quantity;
+            subtotal += itemSubtotal;
 
             OrderItem orderItem = new OrderItem();
             orderItem.setId(UUID.randomUUID());
@@ -273,13 +273,13 @@ public class OrderResource {
             orderItem.setProduct(product);
             orderItem.setProductVariant(variant);
             orderItem.setQuantity(item.quantity);
-            orderItem.setUnitPrice(unitPrice);
-            orderItem.setSubtotalAmount(itemSubtotal);
+            orderItem.setUnitPriceMinor(unitPrice);
+            orderItem.setSubtotalAmountMinor(itemSubtotal);
             orderItems.add(orderItem);
         }
 
         // 4. Handle Voucher
-        BigDecimal discount = BigDecimal.ZERO;
+        long discount = 0;
         Voucher voucher = null;
         if (request.voucherCode != null && !request.voucherCode.isBlank()) {
             voucher = Voucher.find("code = ?1 and tenantId = ?2", request.voucherCode.trim(), tenantCode).firstResult();
@@ -303,17 +303,17 @@ public class OrderResource {
 
         // 5. Calculate Shipping Fee (USD)
         // Flat rate: $10. Free shipping if subtotal - discount >= $100.
-        BigDecimal orderAfterDiscount = subtotal.subtract(discount);
-        BigDecimal shippingFee = BigDecimal.valueOf(10);
-        if (orderAfterDiscount.compareTo(BigDecimal.valueOf(100)) >= 0) {
-            shippingFee = BigDecimal.ZERO;
+        long orderAfterDiscount = subtotal - discount;
+        long shippingFee = 1000; // Flat rate: $10 (1000 minor units). Free shipping if subtotal - discount >= $100.
+        if (orderAfterDiscount >= 10000) {
+            shippingFee = 0;
         }
 
         // 6. Calculate VAT Tax (10% of order value after discount)
-        BigDecimal tax = orderAfterDiscount.multiply(BigDecimal.valueOf(0.10)).setScale(2, RoundingMode.HALF_UP);
+        long tax = Math.round((double) orderAfterDiscount * 0.10);
 
         // 7. Calculate Final Amount
-        BigDecimal finalAmount = orderAfterDiscount.add(shippingFee).add(tax);
+        long finalAmount = orderAfterDiscount + shippingFee + tax;
 
         // 8. Populate Order Details
         order.setCustomer(customer);
@@ -324,11 +324,11 @@ public class OrderResource {
         order.setShippingPhone(request.shippingPhone);
         order.setShippingAddress(request.shippingAddress);
         order.setShippingNote(request.shippingNote);
-        order.setSubtotalAmount(subtotal);
-        order.setDiscountAmount(discount);
-        order.setShippingFee(shippingFee);
-        order.setTaxAmount(tax);
-        order.setFinalAmount(finalAmount);
+        order.setSubtotalAmountMinor(subtotal);
+        order.setDiscountAmountMinor(discount);
+        order.setShippingFeeMinor(shippingFee);
+        order.setTaxAmountMinor(tax);
+        order.setFinalAmountMinor(finalAmount);
         order.setItems(orderItems);
 
         order.persist();
@@ -441,28 +441,26 @@ public class OrderResource {
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
             Customer customer = order.getCustomer();
             if (customer != null) {
-                BigDecimal amount = order.getFinalAmount();
-                if (amount != null) {
-                    if (customer.getTotalSpend() == null) {
-                        customer.setTotalSpend(BigDecimal.ZERO);
-                    }
-                    customer.setTotalSpend(customer.getTotalSpend().add(amount));
-                    // 1 point per 1 unit of currency (rounded down)
-                    int earnedPoints = amount.setScale(0, RoundingMode.DOWN).intValue();
+                long amount = order.getFinalAmountMinor();
+                if (customer.getTotalSpendMinor() == null) {
+                    customer.setTotalSpendMinor(0L);
+                }
+                customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
+                // 1 point per 100 units of minor currency
+                int earnedPoints = (int) (amount / 100);
                     customer.setPoints(customer.getPoints() + earnedPoints);
 
                     // Update tier dynamically based on new totalSpend
-                    BigDecimal totalSpend = customer.getTotalSpend();
-                    if (totalSpend.compareTo(BigDecimal.valueOf(3000)) >= 0) {
+                    long totalSpend = customer.getTotalSpendMinor();
+                    if (totalSpend >= 300000) {
                         customer.setTier("DIAMOND");
-                    } else if (totalSpend.compareTo(BigDecimal.valueOf(1000)) >= 0) {
+                    } else if (totalSpend >= 100000) {
                         customer.setTier("PLATINUM");
-                    } else if (totalSpend.compareTo(BigDecimal.valueOf(200)) >= 0) {
+                    } else if (totalSpend >= 20000) {
                         customer.setTier("GOLD");
                     } else {
                         customer.setTier("SILVER");
                     }
-                }
             }
             escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
         }

@@ -22,6 +22,12 @@ public class Cart extends BaseEntity {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @Column(name = "subtotal_amount_minor", nullable = false)
+    private long subtotalAmountMinor = 0;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
+
     @Column(nullable = false)
     private String status = "ACTIVE";
 

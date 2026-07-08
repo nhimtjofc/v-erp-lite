@@ -122,7 +122,7 @@ public class CartResource {
             }
         }
 
-        BigDecimal price = resolvePrice(product, variant);
+        long price = resolvePrice(product, variant);
 
         CartItem existingItem = null;
         for (CartItem item : cart.getItems()) {
@@ -144,7 +144,7 @@ public class CartResource {
             item.setProduct(product);
             item.setVariant(variant);
             item.setQuantity(request.quantity > 0 ? request.quantity : 1);
-            item.setUnitPrice(price);
+            item.setUnitPriceMinor(price);
             item.setTenantId(caller.tenantCode());
             cart.getItems().add(item);
         }
@@ -224,7 +224,7 @@ public class CartResource {
         order.setCreatedBy(caller.userId());
         order.setStatus("PENDING");
 
-        BigDecimal total = BigDecimal.ZERO;
+        long total = 0;
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
             int qty = cartItem.getQuantity();
@@ -246,17 +246,17 @@ public class CartResource {
             orderItem.setId(UUID.randomUUID());
             orderItem.setOrder(order);
             orderItem.setProduct(product);
-            orderItem.setVariant(variant);
+            orderItem.setProductVariant(variant);
             orderItem.setQuantity(qty);
-            orderItem.setUnitPrice(cartItem.getUnitPrice());
-            BigDecimal subtotal = cartItem.getUnitPrice().multiply(BigDecimal.valueOf(qty));
-            orderItem.setSubtotal(subtotal);
+            orderItem.setUnitPriceMinor(cartItem.getUnitPriceMinor());
+            long subtotal = cartItem.getUnitPriceMinor() * qty;
+            orderItem.setSubtotalAmountMinor(subtotal);
             orderItem.setTenantId(caller.tenantCode());
             order.getItems().add(orderItem);
-            total = total.add(subtotal);
+            total += subtotal;
         }
 
-        order.setTotalAmount(total);
+        order.setSubtotalAmountMinor(total);
 
         BigDecimal discountPct = request.discountPercent != null ? request.discountPercent : BigDecimal.ZERO;
         BigDecimal vatPct = request.vatPercent != null ? request.vatPercent : BigDecimal.ZERO;
@@ -267,20 +267,20 @@ public class CartResource {
             throw new BadRequestException("VAT percent must be between 0 and 100");
         }
 
-        BigDecimal discountAmount = total.multiply(discountPct).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
-        BigDecimal afterDiscount = total.subtract(discountAmount);
-        BigDecimal vatAmount = afterDiscount.multiply(vatPct).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
-        BigDecimal shipping = request.shippingFee != null ? request.shippingFee : BigDecimal.ZERO;
+        long discountAmount = BigDecimal.valueOf(total).multiply(discountPct).divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP).longValue();
+        long afterDiscount = total - discountAmount;
+        long vatAmount = BigDecimal.valueOf(afterDiscount).multiply(vatPct).divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP).longValue();
+        long shipping = request.shippingFeeMinor != null ? request.shippingFeeMinor : 0;
 
         order.setDiscountPercent(discountPct);
-        order.setDiscountAmount(discountAmount);
+        order.setDiscountAmountMinor(discountAmount);
         order.setVatPercent(vatPct);
-        order.setVatAmount(vatAmount);
-        order.setShippingFee(shipping);
+        order.setVatAmountMinor(vatAmount);
+        order.setShippingFeeMinor(shipping);
 
-        BigDecimal finalAmount = afterDiscount.add(shipping).add(vatAmount);
-        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) finalAmount = BigDecimal.ZERO;
-        order.setFinalAmount(finalAmount);
+        long finalAmount = afterDiscount + shipping + vatAmount;
+        if (finalAmount < 0) finalAmount = 0;
+        order.setFinalAmountMinor(finalAmount);
 
         if (request.notes != null) {
             order.setNotes(request.notes);
@@ -305,10 +305,10 @@ public class CartResource {
         return Response.noContent().build();
     }
 
-    private BigDecimal resolvePrice(Product product, ProductVariant variant) {
-        if (variant != null) return variant.getPrice();
-        if (product.getSalePrice() != null) return product.getSalePrice();
-        return product.getBasePrice();
+    private long resolvePrice(Product product, ProductVariant variant) {
+        if (variant != null) return variant.getPriceMinor();
+        if (product.getSalePriceMinor() != null) return product.getSalePriceMinor();
+        return product.getBasePriceMinor();
     }
 
     public static class AddItemRequest {
@@ -324,7 +324,7 @@ public class CartResource {
     public static class CheckoutRequest {
         public BigDecimal discountPercent;
         public BigDecimal vatPercent;
-        public BigDecimal shippingFee;
+        public Long shippingFeeMinor;
         public String notes;
     }
 }
