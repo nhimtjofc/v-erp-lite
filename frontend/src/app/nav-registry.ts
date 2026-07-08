@@ -10,6 +10,8 @@ import {
   Shield,
   Sun,
   Building,
+  Receipt,
+  Tag,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -18,12 +20,20 @@ export interface NavItem {
   labelKey: string
   to: string
   icon: LucideIcon
+  roles?: string[]
+  /** Nested submenu items (mechanism preserved for future use) */
+  children?: NavItem[]
+  /** If true, only shown to admin */
+  adminOnly?: boolean
+  /** List of roles that cannot see this item */
+  hideForRoles?: string[]
 }
 
 export interface NavGroup {
   /** i18n key for the section header */
   labelKey: string
   items: NavItem[]
+  roles?: string[]
   /** If true, only shown to users with role.name === 'admin' */
   adminOnly?: boolean
 }
@@ -33,22 +43,27 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav:businessFeatures',
     items: [
       { labelKey: 'nav:dashboard', to: '/dashboard', icon: LayoutDashboard },
-      { labelKey: 'nav:customers', to: '/customers', icon: Users },
-      { labelKey: 'nav:products', to: '/products', icon: Package },
+      { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag },
+      { labelKey: 'nav:customers', to: '/customers', icon: Users, hideForRoles: ['customer'] },
+      { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
+      { labelKey: 'nav:orders', to: '/orders', icon: Receipt, hideForRoles: ['customer'] },
+      { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
       { labelKey: 'nav:cart', to: '/cart', icon: ShoppingCart },
-      { labelKey: 'nav:orders', to: '/orders', icon: ShoppingBag },
     ],
   },
   {
     labelKey: 'nav:businessAdmin',
+    roles: ['operator', 'businessOwner'],
     items: [
-      { labelKey: 'nav:businesses', to: '/businesses', icon: Building2 },
-      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings },
+<<<<<<< HEAD
+      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
+      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
     ],
   },
   {
     labelKey: 'nav:systemAdmin',
     adminOnly: true,
+    roles: ['systemAdmin'],
     items: [
       { labelKey: 'nav:tenants', to: '/admin/tenants', icon: Building },
     ],

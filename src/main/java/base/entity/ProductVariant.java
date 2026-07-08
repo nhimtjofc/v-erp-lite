@@ -7,7 +7,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,11 +29,22 @@ public class ProductVariant extends BaseEntity {
     @Column(nullable = false)
     private String sku;
 
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal price;
+    @Column(name = "price_minor", nullable = false)
+    private long priceMinor;
 
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
+
+    @Column(name = "low_stock_threshold", nullable = false)
+    private int lowStockThreshold = 0;
+
+    @Column(name = "reserved_quantity", nullable = false)
+    private int reservedQuantity = 0;
+
+    @Transient
+    public int getAvailableQuantity() {
+        return Math.max(0, this.stockQuantity - this.reservedQuantity);
+    }
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "option_values", columnDefinition = "json", nullable = false)

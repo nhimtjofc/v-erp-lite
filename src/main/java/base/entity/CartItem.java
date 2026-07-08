@@ -36,8 +36,14 @@ public class CartItem {
     @Column(nullable = false)
     private int quantity = 1;
 
-    @Column(name = "unit_price", nullable = false, precision = 19, scale = 2)
-    private BigDecimal unitPrice;
+    @Column(name = "unit_price_minor", nullable = false)
+    private long unitPriceMinor;
+
+    @Column(name = "subtotal_amount_minor", nullable = false)
+    private long subtotalAmountMinor;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
 
     @Column(name = "tenant_id", nullable = false)
     private String tenantId;

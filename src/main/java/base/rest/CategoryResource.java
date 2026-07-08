@@ -16,7 +16,6 @@ import java.util.UUID;
 @Path("/categories")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
 public class CategoryResource {
 
     @Inject
@@ -46,6 +45,7 @@ public class CategoryResource {
     }
 
     @POST
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response create(Category category) {
         validate(category);
@@ -59,6 +59,7 @@ public class CategoryResource {
 
     @PUT
     @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Category update(@PathParam("id") UUID id, Category updated) {
         validate(updated);
@@ -80,6 +81,7 @@ public class CategoryResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Category.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());

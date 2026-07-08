@@ -25,13 +25,13 @@ import java.util.UUID;
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({ "admin", "operator", "businessOwner" })
 public class ProductResource {
 
     @Inject
     CallerContext caller;
 
     @GET
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public List<Product> list(
             @QueryParam("search") String search,
             @QueryParam("categoryId") UUID categoryId,
@@ -77,6 +77,7 @@ public class ProductResource {
     }
 
     @POST
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response create(Product product) {
         validate(product);
@@ -101,6 +102,7 @@ public class ProductResource {
 
     @PUT
     @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Product update(@PathParam("id") UUID id, Product updated) {
         validate(updated);
@@ -114,12 +116,13 @@ public class ProductResource {
         product.setName(updated.getName());
         product.setDescription(updated.getDescription());
         product.setImageUrl(updated.getImageUrl());
-        product.setBasePrice(updated.getBasePrice());
-        product.setSalePrice(updated.getSalePrice());
+        product.setBasePriceMinor(updated.getBasePriceMinor());
+        product.setSalePriceMinor(updated.getSalePriceMinor());
         product.setSaleStartsAt(updated.getSaleStartsAt());
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
         product.setStockQuantity(updated.getStockQuantity());
+        product.setLowStockThreshold(updated.getLowStockThreshold());
         product.setOptions(updated.getOptions());
         product.setUpdatedBy(caller.userId());
 
@@ -136,8 +139,9 @@ public class ProductResource {
             for (ProductVariant updatedVar : updated.getVariants()) {
                 ProductVariant var = existingVariants.get(updatedVar.getSku());
                 if (var != null) {
-                    var.setPrice(updatedVar.getPrice());
+                    var.setPriceMinor(updatedVar.getPriceMinor());
                     var.setStockQuantity(updatedVar.getStockQuantity());
+                    var.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     var.setOptionValues(updatedVar.getOptionValues());
                     var.setUpdatedBy(caller.userId());
                     newVariants.add(var);
@@ -146,8 +150,9 @@ public class ProductResource {
                     newVar.setId(UUID.randomUUID());
                     newVar.setProduct(product);
                     newVar.setSku(updatedVar.getSku());
-                    newVar.setPrice(updatedVar.getPrice());
+                    newVar.setPriceMinor(updatedVar.getPriceMinor());
                     newVar.setStockQuantity(updatedVar.getStockQuantity());
+                    newVar.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     newVar.setOptionValues(updatedVar.getOptionValues());
                     newVar.setTenantId(caller.tenantCode());
                     newVar.setCreatedBy(caller.userId());
@@ -167,6 +172,7 @@ public class ProductResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response delete(@PathParam("id") UUID id) {
         long deleted = Product.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
@@ -183,10 +189,10 @@ public class ProductResource {
         if (product.getName() == null || product.getName().isBlank()) {
             throw new BadRequestException("Product name is required");
         }
-        if (product.getBasePrice() == null || product.getBasePrice().compareTo(BigDecimal.ZERO) < 0) {
+        if (product.getBasePriceMinor() < 0) {
             throw new BadRequestException("Base price must be zero or greater");
         }
-        if (product.getSalePrice() != null && product.getSalePrice().compareTo(BigDecimal.ZERO) < 0) {
+        if (product.getSalePriceMinor() != null && product.getSalePriceMinor() < 0) {
             throw new BadRequestException("Sale price must be zero or greater");
         }
         if (product.getSaleStartsAt() != null && product.getSaleEndsAt() != null
@@ -199,7 +205,7 @@ public class ProductResource {
                 if (variant.getSku() == null || variant.getSku().isBlank()) {
                     throw new BadRequestException("Variant SKU is required");
                 }
-                if (variant.getPrice() == null || variant.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                if (variant.getPriceMinor() < 0) {
                     throw new BadRequestException("Variant price must be zero or greater");
                 }
                 if (variant.getStockQuantity() < 0) {

@@ -20,8 +20,56 @@ public class EscrowService {
     @Inject
     WalletService walletService;
 
+    @Inject
+    MoneyService moneyService;
+
+    @Transactional
+    public EscrowRecord holdSellerEscrow(String tenantId, UUID orderId, UUID sellerOwnerId, Money amount,
+            Instant releaseDueAt, UUID actorId) {
+        if (orderId == null) {
+            throw new BadRequestException("Vui lòng nhập mã đơn hàng");
+        }
+        if (sellerOwnerId == null) {
+            throw new BadRequestException("Vui lòng nhập mã người bán");
+        }
+        moneyService.requirePositive(amount);
+
+        Wallet wallet = walletService.getOrCreateWallet(tenantId, "SELLER", sellerOwnerId, amount.getCurrency(),
+                actorId);
+        EscrowRecord existing = EscrowRecord.find(
+                "tenantId = ?1 and orderId = ?2 and sellerWallet.id = ?3",
+                tenantId,
+                orderId,
+                wallet.getId()).firstResult();
+        if (existing != null) {
+            return existing;
+        }
+
+        walletService.holdEscrowForSeller(
+                tenantId,
+                sellerOwnerId,
+                amount,
+                "ORDER",
+                orderId,
+                actorId,
+                "Tạm giữ tiền đơn hàng");
+
+        EscrowRecord escrow = new EscrowRecord();
+        escrow.setId(UUID.randomUUID());
+        escrow.setTenantId(tenantId);
+        escrow.setOrderId(orderId);
+        escrow.setSellerWallet(wallet);
+        escrow.setAmountMinor(amount.getAmountMinor());
+        escrow.setCurrency(amount.getCurrency());
+        escrow.setStatus("HELD");
+        escrow.setReleaseDueAt(releaseDueAt == null ? Instant.now() : releaseDueAt);
+        escrow.setCreatedBy(actorId);
+        escrow.persist();
+        return escrow;
+    }
+
     public List<EscrowRecord> listByOrder(String tenantId, UUID orderId) {
-        return EscrowRecord.list("tenantId = ?1 and orderId = ?2", tenantId, orderId);
+        return EscrowRecord.list("tenantId = ?1 and orderId = ?2 order by createdAt asc", tenantId, orderId);
     }
 
     public List<EscrowRecord> listByStatus(String tenantId, String status) {
@@ -29,39 +77,39 @@ public class EscrowService {
     }
 
     @Transactional
-    public EscrowRecord holdSellerEscrow(String tenantId, UUID orderId, UUID sellerWalletId,
-                                          Money amount, Instant releaseDueAt, UUID actorId) {
-        Wallet wallet = walletService.getWallet(tenantId, sellerWalletId);
-        UUID escrowId = UUID.randomUUID();
-
-        walletService.creditPending(
-                tenantId, sellerWalletId, amount,
-                "ESCROW_HOLD", "ORDER", orderId,
-                actorId, "Giữ tiền ký quỹ từ đơn hàng"
-        );
-
-        EscrowRecord record = new EscrowRecord();
-        record.setId(escrowId);
-        record.setTenantId(tenantId);
-        record.setOrderId(orderId);
-        record.setSellerWallet(wallet);
-        record.setAmountMinor(amount.getAmountMinor());
-        record.setCurrency(amount.getCurrency());
-        record.setStatus("HELD");
-        record.setReleaseDueAt(releaseDueAt);
-        record.setCreatedBy(actorId);
-        record.persist();
-        return record;
+    public List<EscrowRecord> releaseOrderEscrow(String tenantId, UUID orderId, UUID actorId) {
+        List<EscrowRecord> records = heldRecords(tenantId, orderId);
+        for (EscrowRecord record : records) {
+            walletService.releasePendingToAvailable(
+                    tenantId,
+                    record.getSellerWallet().getId(),
+                    Money.of(record.getAmountMinor(), record.getCurrency()),
+                    "ORDER",
+                    orderId,
+                    actorId,
+                    "Giải ngân tiền đơn hàng");
+            record.setStatus("RELEASED");
+            record.setUpdatedBy(actorId);
+        }
+        return records;
     }
 
     @Transactional
-    public EscrowRecord releaseEscrow(UUID escrowId) {
-        return releaseEscrowInternal(escrowId, null);
-    }
-
-    @Transactional
-    public EscrowRecord releaseEscrow(UUID escrowId, UUID actorId) {
-        return releaseEscrowInternal(escrowId, actorId);
+    public List<EscrowRecord> refundOrderEscrow(String tenantId, UUID orderId, UUID actorId) {
+        List<EscrowRecord> records = heldRecords(tenantId, orderId);
+        for (EscrowRecord record : records) {
+            walletService.refundPending(
+                    tenantId,
+                    record.getSellerWallet().getId(),
+                    Money.of(record.getAmountMinor(), record.getCurrency()),
+                    "ORDER",
+                    orderId,
+                    actorId,
+                    "Hoàn tiền tạm giữ đơn hàng");
+            record.setStatus("REFUNDED");
+            record.setUpdatedBy(actorId);
+        }
+        return records;
     }
 
     @Transactional
@@ -93,27 +141,14 @@ public class EscrowService {
         return escrow;
     }
 
-    private EscrowRecord releaseEscrowInternal(EscrowRecord escrow, UUID actorId) {
-        if (!"HELD".equals(escrow.getStatus())) {
-            return escrow;
+    private List<EscrowRecord> heldRecords(String tenantId, UUID orderId) {
+        if (orderId == null) {
+            throw new BadRequestException("Vui lòng nhập mã đơn hàng");
         }
-        Money amount = Money.of(escrow.getAmountMinor(), escrow.getCurrency());
-        Wallet sellerWallet = escrow.getSellerWallet();
-
-        walletService.settlePendingToAvailable(
-                escrow.getTenantId(), sellerWallet.getId(), amount, actorId
-        );
-
-        escrow.setStatus("RELEASED");
-        escrow.setUpdatedBy(actorId);
-        return escrow;
-    }
-
-    private EscrowRecord releaseEscrowInternal(UUID escrowId, UUID actorId) {
-        EscrowRecord escrow = EscrowRecord.findById(escrowId);
-        if (escrow == null) {
-            throw new NotFoundException("Không tìm thấy bản ghi ký quỹ");
-        }
-        return releaseEscrowInternal(escrow, actorId);
+        return EscrowRecord.list(
+                "tenantId = ?1 and orderId = ?2 and status = ?3 order by createdAt asc",
+                tenantId,
+                orderId,
+                "HELD");
     }
 }

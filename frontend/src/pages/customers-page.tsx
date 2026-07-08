@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useList2Query } from '@/shared/api'
+import { useList3Query, useMeQuery } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -12,6 +12,10 @@ import { Plus, Search } from 'lucide-react'
 
 export function CustomersPage() {
   const { t } = useTranslation()
+  const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const roleName = me?.role?.name
+  const isCustomer = roleName === 'customer'
+
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -20,10 +24,25 @@ export function CustomersPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const { data: customers, isLoading } = useList2Query(
+  const { data: customers, isLoading } = useList3Query(
     debouncedSearch ? { query: { search: debouncedSearch } } : undefined
   )
   const customerList = customers ?? []
+
+  if (isMeLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
+  }
+
+  if (!roleName || isCustomer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">
+          Only staff members are allowed to view the customer list.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

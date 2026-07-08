@@ -57,11 +57,11 @@ public class VoucherResource {
     @GET
     @Path("/validate")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public Response validateVoucher(@QueryParam("code") String code, @QueryParam("subtotal") BigDecimal subtotal) {
+    public Response validateVoucher(@QueryParam("code") String code, @QueryParam("subtotal") Long subtotal) {
         if (code == null || code.isBlank()) {
             throw new BadRequestException("Voucher code is required");
         }
-        if (subtotal == null || subtotal.compareTo(BigDecimal.ZERO) < 0) {
+        if (subtotal == null || subtotal < 0) {
             throw new BadRequestException("Subtotal must be zero or greater");
         }
 
@@ -71,22 +71,22 @@ public class VoucherResource {
         Map<String, Object> result = new HashMap<>();
         if (voucher == null) {
             result.put("valid", false);
-            result.put("discountAmount", BigDecimal.ZERO);
+            result.put("discountAmount", 0L);
             result.put("message", "Voucher not found");
         } else if (!voucher.isValid(subtotal)) {
             result.put("valid", false);
-            result.put("discountAmount", BigDecimal.ZERO);
+            result.put("discountAmount", 0L);
             if (!voucher.isActive()) {
                 result.put("message", "Voucher is inactive");
             } else if (voucher.getUsageLimit() != null && voucher.getUsedCount() >= voucher.getUsageLimit()) {
                 result.put("message", "Voucher usage limit has been reached");
-            } else if (subtotal.compareTo(voucher.getMinOrderValue()) < 0) {
-                result.put("message", "Order subtotal is less than the minimum required value of " + voucher.getMinOrderValue());
+            } else if (subtotal < voucher.getMinOrderValueMinor()) {
+                result.put("message", "Order subtotal is less than the minimum required value of " + voucher.getMinOrderValueMinor());
             } else {
                 result.put("message", "Voucher is expired or not yet valid");
             }
         } else {
-            BigDecimal discount = voucher.calculateDiscount(subtotal);
+            long discount = voucher.calculateDiscount(subtotal);
             result.put("valid", true);
             result.put("discountAmount", discount);
             result.put("voucherId", voucher.getId());
@@ -192,8 +192,8 @@ public class VoucherResource {
         voucher.setName(updated.getName());
         voucher.setDiscountType(updated.getDiscountType());
         voucher.setDiscountValue(updated.getDiscountValue());
-        voucher.setMinOrderValue(updated.getMinOrderValue());
-        voucher.setMaxDiscountAmount(updated.getMaxDiscountAmount());
+        voucher.setMinOrderValueMinor(updated.getMinOrderValueMinor());
+        voucher.setMaxDiscountAmountMinor(updated.getMaxDiscountAmountMinor());
         voucher.setStartTime(updated.getStartTime());
         voucher.setEndTime(updated.getEndTime());
         voucher.setUsageLimit(updated.getUsageLimit());
@@ -224,10 +224,10 @@ public class VoucherResource {
         if (voucher.getDiscountType() == null || (!"PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType()) && !"FIXED_AMOUNT".equalsIgnoreCase(voucher.getDiscountType()))) {
             throw new BadRequestException("Valid discount type (PERCENTAGE or FIXED_AMOUNT) is required");
         }
-        if (voucher.getDiscountValue() == null || voucher.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
+        if (voucher.getDiscountValue() <= 0) {
             throw new BadRequestException("Discount value must be greater than zero");
         }
-        if (voucher.getMinOrderValue() == null || voucher.getMinOrderValue().compareTo(BigDecimal.ZERO) < 0) {
+        if (voucher.getMinOrderValueMinor() < 0) {
             throw new BadRequestException("Minimum order value must be zero or greater");
         }
         if (voucher.getStartTime() != null && voucher.getEndTime() != null && voucher.getEndTime().isBefore(voucher.getStartTime())) {

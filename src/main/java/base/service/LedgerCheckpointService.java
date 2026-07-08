@@ -22,10 +22,29 @@ public class LedgerCheckpointService {
         this.em = em;
     }
 
-    /**
-     * Creates a new checkpoint for a given wallet, summarizing all transactions 
-     * up to the latest sequence number.
-     */
+    public LedgerCheckpoint writeCheckpoint(Wallet wallet, WalletTransaction transaction, UUID actorId) {
+        LedgerCheckpoint checkpoint = new LedgerCheckpoint();
+        checkpoint.setId(UUID.randomUUID());
+        checkpoint.setTenantId(wallet.getTenantId());
+        checkpoint.setWallet(wallet);
+        checkpoint.setLastTransactionId(transaction.getId());
+        checkpoint.setLastSequenceNo(transaction.getSequenceNo());
+        checkpoint.setAvailableBalanceMinor(wallet.getAvailableBalanceMinor());
+        checkpoint.setPendingBalanceMinor(wallet.getPendingBalanceMinor());
+        checkpoint.setCheckpointedAt(Instant.now());
+        checkpoint.setCreatedBy(actorId);
+        checkpoint.persist();
+        return checkpoint;
+    }
+
+    public LedgerCheckpoint latestForWallet(String tenantId, UUID walletId) {
+        return LedgerCheckpoint.find(
+                "tenantId = ?1 and wallet.id = ?2 order by lastSequenceNo desc",
+                tenantId,
+                walletId
+        ).firstResult();
+    }
+
     @Transactional
     public void createCheckpoint(UUID walletId, String tenantCode) {
         Wallet wallet = Wallet.find("id = ?1 and tenantId = ?2", walletId, tenantCode).firstResult();
@@ -33,7 +52,6 @@ public class LedgerCheckpointService {
             throw new IllegalArgumentException("Wallet not found");
         }
 
-        // Get the last sequence no from transactions
         Long latestSequenceNo = em.createQuery(
                 "SELECT MAX(wt.sequenceNo) FROM WalletTransaction wt WHERE wt.wallet.id = :walletId AND wt.tenantId = :tenantId", Long.class)
                 .setParameter("walletId", walletId)
@@ -41,21 +59,19 @@ public class LedgerCheckpointService {
                 .getSingleResult();
 
         if (latestSequenceNo == null) {
-            return; // No transactions yet
+            return;
         }
 
-        // Check if there is an existing checkpoint
         LedgerCheckpoint lastCheckpoint = LedgerCheckpoint.find(
                 "wallet.id = ?1 and tenantId = ?2 ORDER BY lastSequenceNo DESC", walletId, tenantCode)
                 .firstResult();
 
         if (lastCheckpoint != null && lastCheckpoint.getLastSequenceNo() >= latestSequenceNo) {
-            return; // Already up to date
+            return;
         }
 
         Long startSeq = lastCheckpoint != null ? lastCheckpoint.getLastSequenceNo() : 0L;
 
-        // Sum up credits and debits between startSeq (exclusive) and latestSequenceNo (inclusive)
         List<WalletTransaction> recentTxns = WalletTransaction.find(
                 "wallet.id = ?1 and tenantId = ?2 and sequenceNo > ?3 and sequenceNo <= ?4",
                 walletId, tenantCode, startSeq, latestSequenceNo).list();
@@ -76,22 +92,20 @@ public class LedgerCheckpointService {
         long newAvailable = (lastCheckpoint != null ? lastCheckpoint.getAvailableBalanceMinor() : 0) + availableDiff;
         long newPending = (lastCheckpoint != null ? lastCheckpoint.getPendingBalanceMinor() : 0) + pendingDiff;
 
-        // Save new checkpoint
         LedgerCheckpoint checkpoint = new LedgerCheckpoint();
         checkpoint.setTenantId(tenantCode);
         checkpoint.setWallet(wallet);
-        
-        // Find last transaction ID for the latestSequenceNo
+
         WalletTransaction lastTxn = WalletTransaction.find("wallet.id = ?1 and tenantId = ?2 and sequenceNo = ?3", walletId, tenantCode, latestSequenceNo).firstResult();
         if (lastTxn != null) {
             checkpoint.setLastTransactionId(lastTxn.getId());
         }
-        
+
         checkpoint.setLastSequenceNo(latestSequenceNo);
         checkpoint.setAvailableBalanceMinor(newAvailable);
         checkpoint.setPendingBalanceMinor(newPending);
         checkpoint.setCheckpointedAt(Instant.now());
-        
+
         checkpoint.persist();
         log.infof("Created LedgerCheckpoint for Wallet ID: %s at Sequence: %d", walletId, latestSequenceNo);
     }

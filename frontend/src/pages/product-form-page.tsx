@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { ArrowLeft, Save, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Plus, Upload, X, ImageIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
 import type { Product, Category, ProductOption, ProductVariant } from '@/shared/api/catalog'
@@ -28,9 +28,10 @@ interface ProductFormState {
   saleEndsAt: string
   active: boolean
   stockQuantity: string
+  lowStockThreshold: string
   hasVariants: boolean
   options: { name: string; values: string }[]
-  variants: { sku: string; price: string; stockQuantity: string; optionValues: Record<string, string> }[]
+  variants: { sku: string; price: string; stockQuantity: string; lowStockThreshold: string; optionValues: Record<string, string> }[]
   tagsInput: string
 }
 
@@ -46,6 +47,7 @@ const emptyForm: ProductFormState = {
   saleEndsAt: '',
   active: true,
   stockQuantity: '0',
+  lowStockThreshold: '0',
   hasVariants: false,
   options: [],
   variants: [],
@@ -75,6 +77,7 @@ function productToForm(product: Product): ProductFormState {
     sku: v.sku,
     price: v.price.toString(),
     stockQuantity: v.stockQuantity.toString(),
+    lowStockThreshold: (v.lowStockThreshold ?? 0).toString(),
     optionValues: v.optionValues,
   }))
 
@@ -92,6 +95,7 @@ function productToForm(product: Product): ProductFormState {
     saleEndsAt: toLocalInputValue(product.saleEndsAt),
     active: product.active ?? true,
     stockQuantity: product.stockQuantity?.toString() || '0',
+    lowStockThreshold: product.lowStockThreshold?.toString() || '0',
     hasVariants,
     options,
     variants,
@@ -120,6 +124,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
         sku: v.sku.trim(),
         price: Number(v.price || 0),
         stockQuantity: Number(v.stockQuantity || 0),
+        lowStockThreshold: Number(v.lowStockThreshold || 0),
         optionValues: v.optionValues,
       }))
     : []
@@ -136,6 +141,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
     saleEndsAt: fromLocalInputValue(form.saleEndsAt),
     active: form.active,
     stockQuantity: form.hasVariants ? 0 : Number(form.stockQuantity || 0),
+    lowStockThreshold: form.hasVariants ? 0 : Number(form.lowStockThreshold || 0),
     options,
     variants,
     tags,
@@ -209,6 +215,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         sku: defaultSku,
         price: form.basePrice || '0',
         stockQuantity: '0',
+        lowStockThreshold: '0',
         optionValues: comb,
       }
     })
@@ -232,10 +239,15 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
       }
       return catalogApi.createProduct(payload)
     },
-    onSuccess: (product) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
+    onSuccess: async (product) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['product', product.id], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tags'], refetchType: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['products'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['product', product.id], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['tags'], type: 'active' }),
+      ])
       router.navigate({ to: '/products/$id', params: { id: product.id! } })
     },
     onError: (err) => setError(err instanceof Error ? err.message : t('saveFailed')),
@@ -243,8 +255,9 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
 
   const deleteMutation = useMutation({
     mutationFn: () => catalogApi.deleteProduct(productId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['products'], type: 'active' })
       router.navigate({ to: '/products' })
     },
   })
@@ -275,6 +288,9 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         errors.stockQuantity = t('requiredField')
       } else if (Number(form.stockQuantity) < 0) {
         errors.stockQuantity = t('nonNegativeField')
+      }
+      if (form.lowStockThreshold.trim() && Number(form.lowStockThreshold) < 0) {
+        errors.lowStockThreshold = t('nonNegativeField')
       }
     } else {
       form.variants.forEach((v, idx) => {
@@ -404,8 +420,60 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">{t('imageUrl')}</Label>
-              <Input id="imageUrl" value={form.imageUrl} onChange={(event) => updateField('imageUrl', event.target.value)} />
+              <Label>Product Image</Label>
+              <div className="flex items-start gap-4">
+                <div className="h-24 w-24 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  {form.imageUrl ? (
+                    <img src={form.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+                    <Upload className="h-4 w-4" />
+                    Upload Image
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const formData = new FormData()
+                        formData.append('file', file)
+                        try {
+                          const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+                          const token = localStorage.getItem('access_token')
+                          const res = await fetch(`${baseUrl}/api/images/upload`, {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            body: formData,
+                          })
+                          if (res.ok) {
+                            const data = await res.json()
+                            updateField('imageUrl', data.url)
+                          }
+                        } catch (err) {
+                          console.error('Upload failed', err)
+                        }
+                      }}
+                    />
+                  </label>
+                  {form.imageUrl && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate max-w-[200px]">{form.imageUrl}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateField('imageUrl', '')}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -469,17 +537,31 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
             </div>
 
             {!form.hasVariants && (
-              <div className="space-y-2">
-                <Label htmlFor="stockQuantity">{t('stockQuantity')}</Label>
-                <Input
-                  id="stockQuantity"
-                  type="number"
-                  min="0"
-                  value={form.stockQuantity}
-                  onChange={(event) => updateField('stockQuantity', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.stockQuantity)}
-                />
-                {fieldErrors.stockQuantity && <p className="text-sm text-destructive">{fieldErrors.stockQuantity}</p>}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="stockQuantity">{t('stockQuantity')}</Label>
+                  <Input
+                    id="stockQuantity"
+                    type="number"
+                    min="0"
+                    value={form.stockQuantity}
+                    onChange={(event) => updateField('stockQuantity', event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.stockQuantity)}
+                  />
+                  {fieldErrors.stockQuantity && <p className="text-sm text-destructive">{fieldErrors.stockQuantity}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lowStockThreshold">{t('lowStockThreshold')}</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    min="0"
+                    value={form.lowStockThreshold}
+                    onChange={(event) => updateField('lowStockThreshold', event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.lowStockThreshold)}
+                  />
+                  {fieldErrors.lowStockThreshold && <p className="text-sm text-destructive">{fieldErrors.lowStockThreshold}</p>}
+                </div>
               </div>
             )}
 
@@ -570,6 +652,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                             <TableHead className="min-w-[150px]">{t('sku')}</TableHead>
                             <TableHead className="min-w-[100px]">{t('variantPrice')}</TableHead>
                             <TableHead className="min-w-[100px]">{t('variantStock')}</TableHead>
+                            <TableHead className="min-w-[120px]">{t('variantLowStock')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -611,6 +694,18 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                                     onChange={(e) => {
                                       const next = [...form.variants]
                                       next[i].stockQuantity = e.target.value
+                                      updateField('variants', next)
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={v.lowStockThreshold}
+                                    onChange={(e) => {
+                                      const next = [...form.variants]
+                                      next[i].lowStockThreshold = e.target.value
                                       updateField('variants', next)
                                     }}
                                   />

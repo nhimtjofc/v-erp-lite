@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link, useRouter, useRouterState } from '@tanstack/react-router'
 import { logout } from '@/shared/auth'
 import { useMeQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { navGroups, profileGroup, type NavGroup } from '@/app/nav-registry'
@@ -30,7 +30,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { isDark, setIsDark } = useTheme()
   const { t } = useTranslation()
   const { data: me } = useMeQuery()
-  const isAdmin = me?.role?.name === 'admin'
+  const role = me?.role?.name
+  const isAdmin = role === 'admin'
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const homePath = role === 'admin' ? '/orders' : role === 'customer' || role === 'user' ? '/shop' : '/dashboard'
 
   const initials = getInitials(user)
 
@@ -38,40 +41,86 @@ export function AppLayout({ children }: { children: ReactNode }) {
     await logout()
   }
 
+  useEffect(() => {
+    if (!role) return
+
+    const adminAllowed =
+      pathname === '/dashboard' ||
+      pathname.startsWith('/customers') ||
+      pathname.startsWith('/products') ||
+      pathname.startsWith('/orders') ||
+      pathname.startsWith('/vouchers') ||
+      pathname.startsWith('/shop') ||
+      pathname.startsWith('/profile')
+
+    const customerAllowed =
+      pathname.startsWith('/shop') ||
+      pathname.startsWith('/profile')
+
+    if (role === 'admin' && !adminAllowed) {
+      router.navigate({ to: '/orders', replace: true })
+      return
+    }
+
+    if (role === 'operator' && pathname.startsWith('/orders')) {
+      router.navigate({ to: '/dashboard', replace: true })
+      return
+    }
+
+    if ((role === 'customer' || role === 'user') && !customerAllowed) {
+      router.navigate({ to: '/shop', replace: true })
+    }
+  }, [pathname, role, router])
+
+  const canSeeRole = (roles?: string[]) => {
+    if (!roles) return true
+    return role ? roles.includes(role) : false
+  }
+
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => {
-    const renderGroup = (group: NavGroup) => (
-      <div key={group.labelKey}>
-        <div className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-          {t(group.labelKey)}
+    const renderGroup = (group: NavGroup) => {
+      const items = group.items.filter((item) => {
+        if (item.adminOnly && !isAdmin) return false
+        if (item.hideForRoles && me?.role?.name && item.hideForRoles.includes(me.role.name)) return false
+        return canSeeRole(item.roles)
+      })
+      if (items.length === 0) return null
+
+      return (
+        <div key={group.labelKey}>
+          <div className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+            {t(group.labelKey)}
+          </div>
+          <div className="space-y-0.5">
+            {items.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  activeProps={{
+                    className:
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium bg-sidebar-accent text-sidebar-accent-foreground transition-colors',
+                  }}
+                  onClick={onNavigate}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {t(item.labelKey)}
+                </Link>
+              )
+            })}
+          </div>
         </div>
-        <div className="space-y-0.5">
-          {group.items.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                activeProps={{
-                  className:
-                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium bg-sidebar-accent text-sidebar-accent-foreground transition-colors',
-                }}
-                onClick={onNavigate}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {t(item.labelKey)}
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-    )
+      )
+    }
 
     return (
       <nav className="flex flex-1 flex-col p-3">
         <div className="flex-1 space-y-4 overflow-y-auto">
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null
+            if (!canSeeRole(group.roles)) return null
             return renderGroup(group)
           })}
         </div>
@@ -88,7 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar">
         <div className="flex h-14 items-center border-b border-sidebar-border px-4">
           <Link
-            to="/dashboard"
+            to={homePath}
             className="flex items-center gap-2 font-semibold text-sidebar-foreground"
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
@@ -110,7 +159,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar shadow-xl md:hidden">
             <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
               <Link
-                to="/dashboard"
+                to={homePath}
                 className="flex items-center gap-2 font-semibold text-sidebar-foreground"
                 onClick={() => setMobileOpen(false)}
               >
@@ -176,13 +225,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <UserIcon className="h-4 w-4" />
                   {t('nav:profile')}
                 </DropdownMenuLinkItem>
-                <DropdownMenuLinkItem
-                  className="cursor-pointer"
-                  onClick={() => router.navigate({ to: '/businesses' })}
-                >
-                  <Building2 className="h-4 w-4" />
-                  {t('nav:business')}
-                </DropdownMenuLinkItem>
+                {role !== 'admin' && role !== 'customer' && role !== 'user' && (
+                  <DropdownMenuLinkItem
+                    className="cursor-pointer"
+                    onClick={() => router.navigate({ to: '/business' })}
+                  >
+                    <Building2 className="h-4 w-4" />
+                    {t('nav:business')}
+                  </DropdownMenuLinkItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer"

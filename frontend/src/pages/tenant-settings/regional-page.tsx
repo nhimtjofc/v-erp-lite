@@ -29,7 +29,7 @@ export function RegionalPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
 
   const [regional, setRegional] = useState<RegionalSettings>({})
   const [savedRegional, setSavedRegional] = useState<RegionalSettings>({})
@@ -129,6 +129,7 @@ export function RegionalPage() {
             onChange={(v) => setRegional((prev) => ({ ...prev, timezone: v }))}
             options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
             placeholder={t('common:select')}
+            disabled={!isAdmin}
           />
           {effective?.regional?.timezone && !regional.timezone && (
             <p className="text-xs text-muted-foreground">
@@ -144,6 +145,7 @@ export function RegionalPage() {
             onChange={(v) => setRegional((prev) => ({ ...prev, language: v }))}
             options={LANGUAGES}
             placeholder={t('common:select')}
+            disabled={!isAdmin}
           />
           {effective?.regional?.language && !regional.language && (
             <p className="text-xs text-muted-foreground">
@@ -159,6 +161,7 @@ export function RegionalPage() {
             onChange={(v) => setRegional((prev) => ({ ...prev, dateFormat: v }))}
             options={DATE_FORMATS}
             placeholder={t('common:select')}
+            disabled={!isAdmin}
           />
           {effective?.regional?.dateFormat && !regional.dateFormat && (
             <p className="text-xs text-muted-foreground">
@@ -174,6 +177,7 @@ export function RegionalPage() {
             onChange={(v) => setRegional((prev) => ({ ...prev, timeFormat: v }))}
             options={TIME_FORMATS}
             placeholder={t('common:select')}
+            disabled={!isAdmin}
           />
           {effective?.regional?.timeFormat && !regional.timeFormat && (
             <p className="text-xs text-muted-foreground">

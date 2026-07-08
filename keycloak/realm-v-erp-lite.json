@@ -6,13 +6,15 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "registrationAllowed": false,
+  "resetPasswordAllowed": true,
   "organizationsEnabled": true,
 
   "roles": {
     "realm": [
       { "name": "admin",         "description": "Full system access" },
       { "name": "operator",      "description": "Operational access" },
-      { "name": "businessOwner", "description": "Tenant owner" }
+      { "name": "businessOwner", "description": "Tenant owner" },
+      { "name": "customer",      "description": "Customer - can browse products and place orders" }
     ]
   },
 
@@ -103,6 +105,25 @@
           "manage-clients",
           "view-clients"
         ]
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "REDACTED_GOOGLE_OAUTH_CLIENT_ID",
+        "clientSecret": "REDACTED_GOOGLE_OAUTH_CLIENT_SECRET",
+        "useJwksUrl": "true"
       }
     }
   ]
