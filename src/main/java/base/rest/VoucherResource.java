@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;

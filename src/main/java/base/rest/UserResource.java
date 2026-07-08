@@ -3,7 +3,6 @@ package base.rest;
 import base.entity.Role;
 import base.entity.User;
 import base.security.CallerContext;
-import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

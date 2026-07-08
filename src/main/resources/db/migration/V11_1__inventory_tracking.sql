@@ -1,0 +1,5 @@
+ALTER TABLE products ADD COLUMN IF NOT EXISTS low_stock_threshold INT NOT NULL DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_quantity INT NOT NULL DEFAULT 0;
+
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS low_stock_threshold INT NOT NULL DEFAULT 0;
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS reserved_quantity INT NOT NULL DEFAULT 0;

@@ -37,7 +37,7 @@ public class PaymentTestDataFactory {
         product.setBusiness(seller);
         product.setSku("SKU-" + UUID.randomUUID());
         product.setName("Sản phẩm kiểm thử");
-        product.setBasePrice(finalAmount);
+        product.setBasePriceMinor(finalAmount.longValueExact());
         product.persist();
 
         Order order = new Order();
@@ -51,11 +51,11 @@ public class PaymentTestDataFactory {
         order.setShippingName("Khách kiểm thử");
         order.setShippingPhone("0900000000");
         order.setShippingAddress("Địa chỉ kiểm thử");
-        order.setSubtotalAmount(finalAmount);
-        order.setDiscountAmount(BigDecimal.ZERO);
-        order.setShippingFee(BigDecimal.ZERO);
-        order.setTaxAmount(BigDecimal.ZERO);
-        order.setFinalAmount(finalAmount);
+        order.setSubtotalAmountMinor(finalAmount.longValueExact());
+        order.setDiscountAmountMinor(0L);
+        order.setShippingFeeMinor(0L);
+        order.setTaxAmountMinor(0L);
+        order.setFinalAmountMinor(finalAmount.longValueExact());
         order.persist();
 
         OrderItem item = new OrderItem();
@@ -64,8 +64,8 @@ public class PaymentTestDataFactory {
         item.setOrder(order);
         item.setProduct(product);
         item.setQuantity(1);
-        item.setUnitPrice(finalAmount);
-        item.setSubtotalAmount(finalAmount);
+        item.setUnitPriceMinor(finalAmount.longValueExact());
+        item.setSubtotalAmountMinor(finalAmount.longValueExact());
         item.persist();
         order.getItems().add(item);
 

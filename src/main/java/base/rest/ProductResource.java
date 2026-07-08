@@ -12,7 +12,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;

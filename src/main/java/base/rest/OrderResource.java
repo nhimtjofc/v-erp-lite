@@ -1,7 +1,5 @@
 package base.rest;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -78,25 +76,27 @@ public class OrderResource {
     public List<Order> list(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
+        String normalizedSearch = search == null ? null : search.trim();
+        String normalizedStatus = status == null ? null : status.trim();
 
-        boolean hasSearch = search != null && !search.isBlank();
-        boolean hasStatus = status != null && !status.isBlank();
+        boolean hasSearch = normalizedSearch != null && !normalizedSearch.isBlank();
+        boolean hasStatus = normalizedStatus != null && !normalizedStatus.isBlank();
 
         if (hasSearch && hasStatus) {
-            String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            String upperStatus = status.trim().toUpperCase();
+            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            String upperStatus = normalizedStatus.toUpperCase();
             return Order.find(
                     "tenantId = ?1 AND deletedAt IS NULL AND status = ?2 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
                     tenantCode, upperStatus, escaped
             ).list();
         } else if (hasSearch) {
-            String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             return Order.find(
                     "tenantId = ?1 AND deletedAt IS NULL AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
                     tenantCode, escaped
             ).list();
         } else if (hasStatus) {
-            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, status.trim().toUpperCase());
+            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, normalizedStatus.toUpperCase());
         }
 
         return Order.list("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode);
