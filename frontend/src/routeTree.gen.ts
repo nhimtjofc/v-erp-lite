@@ -287,6 +287,21 @@ export interface FileRoutesByFullPath {
   '/admin/tenants/': typeof AuthenticatedAdminTenantsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthenticatedIndexRoute
+  '/auth-callback': typeof AuthAuthCallbackRoute
+  '/login': typeof AuthLoginRoute
+  '/business': typeof AuthenticatedBusinessRoute
+  '/businesses': typeof AuthenticatedBusinessesRoute
+  '/cart': typeof AuthenticatedCartRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/shop': typeof AuthenticatedShopRoute
+  '/vouchers': typeof AuthenticatedVouchersRoute
+  '/customers/$id': typeof AuthenticatedCustomersIdRoute
+  '/customers/new': typeof AuthenticatedCustomersNewRoute
+  '/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/orders/new': typeof AuthenticatedOrdersNewRoute
+  '/products/$id': typeof AuthenticatedProductsIdRoute
+  '/products/new': typeof AuthenticatedProductsNewRoute
   '/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
   '/profile/security': typeof AuthenticatedProfileSecurityRoute
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute

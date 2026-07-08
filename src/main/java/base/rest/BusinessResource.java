@@ -23,13 +23,13 @@ public class BusinessResource {
     CallerContext caller;
 
     @GET
-    public List<Business> list() {
+    public List<Business> listBusinesses() {
         return Business.list("tenantId", caller.tenantCode());
     }
 
     @GET
     @Path("/{id}")
-    public Business get(@PathParam("id") UUID id) {
+    public Business getBusiness(@PathParam("id") UUID id) {
         Business business = Business.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (business == null) {
             throw new NotFoundException("Business not found");
@@ -39,7 +39,7 @@ public class BusinessResource {
 
     @POST
     @Transactional
-    public Response create(Business business) {
+    public Response createBusiness(Business business) {
         business.setId(UUID.randomUUID());
         business.setTenantId(caller.tenantCode());
         business.setCreatedBy(caller.userId());
@@ -50,7 +50,7 @@ public class BusinessResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Business update(@PathParam("id") UUID id, Business updated) {
+    public Business updateBusiness(@PathParam("id") UUID id, Business updated) {
         Business business = Business.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (business == null) {
             throw new NotFoundException("Business not found");
@@ -69,7 +69,7 @@ public class BusinessResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteBusiness(@PathParam("id") UUID id) {
         long deleted = Business.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Business not found");

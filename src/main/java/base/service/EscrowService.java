@@ -127,12 +127,9 @@ public class EscrowService {
         Wallet sellerWallet = escrow.getSellerWallet();
         Money amount = Money.of(escrow.getAmountMinor(), escrow.getCurrency());
 
-        walletService.settlePendingToAvailable(
-                escrow.getTenantId(), sellerWallet.getId(), amount, actorId
-        );
-        walletService.debitAvailable(
+        walletService.refundPending(
                 escrow.getTenantId(), sellerWallet.getId(), amount,
-                "ESCROW_REFUND", "ORDER", escrow.getOrderId(),
+                "ORDER", escrow.getOrderId(),
                 actorId, "Hoàn tiền ký quỹ"
         );
 

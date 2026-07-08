@@ -75,7 +75,7 @@ public class OrderResource {
 
     @GET
     @RolesAllowed({"admin", "businessOwner", "operator"})
-    public List<Order> list(@QueryParam("search") String search,
+    public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
 
@@ -145,7 +145,7 @@ public class OrderResource {
     @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
-    public Order get(@PathParam("id") UUID id) {
+    public Order getOrder(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
@@ -177,7 +177,7 @@ public class OrderResource {
     @Path("/checkout")
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
-    public Response checkout(CheckoutRequest request) {
+    public Response checkoutOrder(CheckoutRequest request) {
         if (request.customerId == null) {
             throw new BadRequestException("Customer ID is required");
         }
@@ -486,7 +486,7 @@ public class OrderResource {
     @Path("/{id}")
     @RolesAllowed("admin")
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteOrder(@PathParam("id") UUID id) {
         String tenantCode = caller.tenantCode();
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
         if (order == null) {

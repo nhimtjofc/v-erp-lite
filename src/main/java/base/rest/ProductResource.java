@@ -32,7 +32,7 @@ public class ProductResource {
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public List<Product> list(
+    public List<Product> listProducts(
             @QueryParam("search") String search,
             @QueryParam("categoryId") UUID categoryId,
             @QueryParam("tagId") UUID tagId) {
@@ -68,7 +68,7 @@ public class ProductResource {
 
     @GET
     @Path("/{id}")
-    public Product get(@PathParam("id") UUID id) {
+    public Product getProduct(@PathParam("id") UUID id) {
         Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (product == null) {
             throw new NotFoundException("Product not found");
@@ -79,7 +79,7 @@ public class ProductResource {
     @POST
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response create(Product product) {
+    public Response createProduct(Product product) {
         validate(product);
         product.setId(UUID.randomUUID());
         product.setTenantId(caller.tenantCode());
@@ -104,7 +104,7 @@ public class ProductResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Product update(@PathParam("id") UUID id, Product updated) {
+    public Product updateProduct(@PathParam("id") UUID id, Product updated) {
         validate(updated);
         Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (product == null) {
@@ -174,7 +174,7 @@ public class ProductResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteProduct(@PathParam("id") UUID id) {
         long deleted = Product.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Product not found");
