@@ -1,0 +1,145 @@
+package base.service;
+
+import base.entity.PaymentIntent;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.UUID;
+
+@ApplicationScoped
+public class PaymentGatewayService {
+
+    private static final String MOCK_API_KEY = "mock_key_v_erp_lite_2025";
+    private static final String MOCK_SECRET = "mock_secret_v_erp_lite_2025";
+
+    public record MockGatewayResponse(
+            String gateway,
+            String gatewayTransactionId,
+            String paymentUrl,
+            String qrCodeContent,
+            String mockSecret,
+            Instant expiresAt,
+            Map<String, String> metadata
+    ) {}
+
+    public MockGatewayResponse initiatePayment(PaymentIntent intent, String gateway) {
+        if (intent == null) {
+            throw new IllegalArgumentException("PaymentIntent is required");
+        }
+        String normalizedGateway = normalizeGateway(gateway);
+        String transactionId = generateTransactionId(normalizedGateway);
+
+        String paymentUrl = buildMockPaymentUrl(intent, transactionId, normalizedGateway);
+        String qrContent = buildQrCodeContent(intent, transactionId, normalizedGateway);
+        String signature = signPayload(intent.getId().toString(), transactionId, intent.getAmountMinor());
+
+        return new MockGatewayResponse(
+                normalizedGateway,
+                transactionId,
+                paymentUrl,
+                qrContent,
+                signature,
+                intent.getExpiresAt(),
+                Map.of(
+                        "intent_id", intent.getId().toString(),
+                        "order_id", intent.getOrderId().toString(),
+                        "amount_minor", String.valueOf(intent.getAmountMinor()),
+                        "currency", intent.getCurrency(),
+                        "signature", signature
+                )
+        );
+    }
+
+    public String getWebhookPayload(PaymentIntent intent, String gatewayTransactionId, boolean success) {
+        String status = success ? "SUCCESS" : "FAILED";
+        String signature = signPayload(intent.getId().toString(), gatewayTransactionId, intent.getAmountMinor());
+        return String.format(
+                "{\"payment_intent_id\":\"%s\",\"gateway_transaction_id\":\"%s\",\"status\":\"%s\",\"amount_minor\":%d,\"currency\":\"%s\",\"signature\":\"%s\"}",
+                intent.getId(),
+                gatewayTransactionId,
+                status,
+                intent.getAmountMinor(),
+                intent.getCurrency(),
+                signature
+        );
+    }
+
+    public boolean verifySignature(String payload, String signature) {
+        if (signature == null || signature.isBlank()) {
+            return false;
+        }
+        String expected = hmacSha256(payload, MOCK_SECRET);
+        return expected.equals(signature.trim());
+    }
+
+    public String generateTransactionId(String gateway) {
+        String prefix = switch (normalizeGateway(gateway)) {
+            case "VNPAY" -> "VNP";
+            case "STRIPE" -> "STR";
+            default -> "MOCK";
+        };
+        return prefix + "_" + Instant.now().toEpochMilli() + "_" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private String buildMockPaymentUrl(PaymentIntent intent, String transactionId, String gateway) {
+        String baseUrl = switch (gateway) {
+            case "VNPAY" -> "https://sandbox.vnpay.vn/payment";
+            case "STRIPE" -> "https://checkout.stripe.com/pay";
+            default -> "https://mock-gateway.v-erp-lite.local/pay";
+        };
+        String params = String.format(
+                "transaction_id=%s&order_id=%s&amount=%d&currency=%s&signature=%s",
+                transactionId,
+                intent.getOrderId(),
+                intent.getAmountMinor(),
+                intent.getCurrency(),
+                URLEncoder.encode(signPayload(intent.getId().toString(), transactionId, intent.getAmountMinor()), StandardCharsets.UTF_8)
+        );
+        return baseUrl + "?" + params;
+    }
+
+    private String buildQrCodeContent(PaymentIntent intent, String transactionId, String gateway) {
+        return String.format(
+                "v-erp://payment/%s?intent=%s&txn=%s&amount=%d&currency=%s",
+                gateway.toLowerCase(),
+                intent.getId(),
+                transactionId,
+                intent.getAmountMinor(),
+                intent.getCurrency()
+        );
+    }
+
+    private String signPayload(String intentId, String transactionId, long amountMinor) {
+        String payload = String.format("%s:%s:%d:%s", intentId, transactionId, amountMinor, MOCK_SECRET);
+        return hmacSha256(payload, MOCK_SECRET);
+    }
+
+    private String hmacSha256(String data, String secret) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String salted = secret + data;
+            byte[] hash = digest.digest(salted.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    private String normalizeGateway(String gateway) {
+        if (gateway == null || gateway.isBlank()) {
+            return "MOCK";
+        }
+        String upper = gateway.trim().toUpperCase();
+        return switch (upper) {
+            case "VNPAY" -> "VNPAY";
+            case "STRIPE" -> "STRIPE";
+            default -> "MOCK";
+        };
+    }
+}

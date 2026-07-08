@@ -20,6 +20,8 @@ import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
+import { Route as AuthenticatedCartRouteImport } from './routes/_authenticated/cart'
+import { Route as AuthenticatedBusinessesRouteImport } from './routes/_authenticated/businesses'
 import { Route as AuthenticatedBusinessRouteImport } from './routes/_authenticated/business'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthAuthCallbackRouteImport } from './routes/_auth/auth-callback'
@@ -96,6 +98,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCartRoute = AuthenticatedCartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBusinessesRoute = AuthenticatedBusinessesRouteImport.update({
+  id: '/businesses',
+  path: '/businesses',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedBusinessRoute = AuthenticatedBusinessRouteImport.update({
@@ -242,6 +254,8 @@ export interface FileRoutesByFullPath {
   '/auth-callback': typeof AuthAuthCallbackRoute
   '/login': typeof AuthLoginRoute
   '/business': typeof AuthenticatedBusinessRoute
+  '/businesses': typeof AuthenticatedBusinessesRoute
+  '/cart': typeof AuthenticatedCartRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
@@ -273,19 +287,6 @@ export interface FileRoutesByFullPath {
   '/admin/tenants/': typeof AuthenticatedAdminTenantsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AuthenticatedIndexRoute
-  '/auth-callback': typeof AuthAuthCallbackRoute
-  '/login': typeof AuthLoginRoute
-  '/business': typeof AuthenticatedBusinessRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/shop': typeof AuthenticatedShopRoute
-  '/vouchers': typeof AuthenticatedVouchersRoute
-  '/customers/$id': typeof AuthenticatedCustomersIdRoute
-  '/customers/new': typeof AuthenticatedCustomersNewRoute
-  '/orders/$id': typeof AuthenticatedOrdersIdRoute
-  '/orders/new': typeof AuthenticatedOrdersNewRoute
-  '/products/$id': typeof AuthenticatedProductsIdRoute
-  '/products/new': typeof AuthenticatedProductsNewRoute
   '/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
   '/profile/security': typeof AuthenticatedProfileSecurityRoute
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
@@ -308,6 +309,8 @@ export interface FileRoutesById {
   '/_auth/auth-callback': typeof AuthAuthCallbackRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_authenticated/business': typeof AuthenticatedBusinessRoute
+  '/_authenticated/businesses': typeof AuthenticatedBusinessesRoute
+  '/_authenticated/cart': typeof AuthenticatedCartRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
@@ -346,6 +349,8 @@ export interface FileRouteTypes {
     | '/auth-callback'
     | '/login'
     | '/business'
+    | '/businesses'
+    | '/cart'
     | '/customers'
     | '/dashboard'
     | '/orders'
@@ -381,6 +386,8 @@ export interface FileRouteTypes {
     | '/auth-callback'
     | '/login'
     | '/business'
+    | '/businesses'
+    | '/cart'
     | '/dashboard'
     | '/shop'
     | '/vouchers'
@@ -411,6 +418,8 @@ export interface FileRouteTypes {
     | '/_auth/auth-callback'
     | '/_auth/login'
     | '/_authenticated/business'
+    | '/_authenticated/businesses'
+    | '/_authenticated/cart'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/orders'
@@ -525,6 +534,20 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/customers'
       preLoaderRoute: typeof AuthenticatedCustomersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/cart': {
+      id: '/_authenticated/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof AuthenticatedCartRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/businesses': {
+      id: '/_authenticated/businesses'
+      path: '/businesses'
+      fullPath: '/businesses'
+      preLoaderRoute: typeof AuthenticatedBusinessesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/business': {
@@ -817,6 +840,8 @@ const AuthenticatedAdminTenantsRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedBusinessRoute: typeof AuthenticatedBusinessRoute
+  AuthenticatedBusinessesRoute: typeof AuthenticatedBusinessesRoute
+  AuthenticatedCartRoute: typeof AuthenticatedCartRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
@@ -831,6 +856,8 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBusinessRoute: AuthenticatedBusinessRoute,
+  AuthenticatedBusinessesRoute: AuthenticatedBusinessesRoute,
+  AuthenticatedCartRoute: AuthenticatedCartRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,

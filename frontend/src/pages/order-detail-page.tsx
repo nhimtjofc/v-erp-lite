@@ -1,24 +1,24 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  useGet4Query, // order detail
+  useGet4Query,
   useUpdateStatusMutation,
   useMeQuery,
 } from '@/shared/api'
+import { cartApi } from '@/shared/api/cart'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2,
+  Trash2, Save,
 } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface OrderHistoryEntry {
   id: string
@@ -28,8 +28,6 @@ interface OrderHistoryEntry {
   createdAt: string
   createdBy?: string
 }
-
-// ─── Status helpers ───────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClass: string; icon: React.ElementType }> = {
   PENDING: {
@@ -73,8 +71,6 @@ function getStatusConfig(status: string) {
   }
 }
 
-// ─── Order History via fetch (not in SDK yet — new endpoint) ─────────────────
-
 async function fetchOrderHistory(orderId: string): Promise<OrderHistoryEntry[]> {
   const token = localStorage.getItem('access_token')
   const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
@@ -92,14 +88,11 @@ async function deleteOrder(orderId: string): Promise<void> {
     method: 'DELETE',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
-
   if (!res.ok) {
     const message = await res.text()
     throw new Error(message || 'Unable to delete order')
   }
 }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function OrderDetailPage() {
   const { id } = useParams({ from: '/_authenticated/orders/$id' })
@@ -108,12 +101,16 @@ export function OrderDetailPage() {
   const { data: me } = useMeQuery()
   const isAdmin = me?.role?.name === 'admin'
 
-  // Dialog state
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
   const [statusNote, setStatusNote] = useState('')
   const [statusError, setStatusError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [notes, setNotes] = useState<string | null>(null)
+  const [shippingFee, setShippingFee] = useState<string | null>(null)
+  const [discountPercent, setDiscountPercent] = useState<string | null>(null)
+  const [vatPercent, setVatPercent] = useState<string | null>(null)
 
   const {
     data: order,
@@ -175,6 +172,21 @@ export function OrderDetailPage() {
     },
   })
 
+  const updateOrderMutation = useMutation({
+    mutationFn: () => cartApi.updateOrder(id, {
+      notes: notes ?? undefined,
+      shippingFee: shippingFee !== null ? Number(shippingFee) : undefined,
+      discountPercent: discountPercent !== null ? Number(discountPercent) : undefined,
+      vatPercent: vatPercent !== null ? Number(vatPercent) : undefined,
+    }),
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setError('')
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to update order.'),
+  })
+
   const openStatusDialog = (newStatus: string) => {
     setPendingStatus(newStatus)
     setStatusNote('')
@@ -218,6 +230,11 @@ export function OrderDetailPage() {
 
   const statusCfg = getStatusConfig(status)
 
+  const currentNotes = notes ?? order.notes ?? ''
+  const currentShipping = shippingFee ?? order.shippingFee?.toString() ?? '0'
+  const currentDiscount = discountPercent ?? order.discountPercent?.toString() ?? '0'
+  const currentVat = vatPercent ?? order.vatPercent?.toString() ?? '0'
+
   const handleDeleteOrder = () => {
     setDeleteError(null)
     if (!canDelete) return
@@ -233,7 +250,6 @@ export function OrderDetailPage() {
         </Link>
       </div>
 
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-2.5">
@@ -253,7 +269,6 @@ export function OrderDetailPage() {
             <RefreshCw className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
           </Button>
 
-          {/* Print button */}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
@@ -270,7 +285,6 @@ export function OrderDetailPage() {
             </Button>
           )}
 
-          {/* Status action buttons */}
           {!isFinal && (
             <>
               {isPending && (
@@ -306,10 +320,8 @@ export function OrderDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* LEFT: Items + Delivery + Timeline */}
         <div className="md:col-span-2 space-y-6">
 
-          {/* Order Items */}
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
               <Receipt className="h-5 w-5 text-primary" />
@@ -355,7 +367,6 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Delivery Information */}
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
               <Truck className="h-5 w-5 text-primary" />
@@ -388,7 +399,77 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Order Tracking Timeline */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Update Order</CardTitle>
+              <CardDescription>Edit order notes, shipping fee, discount, and VAT</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <textarea
+                  id="notes"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={currentNotes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="shipping">Shipping Fee ($)</Label>
+                  <Input
+                    id="shipping"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={currentShipping}
+                    onChange={(e) => setShippingFee(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Discount (%)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={currentDiscount}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setDiscountPercent(val)
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vat">VAT (%)</Label>
+                  <Input
+                    id="vat"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={currentVat}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setVatPercent(val)
+                    }}
+                  />
+                </div>
+              </div>
+              {error && (
+                <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+              <Button onClick={() => updateOrderMutation.mutate()} disabled={updateOrderMutation.isPending}>
+                <Save className="h-4 w-4 mr-1" />
+                {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
               <Clock className="h-5 w-5 text-primary" />
@@ -402,7 +483,6 @@ export function OrderDetailPage() {
                 <p className="text-sm text-muted-foreground text-center py-4">No history available.</p>
               ) : (
                 <div className="relative">
-                  {/* vertical line */}
                   <div className="absolute left-[11px] top-3 bottom-3 w-px bg-border" />
                   <ul className="space-y-0">
                     {history.map((entry, i) => {
@@ -411,14 +491,12 @@ export function OrderDetailPage() {
                       const isLast = i === history.length - 1
                       return (
                         <li key={entry.id} className="flex gap-4 relative">
-                          {/* Dot */}
                           <div className={`relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
                             isLast ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
                           }`}>
                             <Icon className="h-3 w-3" />
                           </div>
 
-                          {/* Content */}
                           <div className={`pb-6 flex-1 ${isLast ? '' : ''}`}>
                             <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                               <div className="min-w-0">
@@ -454,10 +532,8 @@ export function OrderDetailPage() {
           </Card>
         </div>
 
-        {/* RIGHT: Customer + Totals */}
         <div className="space-y-6">
 
-          {/* Customer Profile */}
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
               <User className="h-5 w-5 text-primary" />
@@ -484,7 +560,6 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Order Totals */}
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">Order Totals</CardTitle>
@@ -532,7 +607,6 @@ export function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Status Update Dialog */}
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

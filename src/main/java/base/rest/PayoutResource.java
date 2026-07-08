@@ -5,6 +5,7 @@ import base.security.CallerContext;
 import base.service.PayoutService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/payouts")
@@ -79,6 +81,7 @@ public class PayoutResource {
     }
 
     @POST
+    @Transactional
     public Response create(CreatePayoutRequest request) {
         PayoutRequest payout = payoutService.createPayout(
                 caller.tenantCode(),
@@ -104,6 +107,7 @@ public class PayoutResource {
     @POST
     @Path("/{id}/approve")
     @RolesAllowed({"admin", "operator"})
+    @Transactional
     public PayoutResponse approve(@PathParam("id") UUID id) {
         return PayoutResponse.from(payoutService.approvePayout(caller.tenantCode(), id, caller.userId()));
     }
@@ -111,7 +115,39 @@ public class PayoutResource {
     @POST
     @Path("/{id}/reject")
     @RolesAllowed({"admin", "operator"})
+    @Transactional
     public PayoutResponse reject(@PathParam("id") UUID id) {
         return PayoutResponse.from(payoutService.rejectPayout(caller.tenantCode(), id, caller.userId()));
+    }
+
+    @POST
+    @Path("/batch-approve")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public Response batchApprove(Map<String, List<UUID>> body) {
+        List<UUID> ids = body.get("ids");
+        int count = payoutService.batchApprove(caller.tenantCode(), ids, caller.userId());
+        return Response.ok(Map.of("approved", count)).build();
+    }
+
+    @POST
+    @Path("/batch-reject")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public Response batchReject(Map<String, List<UUID>> body) {
+        List<UUID> ids = body.get("ids");
+        int count = payoutService.batchReject(caller.tenantCode(), ids, caller.userId());
+        return Response.ok(Map.of("rejected", count)).build();
+    }
+
+    @GET
+    @Path("/export")
+    @RolesAllowed({"admin", "operator"})
+    @Produces("text/csv")
+    public Response export(@QueryParam("status") String status) {
+        String csv = payoutService.generateCsv(caller.tenantCode(), status);
+        return Response.ok(csv)
+                .header("Content-Disposition", "attachment; filename=\"payouts.csv\"")
+                .build();
     }
 }
