@@ -11,6 +11,8 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -235,23 +237,36 @@ class WalletServiceTest {
         String tenantId = tenant();
         Wallet wallet = createWallet(tenantId, "VND");
         walletService.creditAvailable(
-                tenantId, wallet.getId(), Money.of(100_000, "VND"), "DEPOSIT", "SETUP", UUID.randomUUID(), actorId, null);
+                tenantId,
+                wallet.getId(),
+                Money.of(1_000_000, "VND"),
+                "DEPOSIT",
+                "SETUP",
+                UUID.randomUUID(),
+                actorId,
+                null
+        );
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        ExecutorService executor = Executors.newFixedThreadPool(50);
         CountDownLatch start = new CountDownLatch(1);
+        List<Future<Boolean>> results = new ArrayList<>();
         try {
-            Future<Boolean> first = executor.submit(() -> debitAfterStart(start, tenantId, wallet.getId()));
-            Future<Boolean> second = executor.submit(() -> debitAfterStart(start, tenantId, wallet.getId()));
+            for (int i = 0; i < 50; i++) {
+                results.add(executor.submit(() -> debitAfterStart(start, tenantId, wallet.getId(), 20_000)));
+            }
 
             start.countDown();
-            int successfulDebits = (first.get(10, TimeUnit.SECONDS) ? 1 : 0)
-                    + (second.get(10, TimeUnit.SECONDS) ? 1 : 0);
+            int successfulDebits = 0;
+            for (Future<Boolean> result : results) {
+                successfulDebits += result.get(15, TimeUnit.SECONDS) ? 1 : 0;
+            }
 
-            assertEquals(1, successfulDebits);
-            assertBalances(tenantId, wallet.getId(), 20_000, 0);
-            assertEquals(2, countTransactions(tenantId, wallet.getId()));
+            assertEquals(50, successfulDebits);
+            assertBalances(tenantId, wallet.getId(), 0, 0);
+            assertEquals(51, countTransactions(tenantId, wallet.getId()));
         } finally {
             executor.shutdownNow();
+            assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
         }
     }
 
@@ -263,13 +278,13 @@ class WalletServiceTest {
         return "test-" + UUID.randomUUID();
     }
 
-    private boolean debitAfterStart(CountDownLatch start, String tenantId, UUID walletId) throws Exception {
+    private boolean debitAfterStart(CountDownLatch start, String tenantId, UUID walletId, long amountMinor) throws Exception {
         start.await(5, TimeUnit.SECONDS);
         try {
             walletService.debitAvailable(
                     tenantId,
                     walletId,
-                    Money.of(80_000, "VND"),
+                    Money.of(amountMinor, "VND"),
                     "WITHDRAWAL",
                     "CONCURRENCY_TEST",
                     UUID.randomUUID(),

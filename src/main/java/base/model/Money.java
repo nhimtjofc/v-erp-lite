@@ -1,5 +1,6 @@
 package base.model;
 
+import jakarta.ws.rs.BadRequestException;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -27,6 +28,9 @@ public final class Money {
     public static Money fromDecimal(BigDecimal decimalAmount, String currency) {
         Objects.requireNonNull(decimalAmount);
         Objects.requireNonNull(currency);
+        if (decimalAmount.signum() <= 0) {
+            throw new BadRequestException("Số tiền phải lớn hơn 0");
+        }
         int exponent = getExponent(currency);
         BigDecimal minorAmount = decimalAmount.movePointRight(exponent).setScale(0, RoundingMode.HALF_UP);
         return new Money(minorAmount.longValue(), currency);
