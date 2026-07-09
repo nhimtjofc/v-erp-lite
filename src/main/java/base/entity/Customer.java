@@ -1,11 +1,15 @@
 package base.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDate;
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "customer")
@@ -64,6 +68,38 @@ public class Customer extends BaseEntity {
         if (tier == null || tier.isBlank()) {
             tier = "SILVER";
         }
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
+    }
+
+    public Long getTotalSpendMinor() {
+        return totalSpendMinor;
+    }
+
+    public void setTotalSpendMinor(Long totalSpendMinor) {
+        this.totalSpendMinor = totalSpendMinor;
+    }
+
+    public String getTier() {
+        return tier;
+    }
+
+    public void setTier(String tier) {
+        this.tier = tier;
     }
 
     private String generateCardNumber() {

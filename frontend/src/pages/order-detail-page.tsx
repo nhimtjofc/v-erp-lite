@@ -229,11 +229,25 @@ export function OrderDetailPage() {
   const canDelete = isAdmin && isFinal
 
   const statusCfg = getStatusConfig(status)
+<<<<<<< HEAD
 
   const currentNotes = notes ?? order.notes ?? ''
   const currentShipping = shippingFeeMinor ?? order.shippingFeeMinor?.toString() ?? '0'
   const currentDiscount = discountPercent ?? order.discountPercent?.toString() ?? '0'
   const currentVat = vatPercent ?? order.vatPercent?.toString() ?? '0'
+=======
+  const orderWithExtras = order as typeof order & {
+    notes?: string | null
+    shippingFeeMinor?: number | null
+    discountPercent?: number | null
+    vatPercent?: number | null
+  }
+
+  const currentNotes = notes ?? orderWithExtras.notes ?? ''
+  const currentShipping = shippingFeeMinor ?? orderWithExtras.shippingFeeMinor?.toString() ?? '0'
+  const currentDiscount = discountPercent ?? orderWithExtras.discountPercent?.toString() ?? '0'
+  const currentVat = vatPercent ?? orderWithExtras.vatPercent?.toString() ?? '0'
+>>>>>>> 071fbf0d4336084f5ba6ada3f2e1628e362b054f
 
   const handleDeleteOrder = () => {
     setDeleteError(null)
