@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "generate-api": "openapi-ts"
+    "generate-api": "curl -s http://localhost:8081/api/q/openapi.yaml -o openapi-spec.yaml && openapi-ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

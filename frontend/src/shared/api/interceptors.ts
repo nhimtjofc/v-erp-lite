@@ -1,4 +1,5 @@
 import { client } from './gen/client.gen'
+import { userManager } from '@/shared/auth'
 
 // Registered once at app startup. Stashed in main.tsx import.
 
@@ -10,6 +11,10 @@ const KC_CLIENT = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'v-erp-app'
 
 client.interceptors.request.use((request) => {
   retryClones.set(request, request.clone())
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    request.headers.set('Authorization', `Bearer ${token}`)
+  }
   return request
 })
 
@@ -57,8 +62,6 @@ function scheduleTimerRetry(delaySec: number) {
 }
 
 async function initAutoRefresh() {
-  const { userManager } = await import('@/shared/auth')
-
   const user = await userManager.getUser()
   if (user?.expires_in && user.expires_in > 0) {
     scheduleRefresh(user.expires_in)
@@ -86,7 +89,6 @@ async function failAuth() {
   const authority = `${KC_URL}/realms/${KC_REALM}`
   const clientId = KC_CLIENT
   localStorage.removeItem(`oidc.user:${authority}:${clientId}`)
-  const { userManager } = await import('@/shared/auth')
   await userManager.signinRedirect()
 }
 
@@ -111,8 +113,6 @@ function oidcStoreKey(): string {
 async function refreshToken(): Promise<boolean> {
   const refreshTokenValue = localStorage.getItem('refresh_token')
   if (!refreshTokenValue) return false
-
-  const { userManager } = await import('@/shared/auth')
 
   try {
     await userManager.signinSilent()

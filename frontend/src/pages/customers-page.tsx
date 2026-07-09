@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from '@tanstack/react-router'
-import { useList2Query } from '@/shared/api'
+import { useListCustomersQuery, useMeQuery } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/shared/ui/button'
@@ -15,105 +14,37 @@ import type { RowAction } from '@/shared/ui/data-table-row-actions'
 
 export function CustomersPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { data: customers, isLoading } = useList2Query()
+  const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const roleName = me?.role?.name
+  const isCustomer = roleName === 'customer'
+
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const { data: customers, isLoading } = useListCustomersQuery(
+    debouncedSearch ? { query: { search: debouncedSearch } } : undefined
+  )
   const customerList = customers ?? []
 
-  const columns = useMemo(
-    (): ColumnDef<Customer>[] => [
-      {
-        accessorKey: 'firstName',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Name" />
-        ),
-        cell: ({ row }) => {
-          const first = row.original.firstName ?? ''
-          const last = row.original.lastName ?? ''
-          const name = [first, last].filter(Boolean).join(' ') || 'Unnamed'
-          return (
-            <div>
-              <div className="text-sm font-medium">{name}</div>
-              <div className="mt-px truncate text-xs text-muted-foreground">
-                {row.original.email}
-              </div>
-            </div>
-          )
-        },
-      },
-      {
-        accessorKey: 'email',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Email" />
-        ),
-      },
-      {
-        accessorKey: 'phone',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Phone" />
-        ),
-      },
-      {
-        accessorKey: 'active',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Status" />
-        ),
-        cell: ({ row }) => (
-          <Badge variant={row.original.active ? 'default' : 'secondary'}>
-            {row.original.active ? 'Active' : 'Inactive'}
-          </Badge>
-        ),
-        filterFn: (row, id, value: string[]) =>
-          value.includes(String(row.getValue(id))),
-      },
-      {
-        accessorKey: 'createdAt',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Created" />
-        ),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {new Date(row.original.createdAt!).toLocaleDateString()}
-          </span>
-        ),
-      },
-      {
-        id: 'actions',
-        enableSorting: false,
-        enableHiding: false,
-        cell: ({ row }) => {
-          const id = row.original.id!
-          const actions: RowAction[] = [
-            {
-              label: 'View',
-              icon: Eye,
-              onClick: () => navigate({ to: '/customers/$id', params: { id } }),
-            },
-            {
-              label: 'Edit',
-              icon: Pencil,
-              onClick: () =>
-                navigate({ to: '/customers/$id', params: { id } }),
-            },
-            {
-              label: 'Delete',
-              icon: Trash2,
-              variant: 'destructive',
-              separator: true,
-              onClick: () => {
-                // TODO: confirm dialog + delete mutation
-              },
-            },
-          ]
-          return (
-            <div className="flex justify-end">
-              <DataTableRowActions actions={actions} />
-            </div>
-          )
-        },
-      },
-    ],
-    [navigate]
-  )
+  if (isMeLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
+  }
+
+  if (!roleName || isCustomer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">
+          Only staff members are allowed to view the customer list.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

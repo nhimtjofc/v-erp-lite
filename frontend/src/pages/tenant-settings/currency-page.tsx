@@ -25,7 +25,7 @@ export function CurrencyPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
 
   const [currency, setCurrency] = useState<CurrencySettings>({})
   const [savedCurrency, setSavedCurrency] = useState<CurrencySettings>({})
@@ -121,6 +121,7 @@ export function CurrencyPage() {
             onChange={(v) => setCurrency((prev) => ({ ...prev, code: v }))}
             options={CURRENCIES}
             placeholder={t('common:select')}
+            disabled={!isAdmin}
           />
           {effective?.currency?.code && !currency.code && (
             <p className="text-xs text-muted-foreground">

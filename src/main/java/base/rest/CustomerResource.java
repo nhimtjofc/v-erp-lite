@@ -23,7 +23,35 @@ public class CustomerResource {
     CallerContext caller;
 
     @GET
-    public List<Customer> list(@QueryParam("search") String search) {
+    @Path("/me")
+    @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    @Transactional
+    public Customer getMyCustomerProfile() {
+        String email = caller.userEmail();
+        String tenantCode = caller.tenantCode();
+        Customer customer = Customer.find("email = ?1 and tenantId = ?2", email, tenantCode).firstResult();
+        if (customer == null) {
+            customer = new Customer();
+            customer.setId(UUID.randomUUID());
+            customer.setTenantId(tenantCode);
+            customer.setEmail(email);
+            String preferredUsername = caller.preferredUsername();
+            if (preferredUsername != null && !preferredUsername.isBlank()) {
+                customer.setFirstName(preferredUsername);
+                customer.setLastName("");
+            } else {
+                customer.setFirstName("Customer");
+                customer.setLastName("");
+            }
+            customer.setActive(true);
+            customer.setCreatedBy(caller.userId());
+            customer.persist();
+        }
+        return customer;
+    }
+
+    @GET
+    public List<Customer> listCustomers(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
@@ -37,7 +65,7 @@ public class CustomerResource {
 
     @GET
     @Path("/{id}")
-    public Customer get(@PathParam("id") UUID id) {
+    public Customer getCustomer(@PathParam("id") UUID id) {
         Customer customer = Customer.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (customer == null) {
             throw new NotFoundException("Customer not found");
@@ -47,7 +75,7 @@ public class CustomerResource {
 
     @POST
     @Transactional
-    public Response create(Customer customer) {
+    public Response createCustomer(Customer customer) {
         customer.setId(UUID.randomUUID());
         customer.setTenantId(caller.tenantCode());
         customer.setCreatedBy(caller.userId());
@@ -58,7 +86,7 @@ public class CustomerResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Customer update(@PathParam("id") UUID id, Customer updated) {
+    public Customer updateCustomer(@PathParam("id") UUID id, Customer updated) {
         Customer customer = Customer.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (customer == null) {
             throw new NotFoundException("Customer not found");
@@ -78,7 +106,7 @@ public class CustomerResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteCustomer(@PathParam("id") UUID id) {
         long deleted = Customer.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Customer not found");

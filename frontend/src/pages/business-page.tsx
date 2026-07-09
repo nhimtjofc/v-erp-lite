@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useListQuery, useCreateMutation, useUpdateMutation } from '@/shared/api'
+import { useListQuery, useCreateBusinessMutation, useUpdateBusinessMutation, useMeQuery } from '@/shared/api'
 import type { Business } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -10,9 +10,13 @@ import { Label } from '@/shared/ui/label'
 
 export function BusinessPage() {
   const { t } = useTranslation()
+  const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const roleName = me?.role?.name
+  const isCustomer = roleName === 'customer'
+
   const { data: businesses, isLoading } = useListQuery()
-  const createMutation = useCreateMutation()
-  const updateMutation = useUpdateMutation()
+  const createMutation = useCreateBusinessMutation()
+  const updateMutation = useUpdateBusinessMutation()
   const [business, setBusiness] = useState<Business | null>(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -33,7 +37,8 @@ export function BusinessPage() {
       const created = await createMutation.mutateAsync({ body: { name: 'My Business' } as Business }) as Business
       setBusiness(created)
       setForm(created)
-      queryClient.invalidateQueries({ queryKey: ['list'] })
+      await queryClient.invalidateQueries({ queryKey: ['list'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list'], type: 'active' })
       setEditing(true)
     } catch (err) {
       console.error(err)
@@ -49,7 +54,8 @@ export function BusinessPage() {
       const updated = await updateMutation.mutateAsync({ path: { id: business.id! }, body: form })
       setBusiness(updated)
       setEditing(false)
-      queryClient.invalidateQueries({ queryKey: ['list'] })
+      await queryClient.invalidateQueries({ queryKey: ['list'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list'], type: 'active' })
     } catch (err) {
       console.error(err)
     } finally {
@@ -57,8 +63,19 @@ export function BusinessPage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || isMeLoading) {
     return <p className="text-muted-foreground py-8 text-center">{t('common:loading', 'Loading...')}</p>
+  }
+
+  if (!roleName || isCustomer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">
+          Only staff members are allowed to view business details.
+        </p>
+      </div>
+    )
   }
 
   if (!business) {

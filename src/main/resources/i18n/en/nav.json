@@ -17,9 +17,14 @@
   "darkMode": "Dark Mode",
   "logout": "Logout",
   "businessFeatures": "Business Features",
+  "products": "Products",
+  "orders": "Orders",
+  "vouchers": "Vouchers",
   "businessAdmin": "Business Settings",
   "systemAdmin": "System Admin",
   "admin": "Admin",
   "administration": "Administration",
-  "tenants": "Tenants"
+  "tenants": "Tenants",
+  "shop": "Shop",
+  "cart": "Cart"
 }

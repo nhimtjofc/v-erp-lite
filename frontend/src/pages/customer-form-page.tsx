@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCreate2Mutation } from '@/shared/api'
+import { useCreateCustomerMutation } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
@@ -28,7 +28,7 @@ export function CustomerFormPage() {
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
   }
 
-  const createMutation = useCreate2Mutation()
+  const createMutation = useCreateCustomerMutation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +36,8 @@ export function CustomerFormPage() {
     setError(null)
     try {
       const customer = await createMutation.mutateAsync({ body: form }) as Customer
-      queryClient.invalidateQueries({ queryKey: ['list2'] })
+      await queryClient.invalidateQueries({ queryKey: ['list3'], refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: ['list3'], type: 'active' })
       router.navigate({ to: '/customers/$id', params: { id: customer.id! } })
     } catch (err) {
       setError(t('common:error', 'Failed to create customer'))

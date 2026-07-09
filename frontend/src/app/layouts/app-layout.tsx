@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useRouter, useLocation } from '@tanstack/react-router'
-import { logout, getUser } from '@/shared/auth'
+import { Link, useRouter, useRouterState } from '@tanstack/react-router'
+import { logout } from '@/shared/auth'
 import { useMeQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { navGroups, profileGroup, type NavItem } from '@/app/nav-registry'
 import { Button } from '@/shared/ui/button'
@@ -337,277 +337,233 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 /* ------------------------------------------------------------------ */
 
 export function AppLayout({ children }: { children: ReactNode }) {
-    const router = useRouter()
-    const location = useLocation()
-    const [user, setUser] = useState<User | null>(null)
-    const [mobileOpen, setMobileOpen] = useState(false)
-    const [collapsed, setCollapsed] = useState(() => {
-        try {
-            return localStorage.getItem('sidebar:collapsed') === 'true'
-        } catch {
-            return false
-        }
-    })
-    const { isDark, setIsDark } = useTheme()
-    const { t } = useTranslation()
-    const { data: me } = useMeQuery()
-    const isAdmin = me?.role?.name === 'admin'
-
-    useEffect(() => {
-        getUser().then(setUser)
-    }, [])
-
-    const toggleCollapsed = useCallback(() => {
-        setCollapsed((prev) => {
-            const next = !prev
-            try {
-                localStorage.setItem('sidebar:collapsed', String(next))
-            } catch {
-                // ignore
-            }
-            return next
-        })
-    }, [])
+  const router = useRouter()
+  const { user } = useAuthStore()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const { isDark, setIsDark } = useTheme()
+  const { t } = useTranslation()
+  const { data: me } = useMeQuery()
+  const role = me?.role?.name
+  const isAdmin = role === 'admin'
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const homePath = role === 'admin' ? '/orders' : role === 'customer' || role === 'user' ? '/shop' : '/dashboard'
 
     const initials = getInitials(user)
 
-    const handleLogout = async () => {
-        await logout()
+  const handleLogout = async () => {
+    await logout()
+  }
+
+  useEffect(() => {
+    if (!role) return
+
+    const adminAllowed =
+      pathname === '/dashboard' ||
+      pathname.startsWith('/customers') ||
+      pathname.startsWith('/products') ||
+      pathname.startsWith('/orders') ||
+      pathname.startsWith('/vouchers') ||
+      pathname.startsWith('/shop') ||
+      pathname.startsWith('/cart') ||
+      pathname.startsWith('/profile')
+
+    const customerAllowed =
+      pathname.startsWith('/shop') ||
+      pathname.startsWith('/cart') ||
+      pathname.startsWith('/profile')
+
+    if (role === 'admin' && !adminAllowed) {
+      router.navigate({ to: '/orders', replace: true })
+      return
     }
 
-    const renderGroup = (group: { labelKey: string; items: NavItem[]; adminOnly?: boolean }) => (
+    if ((role === 'customer' || role === 'user') && !customerAllowed) {
+      router.navigate({ to: '/shop', replace: true })
+    }
+  }, [pathname, role, router])
+
+  const canSeeRole = (roles?: string[]) => {
+    if (!roles) return true
+    return role ? roles.includes(role) : false
+  }
+
+  const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => {
+    const renderGroup = (group: NavGroup) => {
+      const items = group.items.filter((item) => {
+        if (item.adminOnly && !isAdmin) return false
+        if (item.hideForRoles && me?.role?.name && item.hideForRoles.includes(me.role.name)) return false
+        return canSeeRole(item.roles)
+      })
+      if (items.length === 0) return null
+
+      return (
         <div key={group.labelKey}>
-            <div
-                className={cn(
-                    'mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 transition-all duration-200',
-                    collapsed && 'h-0 opacity-0 mb-0 overflow-hidden'
-                )}
-                aria-hidden={collapsed}
-            >
-                {t(group.labelKey)}
-            </div>
-            <div className="space-y-0.5">
-                {group.items.map((item) => (
-                    <SidebarNavItem
-                        key={item.to}
-                        item={item}
-                        collapsed={collapsed}
-                        onNavigate={undefined}
-                    />
-                ))}
-            </div>
+          <div className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+            {t(group.labelKey)}
+          </div>
+          <div className="space-y-0.5">
+            {items.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  activeProps={{
+                    className:
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium bg-sidebar-accent text-sidebar-accent-foreground transition-colors',
+                  }}
+                  onClick={onNavigate}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {t(item.labelKey)}
+                </Link>
+              )
+            })}
+          </div>
         </div>
-    )
+      )
+    }
 
     return (
-        <div className="flex h-screen overflow-hidden">
-            {/* Desktop Sidebar */}
-            <aside
-                className={cn(
-                    'relative hidden md:flex flex-col border-r bg-sidebar transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-                    collapsed ? 'w-16' : 'w-64'
-                )}
-                data-collapsed={collapsed}
-            >
-                {/* Header with toggle */}
-                <div
-                    className={cn(
-                        'flex h-14 shrink-0 items-center border-b border-sidebar-border transition-all duration-300',
-                        collapsed ? 'justify-center px-2' : 'justify-between px-4'
-                    )}
-                >
-                    {collapsed ? (
-                        <button
-                            onClick={toggleCollapsed}
-                            className="flex h-10 w-10 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                            aria-label="Expand sidebar"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </button>
-                    ) : (
-                        <>
-                            <Link
-                                to="/dashboard"
-                                className="flex items-center gap-2 font-semibold text-sidebar-foreground"
-                            >
-                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <span className="text-xs font-bold">V</span>
-                                </div>
-                                <span className="whitespace-nowrap transition-opacity duration-200">
-                                    {t('nav:appName')}
-                                </span>
-                            </Link>
-                            <button
-                                onClick={toggleCollapsed}
-                                className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                                aria-label="Collapse sidebar"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                        </>
-                    )}
+      <nav className="flex flex-1 flex-col p-3">
+        <div className="flex-1 space-y-4 overflow-y-auto">
+          {navGroups.map((group) => {
+            if (group.adminOnly && !isAdmin) return null
+            if (!canSeeRole(group.roles)) return null
+            return renderGroup(group)
+          })}
+        </div>
+        <div className="mt-auto space-y-1 border-t border-sidebar-border pt-3">
+          {renderGroup(profileGroup)}
+        </div>
+      </nav>
+    )
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar">
+        <div className="flex h-14 items-center border-b border-sidebar-border px-4">
+          <Link
+            to={homePath}
+            className="flex items-center gap-2 font-semibold text-sidebar-foreground"
+          >
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+              <span className="text-xs font-bold">V</span>
+            </div>
+            <span>{t('nav:appName')}</span>
+          </Link>
+        </div>
+        <NavLinks />
+      </aside>
+
+      {/* Mobile Drawer */}
+      {mobileOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar shadow-xl md:hidden">
+            <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
+              <Link
+                to={homePath}
+                className="flex items-center gap-2 font-semibold text-sidebar-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                  <span className="text-xs font-bold">V</span>
                 </div>
+                <span>{t('nav:appName')}</span>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-sidebar-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <NavLinks onNavigate={() => setMobileOpen(false)} />
+          </aside>
+        </>
+      )}
 
-                {/* Navigation */}
-                <nav className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden p-3">
-                    <div className="flex-1 space-y-4">
-                        {navGroups.map((group) => {
-                            if (group.adminOnly && !isAdmin) return null
-                            return renderGroup(group)
-                        })}
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
+          <div className="ml-auto flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                {user && (
+                  <span className="hidden text-sm text-muted-foreground sm:inline">
+                    {user.profile.email}
+                  </span>
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {user && (
+                  <DropdownMenuGroup>
+                    <DropdownMenuGroupLabel>
+                      {user.profile.name || user.profile.email}
+                    </DropdownMenuGroupLabel>
+                    <div className="border-b px-2 pb-1 mb-1">
+                      <p className="text-xs text-muted-foreground">{user.profile.email}</p>
                     </div>
-                    <div className="mt-auto space-y-1 border-t border-sidebar-border pt-3">
-                        {renderGroup(profileGroup)}
-                    </div>
-                </nav>
-
-            </aside>
-
-            {/* Mobile Drawer — always expanded */}
-            {mobileOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
-                        onClick={() => setMobileOpen(false)}
-                    />
-                    <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar shadow-xl md:hidden">
-                        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
-                            <Link
-                                to="/dashboard"
-                                className="flex items-center gap-2 font-semibold text-sidebar-foreground"
-                                onClick={() => setMobileOpen(false)}
-                            >
-                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <span className="text-xs font-bold">V</span>
-                                </div>
-                                <span>{t('nav:appName')}</span>
-                            </Link>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-sidebar-foreground"
-                                onClick={() => setMobileOpen(false)}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        <nav className="flex flex-1 flex-col p-3">
-                            <div className="flex-1 space-y-4 overflow-y-auto">
-                                {navGroups.map((group) => {
-                                    if (group.adminOnly && !isAdmin) return null
-                                    return (
-                                        <div key={group.labelKey}>
-                                            <div className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-                                                {t(group.labelKey)}
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                {group.items.map((item) => (
-                                                    <SidebarNavItem
-                                                        key={item.to}
-                                                        item={item}
-                                                        collapsed={false}
-                                                        onNavigate={() => setMobileOpen(false)}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                            <div className="mt-auto space-y-1 border-t border-sidebar-border pt-3">
-                                <div>
-                                    <div className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-                                        {t(profileGroup.labelKey)}
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        {profileGroup.items.map((item) => (
-                                            <SidebarNavItem
-                                                key={item.to}
-                                                item={item}
-                                                collapsed={false}
-                                                onNavigate={() => setMobileOpen(false)}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </nav>
-                    </aside>
-                </>
-            )}
-
-            {/* Main Content Area */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-                <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="md:hidden"
-                        onClick={() => setMobileOpen(true)}
-                        aria-label="Open menu"
-                    >
-                        <MenuIcon className="h-5 w-5" />
-                    </Button>
-
-                    <Breadcrumbs pathname={location.pathname} />
-
-                    <div className="ml-auto flex items-center gap-3">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent">
-                                <Avatar className="h-7 w-7">
-                                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                                </Avatar>
-                                {user && (
-                                    <span className="hidden text-sm text-muted-foreground sm:inline">
-                                        {user.profile.email}
-                                    </span>
-                                )}
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                {user && (
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuGroupLabel>
-                                            {user.profile.name || user.profile.email}
-                                        </DropdownMenuGroupLabel>
-                                        <div className="border-b px-2 pb-1 mb-1">
-                                            <p className="text-xs text-muted-foreground">{user.profile.email}</p>
-                                        </div>
-                                    </DropdownMenuGroup>
-                                )}
-                                <DropdownMenuLinkItem
-                                    className="cursor-pointer"
-                                    onClick={() => router.navigate({ to: '/profile' })}
-                                >
-                                    <UserIcon className="h-4 w-4" />
-                                    {t('nav:profile')}
-                                </DropdownMenuLinkItem>
-                                <DropdownMenuLinkItem
-                                    className="cursor-pointer"
-                                    onClick={() => router.navigate({ to: '/business' })}
-                                >
-                                    <Building2 className="h-4 w-4" />
-                                    {t('nav:business')}
-                                </DropdownMenuLinkItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    className="cursor-pointer"
-                                    onClick={() => setIsDark(!isDark)}
-                                >
-                                    {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                                    {isDark ? t('nav:lightMode') : t('nav:darkMode')}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    className="cursor-pointer text-destructive focus:text-destructive data-[highlighted]:text-destructive"
-                                    onClick={handleLogout}
-                                >
-                                    <LogOut className="h-4 w-4" />
-                                    {t('nav:logout')}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </header>
+                  </DropdownMenuGroup>
+                )}
+                <DropdownMenuLinkItem
+                  className="cursor-pointer"
+                  onClick={() => router.navigate({ to: '/profile' })}
+                >
+                  <UserIcon className="h-4 w-4" />
+                  {t('nav:profile')}
+                </DropdownMenuLinkItem>
+                {role !== 'admin' && role !== 'customer' && role !== 'user' && (
+                  <DropdownMenuLinkItem
+                    className="cursor-pointer"
+                    onClick={() => router.navigate({ to: '/business' })}
+                  >
+                    <Building2 className="h-4 w-4" />
+                    {t('nav:business')}
+                  </DropdownMenuLinkItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => setIsDark(!isDark)}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  {isDark ? t('nav:lightMode') : t('nav:darkMode')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive focus:text-destructive data-[highlighted]:text-destructive"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t('nav:logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
 
                 <main className="flex-1 overflow-y-auto p-6">{children}</main>
             </div>

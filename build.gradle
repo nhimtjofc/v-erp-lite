@@ -51,6 +51,9 @@ dependencies {
     // Cache
     implementation 'io.quarkus:quarkus-cache'
 
+    // Scheduler (cron-based escrow release)
+    implementation 'io.quarkus:quarkus-scheduler'
+
     // Test
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.quarkus:quarkus-test-security'
@@ -61,8 +64,8 @@ group 'base'
 version '1.0-SNAPSHOT'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    sourceCompatibility = JavaVersion.VERSION_24
+    targetCompatibility = JavaVersion.VERSION_24
 }
 
 test {

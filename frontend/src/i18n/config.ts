@@ -8,9 +8,9 @@ i18n
   .use(HttpBackend)
   .use(initReactI18next)
   .init({
-    lng: (typeof window !== 'undefined' ? localStorage.getItem('language') : null) || 'en',
-    fallbackLng: 'en',
-    ns: ['common', 'nav', 'dashboard', 'profile', 'settings', 'admin'],
+    lng: (typeof window !== 'undefined' ? localStorage.getItem('language') : null) || 'vi',
+    fallbackLng: 'vi',
+    ns: ['common', 'nav', 'dashboard', 'profile', 'settings', 'admin', 'catalog'],
     defaultNS: 'common',
     backend: {
       loadPath: `${API_BASE}/api/i18n/{{lng}}/{{ns}}`,

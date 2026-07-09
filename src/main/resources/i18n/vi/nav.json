@@ -17,9 +17,14 @@
   "darkMode": "Chế độ tối",
   "logout": "Đăng xuất",
   "businessFeatures": "Tính năng kinh doanh",
+  "products": "Sản phẩm",
+  "orders": "Đơn hàng",
+  "vouchers": "Khuyến mãi",
   "businessAdmin": "Cài đặt doanh nghiệp",
   "systemAdmin": "Quản trị hệ thống",
   "admin": "Quản trị",
   "administration": "Quản trị",
-  "tenants": "Đơn vị"
+  "tenants": "Đơn vị",
+  "shop": "Cửa hàng",
+  "cart": "Giỏ hàng"
 }
