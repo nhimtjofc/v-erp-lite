@@ -97,9 +97,8 @@ public final class TotpUtil {
 
     private static String base32Encode(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
-        int i = 0, index = 0;
+        int i = 0;
         int curByte, nextByte;
-        int[] bits = {8, 5, 5, 5, 5, 5, 5, 5};
 
         while (i < bytes.length) {
             curByte = bytes[i++] & 0xff;

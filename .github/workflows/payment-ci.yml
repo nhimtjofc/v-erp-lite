@@ -1,0 +1,48 @@
+name: payment-ci
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Start docker compose stack
+        run: docker compose up -d
+
+      - name: Wait for MariaDB and Keycloak
+        run: |
+          for i in {1..60}; do
+            docker compose ps | grep -E "(healthy|running)" && break
+            sleep 5
+          done
+          for i in {1..30}; do
+            docker compose exec -T mariadb mariadb-admin ping -h localhost -u root -proot-secret --silent && break
+            sleep 5
+          done
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8181/health/ready && break
+            sleep 5
+          done
+
+      - name: Run backend tests
+        run: ./gradlew test --tests "base.service.Dev2WalletServiceTest" --tests "base.service.PaymentTenantIsolationTest" --tests "base.service.PaymentModuleInvariantTest" --tests "base.service.MigrationValidationTest"
+
+      - name: Stop docker compose stack
+        if: always()
+        run: docker compose down -v

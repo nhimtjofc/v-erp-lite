@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  useGet4Query,
+  useGetOrderQuery,
   useUpdateStatusMutation,
   useMeQuery,
 } from '@/shared/api'
@@ -108,7 +108,7 @@ export function OrderDetailPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notes, setNotes] = useState<string | null>(null)
-  const [shippingFee, setShippingFee] = useState<string | null>(null)
+  const [shippingFeeMinor, setShippingFee] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<string | null>(null)
   const [vatPercent, setVatPercent] = useState<string | null>(null)
 
@@ -118,7 +118,7 @@ export function OrderDetailPage() {
     isFetching: isOrderFetching,
     error: orderError,
     refetch: refetchOrder,
-  } = useGet4Query({
+  } = useGetOrderQuery({
     path: { id },
   })
 
@@ -175,7 +175,7 @@ export function OrderDetailPage() {
   const updateOrderMutation = useMutation({
     mutationFn: () => cartApi.updateOrder(id, {
       notes: notes ?? undefined,
-      shippingFee: shippingFee !== null ? Number(shippingFee) : undefined,
+      shippingFeeMinor: shippingFeeMinor !== null ? Number(shippingFeeMinor) : undefined,
       discountPercent: discountPercent !== null ? Number(discountPercent) : undefined,
       vatPercent: vatPercent !== null ? Number(vatPercent) : undefined,
     }),
@@ -229,11 +229,17 @@ export function OrderDetailPage() {
   const canDelete = isAdmin && isFinal
 
   const statusCfg = getStatusConfig(status)
+  const orderWithExtras = order as typeof order & {
+    notes?: string | null
+    shippingFeeMinor?: number | null
+    discountPercent?: number | null
+    vatPercent?: number | null
+  }
 
-  const currentNotes = notes ?? order.notes ?? ''
-  const currentShipping = shippingFee ?? order.shippingFee?.toString() ?? '0'
-  const currentDiscount = discountPercent ?? order.discountPercent?.toString() ?? '0'
-  const currentVat = vatPercent ?? order.vatPercent?.toString() ?? '0'
+  const currentNotes = notes ?? orderWithExtras.notes ?? ''
+  const currentShipping = shippingFeeMinor ?? orderWithExtras.shippingFeeMinor?.toString() ?? '0'
+  const currentDiscount = discountPercent ?? orderWithExtras.discountPercent?.toString() ?? '0'
+  const currentVat = vatPercent ?? orderWithExtras.vatPercent?.toString() ?? '0'
 
   const handleDeleteOrder = () => {
     setDeleteError(null)
@@ -354,10 +360,10 @@ export function OrderDetailPage() {
 
                       <div className="text-right">
                         <div className="text-sm font-semibold">
-                          {formatUSD(Number(item.unitPrice) * (item.quantity ?? 0))}
+                          {formatUSD(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatUSD(Number(item.unitPrice))} × {item.quantity ?? 0}
+                          {formatUSD(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
                         </div>
                       </div>
                     </div>
@@ -568,37 +574,37 @@ export function OrderDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatUSD(Number(order.subtotalAmount))}</span>
+                  <span className="font-medium">{formatUSD(Number(order.subtotalAmountMinor))}</span>
                 </div>
 
-                {Number(order.discountAmount) > 0 && (
+                {Number(order.discountAmountMinor) > 0 && (
                   <div className="flex justify-between text-success">
                     <span className="flex items-center gap-1">
                       <Tag className="h-3.5 w-3.5" />
                       Discount {order.voucher?.code && `(${order.voucher.code})`}
                     </span>
-                    <span>-{formatUSD(Number(order.discountAmount))}</span>
+                    <span>-{formatUSD(Number(order.discountAmountMinor))}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping Fee</span>
                   <span>
-                    {Number(order.shippingFee) > 0
-                      ? `${formatUSD(Number(order.shippingFee))}`
+                    {Number(order.shippingFeeMinor) > 0
+                      ? `${formatUSD(Number(order.shippingFeeMinor))}`
                       : <span className="text-success font-medium">Free</span>}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{formatUSD(Number(order.taxAmount))}</span>
+                  <span>{formatUSD(Number(order.taxAmountMinor))}</span>
                 </div>
 
                 <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                   <span>Grand Total</span>
                   <span className="text-primary text-lg">
-                    {formatUSD(Number(order.finalAmount))}
+                    {formatUSD(Number(order.finalAmountMinor))}
                   </span>
                 </div>
               </div>

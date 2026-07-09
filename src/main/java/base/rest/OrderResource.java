@@ -42,6 +42,8 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+
     @Inject
     CallerContext caller;
 
@@ -69,34 +71,43 @@ public class OrderResource {
         public String note;
     }
 
+    public static class OrderUpdateRequest {
+        public String notes;
+        public Long shippingFeeMinor;
+        public BigDecimal discountPercent;
+        public BigDecimal vatPercent;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // List / Search
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"admin", "businessOwner", "operator"})
-    public List<Order> list(@QueryParam("search") String search,
+    public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
+        String normalizedSearch = search == null ? null : search.trim();
+        String normalizedStatus = status == null ? null : status.trim();
 
-        boolean hasSearch = search != null && !search.isBlank();
-        boolean hasStatus = status != null && !status.isBlank();
+        boolean hasSearch = normalizedSearch != null && !normalizedSearch.isBlank();
+        boolean hasStatus = normalizedStatus != null && !normalizedStatus.isBlank();
 
         if (hasSearch && hasStatus) {
-            String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            String upperStatus = status.trim().toUpperCase();
+            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            String upperStatus = normalizedStatus.toUpperCase();
             return Order.find(
                     "tenantId = ?1 AND deletedAt IS NULL AND status = ?2 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
                     tenantCode, upperStatus, escaped
             ).list();
         } else if (hasSearch) {
-            String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             return Order.find(
                     "tenantId = ?1 AND deletedAt IS NULL AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
                     tenantCode, escaped
             ).list();
         } else if (hasStatus) {
-            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, status.trim().toUpperCase());
+            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, normalizedStatus.toUpperCase());
         }
 
         return Order.list("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode);
@@ -145,7 +156,7 @@ public class OrderResource {
     @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
-    public Order get(@PathParam("id") UUID id) {
+    public Order getOrder(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
@@ -177,7 +188,10 @@ public class OrderResource {
     @Path("/checkout")
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
-    public Response checkout(CheckoutRequest request) {
+    public Response checkoutOrder(CheckoutRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
         if (request.customerId == null) {
             throw new BadRequestException("Customer ID is required");
         }
@@ -348,6 +362,9 @@ public class OrderResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Order updateStatus(@PathParam("id") UUID id, StatusUpdateRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
         if (request.status == null || request.status.isBlank()) {
             throw new BadRequestException("Status is required");
         }
@@ -448,19 +465,19 @@ public class OrderResource {
                 customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
                 // 1 point per 100 units of minor currency
                 int earnedPoints = (int) (amount / 100);
-                    customer.setPoints(customer.getPoints() + earnedPoints);
+                customer.setPoints(customer.getPoints() + earnedPoints);
 
-                    // Update tier dynamically based on new totalSpend
-                    long totalSpend = customer.getTotalSpendMinor();
-                    if (totalSpend >= 300000) {
-                        customer.setTier("DIAMOND");
-                    } else if (totalSpend >= 100000) {
-                        customer.setTier("PLATINUM");
-                    } else if (totalSpend >= 20000) {
-                        customer.setTier("GOLD");
-                    } else {
-                        customer.setTier("SILVER");
-                    }
+                // Update tier dynamically based on new totalSpend
+                long totalSpend = customer.getTotalSpendMinor();
+                if (totalSpend >= 300000) {
+                    customer.setTier("DIAMOND");
+                } else if (totalSpend >= 100000) {
+                    customer.setTier("PLATINUM");
+                } else if (totalSpend >= 20000) {
+                    customer.setTier("GOLD");
+                } else {
+                    customer.setTier("SILVER");
+                }
             }
             escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
         }
@@ -478,6 +495,62 @@ public class OrderResource {
         return order;
     }
 
+    @PUT
+    @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public Order updateOrder(@PathParam("id") UUID id, OrderUpdateRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
+
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        BigDecimal discountPct = request.discountPercent != null ? request.discountPercent : order.getDiscountPercent();
+        BigDecimal vatPct = request.vatPercent != null ? request.vatPercent : order.getVatPercent();
+        if (discountPct == null) {
+            discountPct = BigDecimal.ZERO;
+        }
+        if (vatPct == null) {
+            vatPct = BigDecimal.ZERO;
+        }
+        validatePercent("Discount percent", discountPct);
+        validatePercent("VAT percent", vatPct);
+
+        long shippingFee = request.shippingFeeMinor != null ? request.shippingFeeMinor : order.getShippingFeeMinor();
+        if (shippingFee < 0) {
+            throw new BadRequestException("Shipping fee must be greater than or equal to 0");
+        }
+
+        long subtotal = order.getItems().stream()
+                .mapToLong(OrderItem::getSubtotalAmountMinor)
+                .sum();
+        order.setSubtotalAmountMinor(subtotal);
+
+        long discountAmount = percentageOf(subtotal, discountPct);
+        long afterDiscount = Math.max(0, subtotal - discountAmount);
+        long vatAmount = percentageOf(afterDiscount, vatPct);
+        long finalAmount = Math.max(0, afterDiscount + shippingFee + vatAmount);
+
+        order.setDiscountPercent(discountPct);
+        order.setDiscountAmountMinor(discountAmount);
+        order.setVatPercent(vatPct);
+        order.setVatAmountMinor(vatAmount);
+        order.setTaxAmountMinor(vatAmount);
+        order.setShippingFeeMinor(shippingFee);
+        order.setFinalAmountMinor(finalAmount);
+        if (request.notes != null) {
+            order.setNotes(request.notes);
+        }
+        order.setUpdatedBy(caller.userId());
+
+        return order;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Private Helper
     // ─────────────────────────────────────────────────────────────────────────
@@ -486,7 +559,7 @@ public class OrderResource {
     @Path("/{id}")
     @RolesAllowed("admin")
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteOrder(@PathParam("id") UUID id) {
         String tenantCode = caller.tenantCode();
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
         if (order == null) {
@@ -514,6 +587,19 @@ public class OrderResource {
         history.setNote(note);
         history.setCreatedBy(userId);
         history.persist();
+    }
+
+    private void validatePercent(String label, BigDecimal value) {
+        if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(ONE_HUNDRED) > 0) {
+            throw new BadRequestException(label + " must be between 0 and 100");
+        }
+    }
+
+    private long percentageOf(long amountMinor, BigDecimal percent) {
+        return BigDecimal.valueOf(amountMinor)
+                .multiply(percent)
+                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
+                .longValue();
     }
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {

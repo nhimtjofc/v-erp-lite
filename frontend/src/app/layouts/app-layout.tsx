@@ -51,19 +51,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/orders') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
+      pathname.startsWith('/cart') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =
       pathname.startsWith('/shop') ||
+      pathname.startsWith('/cart') ||
       pathname.startsWith('/profile')
 
     if (role === 'admin' && !adminAllowed) {
       router.navigate({ to: '/orders', replace: true })
-      return
-    }
-
-    if (role === 'operator' && pathname.startsWith('/orders')) {
-      router.navigate({ to: '/dashboard', replace: true })
       return
     }
 

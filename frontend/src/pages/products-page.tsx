@@ -203,8 +203,8 @@ export function ProductsPage() {
                     <TableHead>{t('product')}</TableHead>
                     <TableHead>{t('sku')}</TableHead>
                     <TableHead>{t('category')}</TableHead>
-                    <TableHead>{t('basePrice')}</TableHead>
-                    <TableHead>{t('salePrice')}</TableHead>
+                    <TableHead>{t('basePriceMinor')}</TableHead>
+                    <TableHead>{t('salePriceMinor')}</TableHead>
                     <TableHead>{t('stockQuantity')}</TableHead>
                     <TableHead>{t('status')}</TableHead>
                     {canManageProducts && <TableHead></TableHead>}
@@ -272,17 +272,17 @@ export function ProductsPage() {
                       <TableCell>
                         {(() => {
                           const prices = product.variants && product.variants.length > 0
-                            ? product.variants.map((v) => v.price).filter((p) => p !== undefined && p !== null)
+                            ? product.variants.map((v) => v.priceMinor).filter((p) => p !== undefined && p !== null)
                             : []
                           const hasMultiplePrices = prices.length > 0 && new Set(prices).size > 1
                           if (hasMultiplePrices) {
                             const minPrice = Math.min(...prices)
-                            return t('priceFrom', { price: formatMoney(minPrice, i18n.language) })
+                            return t('priceFrom', { priceMinor: formatMoney(minPrice, i18n.language) })
                           }
-                          return formatMoney(product.basePrice, i18n.language)
+                          return formatMoney(product.basePriceMinor, i18n.language)
                         })()}
                       </TableCell>
-                      <TableCell>{formatMoney(product.salePrice, i18n.language)}</TableCell>
+                      <TableCell>{formatMoney(product.salePriceMinor, i18n.language)}</TableCell>
                       <TableCell>
                         {(() => {
                           const hasVariants = Boolean(product.variants && product.variants.length > 0)

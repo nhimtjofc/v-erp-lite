@@ -22,7 +22,7 @@ public class TagResource {
     CallerContext caller;
 
     @GET
-    public List<Tag> list(@QueryParam("search") String search) {
+    public List<Tag> listTags(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
@@ -36,7 +36,7 @@ public class TagResource {
 
     @GET
     @Path("/{id}")
-    public Tag get(@PathParam("id") UUID id) {
+    public Tag getTag(@PathParam("id") UUID id) {
         Tag tag = Tag.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (tag == null) {
             throw new NotFoundException("Tag not found");
@@ -47,7 +47,7 @@ public class TagResource {
     @POST
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response create(Tag tag) {
+    public Response createTag(Tag tag) {
         validate(tag);
         Tag existing = Tag.find("name = ?1 and tenantId = ?2", tag.getName().trim(), caller.tenantCode()).firstResult();
         if (existing != null) {
@@ -64,7 +64,7 @@ public class TagResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteTag(@PathParam("id") UUID id) {
         long deleted = Tag.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Tag not found");

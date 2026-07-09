@@ -396,18 +396,6 @@ components:
           format: int64
         currency:
           type: string
-    OrderUpdateRequest:
-      type: object
-      properties:
-        notes:
-          type: string
-        shippingFeeMinor:
-          type: integer
-          format: int64
-        discountPercent:
-          type: number
-        vatPercent:
-          type: number
     PasswordChangeRequest:
       type: object
       properties:
@@ -2049,41 +2037,6 @@ paths:
         - businessOwner
         - operator
   /api/orders/{id}:
-    put:
-      operationId: updateOrder
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/OrderUpdateRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Order"
-        "401":
-          description: Not Authorized
-        "403":
-          description: Not Allowed
-        "400":
-          description: Bad Request
-      summary: Update Order
-      tags:
-      - Order Resource
-      security:
-      - SecurityScheme:
-        - admin
-        - businessOwner
-        - operator
     get:
       operationId: getOrder
       parameters:

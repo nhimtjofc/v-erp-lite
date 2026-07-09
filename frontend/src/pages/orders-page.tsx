@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { useList4Query, type Order, useMeQuery } from '@/shared/api'
+import { useListOrdersQuery, type Order, useMeQuery } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
@@ -193,7 +193,7 @@ function OrderCard({
                 </div>
                 <div className="text-right">
                     <div className="font-bold text-foreground">
-                        {formatUSD(Number(order.finalAmount))}
+                        {formatUSD(Number(order.finalAmountMinor))}
                     </div>
                     <div className="text-xs text-muted-foreground">Total</div>
                 </div>
@@ -283,7 +283,7 @@ export function OrdersPage() {
     if (debouncedSearch) queryParams.search = debouncedSearch
     if (activeStatus) queryParams.status = activeStatus
 
-    const { data: orders, isLoading, refetch } = useList4Query(
+    const { data: orders, isLoading, refetch } = useListOrdersQuery(
         Object.keys(queryParams).length > 0 ? { query: queryParams } : undefined
     )
     const orderList = orders ?? []
@@ -548,7 +548,7 @@ export function OrdersPage() {
                                             {cfg.label}
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="font-bold text-sm">{formatUSD(Number(order.finalAmount))}</div>
+                                            <div className="font-bold text-sm">{formatUSD(Number(order.finalAmountMinor))}</div>
                                         </div>
                                         {canDeleteOrder(order) ? (
                                             <Button
