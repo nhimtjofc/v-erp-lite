@@ -139,6 +139,13 @@ export type OrderItem = {
     subtotalAmount?: number;
 };
 
+export type OrderUpdateRequest = {
+    notes?: string;
+    shippingFeeMinor?: number;
+    discountPercent?: number;
+    vatPercent?: number;
+};
+
 export type PasswordChangeRequest = {
     newPassword?: string;
 };
@@ -1199,6 +1206,39 @@ export type Get4Responses = {
 };
 
 export type Get4Response = Get4Responses[keyof Get4Responses];
+
+export type UpdateOrderData = {
+    body: OrderUpdateRequest;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/orders/{id}';
+};
+
+export type UpdateOrderErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type UpdateOrderResponses = {
+    /**
+     * OK
+     */
+    200: Order;
+};
+
+export type UpdateOrderResponse = UpdateOrderResponses[keyof UpdateOrderResponses];
 
 export type GetHistoryData = {
     body?: never;

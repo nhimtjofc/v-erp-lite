@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckoutData, CheckoutErrors, CheckoutResponses, CollectData, CollectErrors, CollectResponses, Create2Data, Create2Errors, Create2Responses, Create3Data, Create3Errors, Create3Responses, Create4Data, Create4Errors, Create4Responses, Create5Data, Create5Errors, Create5Responses, Create6Data, Create6Errors, Create6Responses, Create7Data, Create7Errors, Create7Responses, Create8Data, Create8Errors, Create8Responses, CreateData, CreateErrors, CreateResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, DebugCallerData, DebugCallerResponses, Delete2Data, Delete2Errors, Delete2Responses, Delete3Data, Delete3Errors, Delete3Responses, Delete4Data, Delete4Errors, Delete4Responses, Delete5Data, Delete5Errors, Delete5Responses, Delete6Data, Delete6Errors, Delete6Responses, Delete7Data, Delete7Errors, Delete7Responses, Delete8Data, Delete8Errors, Delete8Responses, DeleteData, DeleteErrors, DeleteResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, Get2Data, Get2Responses, Get3Data, Get3Errors, Get3Responses, Get4Data, Get4Errors, Get4Responses, Get5Data, Get5Responses, Get6Data, Get6Responses, Get7Data, Get7Errors, Get7Responses, Get8Data, Get8Errors, Get8Responses, Get9Data, Get9Errors, Get9Responses, GetData, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetErrors, GetHistoryData, GetHistoryErrors, GetHistoryResponses, GetImageData, GetImageResponses, GetMyCustomerProfileData, GetMyCustomerProfileErrors, GetMyCustomerProfileResponses, GetResponses, GetStatsData, GetStatsErrors, GetStatsResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, HealthData, HealthResponses, List2Data, List2Responses, List3Data, List3Errors, List3Responses, List4Data, List4Errors, List4Responses, List5Data, List5Errors, List5Responses, List6Data, List6Responses, List7Data, List7Errors, List7Responses, List8Data, List8Errors, List8Responses, List9Data, List9Errors, List9Responses, ListData, ListErrors, ListResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, MyVouchersData, MyVouchersErrors, MyVouchersResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, RegisterData, RegisterErrors, RegisterResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, Update2Data, Update2Errors, Update2Responses, Update3Data, Update3Errors, Update3Responses, Update4Data, Update4Errors, Update4Responses, Update5Data, Update5Errors, Update5Responses, Update6Data, Update6Errors, Update6Responses, Update7Data, Update7Errors, Update7Responses, UpdateData, UpdateErrors, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateResponses, UpdateStatusData, UpdateStatusErrors, UpdateStatusResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, UploadImageData, UploadImageResponses, ValidateVoucherData, ValidateVoucherErrors, ValidateVoucherResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
+import type { AddItemData, AddItemErrors, AddItemResponses, AdjustData, AdjustErrors, AdjustResponses, ApproveData, ApproveErrors, ApproveResponses, BatchApproveData, BatchApproveErrors, BatchApproveResponses, BatchRejectData, BatchRejectErrors, BatchRejectResponses, ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckoutCartData, CheckoutCartErrors, CheckoutCartResponses, CheckoutOrderData, CheckoutOrderErrors, CheckoutOrderResponses, CollectData, CollectErrors, CollectResponses, CompleteMockPaymentData, CompleteMockPaymentErrors, CompleteMockPaymentResponses, CreateBusinessData, CreateBusinessErrors, CreateBusinessResponses, CreateCartData, CreateCartErrors, CreateCartResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCustomerData, CreateCustomerErrors, CreateCustomerResponses, CreateData, CreateErrors, CreateIntentData, CreateIntentErrors, CreateIntentResponses, CreateProductData, CreateProductErrors, CreateProductResponses, CreateResponses, CreateTagData, CreateTagErrors, CreateTagResponses, CreateTenantData, CreateTenantErrors, CreateTenantResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, CreateUserData, CreateUserErrors, CreateUserResponses, CreateVoucherData, CreateVoucherErrors, CreateVoucherResponses, CreditData, CreditErrors, CreditResponses, DebitData, DebitErrors, DebitResponses, DebugCallerData, DebugCallerResponses, DeleteBusinessData, DeleteBusinessErrors, DeleteBusinessResponses, DeleteCartData, DeleteCartErrors, DeleteCartResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCustomerData, DeleteCustomerErrors, DeleteCustomerResponses, DeleteOrderData, DeleteOrderErrors, DeleteOrderResponses, DeleteProductData, DeleteProductErrors, DeleteProductResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, DeleteTenantData, DeleteTenantErrors, DeleteTenantResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, DeleteVoucherData, DeleteVoucherErrors, DeleteVoucherResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, EnsureData, EnsureErrors, EnsureResponses, ExportData, ExportErrors, ExportResponses, FailMockPaymentData, FailMockPaymentErrors, FailMockPaymentResponses, GetBusinessData, GetBusinessErrors, GetBusinessResponses, GetCartData, GetCartErrors, GetCartResponses, GetCategoryData, GetCategoryResponses, GetCustomerData, GetCustomerErrors, GetCustomerResponses, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetHistoryData, GetHistoryErrors, GetHistoryResponses, GetImageData, GetImageResponses, GetMyCustomerProfileData, GetMyCustomerProfileErrors, GetMyCustomerProfileResponses, GetOrCreateActiveData, GetOrCreateActiveErrors, GetOrCreateActiveResponses, GetOrderData, GetOrderErrors, GetOrderResponses, GetPaymentIntentData, GetPaymentIntentErrors, GetPaymentIntentResponses, GetPayoutData, GetPayoutErrors, GetPayoutResponses, GetProductData, GetProductResponses, GetStatsData, GetStatsErrors, GetStatsResponses, GetTagData, GetTagResponses, GetTenantData, GetTenantErrors, GetTenantResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserData, GetUserErrors, GetUserResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, GetVoucherData, GetVoucherErrors, GetVoucherResponses, GetWalletData, GetWalletErrors, GetWalletResponses, HandleWebhookData, HandleWebhookErrors, HandleWebhookResponses, HealthData, HealthResponses, InitiateMockPaymentData, InitiateMockPaymentErrors, InitiateMockPaymentResponses, ListBusinessesData, ListBusinessesErrors, ListBusinessesResponses, ListCartsData, ListCartsErrors, ListCartsResponses, ListCategoriesData, ListCategoriesResponses, ListCustomersData, ListCustomersErrors, ListCustomersResponses, ListData, ListErrors, ListOrdersData, ListOrdersErrors, ListOrdersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, ListResponses, ListTagsData, ListTagsResponses, ListTenantsData, ListTenantsErrors, ListTenantsResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, ListVouchersData, ListVouchersErrors, ListVouchersResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, MyVouchersData, MyVouchersErrors, MyVouchersResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, RegisterData, RegisterErrors, RegisterResponses, RejectData, RejectErrors, RejectResponses, RemoveItemData, RemoveItemErrors, RemoveItemResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, TransactionsData, TransactionsErrors, TransactionsResponses, UpdateBusinessData, UpdateBusinessErrors, UpdateBusinessResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateCustomerData, UpdateCustomerErrors, UpdateCustomerResponses, UpdateItemData, UpdateItemErrors, UpdateItemResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateOrderData, UpdateOrderErrors, UpdateOrderResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses, UpdateStatusData, UpdateStatusErrors, UpdateStatusResponses, UpdateTenantData, UpdateTenantErrors, UpdateTenantResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UpdateVoucherData, UpdateVoucherErrors, UpdateVoucherResponses, UploadImageData, UploadImageResponses, ValidateVoucherData, ValidateVoucherErrors, ValidateVoucherResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -128,18 +128,18 @@ export const register = <ThrowOnError extends boolean = false>(options: Options<
 });
 
 /**
- * List
+ * List Businesses
  */
-export const list = <ThrowOnError extends boolean = false>(options?: Options<ListData, ThrowOnError>): RequestResult<ListResponses, ListErrors, ThrowOnError> => (options?.client ?? client).get<ListResponses, ListErrors, ThrowOnError>({
+export const listBusinesses = <ThrowOnError extends boolean = false>(options?: Options<ListBusinessesData, ThrowOnError>): RequestResult<ListBusinessesResponses, ListBusinessesErrors, ThrowOnError> => (options?.client ?? client).get<ListBusinessesResponses, ListBusinessesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/businesses',
     ...options
 });
 
 /**
- * Create
+ * Create Business
  */
-export const create = <ThrowOnError extends boolean = false>(options: Options<CreateData, ThrowOnError>): RequestResult<CreateResponses, CreateErrors, ThrowOnError> => (options.client ?? client).post<CreateResponses, CreateErrors, ThrowOnError>({
+export const createBusiness = <ThrowOnError extends boolean = false>(options: Options<CreateBusinessData, ThrowOnError>): RequestResult<CreateBusinessResponses, CreateBusinessErrors, ThrowOnError> => (options.client ?? client).post<CreateBusinessResponses, CreateBusinessErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/businesses',
     ...options,
@@ -150,27 +150,27 @@ export const create = <ThrowOnError extends boolean = false>(options: Options<Cr
 });
 
 /**
- * Delete
+ * Delete Business
  */
-export const delete_ = <ThrowOnError extends boolean = false>(options: Options<DeleteData, ThrowOnError>): RequestResult<DeleteResponses, DeleteErrors, ThrowOnError> => (options.client ?? client).delete<DeleteResponses, DeleteErrors, ThrowOnError>({
+export const deleteBusiness = <ThrowOnError extends boolean = false>(options: Options<DeleteBusinessData, ThrowOnError>): RequestResult<DeleteBusinessResponses, DeleteBusinessErrors, ThrowOnError> => (options.client ?? client).delete<DeleteBusinessResponses, DeleteBusinessErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/businesses/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Business
  */
-export const get = <ThrowOnError extends boolean = false>(options: Options<GetData, ThrowOnError>): RequestResult<GetResponses, GetErrors, ThrowOnError> => (options.client ?? client).get<GetResponses, GetErrors, ThrowOnError>({
+export const getBusiness = <ThrowOnError extends boolean = false>(options: Options<GetBusinessData, ThrowOnError>): RequestResult<GetBusinessResponses, GetBusinessErrors, ThrowOnError> => (options.client ?? client).get<GetBusinessResponses, GetBusinessErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/businesses/{id}',
     ...options
 });
 
 /**
- * Update
+ * Update Business
  */
-export const update = <ThrowOnError extends boolean = false>(options: Options<UpdateData, ThrowOnError>): RequestResult<UpdateResponses, UpdateErrors, ThrowOnError> => (options.client ?? client).put<UpdateResponses, UpdateErrors, ThrowOnError>({
+export const updateBusiness = <ThrowOnError extends boolean = false>(options: Options<UpdateBusinessData, ThrowOnError>): RequestResult<UpdateBusinessResponses, UpdateBusinessErrors, ThrowOnError> => (options.client ?? client).put<UpdateBusinessResponses, UpdateBusinessErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/businesses/{id}',
     ...options,
@@ -181,14 +181,111 @@ export const update = <ThrowOnError extends boolean = false>(options: Options<Up
 });
 
 /**
- * List
+ * List Carts
  */
-export const list2 = <ThrowOnError extends boolean = false>(options?: Options<List2Data, ThrowOnError>): RequestResult<List2Responses, unknown, ThrowOnError> => (options?.client ?? client).get<List2Responses, unknown, ThrowOnError>({ url: '/api/categories', ...options });
+export const listCarts = <ThrowOnError extends boolean = false>(options?: Options<ListCartsData, ThrowOnError>): RequestResult<ListCartsResponses, ListCartsErrors, ThrowOnError> => (options?.client ?? client).get<ListCartsResponses, ListCartsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts',
+    ...options
+});
 
 /**
- * Create
+ * Create Cart
  */
-export const create2 = <ThrowOnError extends boolean = false>(options: Options<Create2Data, ThrowOnError>): RequestResult<Create2Responses, Create2Errors, ThrowOnError> => (options.client ?? client).post<Create2Responses, Create2Errors, ThrowOnError>({
+export const createCart = <ThrowOnError extends boolean = false>(options: Options<CreateCartData, ThrowOnError>): RequestResult<CreateCartResponses, CreateCartErrors, ThrowOnError> => (options.client ?? client).post<CreateCartResponses, CreateCartErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Or Create Active
+ */
+export const getOrCreateActive = <ThrowOnError extends boolean = false>(options: Options<GetOrCreateActiveData, ThrowOnError>): RequestResult<GetOrCreateActiveResponses, GetOrCreateActiveErrors, ThrowOnError> => (options.client ?? client).get<GetOrCreateActiveResponses, GetOrCreateActiveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/active/{customerId}',
+    ...options
+});
+
+/**
+ * Remove Item
+ */
+export const removeItem = <ThrowOnError extends boolean = false>(options: Options<RemoveItemData, ThrowOnError>): RequestResult<RemoveItemResponses, RemoveItemErrors, ThrowOnError> => (options.client ?? client).delete<RemoveItemResponses, RemoveItemErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/{cartId}/items/{itemId}',
+    ...options
+});
+
+/**
+ * Update Item
+ */
+export const updateItem = <ThrowOnError extends boolean = false>(options: Options<UpdateItemData, ThrowOnError>): RequestResult<UpdateItemResponses, UpdateItemErrors, ThrowOnError> => (options.client ?? client).put<UpdateItemResponses, UpdateItemErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/{cartId}/items/{itemId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Cart
+ */
+export const deleteCart = <ThrowOnError extends boolean = false>(options: Options<DeleteCartData, ThrowOnError>): RequestResult<DeleteCartResponses, DeleteCartErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCartResponses, DeleteCartErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/{id}',
+    ...options
+});
+
+/**
+ * Get Cart
+ */
+export const getCart = <ThrowOnError extends boolean = false>(options: Options<GetCartData, ThrowOnError>): RequestResult<GetCartResponses, GetCartErrors, ThrowOnError> => (options.client ?? client).get<GetCartResponses, GetCartErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/{id}',
+    ...options
+});
+
+/**
+ * Checkout Cart
+ */
+export const checkoutCart = <ThrowOnError extends boolean = false>(options: Options<CheckoutCartData, ThrowOnError>): RequestResult<CheckoutCartResponses, CheckoutCartErrors, ThrowOnError> => (options.client ?? client).post<CheckoutCartResponses, CheckoutCartErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/{id}/checkout',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Add Item
+ */
+export const addItem = <ThrowOnError extends boolean = false>(options: Options<AddItemData, ThrowOnError>): RequestResult<AddItemResponses, AddItemErrors, ThrowOnError> => (options.client ?? client).post<AddItemResponses, AddItemErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/carts/{id}/items',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List Categories
+ */
+export const listCategories = <ThrowOnError extends boolean = false>(options?: Options<ListCategoriesData, ThrowOnError>): RequestResult<ListCategoriesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListCategoriesResponses, unknown, ThrowOnError>({ url: '/api/categories', ...options });
+
+/**
+ * Create Category
+ */
+export const createCategory = <ThrowOnError extends boolean = false>(options: Options<CreateCategoryData, ThrowOnError>): RequestResult<CreateCategoryResponses, CreateCategoryErrors, ThrowOnError> => (options.client ?? client).post<CreateCategoryResponses, CreateCategoryErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/categories',
     ...options,
@@ -199,23 +296,23 @@ export const create2 = <ThrowOnError extends boolean = false>(options: Options<C
 });
 
 /**
- * Delete
+ * Delete Category
  */
-export const delete2 = <ThrowOnError extends boolean = false>(options: Options<Delete2Data, ThrowOnError>): RequestResult<Delete2Responses, Delete2Errors, ThrowOnError> => (options.client ?? client).delete<Delete2Responses, Delete2Errors, ThrowOnError>({
+export const deleteCategory = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryData, ThrowOnError>): RequestResult<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/categories/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Category
  */
-export const get2 = <ThrowOnError extends boolean = false>(options: Options<Get2Data, ThrowOnError>): RequestResult<Get2Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get2Responses, unknown, ThrowOnError>({ url: '/api/categories/{id}', ...options });
+export const getCategory = <ThrowOnError extends boolean = false>(options: Options<GetCategoryData, ThrowOnError>): RequestResult<GetCategoryResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetCategoryResponses, unknown, ThrowOnError>({ url: '/api/categories/{id}', ...options });
 
 /**
- * Update
+ * Update Category
  */
-export const update2 = <ThrowOnError extends boolean = false>(options: Options<Update2Data, ThrowOnError>): RequestResult<Update2Responses, Update2Errors, ThrowOnError> => (options.client ?? client).put<Update2Responses, Update2Errors, ThrowOnError>({
+export const updateCategory = <ThrowOnError extends boolean = false>(options: Options<UpdateCategoryData, ThrowOnError>): RequestResult<UpdateCategoryResponses, UpdateCategoryErrors, ThrowOnError> => (options.client ?? client).put<UpdateCategoryResponses, UpdateCategoryErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/categories/{id}',
     ...options,
@@ -226,18 +323,18 @@ export const update2 = <ThrowOnError extends boolean = false>(options: Options<U
 });
 
 /**
- * List
+ * List Customers
  */
-export const list3 = <ThrowOnError extends boolean = false>(options?: Options<List3Data, ThrowOnError>): RequestResult<List3Responses, List3Errors, ThrowOnError> => (options?.client ?? client).get<List3Responses, List3Errors, ThrowOnError>({
+export const listCustomers = <ThrowOnError extends boolean = false>(options?: Options<ListCustomersData, ThrowOnError>): RequestResult<ListCustomersResponses, ListCustomersErrors, ThrowOnError> => (options?.client ?? client).get<ListCustomersResponses, ListCustomersErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/customers',
     ...options
 });
 
 /**
- * Create
+ * Create Customer
  */
-export const create3 = <ThrowOnError extends boolean = false>(options: Options<Create3Data, ThrowOnError>): RequestResult<Create3Responses, Create3Errors, ThrowOnError> => (options.client ?? client).post<Create3Responses, Create3Errors, ThrowOnError>({
+export const createCustomer = <ThrowOnError extends boolean = false>(options: Options<CreateCustomerData, ThrowOnError>): RequestResult<CreateCustomerResponses, CreateCustomerErrors, ThrowOnError> => (options.client ?? client).post<CreateCustomerResponses, CreateCustomerErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/customers',
     ...options,
@@ -257,27 +354,27 @@ export const getMyCustomerProfile = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Delete
+ * Delete Customer
  */
-export const delete3 = <ThrowOnError extends boolean = false>(options: Options<Delete3Data, ThrowOnError>): RequestResult<Delete3Responses, Delete3Errors, ThrowOnError> => (options.client ?? client).delete<Delete3Responses, Delete3Errors, ThrowOnError>({
+export const deleteCustomer = <ThrowOnError extends boolean = false>(options: Options<DeleteCustomerData, ThrowOnError>): RequestResult<DeleteCustomerResponses, DeleteCustomerErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCustomerResponses, DeleteCustomerErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/customers/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Customer
  */
-export const get3 = <ThrowOnError extends boolean = false>(options: Options<Get3Data, ThrowOnError>): RequestResult<Get3Responses, Get3Errors, ThrowOnError> => (options.client ?? client).get<Get3Responses, Get3Errors, ThrowOnError>({
+export const getCustomer = <ThrowOnError extends boolean = false>(options: Options<GetCustomerData, ThrowOnError>): RequestResult<GetCustomerResponses, GetCustomerErrors, ThrowOnError> => (options.client ?? client).get<GetCustomerResponses, GetCustomerErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/customers/{id}',
     ...options
 });
 
 /**
- * Update
+ * Update Customer
  */
-export const update3 = <ThrowOnError extends boolean = false>(options: Options<Update3Data, ThrowOnError>): RequestResult<Update3Responses, Update3Errors, ThrowOnError> => (options.client ?? client).put<Update3Responses, Update3Errors, ThrowOnError>({
+export const updateCustomer = <ThrowOnError extends boolean = false>(options: Options<UpdateCustomerData, ThrowOnError>): RequestResult<UpdateCustomerResponses, UpdateCustomerErrors, ThrowOnError> => (options.client ?? client).put<UpdateCustomerResponses, UpdateCustomerErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/customers/{id}',
     ...options,
@@ -321,18 +418,18 @@ export const uploadImage = <ThrowOnError extends boolean = false>(options: Optio
 export const getImage = <ThrowOnError extends boolean = false>(options: Options<GetImageData, ThrowOnError>): RequestResult<GetImageResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetImageResponses, unknown, ThrowOnError>({ url: '/api/images/{filename}', ...options });
 
 /**
- * List
+ * List Orders
  */
-export const list4 = <ThrowOnError extends boolean = false>(options?: Options<List4Data, ThrowOnError>): RequestResult<List4Responses, List4Errors, ThrowOnError> => (options?.client ?? client).get<List4Responses, List4Errors, ThrowOnError>({
+export const listOrders = <ThrowOnError extends boolean = false>(options?: Options<ListOrdersData, ThrowOnError>): RequestResult<ListOrdersResponses, ListOrdersErrors, ThrowOnError> => (options?.client ?? client).get<ListOrdersResponses, ListOrdersErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/orders',
     ...options
 });
 
 /**
- * Checkout
+ * Checkout Order
  */
-export const checkout = <ThrowOnError extends boolean = false>(options: Options<CheckoutData, ThrowOnError>): RequestResult<CheckoutResponses, CheckoutErrors, ThrowOnError> => (options.client ?? client).post<CheckoutResponses, CheckoutErrors, ThrowOnError>({
+export const checkoutOrder = <ThrowOnError extends boolean = false>(options: Options<CheckoutOrderData, ThrowOnError>): RequestResult<CheckoutOrderResponses, CheckoutOrderErrors, ThrowOnError> => (options.client ?? client).post<CheckoutOrderResponses, CheckoutOrderErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/orders/checkout',
     ...options,
@@ -352,12 +449,34 @@ export const getStats = <ThrowOnError extends boolean = false>(options?: Options
 });
 
 /**
- * Get
+ * Delete Order
  */
-export const get4 = <ThrowOnError extends boolean = false>(options: Options<Get4Data, ThrowOnError>): RequestResult<Get4Responses, Get4Errors, ThrowOnError> => (options.client ?? client).get<Get4Responses, Get4Errors, ThrowOnError>({
+export const deleteOrder = <ThrowOnError extends boolean = false>(options: Options<DeleteOrderData, ThrowOnError>): RequestResult<DeleteOrderResponses, DeleteOrderErrors, ThrowOnError> => (options.client ?? client).delete<DeleteOrderResponses, DeleteOrderErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/orders/{id}',
     ...options
+});
+
+/**
+ * Get Order
+ */
+export const getOrder = <ThrowOnError extends boolean = false>(options: Options<GetOrderData, ThrowOnError>): RequestResult<GetOrderResponses, GetOrderErrors, ThrowOnError> => (options.client ?? client).get<GetOrderResponses, GetOrderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}',
+    ...options
+});
+
+/**
+ * Update Order
+ */
+export const updateOrder = <ThrowOnError extends boolean = false>(options: Options<UpdateOrderData, ThrowOnError>): RequestResult<UpdateOrderResponses, UpdateOrderErrors, ThrowOnError> => (options.client ?? client).put<UpdateOrderResponses, UpdateOrderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -383,18 +502,176 @@ export const updateStatus = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
+ * Create Intent
+ */
+export const createIntent = <ThrowOnError extends boolean = false>(options: Options<CreateIntentData, ThrowOnError>): RequestResult<CreateIntentResponses, CreateIntentErrors, ThrowOnError> => (options.client ?? client).post<CreateIntentResponses, CreateIntentErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payment-intents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Payment Intent
+ */
+export const getPaymentIntent = <ThrowOnError extends boolean = false>(options: Options<GetPaymentIntentData, ThrowOnError>): RequestResult<GetPaymentIntentResponses, GetPaymentIntentErrors, ThrowOnError> => (options.client ?? client).get<GetPaymentIntentResponses, GetPaymentIntentErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payment-intents/{id}',
+    ...options
+});
+
+/**
+ * List Transactions
+ */
+export const listTransactions = <ThrowOnError extends boolean = false>(options: Options<ListTransactionsData, ThrowOnError>): RequestResult<ListTransactionsResponses, ListTransactionsErrors, ThrowOnError> => (options.client ?? client).get<ListTransactionsResponses, ListTransactionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payment-intents/{id}/transactions',
+    ...options
+});
+
+/**
+ * Initiate Mock Payment
+ */
+export const initiateMockPayment = <ThrowOnError extends boolean = false>(options: Options<InitiateMockPaymentData, ThrowOnError>): RequestResult<InitiateMockPaymentResponses, InitiateMockPaymentErrors, ThrowOnError> => (options.client ?? client).post<InitiateMockPaymentResponses, InitiateMockPaymentErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payments/mock/initiate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Complete Mock Payment
+ */
+export const completeMockPayment = <ThrowOnError extends boolean = false>(options: Options<CompleteMockPaymentData, ThrowOnError>): RequestResult<CompleteMockPaymentResponses, CompleteMockPaymentErrors, ThrowOnError> => (options.client ?? client).post<CompleteMockPaymentResponses, CompleteMockPaymentErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payments/mock/{intentId}/complete',
+    ...options
+});
+
+/**
+ * Fail Mock Payment
+ */
+export const failMockPayment = <ThrowOnError extends boolean = false>(options: Options<FailMockPaymentData, ThrowOnError>): RequestResult<FailMockPaymentResponses, FailMockPaymentErrors, ThrowOnError> => (options.client ?? client).post<FailMockPaymentResponses, FailMockPaymentErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payments/mock/{intentId}/fail',
+    ...options
+});
+
+/**
+ * Handle Webhook
+ */
+export const handleWebhook = <ThrowOnError extends boolean = false>(options: Options<HandleWebhookData, ThrowOnError>): RequestResult<HandleWebhookResponses, HandleWebhookErrors, ThrowOnError> => (options.client ?? client).post<HandleWebhookResponses, HandleWebhookErrors, ThrowOnError>({
+    url: '/api/payments/webhook/{gateway}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List
  */
-export const list5 = <ThrowOnError extends boolean = false>(options?: Options<List5Data, ThrowOnError>): RequestResult<List5Responses, List5Errors, ThrowOnError> => (options?.client ?? client).get<List5Responses, List5Errors, ThrowOnError>({
+export const list = <ThrowOnError extends boolean = false>(options?: Options<ListData, ThrowOnError>): RequestResult<ListResponses, ListErrors, ThrowOnError> => (options?.client ?? client).get<ListResponses, ListErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/products',
+    url: '/api/payouts',
     ...options
 });
 
 /**
  * Create
  */
-export const create4 = <ThrowOnError extends boolean = false>(options: Options<Create4Data, ThrowOnError>): RequestResult<Create4Responses, Create4Errors, ThrowOnError> => (options.client ?? client).post<Create4Responses, Create4Errors, ThrowOnError>({
+export const create = <ThrowOnError extends boolean = false>(options: Options<CreateData, ThrowOnError>): RequestResult<CreateResponses, CreateErrors, ThrowOnError> => (options.client ?? client).post<CreateResponses, CreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Batch Approve
+ */
+export const batchApprove = <ThrowOnError extends boolean = false>(options: Options<BatchApproveData, ThrowOnError>): RequestResult<BatchApproveResponses, BatchApproveErrors, ThrowOnError> => (options.client ?? client).post<BatchApproveResponses, BatchApproveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/batch-approve',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Batch Reject
+ */
+export const batchReject = <ThrowOnError extends boolean = false>(options: Options<BatchRejectData, ThrowOnError>): RequestResult<BatchRejectResponses, BatchRejectErrors, ThrowOnError> => (options.client ?? client).post<BatchRejectResponses, BatchRejectErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/batch-reject',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Export
+ */
+export const export_ = <ThrowOnError extends boolean = false>(options?: Options<ExportData, ThrowOnError>): RequestResult<ExportResponses, ExportErrors, ThrowOnError> => (options?.client ?? client).get<ExportResponses, ExportErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/export',
+    ...options
+});
+
+/**
+ * Get Payout
+ */
+export const getPayout = <ThrowOnError extends boolean = false>(options: Options<GetPayoutData, ThrowOnError>): RequestResult<GetPayoutResponses, GetPayoutErrors, ThrowOnError> => (options.client ?? client).get<GetPayoutResponses, GetPayoutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/{id}',
+    ...options
+});
+
+/**
+ * Approve
+ */
+export const approve = <ThrowOnError extends boolean = false>(options: Options<ApproveData, ThrowOnError>): RequestResult<ApproveResponses, ApproveErrors, ThrowOnError> => (options.client ?? client).post<ApproveResponses, ApproveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/{id}/approve',
+    ...options
+});
+
+/**
+ * Reject
+ */
+export const reject = <ThrowOnError extends boolean = false>(options: Options<RejectData, ThrowOnError>): RequestResult<RejectResponses, RejectErrors, ThrowOnError> => (options.client ?? client).post<RejectResponses, RejectErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/{id}/reject',
+    ...options
+});
+
+/**
+ * List Products
+ */
+export const listProducts = <ThrowOnError extends boolean = false>(options?: Options<ListProductsData, ThrowOnError>): RequestResult<ListProductsResponses, ListProductsErrors, ThrowOnError> => (options?.client ?? client).get<ListProductsResponses, ListProductsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products',
+    ...options
+});
+
+/**
+ * Create Product
+ */
+export const createProduct = <ThrowOnError extends boolean = false>(options: Options<CreateProductData, ThrowOnError>): RequestResult<CreateProductResponses, CreateProductErrors, ThrowOnError> => (options.client ?? client).post<CreateProductResponses, CreateProductErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/products',
     ...options,
@@ -405,23 +682,23 @@ export const create4 = <ThrowOnError extends boolean = false>(options: Options<C
 });
 
 /**
- * Delete
+ * Delete Product
  */
-export const delete4 = <ThrowOnError extends boolean = false>(options: Options<Delete4Data, ThrowOnError>): RequestResult<Delete4Responses, Delete4Errors, ThrowOnError> => (options.client ?? client).delete<Delete4Responses, Delete4Errors, ThrowOnError>({
+export const deleteProduct = <ThrowOnError extends boolean = false>(options: Options<DeleteProductData, ThrowOnError>): RequestResult<DeleteProductResponses, DeleteProductErrors, ThrowOnError> => (options.client ?? client).delete<DeleteProductResponses, DeleteProductErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/products/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Product
  */
-export const get5 = <ThrowOnError extends boolean = false>(options: Options<Get5Data, ThrowOnError>): RequestResult<Get5Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get5Responses, unknown, ThrowOnError>({ url: '/api/products/{id}', ...options });
+export const getProduct = <ThrowOnError extends boolean = false>(options: Options<GetProductData, ThrowOnError>): RequestResult<GetProductResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetProductResponses, unknown, ThrowOnError>({ url: '/api/products/{id}', ...options });
 
 /**
- * Update
+ * Update Product
  */
-export const update4 = <ThrowOnError extends boolean = false>(options: Options<Update4Data, ThrowOnError>): RequestResult<Update4Responses, Update4Errors, ThrowOnError> => (options.client ?? client).put<Update4Responses, Update4Errors, ThrowOnError>({
+export const updateProduct = <ThrowOnError extends boolean = false>(options: Options<UpdateProductData, ThrowOnError>): RequestResult<UpdateProductResponses, UpdateProductErrors, ThrowOnError> => (options.client ?? client).put<UpdateProductResponses, UpdateProductErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/products/{id}',
     ...options,
@@ -450,14 +727,14 @@ export const syncTenant = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * List
+ * List Tags
  */
-export const list6 = <ThrowOnError extends boolean = false>(options?: Options<List6Data, ThrowOnError>): RequestResult<List6Responses, unknown, ThrowOnError> => (options?.client ?? client).get<List6Responses, unknown, ThrowOnError>({ url: '/api/tags', ...options });
+export const listTags = <ThrowOnError extends boolean = false>(options?: Options<ListTagsData, ThrowOnError>): RequestResult<ListTagsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListTagsResponses, unknown, ThrowOnError>({ url: '/api/tags', ...options });
 
 /**
- * Create
+ * Create Tag
  */
-export const create5 = <ThrowOnError extends boolean = false>(options: Options<Create5Data, ThrowOnError>): RequestResult<Create5Responses, Create5Errors, ThrowOnError> => (options.client ?? client).post<Create5Responses, Create5Errors, ThrowOnError>({
+export const createTag = <ThrowOnError extends boolean = false>(options: Options<CreateTagData, ThrowOnError>): RequestResult<CreateTagResponses, CreateTagErrors, ThrowOnError> => (options.client ?? client).post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tags',
     ...options,
@@ -468,18 +745,18 @@ export const create5 = <ThrowOnError extends boolean = false>(options: Options<C
 });
 
 /**
- * Delete
+ * Delete Tag
  */
-export const delete5 = <ThrowOnError extends boolean = false>(options: Options<Delete5Data, ThrowOnError>): RequestResult<Delete5Responses, Delete5Errors, ThrowOnError> => (options.client ?? client).delete<Delete5Responses, Delete5Errors, ThrowOnError>({
+export const deleteTag = <ThrowOnError extends boolean = false>(options: Options<DeleteTagData, ThrowOnError>): RequestResult<DeleteTagResponses, DeleteTagErrors, ThrowOnError> => (options.client ?? client).delete<DeleteTagResponses, DeleteTagErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tags/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Tag
  */
-export const get6 = <ThrowOnError extends boolean = false>(options: Options<Get6Data, ThrowOnError>): RequestResult<Get6Responses, unknown, ThrowOnError> => (options.client ?? client).get<Get6Responses, unknown, ThrowOnError>({ url: '/api/tags/{id}', ...options });
+export const getTag = <ThrowOnError extends boolean = false>(options: Options<GetTagData, ThrowOnError>): RequestResult<GetTagResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetTagResponses, unknown, ThrowOnError>({ url: '/api/tags/{id}', ...options });
 
 /**
  * Get Tenant Settings
@@ -535,18 +812,18 @@ export const putUserSettings = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
- * List
+ * List Tenants
  */
-export const list7 = <ThrowOnError extends boolean = false>(options?: Options<List7Data, ThrowOnError>): RequestResult<List7Responses, List7Errors, ThrowOnError> => (options?.client ?? client).get<List7Responses, List7Errors, ThrowOnError>({
+export const listTenants = <ThrowOnError extends boolean = false>(options?: Options<ListTenantsData, ThrowOnError>): RequestResult<ListTenantsResponses, ListTenantsErrors, ThrowOnError> => (options?.client ?? client).get<ListTenantsResponses, ListTenantsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants',
     ...options
 });
 
 /**
- * Create
+ * Create Tenant
  */
-export const create6 = <ThrowOnError extends boolean = false>(options: Options<Create6Data, ThrowOnError>): RequestResult<Create6Responses, Create6Errors, ThrowOnError> => (options.client ?? client).post<Create6Responses, Create6Errors, ThrowOnError>({
+export const createTenant = <ThrowOnError extends boolean = false>(options: Options<CreateTenantData, ThrowOnError>): RequestResult<CreateTenantResponses, CreateTenantErrors, ThrowOnError> => (options.client ?? client).post<CreateTenantResponses, CreateTenantErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants',
     ...options,
@@ -557,27 +834,27 @@ export const create6 = <ThrowOnError extends boolean = false>(options: Options<C
 });
 
 /**
- * Delete
+ * Delete Tenant
  */
-export const delete6 = <ThrowOnError extends boolean = false>(options: Options<Delete6Data, ThrowOnError>): RequestResult<Delete6Responses, Delete6Errors, ThrowOnError> => (options.client ?? client).delete<Delete6Responses, Delete6Errors, ThrowOnError>({
+export const deleteTenant = <ThrowOnError extends boolean = false>(options: Options<DeleteTenantData, ThrowOnError>): RequestResult<DeleteTenantResponses, DeleteTenantErrors, ThrowOnError> => (options.client ?? client).delete<DeleteTenantResponses, DeleteTenantErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Tenant
  */
-export const get7 = <ThrowOnError extends boolean = false>(options: Options<Get7Data, ThrowOnError>): RequestResult<Get7Responses, Get7Errors, ThrowOnError> => (options.client ?? client).get<Get7Responses, Get7Errors, ThrowOnError>({
+export const getTenant = <ThrowOnError extends boolean = false>(options: Options<GetTenantData, ThrowOnError>): RequestResult<GetTenantResponses, GetTenantErrors, ThrowOnError> => (options.client ?? client).get<GetTenantResponses, GetTenantErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants/{id}',
     ...options
 });
 
 /**
- * Update
+ * Update Tenant
  */
-export const update5 = <ThrowOnError extends boolean = false>(options: Options<Update5Data, ThrowOnError>): RequestResult<Update5Responses, Update5Errors, ThrowOnError> => (options.client ?? client).put<Update5Responses, Update5Errors, ThrowOnError>({
+export const updateTenant = <ThrowOnError extends boolean = false>(options: Options<UpdateTenantData, ThrowOnError>): RequestResult<UpdateTenantResponses, UpdateTenantErrors, ThrowOnError> => (options.client ?? client).put<UpdateTenantResponses, UpdateTenantErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/tenants/{id}',
     ...options,
@@ -588,18 +865,18 @@ export const update5 = <ThrowOnError extends boolean = false>(options: Options<U
 });
 
 /**
- * List
+ * List Users
  */
-export const list8 = <ThrowOnError extends boolean = false>(options?: Options<List8Data, ThrowOnError>): RequestResult<List8Responses, List8Errors, ThrowOnError> => (options?.client ?? client).get<List8Responses, List8Errors, ThrowOnError>({
+export const listUsers = <ThrowOnError extends boolean = false>(options?: Options<ListUsersData, ThrowOnError>): RequestResult<ListUsersResponses, ListUsersErrors, ThrowOnError> => (options?.client ?? client).get<ListUsersResponses, ListUsersErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users',
     ...options
 });
 
 /**
- * Create
+ * Create User
  */
-export const create7 = <ThrowOnError extends boolean = false>(options: Options<Create7Data, ThrowOnError>): RequestResult<Create7Responses, Create7Errors, ThrowOnError> => (options.client ?? client).post<Create7Responses, Create7Errors, ThrowOnError>({
+export const createUser = <ThrowOnError extends boolean = false>(options: Options<CreateUserData, ThrowOnError>): RequestResult<CreateUserResponses, CreateUserErrors, ThrowOnError> => (options.client ?? client).post<CreateUserResponses, CreateUserErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users',
     ...options,
@@ -632,27 +909,27 @@ export const updateMe = <ThrowOnError extends boolean = false>(options: Options<
 });
 
 /**
- * Delete
+ * Delete User
  */
-export const delete7 = <ThrowOnError extends boolean = false>(options: Options<Delete7Data, ThrowOnError>): RequestResult<Delete7Responses, Delete7Errors, ThrowOnError> => (options.client ?? client).delete<Delete7Responses, Delete7Errors, ThrowOnError>({
+export const deleteUser = <ThrowOnError extends boolean = false>(options: Options<DeleteUserData, ThrowOnError>): RequestResult<DeleteUserResponses, DeleteUserErrors, ThrowOnError> => (options.client ?? client).delete<DeleteUserResponses, DeleteUserErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get User
  */
-export const get8 = <ThrowOnError extends boolean = false>(options: Options<Get8Data, ThrowOnError>): RequestResult<Get8Responses, Get8Errors, ThrowOnError> => (options.client ?? client).get<Get8Responses, Get8Errors, ThrowOnError>({
+export const getUser = <ThrowOnError extends boolean = false>(options: Options<GetUserData, ThrowOnError>): RequestResult<GetUserResponses, GetUserErrors, ThrowOnError> => (options.client ?? client).get<GetUserResponses, GetUserErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/{id}',
     ...options
 });
 
 /**
- * Update
+ * Update User
  */
-export const update6 = <ThrowOnError extends boolean = false>(options: Options<Update6Data, ThrowOnError>): RequestResult<Update6Responses, Update6Errors, ThrowOnError> => (options.client ?? client).put<Update6Responses, Update6Errors, ThrowOnError>({
+export const updateUser = <ThrowOnError extends boolean = false>(options: Options<UpdateUserData, ThrowOnError>): RequestResult<UpdateUserResponses, UpdateUserErrors, ThrowOnError> => (options.client ?? client).put<UpdateUserResponses, UpdateUserErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/users/{id}',
     ...options,
@@ -663,18 +940,18 @@ export const update6 = <ThrowOnError extends boolean = false>(options: Options<U
 });
 
 /**
- * List
+ * List Vouchers
  */
-export const list9 = <ThrowOnError extends boolean = false>(options?: Options<List9Data, ThrowOnError>): RequestResult<List9Responses, List9Errors, ThrowOnError> => (options?.client ?? client).get<List9Responses, List9Errors, ThrowOnError>({
+export const listVouchers = <ThrowOnError extends boolean = false>(options?: Options<ListVouchersData, ThrowOnError>): RequestResult<ListVouchersResponses, ListVouchersErrors, ThrowOnError> => (options?.client ?? client).get<ListVouchersResponses, ListVouchersErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers',
     ...options
 });
 
 /**
- * Create
+ * Create Voucher
  */
-export const create8 = <ThrowOnError extends boolean = false>(options: Options<Create8Data, ThrowOnError>): RequestResult<Create8Responses, Create8Errors, ThrowOnError> => (options.client ?? client).post<Create8Responses, Create8Errors, ThrowOnError>({
+export const createVoucher = <ThrowOnError extends boolean = false>(options: Options<CreateVoucherData, ThrowOnError>): RequestResult<CreateVoucherResponses, CreateVoucherErrors, ThrowOnError> => (options.client ?? client).post<CreateVoucherResponses, CreateVoucherErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers',
     ...options,
@@ -703,27 +980,27 @@ export const validateVoucher = <ThrowOnError extends boolean = false>(options?: 
 });
 
 /**
- * Delete
+ * Delete Voucher
  */
-export const delete8 = <ThrowOnError extends boolean = false>(options: Options<Delete8Data, ThrowOnError>): RequestResult<Delete8Responses, Delete8Errors, ThrowOnError> => (options.client ?? client).delete<Delete8Responses, Delete8Errors, ThrowOnError>({
+export const deleteVoucher = <ThrowOnError extends boolean = false>(options: Options<DeleteVoucherData, ThrowOnError>): RequestResult<DeleteVoucherResponses, DeleteVoucherErrors, ThrowOnError> => (options.client ?? client).delete<DeleteVoucherResponses, DeleteVoucherErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers/{id}',
     ...options
 });
 
 /**
- * Get
+ * Get Voucher
  */
-export const get9 = <ThrowOnError extends boolean = false>(options: Options<Get9Data, ThrowOnError>): RequestResult<Get9Responses, Get9Errors, ThrowOnError> => (options.client ?? client).get<Get9Responses, Get9Errors, ThrowOnError>({
+export const getVoucher = <ThrowOnError extends boolean = false>(options: Options<GetVoucherData, ThrowOnError>): RequestResult<GetVoucherResponses, GetVoucherErrors, ThrowOnError> => (options.client ?? client).get<GetVoucherResponses, GetVoucherErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers/{id}',
     ...options
 });
 
 /**
- * Update
+ * Update Voucher
  */
-export const update7 = <ThrowOnError extends boolean = false>(options: Options<Update7Data, ThrowOnError>): RequestResult<Update7Responses, Update7Errors, ThrowOnError> => (options.client ?? client).put<Update7Responses, Update7Errors, ThrowOnError>({
+export const updateVoucher = <ThrowOnError extends boolean = false>(options: Options<UpdateVoucherData, ThrowOnError>): RequestResult<UpdateVoucherResponses, UpdateVoucherErrors, ThrowOnError> => (options.client ?? client).put<UpdateVoucherResponses, UpdateVoucherErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers/{id}',
     ...options,
@@ -739,5 +1016,84 @@ export const update7 = <ThrowOnError extends boolean = false>(options: Options<U
 export const collect = <ThrowOnError extends boolean = false>(options: Options<CollectData, ThrowOnError>): RequestResult<CollectResponses, CollectErrors, ThrowOnError> => (options.client ?? client).post<CollectResponses, CollectErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/vouchers/{id}/collect',
+    ...options
+});
+
+/**
+ * List Wallets
+ */
+export const listWallets = <ThrowOnError extends boolean = false>(options?: Options<ListWalletsData, ThrowOnError>): RequestResult<ListWalletsResponses, ListWalletsErrors, ThrowOnError> => (options?.client ?? client).get<ListWalletsResponses, ListWalletsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets',
+    ...options
+});
+
+/**
+ * Ensure
+ */
+export const ensure = <ThrowOnError extends boolean = false>(options: Options<EnsureData, ThrowOnError>): RequestResult<EnsureResponses, EnsureErrors, ThrowOnError> => (options.client ?? client).post<EnsureResponses, EnsureErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/ensure',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Wallet
+ */
+export const getWallet = <ThrowOnError extends boolean = false>(options: Options<GetWalletData, ThrowOnError>): RequestResult<GetWalletResponses, GetWalletErrors, ThrowOnError> => (options.client ?? client).get<GetWalletResponses, GetWalletErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/{id}',
+    ...options
+});
+
+/**
+ * Adjust
+ */
+export const adjust = <ThrowOnError extends boolean = false>(options: Options<AdjustData, ThrowOnError>): RequestResult<AdjustResponses, AdjustErrors, ThrowOnError> => (options.client ?? client).post<AdjustResponses, AdjustErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/{id}/adjust',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Credit
+ */
+export const credit = <ThrowOnError extends boolean = false>(options: Options<CreditData, ThrowOnError>): RequestResult<CreditResponses, CreditErrors, ThrowOnError> => (options.client ?? client).post<CreditResponses, CreditErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/{id}/credit',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Debit
+ */
+export const debit = <ThrowOnError extends boolean = false>(options: Options<DebitData, ThrowOnError>): RequestResult<DebitResponses, DebitErrors, ThrowOnError> => (options.client ?? client).post<DebitResponses, DebitErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/{id}/debit',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Transactions
+ */
+export const transactions = <ThrowOnError extends boolean = false>(options: Options<TransactionsData, ThrowOnError>): RequestResult<TransactionsResponses, TransactionsErrors, ThrowOnError> => (options.client ?? client).get<TransactionsResponses, TransactionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/{id}/transactions',
     ...options
 });
