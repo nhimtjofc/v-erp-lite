@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useListQuery, useCreateBusinessMutation, useUpdateBusinessMutation, useMeQuery } from '@/shared/api'
+import { useListQuery, useCreateBusinessMutation, useUpdateBusinessMutation, useMeQuery, listQueryKey } from '@/shared/api'
 import type { Business } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -37,8 +37,8 @@ export function BusinessPage() {
       const created = await createMutation.mutateAsync({ body: { name: 'My Business' } as Business }) as Business
       setBusiness(created)
       setForm(created)
-      await queryClient.invalidateQueries({ queryKey: ['list'], refetchType: 'active' })
-      await queryClient.refetchQueries({ queryKey: ['list'], type: 'active' })
+      await queryClient.invalidateQueries({ queryKey: listQueryKey(), refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: listQueryKey(), type: 'active' })
       setEditing(true)
     } catch (err) {
       console.error(err)
@@ -54,8 +54,8 @@ export function BusinessPage() {
       const updated = await updateMutation.mutateAsync({ path: { id: business.id! }, body: form })
       setBusiness(updated)
       setEditing(false)
-      await queryClient.invalidateQueries({ queryKey: ['list'], refetchType: 'active' })
-      await queryClient.refetchQueries({ queryKey: ['list'], type: 'active' })
+      await queryClient.invalidateQueries({ queryKey: listQueryKey(), refetchType: 'active' })
+      await queryClient.refetchQueries({ queryKey: listQueryKey(), type: 'active' })
     } catch (err) {
       console.error(err)
     } finally {

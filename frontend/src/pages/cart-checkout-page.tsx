@@ -6,6 +6,7 @@ import {
     useListProductsQuery, // products
     useCheckoutOrderMutation,
     myVouchersOptions,
+    listOrdersQueryKey,
     type Customer,
     type Product,
     type ProductVariant,
@@ -798,7 +799,7 @@ export function CartCheckoutPage() {
 
     const checkoutMutation = useCheckoutOrderMutation({
         onSuccess: (data: any) => {
-            queryClient.invalidateQueries({ queryKey: ['list4'] })
+            queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
             const createdOrder = data?.data
             if (createdOrder?.id) {
                 navigate({ to: '/orders/$id', params: { id: createdOrder.id } })

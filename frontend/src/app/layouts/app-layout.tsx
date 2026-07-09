@@ -1,9 +1,9 @@
 import { type ReactNode, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useRouter, useRouterState } from '@tanstack/react-router'
+import { Link, useRouter, useRouterState, useLocation } from '@tanstack/react-router'
 import { logout } from '@/shared/auth'
 import { useMeQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
-import { navGroups, profileGroup, type NavItem } from '@/app/nav-registry'
+import { navGroups, profileGroup, type NavItem, type NavGroup } from '@/app/nav-registry'
 import { Button } from '@/shared/ui/button'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import {
@@ -35,6 +35,7 @@ import {
 import type { User } from 'oidc-client-ts'
 import { useTheme } from '@/shared/hooks/use-theme'
 import { getInitials } from '@/shared/utils/user'
+import { useAuthStore } from '@/shared/store/auth-store'
 
 /* ------------------------------------------------------------------ */
 /*  Base UI Menu recursive item list for collapsed sidebar popups      */
@@ -502,7 +503,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5" />
+            <MenuIcon className="h-5 w-5" />
           </Button>
 
           <div className="ml-auto flex items-center gap-3">

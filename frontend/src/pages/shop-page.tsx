@@ -11,6 +11,7 @@ import {
   useMyVouchersQuery,
   useCollectMutation,
   myVouchersQueryKey,
+  listOrdersQueryKey,
   listCustomersOptions,
   listVouchersOptions,
   myVouchersOptions,
@@ -237,7 +238,7 @@ export function ShopPage() {
 
   const checkoutMutation = useCheckoutOrderMutation({
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['list4'] })
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
       queryClient.invalidateQueries({ queryKey: myVouchersQueryKey() })
       setCart([])
       setShowCart(false)
