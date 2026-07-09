@@ -91,4 +91,164 @@ public class Order extends BaseEntity {
     @JsonManagedReference
     @OrderBy("createdAt ASC")
     private List<OrderItem> items = new ArrayList<>();
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
+    public Voucher getVoucher() {
+        return voucher;
+    }
+
+    public void setVoucher(Voucher voucher) {
+        this.voucher = voucher;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getShippingName() {
+        return shippingName;
+    }
+
+    public void setShippingName(String shippingName) {
+        this.shippingName = shippingName;
+    }
+
+    public String getShippingPhone() {
+        return shippingPhone;
+    }
+
+    public void setShippingPhone(String shippingPhone) {
+        this.shippingPhone = shippingPhone;
+    }
+
+    public String getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public void setShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public String getShippingNote() {
+        return shippingNote;
+    }
+
+    public void setShippingNote(String shippingNote) {
+        this.shippingNote = shippingNote;
+    }
+
+    public long getSubtotalAmountMinor() {
+        return subtotalAmountMinor;
+    }
+
+    public void setSubtotalAmountMinor(long subtotalAmountMinor) {
+        this.subtotalAmountMinor = subtotalAmountMinor;
+    }
+
+    public long getDiscountAmountMinor() {
+        return discountAmountMinor;
+    }
+
+    public void setDiscountAmountMinor(long discountAmountMinor) {
+        this.discountAmountMinor = discountAmountMinor;
+    }
+
+    public BigDecimal getDiscountPercent() {
+        return discountPercent;
+    }
+
+    public void setDiscountPercent(BigDecimal discountPercent) {
+        this.discountPercent = discountPercent;
+    }
+
+    public long getShippingFeeMinor() {
+        return shippingFeeMinor;
+    }
+
+    public void setShippingFeeMinor(long shippingFeeMinor) {
+        this.shippingFeeMinor = shippingFeeMinor;
+    }
+
+    public long getTaxAmountMinor() {
+        return taxAmountMinor;
+    }
+
+    public void setTaxAmountMinor(long taxAmountMinor) {
+        this.taxAmountMinor = taxAmountMinor;
+    }
+
+    public BigDecimal getVatPercent() {
+        return vatPercent;
+    }
+
+    public void setVatPercent(BigDecimal vatPercent) {
+        this.vatPercent = vatPercent;
+    }
+
+    public long getVatAmountMinor() {
+        return vatAmountMinor;
+    }
+
+    public void setVatAmountMinor(long vatAmountMinor) {
+        this.vatAmountMinor = vatAmountMinor;
+    }
+
+    public long getFinalAmountMinor() {
+        return finalAmountMinor;
+    }
+
+    public void setFinalAmountMinor(long finalAmountMinor) {
+        this.finalAmountMinor = finalAmountMinor;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }
 }

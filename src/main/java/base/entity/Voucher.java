@@ -53,6 +53,22 @@ public class Voucher extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public int getUsedCount() {
+        return usedCount;
+    }
+
+    public void setUsedCount(int usedCount) {
+        this.usedCount = usedCount;
+    }
+
     public boolean isValid(long orderSubtotal) {
         if (!active) {
             return false;

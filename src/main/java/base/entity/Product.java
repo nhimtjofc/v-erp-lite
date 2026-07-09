@@ -91,5 +91,69 @@ public class Product extends BaseEntity {
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getBasePriceMinor() {
+        return basePriceMinor;
+    }
+
+    public void setBasePriceMinor(long basePriceMinor) {
+        this.basePriceMinor = basePriceMinor;
+    }
+
+    public Long getSalePriceMinor() {
+        return salePriceMinor;
+    }
+
+    public void setSalePriceMinor(Long salePriceMinor) {
+        this.salePriceMinor = salePriceMinor;
+    }
+
+    public Instant getSaleStartsAt() {
+        return saleStartsAt;
+    }
+
+    public void setSaleStartsAt(Instant saleStartsAt) {
+        this.saleStartsAt = saleStartsAt;
+    }
+
+    public Instant getSaleEndsAt() {
+        return saleEndsAt;
+    }
+
+    public void setSaleEndsAt(Instant saleEndsAt) {
+        this.saleEndsAt = saleEndsAt;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public int getReservedQuantity() {
+        return reservedQuantity;
+    }
+
+    public void setReservedQuantity(int reservedQuantity) {
+        this.reservedQuantity = reservedQuantity;
+    }
 }
 

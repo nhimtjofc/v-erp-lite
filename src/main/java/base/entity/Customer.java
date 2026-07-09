@@ -66,6 +66,38 @@ public class Customer extends BaseEntity {
         }
     }
 
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
+    }
+
+    public Long getTotalSpendMinor() {
+        return totalSpendMinor;
+    }
+
+    public void setTotalSpendMinor(Long totalSpendMinor) {
+        this.totalSpendMinor = totalSpendMinor;
+    }
+
+    public String getTier() {
+        return tier;
+    }
+
+    public void setTier(String tier) {
+        this.tier = tier;
+    }
+
     private String generateCardNumber() {
         long rand = Math.abs(java.util.UUID.randomUUID().getMostSignificantBits() % 100000000L);
         return "MEM-" + String.format("%04d-%04d", rand / 10000, rand % 10000);

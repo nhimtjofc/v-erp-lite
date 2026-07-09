@@ -49,4 +49,44 @@ public class ProductVariant extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "option_values", columnDefinition = "json", nullable = false)
     private Map<String, String> optionValues = new HashMap<>();
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getSku() {
+        return sku;
+    }
+
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
+
+    public long getPriceMinor() {
+        return priceMinor;
+    }
+
+    public void setPriceMinor(long priceMinor) {
+        this.priceMinor = priceMinor;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public int getReservedQuantity() {
+        return reservedQuantity;
+    }
+
+    public void setReservedQuantity(int reservedQuantity) {
+        this.reservedQuantity = reservedQuantity;
+    }
 }

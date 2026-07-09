@@ -1,5 +1,7 @@
 package base.rest;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,6 +42,8 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+
     @Inject
     CallerContext caller;
 
@@ -65,6 +69,13 @@ public class OrderResource {
     public static class StatusUpdateRequest {
         public String status;
         public String note;
+    }
+
+    public static class OrderUpdateRequest {
+        public String notes;
+        public Long shippingFeeMinor;
+        public BigDecimal discountPercent;
+        public BigDecimal vatPercent;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -178,6 +189,9 @@ public class OrderResource {
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response checkoutOrder(CheckoutRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
         if (request.customerId == null) {
             throw new BadRequestException("Customer ID is required");
         }
@@ -348,6 +362,9 @@ public class OrderResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Order updateStatus(@PathParam("id") UUID id, StatusUpdateRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
         if (request.status == null || request.status.isBlank()) {
             throw new BadRequestException("Status is required");
         }
@@ -448,19 +465,19 @@ public class OrderResource {
                 customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
                 // 1 point per 100 units of minor currency
                 int earnedPoints = (int) (amount / 100);
-                    customer.setPoints(customer.getPoints() + earnedPoints);
+                customer.setPoints(customer.getPoints() + earnedPoints);
 
-                    // Update tier dynamically based on new totalSpend
-                    long totalSpend = customer.getTotalSpendMinor();
-                    if (totalSpend >= 300000) {
-                        customer.setTier("DIAMOND");
-                    } else if (totalSpend >= 100000) {
-                        customer.setTier("PLATINUM");
-                    } else if (totalSpend >= 20000) {
-                        customer.setTier("GOLD");
-                    } else {
-                        customer.setTier("SILVER");
-                    }
+                // Update tier dynamically based on new totalSpend
+                long totalSpend = customer.getTotalSpendMinor();
+                if (totalSpend >= 300000) {
+                    customer.setTier("DIAMOND");
+                } else if (totalSpend >= 100000) {
+                    customer.setTier("PLATINUM");
+                } else if (totalSpend >= 20000) {
+                    customer.setTier("GOLD");
+                } else {
+                    customer.setTier("SILVER");
+                }
             }
             escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
         }
@@ -474,6 +491,62 @@ public class OrderResource {
 
         // Record history
         persistHistory(order, oldStatus, newStatus, request.note, userId, tenantCode);
+
+        return order;
+    }
+
+    @PUT
+    @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public Order updateOrder(@PathParam("id") UUID id, OrderUpdateRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
+
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        BigDecimal discountPct = request.discountPercent != null ? request.discountPercent : order.getDiscountPercent();
+        BigDecimal vatPct = request.vatPercent != null ? request.vatPercent : order.getVatPercent();
+        if (discountPct == null) {
+            discountPct = BigDecimal.ZERO;
+        }
+        if (vatPct == null) {
+            vatPct = BigDecimal.ZERO;
+        }
+        validatePercent("Discount percent", discountPct);
+        validatePercent("VAT percent", vatPct);
+
+        long shippingFee = request.shippingFeeMinor != null ? request.shippingFeeMinor : order.getShippingFeeMinor();
+        if (shippingFee < 0) {
+            throw new BadRequestException("Shipping fee must be greater than or equal to 0");
+        }
+
+        long subtotal = order.getItems().stream()
+                .mapToLong(OrderItem::getSubtotalAmountMinor)
+                .sum();
+        order.setSubtotalAmountMinor(subtotal);
+
+        long discountAmount = percentageOf(subtotal, discountPct);
+        long afterDiscount = Math.max(0, subtotal - discountAmount);
+        long vatAmount = percentageOf(afterDiscount, vatPct);
+        long finalAmount = Math.max(0, afterDiscount + shippingFee + vatAmount);
+
+        order.setDiscountPercent(discountPct);
+        order.setDiscountAmountMinor(discountAmount);
+        order.setVatPercent(vatPct);
+        order.setVatAmountMinor(vatAmount);
+        order.setTaxAmountMinor(vatAmount);
+        order.setShippingFeeMinor(shippingFee);
+        order.setFinalAmountMinor(finalAmount);
+        if (request.notes != null) {
+            order.setNotes(request.notes);
+        }
+        order.setUpdatedBy(caller.userId());
 
         return order;
     }
@@ -514,6 +587,19 @@ public class OrderResource {
         history.setNote(note);
         history.setCreatedBy(userId);
         history.persist();
+    }
+
+    private void validatePercent(String label, BigDecimal value) {
+        if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(ONE_HUNDRED) > 0) {
+            throw new BadRequestException(label + " must be between 0 and 100");
+        }
+    }
+
+    private long percentageOf(long amountMinor, BigDecimal percent) {
+        return BigDecimal.valueOf(amountMinor)
+                .multiply(percent)
+                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
+                .longValue();
     }
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {

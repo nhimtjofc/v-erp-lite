@@ -231,22 +231,15 @@ export function OrderDetailPage() {
   const statusCfg = getStatusConfig(status)
   const orderWithExtras = order as typeof order & {
     notes?: string | null
-    shippingFee?: number | null
+    shippingFeeMinor?: number | null
     discountPercent?: number | null
     vatPercent?: number | null
   }
 
-<<<<<<< HEAD
   const currentNotes = notes ?? orderWithExtras.notes ?? ''
-  const currentShipping = shippingFee ?? orderWithExtras.shippingFee?.toString() ?? '0'
+  const currentShipping = shippingFeeMinor ?? orderWithExtras.shippingFeeMinor?.toString() ?? '0'
   const currentDiscount = discountPercent ?? orderWithExtras.discountPercent?.toString() ?? '0'
   const currentVat = vatPercent ?? orderWithExtras.vatPercent?.toString() ?? '0'
-=======
-  const currentNotes = notes ?? order.notes ?? ''
-  const currentShipping = shippingFeeMinor ?? order.shippingFeeMinor?.toString() ?? '0'
-  const currentDiscount = discountPercent ?? order.discountPercent?.toString() ?? '0'
-  const currentVat = vatPercent ?? order.vatPercent?.toString() ?? '0'
->>>>>>> 8a9702588ecd1b6bc3585995b89b00cd491f3c58
 
   const handleDeleteOrder = () => {
     setDeleteError(null)
