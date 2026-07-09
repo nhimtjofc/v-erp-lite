@@ -1,16 +1,35 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { useMeQuery } from '@/shared/api'
 import {
   useSellerWalletQuery,
   useWalletTransactionsQuery,
   walletDataSource,
+  type SellerWallet,
   type WalletTransaction,
 } from '@/shared/api/wallet'
-import { formatMoneyMinor } from '@/shared/utils/currency'
+import {
+  useCreatePayoutMutation,
+  useSellerPayoutsQuery,
+  PAYOUT_STATUS_META,
+  type PayoutRequest,
+} from '@/shared/api/payout'
+import { formatMoneyMinor, parseMoneyToMinor } from '@/shared/utils/currency'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Badge } from '@/shared/ui/badge'
-import { Wallet, TrendingUp, Clock, Coins } from 'lucide-react'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/shared/ui/dialog'
+import { Wallet, TrendingUp, Clock, Coins, ArrowUpRight } from 'lucide-react'
 
 /** Roles allowed to manage the seller wallet (matches WalletResource on the backend). */
 const WALLET_ROLES = ['businessOwner', 'operator']
@@ -82,6 +101,219 @@ function BalanceCard({
 }
 
 /**
+ * Payout request form (dialog). Lets a seller submit a withdrawal from their
+ * available balance to a bank account. Validates the amount against the
+ * available balance before enabling submit, so a request can never exceed what
+ * the wallet can pay out.
+ */
+function PayoutRequestDialog({
+  open,
+  onOpenChange,
+  wallet,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  wallet: SellerWallet
+}) {
+  const queryClient = useQueryClient()
+  const createPayout = useCreatePayoutMutation()
+  const currency = wallet.currency
+
+  const [amount, setAmount] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [bankAccountNumber, setBankAccountNumber] = useState('')
+  const [bankAccountHolder, setBankAccountHolder] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const reset = () => {
+    setAmount('')
+    setBankName('')
+    setBankAccountNumber('')
+    setBankAccountHolder('')
+    setError(null)
+    createPayout.reset()
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) reset()
+    onOpenChange(next)
+  }
+
+  const amountMinor = parseMoneyToMinor(amount, currency)
+  const available = wallet.availableBalanceMinor
+  const exceedsBalance = amountMinor !== null && amountMinor > available
+
+  const canSubmit =
+    amountMinor !== null &&
+    !exceedsBalance &&
+    bankName.trim() !== '' &&
+    bankAccountNumber.trim() !== '' &&
+    bankAccountHolder.trim() !== '' &&
+    !createPayout.isPending
+
+  const handleSubmit = async () => {
+    setError(null)
+    if (amountMinor === null) {
+      setError('Vui lòng nhập số tiền hợp lệ lớn hơn 0.')
+      return
+    }
+    if (exceedsBalance) {
+      setError('Số tiền rút vượt quá số dư khả dụng.')
+      return
+    }
+    try {
+      await createPayout.mutateAsync({
+        walletId: wallet.id,
+        amountMinor,
+        currency,
+        bankName: bankName.trim(),
+        bankAccountNumber: bankAccountNumber.trim(),
+        bankAccountHolder: bankAccountHolder.trim(),
+      })
+      // Refresh wallet balance, ledger and payout list so the new PENDING
+      // request (and any reserved balance) shows immediately.
+      queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
+      handleOpenChange(false)
+    } catch (err) {
+      setError((err as Error)?.message || 'Gửi yêu cầu rút tiền thất bại. Vui lòng thử lại.')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Yêu cầu rút tiền</DialogTitle>
+          <DialogDescription>
+            Số dư khả dụng: {formatMoneyMinor(available, currency)}. Yêu cầu sẽ chờ Admin phê duyệt.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="payout-amount">Số tiền rút ({currency})</Label>
+            <Input
+              id="payout-amount"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Ví dụ: 1000000"
+            />
+            {exceedsBalance && (
+              <p className="text-xs text-destructive">Vượt quá số dư khả dụng.</p>
+            )}
+            {amountMinor !== null && !exceedsBalance && (
+              <p className="text-xs text-muted-foreground">
+                Rút {formatMoneyMinor(amountMinor, currency)}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="payout-bank">Ngân hàng</Label>
+            <Input
+              id="payout-bank"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              placeholder="Ví dụ: Vietcombank"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="payout-account-number">Số tài khoản</Label>
+            <Input
+              id="payout-account-number"
+              value={bankAccountNumber}
+              onChange={(e) => setBankAccountNumber(e.target.value)}
+              placeholder="Số tài khoản ngân hàng"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="payout-account-holder">Chủ tài khoản</Label>
+            <Input
+              id="payout-account-holder"
+              value={bankAccountHolder}
+              onChange={(e) => setBankAccountHolder(e.target.value)}
+              placeholder="Tên chủ tài khoản"
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleSubmit} disabled={!canSubmit}>
+              {createPayout.isPending ? 'Đang gửi...' : 'Gửi yêu cầu'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** List of the seller's own payout requests and their approval status. */
+function PayoutHistoryCard({ walletId, currency }: { walletId: string; currency: string }) {
+  const { data: payouts, isLoading } = useSellerPayoutsQuery(walletId)
+  const list = payouts ?? []
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Yêu cầu rút tiền</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Đang tải...</p>
+        ) : list.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Chưa có yêu cầu rút tiền nào.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Thời gian</TableHead>
+                  <TableHead>Ngân hàng</TableHead>
+                  <TableHead>Số tài khoản</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-right">Số tiền</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((payout: PayoutRequest) => {
+                  const status = PAYOUT_STATUS_META[payout.status] ?? {
+                    label: payout.status,
+                    variant: 'secondary' as const,
+                  }
+                  return (
+                    <TableRow key={payout.id}>
+                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                        {formatDate(payout.createdAt)}
+                      </TableCell>
+                      <TableCell>{payout.bankName}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {payout.bankAccountNumber}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-semibold">
+                        {formatMoneyMinor(payout.amountMinor, currency)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
  * Seller wallet dashboard: available balance, pending (escrow) balance and
  * transaction history. Reads from the wallet data layer (mock by default,
  * real backend when `VITE_WALLET_API=real`).
@@ -90,6 +322,7 @@ export function SellerWalletPage() {
   const { t } = useTranslation()
   const { data: me, isLoading: isMeLoading } = useMeQuery()
   const roleName = me?.role?.name
+  const [payoutOpen, setPayoutOpen] = useState(false)
 
   const {
     data: wallet,
@@ -131,10 +364,22 @@ export function SellerWalletPage() {
             </p>
           </div>
         </div>
-        <Badge variant={walletDataSource === 'api' ? 'default' : 'secondary'}>
-          {walletDataSource === 'api' ? 'Live API' : 'Mock data'}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant={walletDataSource === 'api' ? 'default' : 'secondary'}>
+            {walletDataSource === 'api' ? 'Live API' : 'Mock data'}
+          </Badge>
+          {wallet && (
+            <Button onClick={() => setPayoutOpen(true)}>
+              <ArrowUpRight className="mr-2 h-4 w-4" />
+              Rút tiền
+            </Button>
+          )}
+        </div>
       </div>
+
+      {wallet && (
+        <PayoutRequestDialog open={payoutOpen} onOpenChange={setPayoutOpen} wallet={wallet} />
+      )}
 
       {isWalletError ? (
         <Card>
@@ -225,6 +470,8 @@ export function SellerWalletPage() {
               )}
             </CardContent>
           </Card>
+
+          {wallet && <PayoutHistoryCard walletId={wallet.id} currency={currency} />}
         </>
       )}
     </div>

@@ -32,3 +32,17 @@ export function formatMoneyMinor(amountMinor: number, currency: string): string 
     return `${major.toLocaleString()} ${currency}`
   }
 }
+
+/**
+ * Parse a user-entered major-unit amount into integer minor units, rounding to
+ * the currency's exponent. `"10.25"` + `USD` -> `1025`; `"10000"` + `VND` ->
+ * `10000`. Returns `null` when the input is not a valid positive amount.
+ */
+export function parseMoneyToMinor(input: string, currency: string): number | null {
+  const normalized = input.trim().replace(/,/g, '')
+  if (normalized === '' || !/^\d*\.?\d*$/.test(normalized)) return null
+  const major = Number(normalized)
+  if (!Number.isFinite(major) || major <= 0) return null
+  const exponent = currencyExponent(currency)
+  return Math.round(major * Math.pow(10, exponent))
+}
