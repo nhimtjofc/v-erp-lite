@@ -1,4 +1,4 @@
-CREATE TABLE carts (
+CREATE TABLE IF NOT EXISTS carts (
     id          UUID PRIMARY KEY,
     tenant_id   VARCHAR(64) NOT NULL,
     customer_id UUID NOT NULL,
@@ -14,11 +14,11 @@ CREATE TABLE carts (
     CONSTRAINT chk_carts_status CHECK (status IN ('ACTIVE', 'CHECKED_OUT', 'ABANDONED'))
 );
 
-CREATE INDEX idx_carts_tenant ON carts(tenant_id);
-CREATE INDEX idx_carts_customer ON carts(customer_id);
-CREATE INDEX idx_carts_tenant_status ON carts(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_carts_tenant ON carts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_carts_customer ON carts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_carts_tenant_status ON carts(tenant_id, status);
 
-CREATE TABLE cart_items (
+CREATE TABLE IF NOT EXISTS cart_items (
     id                 UUID PRIMARY KEY,
     cart_id            UUID NOT NULL,
     product_id         UUID NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE cart_items (
     CONSTRAINT chk_cart_items_quantity CHECK (quantity > 0)
 );
 
-CREATE INDEX idx_cart_items_cart ON cart_items(cart_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart ON cart_items(cart_id);
 
 -- Add stock_quantity to products if not present (missing from V9)
 ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_quantity INTEGER NOT NULL DEFAULT 0;
