@@ -97,6 +97,14 @@ public class WalletService {
         );
     }
 
+    public List<WalletTransaction> listTransactions(String tenantId, UUID walletId, int limit, int offset) {
+        getWallet(tenantId, walletId);
+        return WalletTransaction.find(
+                "tenantId = ?1 and wallet.id = ?2 order by createdAt desc",
+                tenantId, walletId
+        ).page(offset / Math.max(limit, 1), Math.max(limit, 1)).list();
+    }
+
     @Transactional
     public WalletMutation creditAvailable(String tenantId, UUID walletId, Money amount, String transactionType,
                                           String referenceType, UUID referenceId, UUID actorId, String description) {
@@ -261,6 +269,21 @@ public class WalletService {
                                                 UUID referenceId, UUID actorId, String description) {
         Wallet wallet = getOrCreateWallet(tenantId, "SELLER", sellerOwnerId, amount.getCurrency(), actorId);
         return refundPending(tenantId, wallet.getId(), amount, referenceType, referenceId, actorId, description);
+    }
+
+
+    @Transactional
+    public Wallet adjustBalance(String tenantId, UUID walletId, long adjustmentMinor, String reason, UUID actorId) {
+        Wallet wallet = walletForUpdate(tenantId, walletId);
+        Money amount = Money.of(Math.abs(adjustmentMinor), wallet.getCurrency());
+        if (adjustmentMinor > 0) {
+            creditAvailable(tenantId, walletId, amount, "ADJUSTMENT",
+                    null, null, actorId, reason);
+        } else if (adjustmentMinor < 0) {
+            debitAvailable(tenantId, walletId, amount, "ADJUSTMENT",
+                    null, null, actorId, reason);
+        }
+        return wallet;
     }
 
     private Wallet walletForUpdate(String tenantId, UUID walletId) {

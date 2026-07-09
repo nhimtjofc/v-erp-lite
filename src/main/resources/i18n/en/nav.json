@@ -28,5 +28,6 @@
   "admin": "Admin",
   "administration": "Administration",
   "tenants": "Tenants",
-  "shop": "Shop"
+  "shop": "Shop",
+  "cart": "Cart"
 }

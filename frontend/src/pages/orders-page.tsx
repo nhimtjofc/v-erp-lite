@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { useList4Query, type Order, useMeQuery } from '@/shared/api'
+import { useListOrdersQuery, type Order, useMeQuery } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
@@ -13,8 +13,6 @@ import {
     Package, ChevronRight, Truck, XCircle, Filter, RotateCcw,
     ArrowUpRight, Trash2,
 } from 'lucide-react'
-
-// ─── Stats via direct fetch ────────────────────────────────────────────────────
 
 interface OrderStats {
     totalRevenue: number
@@ -49,8 +47,6 @@ async function deleteOrder(orderId: string): Promise<void> {
         throw new Error(message || 'Unable to delete order')
     }
 }
-
-// ─── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, {
     label: string
@@ -125,8 +121,6 @@ function getAvatarColor(name: string): string {
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
-// ─── Order Card Component ──────────────────────────────────────────────────────
-
 function OrderCard({
     order,
     onClick,
@@ -159,10 +153,8 @@ function OrderCard({
             onClick={onClick}
             className="group relative bg-card border border-border rounded-xl p-4 hover:border-primary/40 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
-            {/* Top row */}
             <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">
-                    {/* Customer avatar */}
                     <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm`}>
                         {initials}
                     </div>
@@ -172,14 +164,12 @@ function OrderCard({
                     </div>
                 </div>
 
-                {/* Status badge */}
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.color} shrink-0`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${status === 'PENDING' ? 'animate-pulse' : ''}`} />
                     {cfg.label}
                 </div>
             </div>
 
-            {/* Order info row */}
             <div className="flex items-center gap-2 mb-3">
                 <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-xs text-muted-foreground truncate flex-1">
@@ -191,7 +181,6 @@ function OrderCard({
                 </span>
             </div>
 
-            {/* Bottom row */}
             <div className="flex items-center justify-between">
                 <div>
                     <div className="font-mono text-xs text-primary font-bold">{order.orderNumber}</div>
@@ -204,13 +193,12 @@ function OrderCard({
                 </div>
                 <div className="text-right">
                     <div className="font-bold text-foreground">
-                        {formatUSD(Number(order.finalAmount))}
+                        {formatUSD(Number(order.finalAmountMinor))}
                     </div>
                     <div className="text-xs text-muted-foreground">Total</div>
                 </div>
             </div>
 
-            {/* Hover arrow */}
             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 {canDelete ? (
                     <Button
@@ -233,8 +221,6 @@ function OrderCard({
         </div>
     )
 }
-
-// ─── Stats Card ───────────────────────────────────────────────────────────────
 
 function StatCard({
     label, value, sub, icon: Icon, gradient, trend,
@@ -268,8 +254,6 @@ function StatCard({
     )
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-
 export function OrdersPage() {
     const { t } = useTranslation()
     const navigate = useNavigate()
@@ -299,7 +283,7 @@ export function OrdersPage() {
     if (debouncedSearch) queryParams.search = debouncedSearch
     if (activeStatus) queryParams.status = activeStatus
 
-    const { data: orders, isLoading, refetch } = useList4Query(
+    const { data: orders, isLoading, refetch } = useListOrdersQuery(
         Object.keys(queryParams).length > 0 ? { query: queryParams } : undefined
     )
     const orderList = orders ?? []
@@ -355,7 +339,6 @@ export function OrdersPage() {
     return (
         <div className="space-y-5">
 
-            {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Đơn hàng</h1>
@@ -377,7 +360,6 @@ export function OrdersPage() {
                 </div>
             )}
 
-            {/* ── Stats ── */}
             {stats && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard
@@ -411,9 +393,7 @@ export function OrdersPage() {
                 </div>
             )}
 
-            {/* ── Filter + Search ── */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-                {/* Search bar */}
                 <div className="flex items-center gap-2 p-3 border-b border-border">
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -455,7 +435,6 @@ export function OrdersPage() {
                     </div>
                 </div>
 
-                {/* Status tabs */}
                 <div className="flex items-center gap-0.5 px-3 py-2 overflow-x-auto">
                     {STATUS_TABS.map((tab) => {
                         const count = tab.key
@@ -491,10 +470,8 @@ export function OrdersPage() {
                     })}
                 </div>
 
-                {/* Content */}
                 <div className="p-3">
                     {isLoading ? (
-                        /* Skeleton */
                         <div className={viewMode === 'grid'
                             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
                             : 'space-y-2'
@@ -539,7 +516,6 @@ export function OrdersPage() {
                             ))}
                         </div>
                     ) : (
-                        /* List view */
                         <div className="divide-y divide-border">
                             {orderList.map((order) => {
                                 const customerFirst = order.customer?.firstName ?? ''
@@ -572,7 +548,7 @@ export function OrdersPage() {
                                             {cfg.label}
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="font-bold text-sm">{formatUSD(Number(order.finalAmount))}</div>
+                                            <div className="font-bold text-sm">{formatUSD(Number(order.finalAmountMinor))}</div>
                                         </div>
                                         {canDeleteOrder(order) ? (
                                             <Button
@@ -598,7 +574,6 @@ export function OrdersPage() {
                     )}
                 </div>
 
-                {/* Footer */}
                 {orderList.length > 0 && (
                     <div className="px-4 py-2.5 border-t border-border bg-muted/30 text-xs text-muted-foreground flex items-center justify-between">
                         <span>Hiển thị {orderList.length} đơn hàng</span>

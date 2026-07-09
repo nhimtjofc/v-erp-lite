@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
@@ -31,7 +30,7 @@ public class VoucherResource {
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public List<Voucher> list(@QueryParam("search") String search) {
+    public List<Voucher> listVouchers(@QueryParam("search") String search) {
         String tenantCode = caller.tenantCode();
         if (search != null && !search.isBlank()) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
@@ -46,7 +45,7 @@ public class VoucherResource {
     @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public Voucher get(@PathParam("id") UUID id) {
+    public Voucher getVoucher(@PathParam("id") UUID id) {
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
             throw new NotFoundException("Voucher not found");
@@ -57,11 +56,11 @@ public class VoucherResource {
     @GET
     @Path("/validate")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public Response validateVoucher(@QueryParam("code") String code, @QueryParam("subtotal") BigDecimal subtotal) {
+    public Response validateVoucher(@QueryParam("code") String code, @QueryParam("subtotal") Long subtotal) {
         if (code == null || code.isBlank()) {
             throw new BadRequestException("Voucher code is required");
         }
-        if (subtotal == null || subtotal.compareTo(BigDecimal.ZERO) < 0) {
+        if (subtotal == null || subtotal < 0) {
             throw new BadRequestException("Subtotal must be zero or greater");
         }
 
@@ -71,22 +70,22 @@ public class VoucherResource {
         Map<String, Object> result = new HashMap<>();
         if (voucher == null) {
             result.put("valid", false);
-            result.put("discountAmount", BigDecimal.ZERO);
+            result.put("discountAmount", 0L);
             result.put("message", "Voucher not found");
         } else if (!voucher.isValid(subtotal)) {
             result.put("valid", false);
-            result.put("discountAmount", BigDecimal.ZERO);
+            result.put("discountAmount", 0L);
             if (!voucher.isActive()) {
                 result.put("message", "Voucher is inactive");
             } else if (voucher.getUsageLimit() != null && voucher.getUsedCount() >= voucher.getUsageLimit()) {
                 result.put("message", "Voucher usage limit has been reached");
-            } else if (subtotal.compareTo(voucher.getMinOrderValue()) < 0) {
-                result.put("message", "Order subtotal is less than the minimum required value of " + voucher.getMinOrderValue());
+            } else if (subtotal < voucher.getMinOrderValueMinor()) {
+                result.put("message", "Order subtotal is less than the minimum required value of " + voucher.getMinOrderValueMinor());
             } else {
                 result.put("message", "Voucher is expired or not yet valid");
             }
         } else {
-            BigDecimal discount = voucher.calculateDiscount(subtotal);
+            long discount = voucher.calculateDiscount(subtotal);
             result.put("valid", true);
             result.put("discountAmount", discount);
             result.put("voucherId", voucher.getId());
@@ -153,7 +152,7 @@ public class VoucherResource {
     @POST
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response create(Voucher voucher) {
+    public Response createVoucher(Voucher voucher) {
         validate(voucher);
         // Check for duplicates
         Voucher existing = Voucher.find("code = ?1 and tenantId = ?2", voucher.getCode().trim(), caller.tenantCode()).firstResult();
@@ -173,7 +172,7 @@ public class VoucherResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Voucher update(@PathParam("id") UUID id, Voucher updated) {
+    public Voucher updateVoucher(@PathParam("id") UUID id, Voucher updated) {
         validate(updated);
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
@@ -192,8 +191,8 @@ public class VoucherResource {
         voucher.setName(updated.getName());
         voucher.setDiscountType(updated.getDiscountType());
         voucher.setDiscountValue(updated.getDiscountValue());
-        voucher.setMinOrderValue(updated.getMinOrderValue());
-        voucher.setMaxDiscountAmount(updated.getMaxDiscountAmount());
+        voucher.setMinOrderValueMinor(updated.getMinOrderValueMinor());
+        voucher.setMaxDiscountAmountMinor(updated.getMaxDiscountAmountMinor());
         voucher.setStartTime(updated.getStartTime());
         voucher.setEndTime(updated.getEndTime());
         voucher.setUsageLimit(updated.getUsageLimit());
@@ -206,7 +205,7 @@ public class VoucherResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteVoucher(@PathParam("id") UUID id) {
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Voucher not found");
@@ -224,10 +223,10 @@ public class VoucherResource {
         if (voucher.getDiscountType() == null || (!"PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType()) && !"FIXED_AMOUNT".equalsIgnoreCase(voucher.getDiscountType()))) {
             throw new BadRequestException("Valid discount type (PERCENTAGE or FIXED_AMOUNT) is required");
         }
-        if (voucher.getDiscountValue() == null || voucher.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
+        if (voucher.getDiscountValue() <= 0) {
             throw new BadRequestException("Discount value must be greater than zero");
         }
-        if (voucher.getMinOrderValue() == null || voucher.getMinOrderValue().compareTo(BigDecimal.ZERO) < 0) {
+        if (voucher.getMinOrderValueMinor() < 0) {
             throw new BadRequestException("Minimum order value must be zero or greater");
         }
         if (voucher.getStartTime() != null && voucher.getEndTime() != null && voucher.getEndTime().isBefore(voucher.getStartTime())) {

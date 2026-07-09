@@ -1,19 +1,31 @@
 package base.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "products")
@@ -45,11 +57,14 @@ public class Product extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "base_price", nullable = false, precision = 19, scale = 2)
-    private BigDecimal basePrice;
+    @Column(name = "base_price_minor", nullable = false)
+    private long basePriceMinor;
 
-    @Column(name = "sale_price", precision = 19, scale = 2)
-    private BigDecimal salePrice;
+    @Column(name = "sale_price_minor")
+    private Long salePriceMinor;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
 
     @Column(name = "sale_starts_at")
     private Instant saleStartsAt;
@@ -89,5 +104,69 @@ public class Product extends BaseEntity {
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getBasePriceMinor() {
+        return basePriceMinor;
+    }
+
+    public void setBasePriceMinor(long basePriceMinor) {
+        this.basePriceMinor = basePriceMinor;
+    }
+
+    public Long getSalePriceMinor() {
+        return salePriceMinor;
+    }
+
+    public void setSalePriceMinor(Long salePriceMinor) {
+        this.salePriceMinor = salePriceMinor;
+    }
+
+    public Instant getSaleStartsAt() {
+        return saleStartsAt;
+    }
+
+    public void setSaleStartsAt(Instant saleStartsAt) {
+        this.saleStartsAt = saleStartsAt;
+    }
+
+    public Instant getSaleEndsAt() {
+        return saleEndsAt;
+    }
+
+    public void setSaleEndsAt(Instant saleEndsAt) {
+        this.saleEndsAt = saleEndsAt;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public int getReservedQuantity() {
+        return reservedQuantity;
+    }
+
+    public void setReservedQuantity(int reservedQuantity) {
+        this.reservedQuantity = reservedQuantity;
+    }
 }
 

@@ -2,7 +2,7 @@ export function formatUSD(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-  }).format(amount)
+  }).format(amount / 100)
 }
 
 /** Currencies whose smallest (minor) unit equals the major unit — exponent 0. */

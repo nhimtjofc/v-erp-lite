@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useList3Query, useMeQuery } from '@/shared/api'
+import { useListCustomersQuery, useMeQuery } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -24,7 +24,7 @@ export function CustomersPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const { data: customers, isLoading } = useList3Query(
+  const { data: customers, isLoading } = useListCustomersQuery(
     debouncedSearch ? { query: { search: debouncedSearch } } : undefined
   )
   const customerList = customers ?? []

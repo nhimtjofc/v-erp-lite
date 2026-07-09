@@ -1,16 +1,24 @@
 package base.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "product_variants")
@@ -30,8 +38,8 @@ public class ProductVariant extends BaseEntity {
     @Column(nullable = false)
     private String sku;
 
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal price;
+    @Column(name = "price_minor", nullable = false)
+    private long priceMinor;
 
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
@@ -50,4 +58,44 @@ public class ProductVariant extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "option_values", columnDefinition = "json", nullable = false)
     private Map<String, String> optionValues = new HashMap<>();
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getSku() {
+        return sku;
+    }
+
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
+
+    public long getPriceMinor() {
+        return priceMinor;
+    }
+
+    public void setPriceMinor(long priceMinor) {
+        this.priceMinor = priceMinor;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public int getReservedQuantity() {
+        return reservedQuantity;
+    }
+
+    public void setReservedQuantity(int reservedQuantity) {
+        this.reservedQuantity = reservedQuantity;
+    }
 }

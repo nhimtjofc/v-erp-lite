@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
-    useList3Query, // customers
-    useList5Query, // products
-    useCheckoutMutation,
+    useListCustomersQuery, // customers
+    useListProductsQuery, // products
+    useCheckoutOrderMutation,
     myVouchersOptions,
     type Customer,
     type Product,
@@ -33,7 +33,7 @@ interface CartLine {
     product: Product
     variant?: ProductVariant
     quantity: number
-    price: number
+    priceMinor: number
     isSalePrice: boolean
     originalPrice: number
 }
@@ -48,7 +48,7 @@ const NEW_PRODUCT_DAYS = 14
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isActiveSale(product: Product): boolean {
-    if (!product.salePrice || !product.saleStartsAt || !product.saleEndsAt) return false
+    if (!product.salePriceMinor || !product.saleStartsAt || !product.saleEndsAt) return false
     const now = Date.now()
     return now > new Date(product.saleStartsAt).getTime() && now < new Date(product.saleEndsAt).getTime()
 }
@@ -91,9 +91,9 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
         : getAvailableStock(product)
     const isOutOfStock = avail <= 0
     const isLowStock = !isOutOfStock && product.lowStockThreshold != null && product.lowStockThreshold > 0 && avail <= product.lowStockThreshold
-    const discPct = sale ? getDiscountPct(product.basePrice as number, product.salePrice as number) : 0
+    const discPct = sale ? getDiscountPct(product.basePriceMinor as number, product.salePriceMinor as number) : 0
 
-    const displayPrice = sale ? product.salePrice : product.basePrice
+    const displayPrice = sale ? product.salePriceMinor : product.basePriceMinor
 
     return (
         <div className={`group relative bg-card border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
@@ -166,7 +166,7 @@ function ProductCard({ product, onAddToCart, cartQty }: ProductCardProps) {
                         </div>
                         {sale && (
                             <div className="text-[10px] line-through text-muted-foreground">
-                                {fmt(Number(product.basePrice))}
+                                {fmt(Number(product.basePriceMinor))}
                             </div>
                         )}
                     </div>
@@ -233,9 +233,9 @@ interface CartDrawerProps {
     onSelectVoucherId: (id: string) => void
     discountAmount: number
     subtotal: number
-    shippingFee: number
-    taxAmount: number
-    finalAmount: number
+    shippingFeeMinor: number
+    taxAmountMinor: number
+    finalAmountMinor: number
     freeShipGap: number
     freeShipProgress: number
     onCheckout: () => void
@@ -249,7 +249,7 @@ function CartDrawer({
     shippingName, shippingPhone, shippingAddress, shippingNote,
     onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingNoteChange,
     collectedVouchers, selectedVoucherId, onSelectVoucherId,
-    discountAmount, subtotal, shippingFee, taxAmount, finalAmount, freeShipGap, freeShipProgress,
+    discountAmount, subtotal, shippingFeeMinor, taxAmountMinor, finalAmountMinor, freeShipGap, freeShipProgress,
     onCheckout, isCheckingOut, error,
 }: CartDrawerProps) {
     const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
@@ -316,7 +316,7 @@ function CartDrawer({
                     ) : (
                         <div className="px-4 pt-3 pb-1 space-y-3">
                             {cart.map((line, index) => {
-                                const itemSub = line.price * line.quantity
+                                const itemSub = line.priceMinor * line.quantity
                                 const variantName = line.variant
                                     ? Object.entries(line.variant.optionValues ?? {}).map(([_, v]) => v).join(' / ')
                                     : null
@@ -422,7 +422,7 @@ function CartDrawer({
                                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                         {collectedVouchers.map((cv: any) => {
                                             const v = cv.voucher
-                                            const isValid = subtotal >= Number(v.minOrderValue)
+                                            const isValid = subtotal >= Number(v.minOrderValueMinor)
                                             const isSelected = selectedVoucherId === cv.voucherId
                                             
                                             // Calculate individual voucher discount for preview
@@ -430,8 +430,8 @@ function CartDrawer({
                                             if (isValid) {
                                                 if (v.discountType === 'PERCENTAGE') {
                                                     previewDiscount = subtotal * (Number(v.discountValue) / 100)
-                                                    if (v.maxDiscountAmount) {
-                                                        previewDiscount = Math.min(previewDiscount, Number(v.maxDiscountAmount))
+                                                    if (v.maxDiscountAmountMinor) {
+                                                        previewDiscount = Math.min(previewDiscount, Number(v.maxDiscountAmountMinor))
                                                     }
                                                 } else {
                                                     previewDiscount = Number(v.discountValue)
@@ -462,7 +462,7 @@ function CartDrawer({
                                                             </span>
                                                             {!isValid && (
                                                                 <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">
-                                                                    Tối thiểu: {fmt(Number(v.minOrderValue))}
+                                                                    Tối thiểu: {fmt(Number(v.minOrderValueMinor))}
                                                                 </Badge>
                                                             )}
                                                         </div>
@@ -562,19 +562,19 @@ function CartDrawer({
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Phí vận chuyển</span>
                                     <span>
-                                        {shippingFee > 0
-                                            ? `${fmt(shippingFee)}`
+                                        {shippingFeeMinor > 0
+                                            ? `${fmt(shippingFeeMinor)}`
                                             : <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Miễn phí</span>
                                         }
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">VAT (10%)</span>
-                                    <span>{fmt(taxAmount)}</span>
+                                    <span>{fmt(taxAmountMinor)}</span>
                                 </div>
                                 <div className="border-t border-border/60 pt-2 mt-1 flex justify-between text-base font-bold">
                                     <span>Tổng thanh toán</span>
-                                    <span className="text-primary text-lg">{fmt(finalAmount)}</span>
+                                    <span className="text-primary text-lg">{fmt(finalAmountMinor)}</span>
                                 </div>
                             </div>
                         </div>
@@ -597,7 +597,7 @@ function CartDrawer({
                                 </>
                             ) : (
                                 <>
-                                    Đặt hàng · {fmt(finalAmount)}
+                                    Đặt hàng · {fmt(finalAmountMinor)}
                                     <ChevronRight className="h-4 w-4" />
                                 </>
                             )}
@@ -638,8 +638,8 @@ function VariantPickerDialog({ product, open, onClose, onConfirm }: VariantPicke
         : !variants.length ? getAvailableStock(product) : 0
     const sale = isActiveSale(product)
     const displayPrice = selectedVariant
-        ? selectedVariant.price
-        : sale ? product.salePrice : product.basePrice
+        ? selectedVariant.priceMinor
+        : sale ? product.salePriceMinor : product.basePriceMinor
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -674,7 +674,7 @@ function VariantPickerDialog({ product, open, onClose, onConfirm }: VariantPicke
                                             <div className="flex items-center justify-between">
                                                 <span>{opts}</span>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-primary">{fmt(Number(v.price))}</div>
+                                                    <div className="font-bold text-primary">{fmt(Number(v.priceMinor))}</div>
                                                     <div className={`text-[10px] ${vAvail <= 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                                                         {vAvail <= 0 ? 'Hết hàng' : `${vAvail} còn lại`}
                                                     </div>
@@ -743,8 +743,8 @@ export function CartCheckoutPage() {
     const queryClient = useQueryClient()
 
     // Queries
-    const { data: customers } = useList3Query()
-    const { data: products } = useList5Query()
+    const { data: customers } = useListCustomersQuery()
+    const { data: products } = useListProductsQuery()
     const { data: categories } = useQuery({
         queryKey: ['categories'],
         queryFn: () => catalogApi.listCategories(),
@@ -796,7 +796,7 @@ export function CartCheckoutPage() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [error, setError] = useState('')
 
-    const checkoutMutation = useCheckoutMutation({
+    const checkoutMutation = useCheckoutOrderMutation({
         onSuccess: (data: any) => {
             queryClient.invalidateQueries({ queryKey: ['list4'] })
             const createdOrder = data?.data
@@ -830,7 +830,7 @@ export function CartCheckoutPage() {
     }, [selectedCustomerId, customers])
 
     // Live calculations
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const subtotal = cart.reduce((sum, item) => sum + item.priceMinor * item.quantity, 0)
 
     const selectedVoucher = useMemo(() => {
         if (!selectedVoucherId || !collectedVoucherList.length) return null
@@ -840,14 +840,14 @@ export function CartCheckoutPage() {
     const discountAmount = useMemo(() => {
         if (!selectedVoucher) return 0
         const v = selectedVoucher
-        const minOrderVal = Number(v.minOrderValue)
+        const minOrderVal = Number(v.minOrderValueMinor)
         if (subtotal < minOrderVal) return 0
 
         let disc = 0
         if (v.discountType === 'PERCENTAGE') {
             disc = subtotal * (Number(v.discountValue) / 100)
-            if (v.maxDiscountAmount) {
-                disc = Math.min(disc, Number(v.maxDiscountAmount))
+            if (v.maxDiscountAmountMinor) {
+                disc = Math.min(disc, Number(v.maxDiscountAmountMinor))
             }
         } else {
             disc = Number(v.discountValue)
@@ -857,9 +857,9 @@ export function CartCheckoutPage() {
 
     const appliedVoucher = selectedVoucher?.code ?? null
 
-    const shippingFee = subtotal > 0 && (subtotal - discountAmount) < FREE_SHIPPING_THRESHOLD ? FLAT_SHIPPING_FEE : 0
-    const taxAmount = Math.max(0, (subtotal - discountAmount) * VAT_RATE)
-    const finalAmount = Math.max(0, subtotal - discountAmount + shippingFee + taxAmount)
+    const shippingFeeMinor = subtotal > 0 && (subtotal - discountAmount) < FREE_SHIPPING_THRESHOLD ? FLAT_SHIPPING_FEE : 0
+    const taxAmountMinor = Math.max(0, (subtotal - discountAmount) * VAT_RATE)
+    const finalAmountMinor = Math.max(0, subtotal - discountAmount + shippingFeeMinor + taxAmountMinor)
     const amountAfterDiscount = subtotal - discountAmount
     const freeShipGap = Math.max(0, FREE_SHIPPING_THRESHOLD - amountAfterDiscount)
     const freeShipProgress = Math.min(100, (amountAfterDiscount / FREE_SHIPPING_THRESHOLD) * 100)
@@ -902,12 +902,12 @@ export function CartCheckoutPage() {
 
     function addToCart(product: Product, variant: ProductVariant | undefined, qty: number) {
         const sale = isActiveSale(product)
-        let price = sale ? (product.salePrice as number) : (product.basePrice as number)
-        let originalPrice = product.basePrice as number
+        let priceMinor = sale ? (product.salePriceMinor as number) : (product.basePriceMinor as number)
+        let originalPrice = product.basePriceMinor as number
 
         if (variant) {
-            price = variant.price as number
-            originalPrice = variant.price as number
+            priceMinor = variant.priceMinor as number
+            originalPrice = variant.priceMinor as number
         }
 
         const avail = getAvailableStock(product, variant)
@@ -931,7 +931,7 @@ export function CartCheckoutPage() {
             setCart(updated)
         } else {
             setCart(prev => [...prev, {
-                product, variant, quantity: qty, price,
+                product, variant, quantity: qty, priceMinor,
                 isSalePrice: sale && !variant,
                 originalPrice,
             }])
@@ -1165,7 +1165,7 @@ export function CartCheckoutPage() {
                 >
                     <ShoppingCart className="h-5 w-5" />
                     <span className="font-bold text-sm">
-                        {cart.length === 0 ? 'Giỏ hàng' : `${fmt(finalAmount)}`}
+                        {cart.length === 0 ? 'Giỏ hàng' : `${fmt(finalAmountMinor)}`}
                     </span>
                     {totalCartQty > 0 && (
                         <span className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-bounce">
@@ -1199,9 +1199,9 @@ export function CartCheckoutPage() {
                 onSelectVoucherId={setSelectedVoucherId}
                 discountAmount={discountAmount}
                 subtotal={subtotal}
-                shippingFee={shippingFee}
-                taxAmount={taxAmount}
-                finalAmount={finalAmount}
+                shippingFeeMinor={shippingFeeMinor}
+                taxAmountMinor={taxAmountMinor}
+                finalAmountMinor={finalAmountMinor}
                 freeShipGap={freeShipGap}
                 freeShipProgress={freeShipProgress}
                 onCheckout={handleCheckoutClick}
@@ -1246,7 +1246,7 @@ export function CartCheckoutPage() {
                                         {line.variant && ` (${Object.values(line.variant.optionValues ?? {}).join('/')})`}
                                         × {line.quantity}
                                     </span>
-                                    <span className="font-medium ml-2 shrink-0">{fmt(line.price * line.quantity)}</span>
+                                    <span className="font-medium ml-2 shrink-0">{fmt(line.priceMinor * line.quantity)}</span>
                                 </div>
                             ))}
                         </div>
@@ -1260,14 +1260,14 @@ export function CartCheckoutPage() {
                             )}
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Phí ship</span>
-                                <span>{shippingFee > 0 ? `${fmt(shippingFee)}` : 'Miễn phí'}</span>
+                                <span>{shippingFeeMinor > 0 ? `${fmt(shippingFeeMinor)}` : 'Miễn phí'}</span>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>VAT 10%</span><span>{fmt(taxAmount)}</span>
+                                <span>VAT 10%</span><span>{fmt(taxAmountMinor)}</span>
                             </div>
                             <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
                                 <span>Tổng cộng</span>
-                                <span className="text-primary">{fmt(finalAmount)}</span>
+                                <span className="text-primary">{fmt(finalAmountMinor)}</span>
                             </div>
                         </div>
                     </div>

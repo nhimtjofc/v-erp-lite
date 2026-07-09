@@ -17,7 +17,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-class Dev2PayoutServiceTest {
+class PayoutServiceTest {
 
     @Inject
     WalletService walletService;
@@ -165,7 +165,7 @@ class Dev2PayoutServiceTest {
     }
 
     private String tenant() {
-        return "dev2-test-" + UUID.randomUUID();
+        return "test-" + UUID.randomUUID();
     }
 
     private Wallet freshWallet(String tenantId, UUID walletId) {

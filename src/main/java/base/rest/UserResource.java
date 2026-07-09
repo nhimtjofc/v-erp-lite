@@ -3,7 +3,6 @@ package base.rest;
 import base.entity.Role;
 import base.entity.User;
 import base.security.CallerContext;
-import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -53,14 +52,14 @@ public class UserResource {
 
     @GET
     @RolesAllowed({"admin", "businessOwner"})
-    public List<User> list() {
+    public List<User> listUsers() {
         return User.list("tenantId", caller.tenantCode());
     }
 
     @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner"})
-    public User get(@PathParam("id") UUID id) {
+    public User getUser(@PathParam("id") UUID id) {
         User user = User.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (user == null) {
             throw new NotFoundException("User not found");
@@ -71,7 +70,7 @@ public class UserResource {
     @POST
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
-    public Response create(User user) {
+    public Response createUser(User user) {
         user.setId(UUID.randomUUID());
         user.setTenantId(caller.tenantCode());
         if (user.getRole() != null && user.getRole().getId() != null) {
@@ -85,7 +84,7 @@ public class UserResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
-    public User update(@PathParam("id") UUID id, User updated) {
+    public User updateUser(@PathParam("id") UUID id, User updated) {
         User user = User.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (user == null) {
             throw new NotFoundException("User not found");
@@ -109,7 +108,7 @@ public class UserResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteUser(@PathParam("id") UUID id) {
         long deleted = User.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("User not found");

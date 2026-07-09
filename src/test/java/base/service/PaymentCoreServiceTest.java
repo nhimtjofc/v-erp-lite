@@ -18,7 +18,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-class Dev2PaymentCoreServiceTest {
+class PaymentCoreServiceTest {
 
     @Inject
     PaymentIntentService paymentIntentService;
@@ -33,14 +33,14 @@ class Dev2PaymentCoreServiceTest {
     WalletService walletService;
 
     @Inject
-    Dev2PaymentTestDataFactory testDataFactory;
+    PaymentTestDataFactory testDataFactory;
 
     private final UUID actorId = UUID.fromString("00000000-0000-0000-0000-000000000111");
 
     @Test
     void paymentIntentLifecycleCreatesEscrowAndPlatformCommissionOnce() {
         String tenantId = tenant();
-        Dev2PaymentTestDataFactory.SeedOrder seed = testDataFactory.seedOrder(tenantId, BigDecimal.valueOf(100_000));
+        PaymentTestDataFactory.SeedOrder seed = testDataFactory.seedOrder(tenantId, BigDecimal.valueOf(100_000));
         String idempotencyKey = "intent-" + UUID.randomUUID();
 
         PaymentIntent first = paymentIntentService.createIntent(
@@ -138,7 +138,7 @@ class Dev2PaymentCoreServiceTest {
     @Test
     void paymentCoreRejectsInvalidStatesAndMismatchedAmounts() {
         String tenantId = tenant();
-        Dev2PaymentTestDataFactory.SeedOrder seed = testDataFactory.seedOrder(tenantId, BigDecimal.valueOf(10_000));
+        PaymentTestDataFactory.SeedOrder seed = testDataFactory.seedOrder(tenantId, BigDecimal.valueOf(10_000));
         PaymentIntent intent = paymentIntentService.createIntent(
                 tenantId,
                 seed.order().getId(),
@@ -163,6 +163,6 @@ class Dev2PaymentCoreServiceTest {
     }
 
     private String tenant() {
-        return "dev2-payment-" + UUID.randomUUID();
+        return "test-payment-" + UUID.randomUUID();
     }
 }

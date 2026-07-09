@@ -36,7 +36,7 @@ public class EscrowReleaseScheduler {
             if (processedOrders.contains(orderKey)) {
                 continue; // Already processed this order in a previous iteration
             }
-            
+
             try {
                 // Delegate to EscrowService to handle business checks and wallet changes
                 // Pass null for actorId since this is a system background job

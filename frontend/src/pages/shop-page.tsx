@@ -3,16 +3,16 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { catalogApi } from '@/shared/api/catalog'
 import {
-  useList5Query,
-  useCheckoutMutation,
+  useListProductsQuery,
+  useCheckoutOrderMutation,
   useMeQuery,
   useGetMyCustomerProfileQuery,
-  useList9Query,
+  useListVouchersQuery,
   useMyVouchersQuery,
   useCollectMutation,
   myVouchersQueryKey,
-  list3Options,
-  list9Options,
+  listCustomersOptions,
+  listVouchersOptions,
   myVouchersOptions,
   getMyCustomerProfileOptions
 } from '@/shared/api'
@@ -36,11 +36,11 @@ interface CartItem {
   product: any
   variant?: any
   quantity: number
-  price: number
+  priceMinor: number
 }
 
 function isOnSale(product: any): boolean {
-  if (!product.salePrice || !product.saleStartsAt || !product.saleEndsAt) return false
+  if (!product.salePriceMinor || !product.saleStartsAt || !product.saleEndsAt) return false
   const now = Date.now()
   return now > new Date(product.saleStartsAt).getTime() && now < new Date(product.saleEndsAt).getTime()
 }
@@ -63,7 +63,7 @@ export function ShopPage() {
   const queryClient = useQueryClient()
 
   // Queries
-  const { data: products } = useList5Query()
+  const { data: products } = useListProductsQuery()
   
   // Resolve current user info
   const { data: me } = useMeQuery()
@@ -71,7 +71,7 @@ export function ShopPage() {
 
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({
-    ...list3Options(),
+    ...listCustomersOptions(),
     enabled: !isCustomerRole,
   })
 
@@ -97,7 +97,7 @@ export function ShopPage() {
   })
 
   // Get active vouchers
-  const { data: allVouchersResponse } = useQuery(list9Options())
+  const { data: allVouchersResponse } = useQuery(listVouchersOptions())
   const vouchers = useMemo(() => {
     if (!allVouchersResponse) return []
     return (allVouchersResponse as any[]).filter((v: any) => v.active)
@@ -165,7 +165,7 @@ export function ShopPage() {
 
   const saleProducts = useMemo(() => activeProducts.filter((p: any) => isOnSale(p)), [activeProducts])
 
-  const cartTotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart])
+  const cartTotal = useMemo(() => cart.reduce((s, i) => s + i.priceMinor * i.quantity, 0), [cart])
 
   const collectedVoucherList = useMemo(() => {
     if (!collectedVouchers) return []
@@ -181,20 +181,20 @@ export function ShopPage() {
     if (!selectedVoucher) return 0
     const v = selectedVoucher
     
-    // Check validity based on minOrderValue
-    const minOrderVal = Number(v.minOrderValue)
+    // Check validity based on minOrderValueMinor
+    const minOrderVal = Number(v.minOrderValueMinor)
     if (cartTotal < minOrderVal) return 0
 
     if (v.discountType === 'PERCENTAGE') {
       const disc = cartTotal * (Number(v.discountValue) / 100)
-      return v.maxDiscountAmount ? Math.min(disc, Number(v.maxDiscountAmount)) : disc
+      return v.maxDiscountAmountMinor ? Math.min(disc, Number(v.maxDiscountAmountMinor)) : disc
     }
     return Number(v.discountValue)
   }, [selectedVoucher, cartTotal])
 
-  const shippingFee = cartTotal > 0 && (cartTotal - discountAmount) < FREE_SHIPPING_THRESHOLD ? FLAT_SHIPPING_FEE : 0
-  const taxAmount = Math.max(0, (cartTotal - discountAmount) * VAT_RATE)
-  const finalAmount = Math.max(0, cartTotal - discountAmount + shippingFee + taxAmount)
+  const shippingFeeMinor = cartTotal > 0 && (cartTotal - discountAmount) < FREE_SHIPPING_THRESHOLD ? FLAT_SHIPPING_FEE : 0
+  const taxAmountMinor = Math.max(0, (cartTotal - discountAmount) * VAT_RATE)
+  const finalAmountMinor = Math.max(0, cartTotal - discountAmount + shippingFeeMinor + taxAmountMinor)
 
   function addToCart(product: any, variant?: any) {
     const hasVariants = (product.variants?.length ?? 0) > 0
@@ -203,7 +203,7 @@ export function ShopPage() {
       return
     }
     const sale = isOnSale(product)
-    const price = variant ? Number(variant.price) : (sale ? Number(product.salePrice) : Number(product.basePrice))
+    const priceMinor = variant ? Number(variant.priceMinor) : (sale ? Number(product.salePriceMinor) : Number(product.basePriceMinor))
     const avail = variant ? (variant.stockQuantity - variant.reservedQuantity) : getAvailableStock(product)
     const existing = cart.find(i => i.product.id === product.id && i.variant?.id === variant?.id)
     const currentQty = existing ? existing.quantity : 0
@@ -215,7 +215,7 @@ export function ShopPage() {
     if (existing) {
       setCart(cart.map(i => (i.product.id === product.id && i.variant?.id === variant?.id) ? { ...i, quantity: i.quantity + 1 } : i))
     } else {
-      setCart([...cart, { product, variant, quantity: 1, price }])
+      setCart([...cart, { product, variant, quantity: 1, priceMinor }])
     }
     setShowCart(true)
   }
@@ -235,7 +235,7 @@ export function ShopPage() {
     }).filter(Boolean) as CartItem[])
   }
 
-  const checkoutMutation = useCheckoutMutation({
+  const checkoutMutation = useCheckoutOrderMutation({
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['list4'] })
       queryClient.invalidateQueries({ queryKey: myVouchersQueryKey() })
@@ -354,7 +354,7 @@ export function ShopPage() {
             {saleProducts.slice(0, 10).map(product => {
               const avail = getAvailableStock(product)
               const hasVariants = (product.variants?.length ?? 0) > 0
-              const discPct = product.salePrice ? Math.round(((Number(product.basePrice) - Number(product.salePrice)) / Number(product.basePrice)) * 100) : 0
+              const discPct = product.salePriceMinor ? Math.round(((Number(product.basePriceMinor) - Number(product.salePriceMinor)) / Number(product.basePriceMinor)) * 100) : 0
               return (
                 <Card key={product.id} className={`overflow-hidden transition-all hover:shadow-lg ${avail <= 0 ? 'opacity-60' : ''}`}>
                   <div className="relative aspect-square bg-muted flex items-center justify-center">
@@ -370,8 +370,8 @@ export function ShopPage() {
                   <CardContent className="p-3">
                     <p className="font-semibold text-sm truncate">{product.name}</p>
                     <div className="flex items-center gap-1 mt-1">
-                      <span className="font-bold text-sm text-red-500">{formatUSD(Number(product.salePrice))}</span>
-                      <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePrice))}</span>
+                      <span className="font-bold text-sm text-red-500">{formatUSD(Number(product.salePriceMinor))}</span>
+                      <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePriceMinor))}</span>
                     </div>
                     <Button size="sm" className="w-full mt-2 h-8 text-xs cursor-pointer" disabled={avail <= 0} onClick={() => addToCart(product)}>
                       <ShoppingCart className="h-3 w-3 mr-1" />
@@ -424,9 +424,9 @@ export function ShopPage() {
                         <span className="font-mono font-black text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide">
                           {voucher.code}
                         </span>
-                        {voucher.maxDiscountAmount && (
+                        {voucher.maxDiscountAmountMinor && (
                           <span className="text-[9px] text-muted-foreground font-medium">
-                            Max ${Number(voucher.maxDiscountAmount)}
+                            Max ${Number(voucher.maxDiscountAmountMinor)}
                           </span>
                         )}
                       </div>
@@ -434,7 +434,7 @@ export function ShopPage() {
                         {voucher.name}
                       </h3>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {Number(voucher.minOrderValue) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValue))}` : 'No Min. Spend'}
+                        {Number(voucher.minOrderValueMinor) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}` : 'No Min. Spend'}
                       </p>
                     </div>
 
@@ -515,9 +515,9 @@ export function ShopPage() {
                   <p className="font-semibold text-sm truncate">{product.name}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <span className={`font-bold text-sm ${sale ? 'text-red-500' : ''}`}>
-                      {formatUSD(sale ? Number(product.salePrice) : Number(product.basePrice))}
+                      {formatUSD(sale ? Number(product.salePriceMinor) : Number(product.basePriceMinor))}
                     </span>
-                    {sale && <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePrice))}</span>}
+                    {sale && <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePriceMinor))}</span>}
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className={`text-[10px] ${avail <= 3 ? 'text-amber-500' : 'text-muted-foreground'}`}>
@@ -575,14 +575,14 @@ export function ShopPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{item.product.name}{variantLabel}</p>
-                        <p className="text-xs text-muted-foreground">{formatUSD(item.price)} each</p>
+                        <p className="text-xs text-muted-foreground">{formatUSD(item.priceMinor)} each</p>
                         <div className="flex items-center justify-between mt-1">
                           <div className="flex items-center gap-1 bg-background border rounded-lg">
                             <button onClick={() => updateQty(item.product.id!, item.variant?.id, -1)} className="h-6 w-6 flex items-center justify-center hover:bg-muted rounded-l-lg"><Minus className="h-3 w-3" /></button>
                             <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
                             <button onClick={() => updateQty(item.product.id!, item.variant?.id, 1)} className="h-6 w-6 flex items-center justify-center hover:bg-muted rounded-r-lg"><Plus className="h-3 w-3" /></button>
                           </div>
-                          <span className="font-bold text-sm">{formatUSD(item.price * item.quantity)}</span>
+                          <span className="font-bold text-sm">{formatUSD(item.priceMinor * item.quantity)}</span>
                         </div>
                       </div>
                     </div>
@@ -672,9 +672,9 @@ export function ShopPage() {
                             <span className="font-mono font-black text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide">
                               {voucher.code}
                             </span>
-                            {voucher.maxDiscountAmount && (
+                            {voucher.maxDiscountAmountMinor && (
                               <span className="text-[9px] text-muted-foreground font-medium">
-                                Max ${Number(voucher.maxDiscountAmount)}
+                                Max ${Number(voucher.maxDiscountAmountMinor)}
                               </span>
                             )}
                           </div>
@@ -682,7 +682,7 @@ export function ShopPage() {
                             {voucher.name}
                           </h3>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {Number(voucher.minOrderValue) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValue))}` : 'No Min. Spend'}
+                            {Number(voucher.minOrderValueMinor) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}` : 'No Min. Spend'}
                           </p>
                         </div>
 
@@ -794,7 +794,7 @@ export function ShopPage() {
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {collectedVoucherList.map((cv: any) => {
                     const v = cv.voucher
-                    const isValid = cartTotal >= Number(v.minOrderValue)
+                    const isValid = cartTotal >= Number(v.minOrderValueMinor)
                     const isSelected = selectedVoucherId === cv.voucherId
                     
                     // Calculate individual voucher discount for preview
@@ -802,8 +802,8 @@ export function ShopPage() {
                     if (isValid) {
                       if (v.discountType === 'PERCENTAGE') {
                         previewDiscount = cartTotal * (Number(v.discountValue) / 100)
-                        if (v.maxDiscountAmount) {
-                          previewDiscount = Math.min(previewDiscount, Number(v.maxDiscountAmount))
+                        if (v.maxDiscountAmountMinor) {
+                          previewDiscount = Math.min(previewDiscount, Number(v.maxDiscountAmountMinor))
                         }
                       } else {
                         previewDiscount = Number(v.discountValue)
@@ -834,7 +834,7 @@ export function ShopPage() {
                             </span>
                             {!isValid && (
                               <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">
-                                Min. spend: {formatUSD(Number(v.minOrderValue))}
+                                Min. spend: {formatUSD(Number(v.minOrderValueMinor))}
                               </Badge>
                             )}
                           </div>
@@ -883,22 +883,22 @@ export function ShopPage() {
               )}
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>{shippingFee > 0 ? formatUSD(shippingFee) : 'Free'}</span>
+                <span>{shippingFeeMinor > 0 ? formatUSD(shippingFeeMinor) : 'Free'}</span>
               </div>
               <div className="flex justify-between">
                 <span>VAT (10%)</span>
-                <span>{formatUSD(taxAmount)}</span>
+                <span>{formatUSD(taxAmountMinor)}</span>
               </div>
               <div className="flex justify-between font-bold text-base border-t pt-1.5">
                 <span>Total</span>
-                <span className="text-primary">{formatUSD(finalAmount)}</span>
+                <span className="text-primary">{formatUSD(finalAmountMinor)}</span>
               </div>
             </div>
           </div>
           <DialogFooter className="pt-4">
             <Button variant="outline" className="cursor-pointer" onClick={() => setShowCheckout(false)}>Cancel</Button>
             <Button onClick={handleCheckout} className="cursor-pointer" disabled={checkoutMutation.isPending || !customerId}>
-              {checkoutMutation.isPending ? 'Processing...' : `Place Order - ${formatUSD(finalAmount)}`}
+              {checkoutMutation.isPending ? 'Processing...' : `Place Order - ${formatUSD(finalAmountMinor)}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -937,7 +937,7 @@ export function ShopPage() {
                     <p className="text-xs text-muted-foreground">{avail <= 0 ? 'Sold Out' : `${avail} left`}</p>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-sm text-primary">{formatUSD(Number(v.price))}</span>
+                    <span className="font-bold text-sm text-primary">{formatUSD(Number(v.priceMinor))}</span>
                   </div>
                 </div>
               )

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useRouter } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useGet7Query, useDelete6Mutation } from '@/shared/api'
+import { useGetTenantQuery, useDeleteTenantMutation } from '@/shared/api'
 import {
   listTenantUsers,
   useCreateTenantUserMutation,
@@ -39,8 +39,8 @@ export function TenantDetailPage() {
   const { t } = useTranslation('admin')
 
   // Tenant data
-  const { data: tenant, isLoading: tenantLoading } = useGet7Query({ path: { id } })
-  const deleteTenantMutation = useDelete6Mutation()
+  const { data: tenant, isLoading: tenantLoading } = useGetTenantQuery({ path: { id } })
+  const deleteTenantMutation = useDeleteTenantMutation()
   const queryClient = useQueryClient()
 
   // Users in this tenant — only fetch when tenant code is available

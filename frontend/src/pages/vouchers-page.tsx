@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  useList9Query,
-  useCreate8Mutation,
-  useUpdate7Mutation,
-  useDelete8Mutation,
-  list9QueryKey,
+  useListVouchersQuery,
+  useCreateVoucherMutation,
+  useUpdateVoucherMutation,
+  useDeleteVoucherMutation,
+  listVouchersQueryKey,
   useMeQuery,
   type Voucher,
 } from '@/shared/api'
@@ -36,7 +36,7 @@ export function VouchersPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const { data: vouchers, isLoading } = useList9Query(
+  const { data: vouchers, isLoading } = useListVouchersQuery(
     debouncedSearch ? { query: { search: debouncedSearch } } : undefined
   )
   const voucherList = vouchers ?? []
@@ -48,8 +48,8 @@ export function VouchersPage() {
   const [name, setName] = useState('')
   const [discountType, setDiscountType] = useState('PERCENTAGE')
   const [discountValue, setDiscountValue] = useState(0)
-  const [minOrderValue, setMinOrderValue] = useState(0)
-  const [maxDiscountAmount, setMaxDiscountAmount] = useState<number | undefined>(undefined)
+  const [minOrderValueMinor, setMinOrderValue] = useState(0)
+  const [maxDiscountAmountMinor, setMaxDiscountAmount] = useState<number | undefined>(undefined)
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [usageLimit, setUsageLimit] = useState<number | undefined>(undefined)
@@ -72,11 +72,11 @@ export function VouchersPage() {
   }
 
   const invalidateVoucherQueries = () => {
-    queryClient.invalidateQueries({ queryKey: list9QueryKey() })
+    queryClient.invalidateQueries({ queryKey: listVouchersQueryKey() })
     queryClient.invalidateQueries({ queryKey: ['activeVouchers'] })
   }
 
-  const createMutation = useCreate8Mutation({
+  const createMutation = useCreateVoucherMutation({
     onSuccess: () => {
       invalidateVoucherQueries()
       setIsDialogOpen(false)
@@ -90,7 +90,7 @@ export function VouchersPage() {
     },
   })
 
-  const updateMutation = useUpdate7Mutation({
+  const updateMutation = useUpdateVoucherMutation({
     onSuccess: () => {
       invalidateVoucherQueries()
       setIsDialogOpen(false)
@@ -104,7 +104,7 @@ export function VouchersPage() {
     },
   })
 
-  const deleteMutation = useDelete8Mutation({
+  const deleteMutation = useDeleteVoucherMutation({
     onSuccess: () => {
       invalidateVoucherQueries()
     },
@@ -137,8 +137,8 @@ export function VouchersPage() {
     setName(voucher.name ?? '')
     setDiscountType(voucher.discountType ?? 'PERCENTAGE')
     setDiscountValue(Number(voucher.discountValue))
-    setMinOrderValue(Number(voucher.minOrderValue))
-    setMaxDiscountAmount(voucher.maxDiscountAmount ? Number(voucher.maxDiscountAmount) : undefined)
+    setMinOrderValue(Number(voucher.minOrderValueMinor))
+    setMaxDiscountAmount(voucher.maxDiscountAmountMinor ? Number(voucher.maxDiscountAmountMinor) : undefined)
     setStartTime(voucher.startTime ? new Date(voucher.startTime).toISOString().slice(0, 16) : '')
     setEndTime(voucher.endTime ? new Date(voucher.endTime).toISOString().slice(0, 16) : '')
     setUsageLimit(voucher.usageLimit ?? undefined)
@@ -167,8 +167,8 @@ export function VouchersPage() {
       name: name.trim(),
       discountType,
       discountValue: discountValue,
-      minOrderValue: minOrderValue,
-      maxDiscountAmount: maxDiscountAmount || undefined,
+      minOrderValueMinor: minOrderValueMinor,
+      maxDiscountAmountMinor: maxDiscountAmountMinor || undefined,
       startTime: startTime ? new Date(startTime).toISOString() : undefined,
       endTime: endTime ? new Date(endTime).toISOString() : undefined,
       usageLimit: usageLimit || undefined,
@@ -256,7 +256,7 @@ export function VouchersPage() {
                       </TableCell>
                       <TableCell className="font-medium">{voucher.name}</TableCell>
                       <TableCell className="font-medium">{discountFormatted}</TableCell>
-                      <TableCell>{formatUSD(Number(voucher.minOrderValue))}</TableCell>
+                      <TableCell>{formatUSD(Number(voucher.minOrderValueMinor))}</TableCell>
                       <TableCell>
                         {voucher.usedCount} / {voucher.usageLimit ?? '∞'}
                       </TableCell>
@@ -355,12 +355,12 @@ export function VouchersPage() {
               </div>
 
               <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="minOrderValue" className="text-right">Min Order Value</Label>
+                <Label htmlFor="minOrderValueMinor" className="text-right">Min Order Value</Label>
                 <Input
-                  id="minOrderValue" name="minOrderValue"
+                  id="minOrderValueMinor" name="minOrderValueMinor"
                   type="number"
                   className="col-span-2"
-                  value={minOrderValue}
+                  value={minOrderValueMinor}
                   onChange={(e) => setMinOrderValue(Number(e.target.value))}
                   min={0}
                 />
@@ -373,7 +373,7 @@ export function VouchersPage() {
                   type="number"
                   className="col-span-2"
                   placeholder="Optional limit for % type"
-                  value={maxDiscountAmount ?? ''}
+                  value={maxDiscountAmountMinor ?? ''}
                   onChange={(e) => setMaxDiscountAmount(e.target.value ? Number(e.target.value) : undefined)}
                   min={0}
                 />

@@ -12,7 +12,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +31,7 @@ public class ProductResource {
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
-    public List<Product> list(
+    public List<Product> listProducts(
             @QueryParam("search") String search,
             @QueryParam("categoryId") UUID categoryId,
             @QueryParam("tagId") UUID tagId) {
@@ -68,7 +67,7 @@ public class ProductResource {
 
     @GET
     @Path("/{id}")
-    public Product get(@PathParam("id") UUID id) {
+    public Product getProduct(@PathParam("id") UUID id) {
         Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (product == null) {
             throw new NotFoundException("Product not found");
@@ -79,7 +78,7 @@ public class ProductResource {
     @POST
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response create(Product product) {
+    public Response createProduct(Product product) {
         validate(product);
         product.setId(UUID.randomUUID());
         product.setTenantId(caller.tenantCode());
@@ -104,7 +103,7 @@ public class ProductResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Product update(@PathParam("id") UUID id, Product updated) {
+    public Product updateProduct(@PathParam("id") UUID id, Product updated) {
         validate(updated);
         Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (product == null) {
@@ -116,8 +115,8 @@ public class ProductResource {
         product.setName(updated.getName());
         product.setDescription(updated.getDescription());
         product.setImageUrl(updated.getImageUrl());
-        product.setBasePrice(updated.getBasePrice());
-        product.setSalePrice(updated.getSalePrice());
+        product.setBasePriceMinor(updated.getBasePriceMinor());
+        product.setSalePriceMinor(updated.getSalePriceMinor());
         product.setSaleStartsAt(updated.getSaleStartsAt());
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
@@ -139,7 +138,7 @@ public class ProductResource {
             for (ProductVariant updatedVar : updated.getVariants()) {
                 ProductVariant var = existingVariants.get(updatedVar.getSku());
                 if (var != null) {
-                    var.setPrice(updatedVar.getPrice());
+                    var.setPriceMinor(updatedVar.getPriceMinor());
                     var.setStockQuantity(updatedVar.getStockQuantity());
                     var.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     var.setOptionValues(updatedVar.getOptionValues());
@@ -150,7 +149,7 @@ public class ProductResource {
                     newVar.setId(UUID.randomUUID());
                     newVar.setProduct(product);
                     newVar.setSku(updatedVar.getSku());
-                    newVar.setPrice(updatedVar.getPrice());
+                    newVar.setPriceMinor(updatedVar.getPriceMinor());
                     newVar.setStockQuantity(updatedVar.getStockQuantity());
                     newVar.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     newVar.setOptionValues(updatedVar.getOptionValues());
@@ -174,7 +173,7 @@ public class ProductResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
-    public Response delete(@PathParam("id") UUID id) {
+    public Response deleteProduct(@PathParam("id") UUID id) {
         long deleted = Product.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Product not found");
@@ -189,10 +188,10 @@ public class ProductResource {
         if (product.getName() == null || product.getName().isBlank()) {
             throw new BadRequestException("Product name is required");
         }
-        if (product.getBasePrice() == null || product.getBasePrice().compareTo(BigDecimal.ZERO) < 0) {
+        if (product.getBasePriceMinor() < 0) {
             throw new BadRequestException("Base price must be zero or greater");
         }
-        if (product.getSalePrice() != null && product.getSalePrice().compareTo(BigDecimal.ZERO) < 0) {
+        if (product.getSalePriceMinor() != null && product.getSalePriceMinor() < 0) {
             throw new BadRequestException("Sale price must be zero or greater");
         }
         if (product.getSaleStartsAt() != null && product.getSaleEndsAt() != null
@@ -205,7 +204,7 @@ public class ProductResource {
                 if (variant.getSku() == null || variant.getSku().isBlank()) {
                     throw new BadRequestException("Variant SKU is required");
                 }
-                if (variant.getPrice() == null || variant.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                if (variant.getPriceMinor() < 0) {
                     throw new BadRequestException("Variant price must be zero or greater");
                 }
                 if (variant.getStockQuantity() < 0) {
