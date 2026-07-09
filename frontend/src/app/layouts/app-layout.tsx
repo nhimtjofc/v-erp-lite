@@ -64,11 +64,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
       return
     }
 
-    if (role === 'operator' && pathname.startsWith('/orders')) {
-      router.navigate({ to: '/dashboard', replace: true })
-      return
-    }
-
     if ((role === 'customer' || role === 'user') && !customerAllowed) {
       router.navigate({ to: '/shop', replace: true })
     }
