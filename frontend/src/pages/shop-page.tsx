@@ -73,7 +73,7 @@ export function ShopPage() {
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({
     ...listCustomersOptions(),
-    enabled: !isCustomerRole,
+    enabled: !!me && !isCustomerRole,
   })
 
   // Fetch logged in customer's profile if customer
@@ -124,12 +124,23 @@ export function ShopPage() {
 
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('')
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('buyer_cart')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [showPromoDrawer, setShowPromoDrawer] = useState(false)
   const [error, setError] = useState('')
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>('')
+
+  useEffect(() => {
+    localStorage.setItem('buyer_cart', JSON.stringify(cart))
+  }, [cart])
   
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null)
   const [selectedVariantIdForProduct, setSelectedVariantIdForProduct] = useState<string>('')

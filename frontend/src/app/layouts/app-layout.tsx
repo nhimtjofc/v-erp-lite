@@ -371,7 +371,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     const customerAllowed =
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
-      pathname.startsWith('/profile')
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/orders')
 
     if (role === 'admin' && !adminAllowed) {
       router.navigate({ to: '/orders', replace: true })

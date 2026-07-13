@@ -100,6 +100,7 @@ export function OrderDetailPage() {
   const queryClient = useQueryClient()
   const { data: me } = useMeQuery()
   const isAdmin = me?.role?.name === 'admin'
+  const isStaff = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
@@ -284,7 +285,7 @@ export function OrderDetailPage() {
             </Button>
           )}
 
-          {!isFinal && (
+          {isStaff && !isFinal && (
             <>
               {isPending && (
                 <>
