@@ -12,6 +12,8 @@ import {
   Building,
   Receipt,
   Tag,
+  Wallet,
+  Banknote,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -46,7 +48,7 @@ export const navGroups: NavGroup[] = [
       { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag },
       { labelKey: 'nav:customers', to: '/customers', icon: Users, hideForRoles: ['customer'] },
       { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
-      { labelKey: 'nav:orders', to: '/orders', icon: Receipt, hideForRoles: ['customer'] },
+      { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
       { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
       { labelKey: 'nav:cart', to: '/cart', icon: ShoppingCart },
     ],
@@ -57,6 +59,15 @@ export const navGroups: NavGroup[] = [
     items: [
       { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
       { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
+    ],
+  },
+  {
+    labelKey: 'nav:finance',
+    items: [
+      // Seller wallet: business staff only (matches WalletResource roles).
+      { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner', 'operator'] },
+      // Admin payout approval dashboard: admin only.
+      { labelKey: 'nav:payouts', to: '/admin/payouts', icon: Banknote, adminOnly: true },
     ],
   },
   {

@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -276,12 +277,13 @@ public class WalletService {
     public Wallet adjustBalance(String tenantId, UUID walletId, long adjustmentMinor, String reason, UUID actorId) {
         Wallet wallet = walletForUpdate(tenantId, walletId);
         Money amount = Money.of(Math.abs(adjustmentMinor), wallet.getCurrency());
+        UUID refId = UUID.nameUUIDFromBytes((walletId + ":" + adjustmentMinor + ":" + reason).getBytes(StandardCharsets.UTF_8));
         if (adjustmentMinor > 0) {
             creditAvailable(tenantId, walletId, amount, "ADJUSTMENT",
-                    null, null, actorId, reason);
+                    "ADJUSTMENT", refId, actorId, reason);
         } else if (adjustmentMinor < 0) {
             debitAvailable(tenantId, walletId, amount, "ADJUSTMENT",
-                    null, null, actorId, reason);
+                    "ADJUSTMENT", refId, actorId, reason);
         }
         return wallet;
     }

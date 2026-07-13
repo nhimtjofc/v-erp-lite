@@ -25,7 +25,7 @@ export function ProductsPage() {
   const isCustomer = roleName === 'customer'
 
   const queryClient = useQueryClient()
-  const canManageProducts = roleName === 'admin' || roleName === 'businessOwner'
+  const canManageProducts = roleName === 'admin' || roleName === 'businessOwner' || roleName === 'operator'
   const canManageTaxonomy = roleName === 'admin'
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')

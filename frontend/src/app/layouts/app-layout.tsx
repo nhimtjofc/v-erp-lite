@@ -366,12 +366,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
+      pathname.startsWith('/admin/payouts') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
-      pathname.startsWith('/profile')
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/orders')
 
     if (role === 'admin' && !adminAllowed) {
       router.navigate({ to: '/orders', replace: true })

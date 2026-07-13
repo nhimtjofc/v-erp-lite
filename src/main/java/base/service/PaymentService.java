@@ -39,10 +39,10 @@ public class PaymentService {
     @Transactional
     public List<EscrowRecord> settleSucceededIntent(PaymentIntent intent, UUID actorId) {
         if (intent == null) {
-            throw new BadRequestException("Vui lòng nhập ý định thanh toán");
+            throw new BadRequestException("Payment intent is required");
         }
         if (!"SUCCEEDED".equals(intent.getStatus())) {
-            throw new BadRequestException("Chỉ xử lý chia tiền cho thanh toán đã thành công");
+            throw new BadRequestException("Only succeeded payment intents can be settled");
         }
 
         List<EscrowRecord> existing = escrowService.listByOrder(intent.getTenantId(), intent.getOrderId());
@@ -56,15 +56,15 @@ public class PaymentService {
                 intent.getTenantId()
         ).firstResult();
         if (order == null) {
-            throw new NotFoundException("Không tìm thấy đơn hàng");
+            throw new NotFoundException("Order not found");
         }
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(intent.getCustomerId())) {
-            throw new BadRequestException("Khách hàng của thanh toán không khớp đơn hàng");
+            throw new BadRequestException("Payment customer does not match order customer");
         }
 
         Money finalAmount = Money.of(order.getFinalAmountMinor(), order.getCurrency());
         if (finalAmount.getAmountMinor() != intent.getAmountMinor()) {
-            throw new BadRequestException("Số tiền thanh toán không khớp đơn hàng");
+            throw new BadRequestException("Payment amount does not match order total");
         }
 
         List<SellerAllocation> allocations = allocateBySeller(order, intent.getAmountMinor());
@@ -104,7 +104,7 @@ public class PaymentService {
                     "ORDER",
                     intent.getOrderId(),
                     actorId,
-                    "Hoa hồng nền tảng từ đơn hàng"
+                    "Platform commission from order"
             );
         }
 
@@ -119,18 +119,24 @@ public class PaymentService {
                 seller = order.getBusiness();
             }
             if (seller == null) {
-                throw new BadRequestException("Đơn hàng thiếu người bán để chia tiền");
+                throw new BadRequestException("Order is missing a seller for fund allocation");
             }
             subtotalBySeller.merge(seller.getId(), item.getSubtotalAmountMinor(), Long::sum);
         }
         if (subtotalBySeller.isEmpty()) {
-            throw new BadRequestException("Đơn hàng chưa có sản phẩm để chia tiền");
+            throw new BadRequestException("Order has no items for fund allocation");
         }
 
-        long subtotal = subtotalBySeller.values().stream()
-                .mapToLong(Long::longValue).sum();
+        // Avoid any boxed->primitive lambda nullability issues by using explicit loop
+        long subtotal = 0;
+        for (Long v : subtotalBySeller.values()) {
+            if (v == null) {
+                throw new BadRequestException("Invalid order subtotal while allocating by seller");
+            }
+            subtotal += v;
+        }
         if (subtotal <= 0) {
-            throw new BadRequestException("Tổng tiền sản phẩm phải lớn hơn 0");
+            throw new BadRequestException("Order subtotal must be greater than zero");
         }
 
         List<Map.Entry<UUID, Long>> entries = new ArrayList<>(subtotalBySeller.entrySet());
