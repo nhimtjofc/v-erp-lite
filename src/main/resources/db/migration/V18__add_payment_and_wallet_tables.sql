@@ -1,4 +1,4 @@
-CREATE TABLE wallets (
+CREATE TABLE IF NOT EXISTS wallets (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     owner_type VARCHAR(50) NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE wallets (
     UNIQUE (tenant_id, owner_type, owner_id, currency)
 );
 
-CREATE TABLE wallet_transactions (
+CREATE TABLE IF NOT EXISTS wallet_transactions (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     wallet_id UUID NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE wallet_transactions (
     FOREIGN KEY (wallet_id) REFERENCES wallets(id)
 );
 
-CREATE TABLE ledger_checkpoints (
+CREATE TABLE IF NOT EXISTS ledger_checkpoints (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     wallet_id UUID NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE ledger_checkpoints (
     FOREIGN KEY (wallet_id) REFERENCES wallets(id)
 );
 
-CREATE TABLE escrow_records (
+CREATE TABLE IF NOT EXISTS escrow_records (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     order_id UUID NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE escrow_records (
     FOREIGN KEY (seller_wallet_id) REFERENCES wallets(id)
 );
 
-CREATE TABLE payment_intents (
+CREATE TABLE IF NOT EXISTS payment_intents (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     order_id UUID NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE payment_intents (
     UNIQUE (tenant_id, idempotency_key)
 );
 
-CREATE TABLE payment_transactions (
+CREATE TABLE IF NOT EXISTS payment_transactions (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     payment_intent_id UUID NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE payment_transactions (
     UNIQUE (tenant_id, gateway, gateway_transaction_id)
 );
 
-CREATE TABLE payout_requests (
+CREATE TABLE IF NOT EXISTS payout_requests (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     wallet_id UUID NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE payout_requests (
     FOREIGN KEY (wallet_id) REFERENCES wallets(id)
 );
 
-CREATE TABLE payment_idempotency (
+CREATE TABLE IF NOT EXISTS payment_idempotency (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
     idempotency_key VARCHAR(255) NOT NULL,

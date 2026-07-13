@@ -5,17 +5,18 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 @ApplicationScoped
 public class PaymentGatewayService {
 
-    private static final String MOCK_API_KEY = "mock_key_v_erp_lite_2025";
     private static final String MOCK_SECRET = "mock_secret_v_erp_lite_2025";
 
     public record MockGatewayResponse(
@@ -124,18 +125,30 @@ public class PaymentGatewayService {
     }
 
     private String signPayload(String intentId, String transactionId, long amountMinor) {
-        String payload = String.format("%s:%s:%d:%s", intentId, transactionId, amountMinor, MOCK_SECRET);
+        String payload = String.format("%s:%s:%d", intentId, transactionId, amountMinor);
         return hmacSha256(payload, MOCK_SECRET);
+    }
+
+    // Test-support: package-private aliases for security tests in the same package
+    String signPayloadForTest(String intentId, String transactionId, long amountMinor) {
+        return signPayload(intentId, transactionId, amountMinor);
+    }
+
+    String hmacSha256ForTest(String data) {
+        return hmacSha256(data, MOCK_SECRET);
     }
 
     private String hmacSha256(String data, String secret) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String salted = secret + data;
-            byte[] hash = digest.digest(salted.getBytes(StandardCharsets.UTF_8));
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec keySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(keySpec);
+            byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+            throw new RuntimeException("HmacSHA256 not available", e);
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("Invalid HMAC key", e);
         }
     }
 

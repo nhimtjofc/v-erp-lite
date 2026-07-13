@@ -224,6 +224,17 @@ public class CartResource {
         order.setCreatedBy(caller.userId());
         order.setStatus("PENDING");
 
+        order.setOrderNumber("ORD-" + System.currentTimeMillis());
+        String name = cart.getCustomer().getFirstName() != null ? cart.getCustomer().getFirstName() : "";
+        if (cart.getCustomer().getLastName() != null) {
+            name += (name.isEmpty() ? "" : " ") + cart.getCustomer().getLastName();
+        }
+        if (name.isEmpty()) name = "Unknown Customer";
+        
+        order.setShippingName(name);
+        order.setShippingPhone(cart.getCustomer().getPhone() != null ? cart.getCustomer().getPhone() : "N/A");
+        order.setShippingAddress(cart.getCustomer().getAddress() != null ? cart.getCustomer().getAddress() : "N/A");
+
         long total = 0;
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
@@ -257,6 +268,10 @@ public class CartResource {
         }
 
         order.setSubtotalAmountMinor(total);
+
+        if (request == null) {
+            request = new CheckoutRequest();
+        }
 
         BigDecimal discountPct = request.discountPercent != null ? request.discountPercent : BigDecimal.ZERO;
         BigDecimal vatPct = request.vatPercent != null ? request.vatPercent : BigDecimal.ZERO;

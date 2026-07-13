@@ -28,7 +28,7 @@ class PayoutServiceTest {
     @Inject
     EntityManager entityManager;
 
-    private final UUID actorId = UUID.fromString("00000000-0000-0000-0000-000000000222");
+    private final UUID actorId = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Test
     void createPayoutValidatesWalletCurrencyAmountAndBankDetails() {
@@ -42,7 +42,7 @@ class PayoutServiceTest {
                 "vnd",
                 " VCB ",
                 " 123456789 ",
-                " Người bán kiểm thử ",
+                " Test Seller ",
                 actorId
         );
 
@@ -51,20 +51,20 @@ class PayoutServiceTest {
         assertEquals("VND", payout.getCurrency());
         assertEquals("VCB", payout.getBankName());
         assertEquals("123456789", payout.getBankAccountNumber());
-        assertEquals("Người bán kiểm thử", payout.getBankAccountHolder());
+        assertEquals("Test Seller", payout.getBankAccountHolder());
 
         assertThrows(BadRequestException.class, () -> payoutService.createPayout(
-                tenantId, wallet.getId(), 0, "VND", "VCB", "123", "Người bán", actorId));
+                tenantId, wallet.getId(), 0, "VND", "VCB", "123", "Seller", actorId));
         assertThrows(BadRequestException.class, () -> payoutService.createPayout(
-                tenantId, wallet.getId(), 1, "USD", "VCB", "123", "Người bán", actorId));
+                tenantId, wallet.getId(), 1, "USD", "VCB", "123", "Seller", actorId));
         assertThrows(BadRequestException.class, () -> payoutService.createPayout(
-                tenantId, wallet.getId(), 1, "VND", "", "123", "Người bán", actorId));
+                tenantId, wallet.getId(), 1, "VND", "", "123", "Seller", actorId));
         assertThrows(BadRequestException.class, () -> payoutService.createPayout(
-                tenantId, wallet.getId(), 1, "VND", "VCB", "", "Người bán", actorId));
+                tenantId, wallet.getId(), 1, "VND", "VCB", "", "Seller", actorId));
         assertThrows(BadRequestException.class, () -> payoutService.createPayout(
                 tenantId, wallet.getId(), 1, "VND", "VCB", "123", "", actorId));
         assertThrows(NotFoundException.class, () -> payoutService.createPayout(
-                "other-" + tenantId, wallet.getId(), 1, "VND", "VCB", "123", "Người bán", actorId));
+                "other-" + tenantId, wallet.getId(), 1, "VND", "VCB", "123", "Seller", actorId));
     }
 
     @Test
@@ -81,7 +81,6 @@ class PayoutServiceTest {
         assertEquals("APPROVED", approvedRetry.getStatus());
         assertEquals(60_000, freshWallet(tenantId, wallet.getId()).getAvailableBalanceMinor());
 
-        entityManager.clear();
         List<WalletTransaction> transactions = walletService.listTransactions(tenantId, wallet.getId());
         assertEquals(2, transactions.size());
         WalletTransaction payoutTransaction = transactions.get(0);
@@ -104,7 +103,6 @@ class PayoutServiceTest {
 
         assertEquals("PENDING", payoutService.getPayout(tenantId, payout.getId()).getStatus());
         assertEquals(10_000, freshWallet(tenantId, wallet.getId()).getAvailableBalanceMinor());
-        entityManager.clear();
         assertEquals(1, WalletTransaction.count("tenantId = ?1 and wallet.id = ?2", tenantId, wallet.getId()));
     }
 
@@ -121,7 +119,6 @@ class PayoutServiceTest {
         assertEquals("REJECTED", rejected.getStatus());
         assertEquals("REJECTED", rejectedRetry.getStatus());
         assertEquals(100_000, freshWallet(tenantId, wallet.getId()).getAvailableBalanceMinor());
-        entityManager.clear();
         assertEquals(1, WalletTransaction.count("tenantId = ?1 and wallet.id = ?2", tenantId, wallet.getId()));
         assertThrows(BadRequestException.class, () -> payoutService.approvePayout(tenantId, payout.getId(), actorId));
     }
@@ -133,9 +130,9 @@ class PayoutServiceTest {
         Wallet walletA = createFundedWallet(tenantA, 100_000);
         Wallet walletB = createFundedWallet(tenantB, 100_000);
         PayoutRequest payoutA = payoutService.createPayout(
-                tenantA, walletA.getId(), 10_000, "VND", "VCB", "123", "Người bán A", actorId);
+                tenantA, walletA.getId(), 10_000, "VND", "VCB", "123", "Seller A", actorId);
         PayoutRequest payoutB = payoutService.createPayout(
-                tenantB, walletB.getId(), 20_000, "VND", "VCB", "456", "Người bán B", actorId);
+                tenantB, walletB.getId(), 20_000, "VND", "VCB", "456", "Seller B", actorId);
 
         payoutService.approvePayout(tenantA, payoutA.getId(), actorId);
 
@@ -159,7 +156,7 @@ class PayoutServiceTest {
                 "TEST_SETUP",
                 UUID.randomUUID(),
                 actorId,
-                "Thiết lập kiểm thử"
+                "Test setup"
         );
         return freshWallet(tenantId, wallet.getId());
     }
@@ -169,6 +166,7 @@ class PayoutServiceTest {
     }
 
     private Wallet freshWallet(String tenantId, UUID walletId) {
+        Wallet wallet = walletService.getWallet(tenantId, walletId);
         entityManager.clear();
         return walletService.getWallet(tenantId, walletId);
     }

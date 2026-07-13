@@ -325,12 +325,12 @@ export function OrdersPage() {
         return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
     }
 
-    if (!roleName || isCustomer) {
+    if (!roleName) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
                 <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
                 <p className="text-muted-foreground max-w-md">
-                    Only staff members are allowed to view orders.
+                    Please log in to view orders.
                 </p>
             </div>
         )
@@ -341,17 +341,21 @@ export function OrdersPage() {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Đơn hàng</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        {isCustomer ? 'Đơn hàng của tôi' : 'Đơn hàng'}
+                    </h1>
                     <p className="text-muted-foreground text-sm mt-0.5">
-                        Quản lý và theo dõi toàn bộ đơn hàng bán ra
+                        {isCustomer ? 'Theo dõi và quản lý lịch sử đơn hàng của bạn' : 'Quản lý và theo dõi toàn bộ đơn hàng bán ra'}
                     </p>
                 </div>
-                <Link to="/orders/new">
-                    <Button className="gap-2 shadow-sm">
-                        <Plus className="h-4 w-4" />
-                        Tạo đơn mới
-                    </Button>
-                </Link>
+                {!isCustomer && (
+                    <Link to="/orders/new">
+                        <Button className="gap-2 shadow-sm">
+                            <Plus className="h-4 w-4" />
+                            Tạo đơn mới
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             {deleteError && (
@@ -360,7 +364,7 @@ export function OrdersPage() {
                 </div>
             )}
 
-            {stats && (
+            {!isCustomer && stats && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard
                         label="Doanh thu"
@@ -438,8 +442,8 @@ export function OrdersPage() {
                 <div className="flex items-center gap-0.5 px-3 py-2 overflow-x-auto">
                     {STATUS_TABS.map((tab) => {
                         const count = tab.key
-                            ? (stats?.countByStatus[tab.key] ?? 0)
-                            : (stats?.totalOrders ?? orderList.length)
+                            ? (stats ? (stats.countByStatus[tab.key] ?? 0) : orderList.filter(o => o.status?.toUpperCase() === tab.key).length)
+                            : (stats ? stats.totalOrders : orderList.length)
                         const isActive = activeStatus === tab.key
                         const cfg = tab.key ? getStatusCfg(tab.key) : null
                         return (

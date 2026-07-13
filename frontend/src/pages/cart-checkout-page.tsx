@@ -6,6 +6,7 @@ import {
     useListProductsQuery, // products
     useCheckoutOrderMutation,
     myVouchersOptions,
+    listOrdersQueryKey,
     type Customer,
     type Product,
     type ProductVariant,
@@ -314,71 +315,117 @@ function CartDrawer({
                             <Button variant="outline" size="sm" onClick={onClose}>Duyệt sản phẩm</Button>
                         </div>
                     ) : (
-                        <div className="px-4 pt-3 pb-1 space-y-3">
-                            {cart.map((line, index) => {
-                                const itemSub = line.priceMinor * line.quantity
-                                const variantName = line.variant
-                                    ? Object.entries(line.variant.optionValues ?? {}).map(([_, v]) => v).join(' / ')
-                                    : null
-                                return (
-                                    <div key={index} className="flex gap-3 bg-muted/30 rounded-xl p-3">
-                                        {/* Thumbnail */}
-                                        <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border">
-                                            {line.product.imageUrl
-                                                ? <img src={line.product.imageUrl} alt="" className="w-full h-full object-cover" />
-                                                : <Package className="h-6 w-6 text-muted-foreground/50" />
-                                            }
-                                        </div>
+                        <div className="px-4 pt-3 pb-1 space-y-4">
+                            {(() => {
+                                const grouped = {} as Record<string, { business?: any; items: { item: CartLine; originalIndex: number }[]; subtotal: number }>;
+                                cart.forEach((line, index) => {
+                                    const business = line.product?.business;
+                                    const bizId = business?.id || 'system';
+                                    if (!grouped[bizId]) {
+                                        grouped[bizId] = { business, items: [], subtotal: 0 };
+                                    }
+                                    grouped[bizId].items.push({ item: line, originalIndex: index });
+                                    grouped[bizId].subtotal += line.priceMinor * line.quantity;
+                                });
 
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <p className="font-semibold text-sm text-foreground truncate">{line.product.name}</p>
-                                                    {variantName && <p className="text-xs text-muted-foreground">{variantName}</p>}
-                                                    {line.isSalePrice && (
-                                                        <div className="flex items-center gap-1 mt-0.5">
-                                                            <span className="text-[10px] line-through text-muted-foreground">{fmt(line.originalPrice)}</span>
-                                                            <Badge variant="destructive" className="text-[9px] px-1 py-0">
-                                                                <Zap className="h-2 w-2 mr-0.5" /> Sale
-                                                            </Badge>
+                                return Object.values(grouped).map((group, gIdx) => {
+                                    const storeName = group.business?.name || 'V-ERP System Store';
+                                    const storeLogo = group.business?.logoUrl;
+
+                                    return (
+                                        <div key={gIdx} className="border border-border/60 rounded-xl bg-card overflow-hidden shadow-sm">
+                                            {/* Store Header */}
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-muted/20 border-b border-border/40">
+                                                {storeLogo ? (
+                                                    <img src={storeLogo} alt={storeName} className="h-5 w-5 rounded object-cover" />
+                                                ) : (
+                                                    <ShoppingBag className="h-4 w-4 text-primary" />
+                                                )}
+                                                <span className="font-semibold text-xs text-foreground truncate">{storeName}</span>
+                                                {group.business ? (
+                                                    <Badge variant="outline" className="text-[9px] h-4 px-1 bg-primary/5 text-primary border-primary/20">Seller</Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-[9px] h-4 px-1 bg-muted text-muted-foreground">Official</Badge>
+                                                )}
+                                            </div>
+
+                                            {/* Store Items */}
+                                            <div className="divide-y divide-border/40 p-2.5 space-y-2.5">
+                                                {group.items.map(({ item: line, originalIndex }) => {
+                                                    const itemSub = line.priceMinor * line.quantity;
+                                                    const variantName = line.variant
+                                                        ? Object.entries(line.variant.optionValues ?? {}).map(([_, v]) => v).join(' / ')
+                                                        : null;
+                                                    return (
+                                                        <div key={originalIndex} className="flex gap-3 pt-2.5 first:pt-0">
+                                                            {/* Thumbnail */}
+                                                            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border">
+                                                                {line.product.imageUrl
+                                                                    ? <img src={line.product.imageUrl} alt="" className="w-full h-full object-cover" />
+                                                                    : <Package className="h-5 w-5 text-muted-foreground/50" />
+                                                                }
+                                                            </div>
+
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-semibold text-xs text-foreground truncate">{line.product.name}</p>
+                                                                        {variantName && <p className="text-[10px] text-muted-foreground">{variantName}</p>}
+                                                                        {line.isSalePrice && (
+                                                                            <div className="flex items-center gap-1 mt-0.5">
+                                                                                <span className="text-[9px] line-through text-muted-foreground">{fmt(line.originalPrice)}</span>
+                                                                                <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3 flex items-center">
+                                                                                    <Zap className="h-2 w-2 mr-0.5" /> Sale
+                                                                                </Badge>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => onRemoveItem(originalIndex)}
+                                                                        className="h-5 w-5 text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
+                                                                    >
+                                                                        <X className="h-3 w-3" />
+                                                                    </Button>
+                                                                </div>
+
+                                                                <div className="flex items-center justify-between mt-1.5">
+                                                                    <div className="flex items-center gap-1 bg-background border border-border/80 rounded-md p-0.5">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => onUpdateQty(originalIndex, line.quantity - 1)}
+                                                                            className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+                                                                        >
+                                                                            <Minus className="h-2.5 w-2.5" />
+                                                                        </button>
+                                                                        <span className="w-6 text-center text-xs font-bold">{line.quantity}</span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => onUpdateQty(originalIndex, line.quantity + 1)}
+                                                                            className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+                                                                        >
+                                                                            <Plus className="h-2.5 w-2.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                    <span className="font-bold text-xs text-foreground">{fmt(itemSub)}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => onRemoveItem(index)}
-                                                    className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-                                                >
-                                                    <X className="h-3.5 w-3.5" />
-                                                </Button>
+                                                    );
+                                                })}
                                             </div>
 
-                                            <div className="flex items-center justify-between mt-2">
-                                                <div className="flex items-center gap-1.5 bg-background border border-border rounded-lg p-0.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onUpdateQty(index, line.quantity - 1)}
-                                                        className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                                                    >
-                                                        <Minus className="h-3 w-3" />
-                                                    </button>
-                                                    <span className="w-7 text-center text-sm font-bold">{line.quantity}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onUpdateQty(index, line.quantity + 1)}
-                                                        className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                                                    >
-                                                        <Plus className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                                <span className="font-bold text-sm text-foreground">{fmt(itemSub)}</span>
+                                            {/* Store Subtotal Footer */}
+                                            <div className="px-3 py-1.5 bg-muted/5 border-t border-border/30 flex justify-between items-center text-[10px] text-muted-foreground">
+                                                <span>Tạm tính cửa hàng này:</span>
+                                                <span className="font-semibold text-foreground">{fmt(group.subtotal)}</span>
                                             </div>
                                         </div>
-                                    </div>
-                                )
-                            })}
+                                    );
+                                });
+                            })()}
                         </div>
                     )}
 
@@ -798,7 +845,7 @@ export function CartCheckoutPage() {
 
     const checkoutMutation = useCheckoutOrderMutation({
         onSuccess: (data: any) => {
-            queryClient.invalidateQueries({ queryKey: ['list4'] })
+            queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
             const createdOrder = data?.data
             if (createdOrder?.id) {
                 navigate({ to: '/orders/$id', params: { id: createdOrder.id } })
@@ -1237,18 +1284,39 @@ export function CartCheckoutPage() {
                             <div className="text-muted-foreground">{shippingAddress}</div>
                         </div>
 
-                        {/* Items */}
-                        <div className="space-y-1.5 text-sm max-h-36 overflow-y-auto">
-                            {cart.map((line, i) => (
-                                <div key={i} className="flex justify-between items-center text-xs">
-                                    <span className="text-muted-foreground truncate flex-1">
-                                        {line.product.name}
-                                        {line.variant && ` (${Object.values(line.variant.optionValues ?? {}).join('/')})`}
-                                        × {line.quantity}
-                                    </span>
-                                    <span className="font-medium ml-2 shrink-0">{fmt(line.priceMinor * line.quantity)}</span>
-                                </div>
-                            ))}
+                        {/* Items grouped by Seller */}
+                        <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                            {(() => {
+                                const grouped = {} as Record<string, { name: string; items: CartLine[]; subtotal: number }>;
+                                cart.forEach(line => {
+                                    const bizId = line.product.business?.id || 'system';
+                                    const bizName = line.product.business?.name || 'V-ERP System Store';
+                                    if (!grouped[bizId]) {
+                                        grouped[bizId] = { name: bizName, items: [], subtotal: 0 };
+                                    }
+                                    grouped[bizId].items.push(line);
+                                    grouped[bizId].subtotal += line.priceMinor * line.quantity;
+                                });
+
+                                return Object.values(grouped).map((group, idx) => (
+                                    <div key={idx} className="border border-border/40 rounded-lg bg-muted/10 p-2 space-y-1.5">
+                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/20 pb-1 mb-1 flex justify-between">
+                                            <span>{group.name}</span>
+                                            <span className="text-foreground font-semibold">Tạm tính: {fmt(group.subtotal)}</span>
+                                        </div>
+                                        {group.items.map((line, i) => (
+                                            <div key={i} className="flex justify-between items-center text-xs">
+                                                <span className="text-muted-foreground truncate flex-1">
+                                                    {line.product.name}
+                                                    {line.variant && ` (${Object.values(line.variant.optionValues ?? {}).join('/')})`}
+                                                    × {line.quantity}
+                                                </span>
+                                                <span className="font-medium ml-2 shrink-0">{fmt(line.priceMinor * line.quantity)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ));
+                            })()}
                         </div>
 
                         {/* Totals */}
