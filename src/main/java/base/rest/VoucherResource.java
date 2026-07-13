@@ -24,9 +24,10 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class VoucherResource {
 
+    private static final Logger LOG = Logger.getLogger(VoucherResource.class);
+
     @Inject
     CallerContext caller;
-    private static final Logger LOG = Logger.getLogger(VoucherResource.class);
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})

@@ -43,6 +43,9 @@ import jakarta.ws.rs.core.Response;
 public class OrderResource {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
+    private static final double TAX_RATE = 0.10;
 
     @Inject
     CallerContext caller;
@@ -90,8 +93,16 @@ public class OrderResource {
         String normalizedSearch = search == null ? null : search.trim();
         String normalizedStatus = status == null ? null : status.trim();
 
-        boolean hasSearch = normalizedSearch != null && !normalizedSearch.isBlank();
-        boolean hasStatus = normalizedStatus != null && !normalizedStatus.isBlank();
+        // Defensive: ensure null-safe access below even if analyzer cannot prove non-null
+        if (normalizedSearch != null && normalizedSearch.isBlank()) {
+            normalizedSearch = null;
+        }
+        if (normalizedStatus != null && normalizedStatus.isBlank()) {
+            normalizedStatus = null;
+        }
+
+        boolean hasSearch = normalizedSearch != null;
+        boolean hasStatus = normalizedStatus != null;
 
         if (hasSearch && hasStatus) {
             String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
@@ -124,10 +135,16 @@ public class OrderResource {
         String tenantCode = caller.tenantCode();
 
         // Count per status
+        String sql = "SELECT status, COUNT(*) FROM orders WHERE tenant_id = ?1 AND deleted_at IS NULL GROUP BY status";
+        List<Object[]> rows = Order.getEntityManager().createNativeQuery(sql)
+                .setParameter(1, tenantCode)
+                .getResultList();
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED")) {
-            long count = Order.count("tenantId = ?1 AND deletedAt IS NULL AND status = ?2", tenantCode, s);
-            countByStatus.put(s, count);
+            countByStatus.put(s, 0L);
+        }
+        for (Object[] row : rows) {
+            countByStatus.put((String) row[0], ((Number) row[1]).longValue());
         }
 
         // Total revenue (COMPLETED orders only)
@@ -138,7 +155,7 @@ public class OrderResource {
 
         // Recent 5 orders
         List<Order> recentOrders = Order.find("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode)
-                .page(0, 5)
+                .page(io.quarkus.panache.common.Page.ofSize(5))
                 .list();
 
         Map<String, Object> result = new HashMap<>();
@@ -318,13 +335,13 @@ public class OrderResource {
         // 5. Calculate Shipping Fee (USD)
         // Flat rate: $10. Free shipping if subtotal - discount >= $100.
         long orderAfterDiscount = subtotal - discount;
-        long shippingFee = 1000; // Flat rate: $10 (1000 minor units). Free shipping if subtotal - discount >= $100.
-        if (orderAfterDiscount >= 10000) {
+        long shippingFee = FLAT_SHIPPING_FEE_MINOR;
+        if (orderAfterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
             shippingFee = 0;
         }
 
         // 6. Calculate VAT Tax (10% of order value after discount)
-        long tax = Math.round((double) orderAfterDiscount * 0.10);
+        long tax = Math.round((double) orderAfterDiscount * TAX_RATE);
 
         // 7. Calculate Final Amount
         long finalAmount = orderAfterDiscount + shippingFee + tax;
