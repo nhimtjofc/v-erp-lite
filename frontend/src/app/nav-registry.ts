@@ -46,7 +46,7 @@ export const navGroups: NavGroup[] = [
       { labelKey: 'nav:shop', to: '/shop', icon: ShoppingBag },
       { labelKey: 'nav:customers', to: '/customers', icon: Users, hideForRoles: ['customer'] },
       { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
-      { labelKey: 'nav:orders', to: '/orders', icon: Receipt, hideForRoles: ['customer'] },
+      { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
       { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
       { labelKey: 'nav:cart', to: '/cart', icon: ShoppingCart },
     ],

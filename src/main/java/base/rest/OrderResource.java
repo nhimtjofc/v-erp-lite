@@ -20,12 +20,14 @@ import base.entity.ProductVariant;
 import base.entity.Voucher;
 import base.security.CallerContext;
 import base.service.EscrowService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -46,6 +48,9 @@ public class OrderResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Inject
     EscrowService escrowService;
@@ -83,34 +88,49 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
+        boolean isCustomer = securityIdentity.hasRole("customer");
+
+        UUID customerId = null;
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+            if (c == null) {
+                return List.of();
+            }
+            customerId = c.getId();
+        }
+
         String normalizedSearch = search == null ? null : search.trim();
         String normalizedStatus = status == null ? null : status.trim();
 
         boolean hasSearch = normalizedSearch != null && !normalizedSearch.isBlank();
         boolean hasStatus = normalizedStatus != null && !normalizedStatus.isBlank();
 
-        if (hasSearch && hasStatus) {
-            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            String upperStatus = normalizedStatus.toUpperCase();
-            return Order.find(
-                    "tenantId = ?1 AND deletedAt IS NULL AND status = ?2 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
-                    tenantCode, upperStatus, escaped
-            ).list();
-        } else if (hasSearch) {
-            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            return Order.find(
-                    "tenantId = ?1 AND deletedAt IS NULL AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
-                    tenantCode, escaped
-            ).list();
-        } else if (hasStatus) {
-            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, normalizedStatus.toUpperCase());
+        StringBuilder query = new StringBuilder("tenantId = :tenantId AND deletedAt IS NULL");
+        Map<String, Object> params = new HashMap<>();
+        params.put("tenantId", tenantCode);
+
+        if (isCustomer) {
+            query.append(" AND customer.id = :customerId");
+            params.put("customerId", customerId);
         }
 
-        return Order.list("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode);
+        if (hasStatus) {
+            query.append(" AND status = :status");
+            params.put("status", normalizedStatus.toUpperCase());
+        }
+
+        if (hasSearch) {
+            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            query.append(" AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',:search,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',:search,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',:search,'%')) ESCAPE '\\')");
+            params.put("search", escaped);
+        }
+
+        query.append(" ORDER BY orderDate DESC");
+        return Order.find(query.toString(), params).list();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -155,11 +175,17 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public Order getOrder(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
+        }
+        if (securityIdentity.hasRole("customer")) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+                throw new ForbiddenException("You are not allowed to view this order");
+            }
         }
         return order;
     }
@@ -170,12 +196,18 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
+        }
+        if (securityIdentity.hasRole("customer")) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+                throw new ForbiddenException("You are not allowed to view this order history");
+            }
         }
         return OrderHistory.list("order.id = ?1 ORDER BY createdAt ASC", id);
     }
