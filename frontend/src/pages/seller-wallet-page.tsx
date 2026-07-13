@@ -31,7 +31,7 @@ import {
 import { Wallet, TrendingUp, Clock, Coins, ArrowUpRight } from 'lucide-react'
 
 /** Roles allowed to manage the seller wallet (matches WalletResource on the backend). */
-const WALLET_ROLES = ['businessOwner', 'operator']
+const WALLET_ROLES = ['businessOwner']
 
 /** Vietnamese labels for ledger business-event types. */
 const TX_TYPE_LABELS: Record<string, string> = {

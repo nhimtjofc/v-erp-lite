@@ -25,7 +25,7 @@ import java.util.UUID;
 @Path("/payouts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
+@RolesAllowed({"admin", "businessOwner"})
 public class PayoutResource {
 
     @Inject
@@ -106,7 +106,7 @@ public class PayoutResource {
 
     @POST
     @Path("/{id}/approve")
-    @RolesAllowed({"admin", "operator"})
+    @RolesAllowed({"admin"})
     @Transactional
     public PayoutResponse approve(@PathParam("id") UUID id) {
         return PayoutResponse.from(payoutService.approvePayout(caller.tenantCode(), id, caller.userId()));
@@ -114,7 +114,7 @@ public class PayoutResource {
 
     @POST
     @Path("/{id}/reject")
-    @RolesAllowed({"admin", "operator"})
+    @RolesAllowed({"admin"})
     @Transactional
     public PayoutResponse reject(@PathParam("id") UUID id) {
         return PayoutResponse.from(payoutService.rejectPayout(caller.tenantCode(), id, caller.userId()));
@@ -142,7 +142,7 @@ public class PayoutResource {
 
     @GET
     @Path("/export")
-    @RolesAllowed({"admin", "operator"})
+    @RolesAllowed({"admin"})
     @Produces("text/csv")
     public Response export(@QueryParam("status") String status) {
         String csv = payoutService.generateCsv(caller.tenantCode(), status);
