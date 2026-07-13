@@ -5,7 +5,6 @@ import { useMeQuery } from '@/shared/api'
 import {
   useSellerWalletQuery,
   useWalletTransactionsQuery,
-  walletDataSource,
   type SellerWallet,
   type WalletTransaction,
 } from '@/shared/api/wallet'
@@ -315,8 +314,7 @@ function PayoutHistoryCard({ walletId, currency }: { walletId: string; currency:
 
 /**
  * Seller wallet dashboard: available balance, pending (escrow) balance and
- * transaction history. Reads from the wallet data layer (mock by default,
- * real backend when `VITE_WALLET_API=real`).
+ * transaction history. Reads from the live backend via the wallet data layer.
  */
 export function SellerWalletPage() {
   const { t } = useTranslation()
@@ -365,9 +363,6 @@ export function SellerWalletPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant={walletDataSource === 'api' ? 'default' : 'secondary'}>
-            {walletDataSource === 'api' ? 'Live API' : 'Mock data'}
-          </Badge>
           {wallet && (
             <Button onClick={() => setPayoutOpen(true)}>
               <ArrowUpRight className="mr-2 h-4 w-4" />

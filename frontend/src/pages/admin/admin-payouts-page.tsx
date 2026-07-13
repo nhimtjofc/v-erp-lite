@@ -6,7 +6,6 @@ import {
   useAdminPayoutsQuery,
   useApprovePayoutMutation,
   useRejectPayoutMutation,
-  payoutDataSource,
   PAYOUT_STATUS_META,
   type PayoutRequest,
 } from '@/shared/api/payout'
@@ -195,9 +194,6 @@ export function AdminPayoutsPage() {
             </p>
           </div>
         </div>
-        <Badge variant={payoutDataSource === 'api' ? 'default' : 'secondary'}>
-          {payoutDataSource === 'api' ? 'Live API' : 'Mock data'}
-        </Badge>
       </div>
 
       {/* Status filter */}
