@@ -3,11 +3,14 @@ import { useQuery } from '@tanstack/react-query'
 /**
  * Seller wallet data layer.
  *
- * Day 2 (Dev 5) ships against a mock so the dashboard UI can be built without
- * blocking on the backend. The real endpoints already exist
- * (`WalletResource`: `GET /wallets`, `GET /wallets/{id}/transactions`) — flip
- * `VITE_WALLET_API=real` to read them once the generated SDK and the
- * seller→business→wallet linkage land (planned for Week 2, Day 3).
+ * `VITE_WALLET_API=real` reads the live backend (`WalletResource`:
+ * `GET /wallets`, `GET /wallets/{id}/transactions`); otherwise a mock backs the
+ * UI so it works without the stack running.
+ *
+ * The one piece not yet wired end-to-end is mapping the logged-in seller to
+ * their wallet (needs a User→Business link from Dev 1/2). That resolution is
+ * isolated in `resolveSellerWalletApi` below — the single seam to update when
+ * the linkage lands; nothing else in the dashboard changes.
  */
 
 export interface SellerWallet {
@@ -47,6 +50,9 @@ export const walletDataSource: 'mock' | 'api' =
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
+/** How many ledger entries to pull for the history table (endpoint defaults to 20). */
+const TRANSACTIONS_PAGE_SIZE = 50
+
 async function apiRequest<T>(path: string): Promise<T> {
   const headers = new Headers({ 'Content-Type': 'application/json' })
   const token = localStorage.getItem('access_token')
@@ -54,20 +60,56 @@ async function apiRequest<T>(path: string): Promise<T> {
 
   const response = await fetch(`${API_BASE}/api${path}`, { headers })
   if (!response.ok) {
-    throw new Error((await response.text()) || `Request failed with ${response.status}`)
+    if (response.status === 401) {
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+    }
+    if (response.status === 403) {
+      throw new Error('Bạn không có quyền truy cập ví này.')
+    }
+    throw new Error((await response.text()) || `Yêu cầu thất bại (${response.status})`)
   }
   return response.json() as Promise<T>
 }
 
-async function fetchSellerWalletApi(): Promise<SellerWallet | null> {
-  // Placeholder resolution until the seller→business→wallet linkage (V17) is
-  // wired: return the first SELLER-owned wallet in the caller's tenant.
-  const wallets = await apiRequest<SellerWallet[]>('/wallets')
-  return wallets.find((w) => w.ownerType === 'SELLER') ?? wallets[0] ?? null
+/**
+ * SEAM — the ONLY place that maps the logged-in seller to their wallet.
+ *
+ * The proper User→Business link isn't wired yet, so we fall back to a
+ * best-effort lookup. When the backend ships one of the options below, enable
+ * it here; the hooks, page and mock all stay unchanged.
+ *
+ *   1. GET /wallets/me                               ← preferred, once Dev 2 adds it
+ *   2. /me exposes businessId → filter by ownerId    ← once User→Business lands
+ *   3. VITE_SELLER_WALLET_ID pins a wallet           ← demo / single-seller testing
+ *   4. Fallback: first SELLER-owned wallet in tenant ← correct only for 1 seller/tenant
+ */
+async function resolveSellerWalletApi(): Promise<SellerWallet | null> {
+  // Strategy 3: explicit override, handy for demoing a specific seller's wallet
+  // while the real resolution is pending.
+  const pinnedId = import.meta.env.VITE_SELLER_WALLET_ID as string | undefined
+  if (pinnedId) {
+    return apiRequest<SellerWallet>(`/wallets/${pinnedId}`)
+  }
+
+  // Strategy 1 — enable when the endpoint exists:
+  //   return apiRequest<SellerWallet>('/wallets/me')
+  // Strategy 2 — enable when /users/me returns a businessId:
+  //   const me = await apiRequest<{ businessId?: string }>('/users/me')
+  //   if (me.businessId) {
+  //     const owned = await apiRequest<SellerWallet[]>(
+  //       `/wallets?ownerType=SELLER&ownerId=${me.businessId}`)
+  //     return owned[0] ?? null
+  //   }
+
+  // Strategy 4 (current): first SELLER-owned wallet in the caller's tenant.
+  const wallets = await apiRequest<SellerWallet[]>('/wallets?ownerType=SELLER')
+  return wallets[0] ?? null
 }
 
 function fetchWalletTransactionsApi(walletId: string): Promise<WalletTransaction[]> {
-  return apiRequest<WalletTransaction[]>(`/wallets/${walletId}/transactions`)
+  return apiRequest<WalletTransaction[]>(
+    `/wallets/${walletId}/transactions?limit=${TRANSACTIONS_PAGE_SIZE}&offset=0`,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +186,7 @@ export function useSellerWalletQuery() {
   return useQuery({
     queryKey: ['seller-wallet', walletDataSource],
     queryFn: () =>
-      walletDataSource === 'api' ? fetchSellerWalletApi() : fetchSellerWalletMock(),
+      walletDataSource === 'api' ? resolveSellerWalletApi() : fetchSellerWalletMock(),
   })
 }
 

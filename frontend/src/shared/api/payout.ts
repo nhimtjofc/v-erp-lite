@@ -73,7 +73,13 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
   const response = await fetch(`${API_BASE}/api${path}`, { ...init, headers })
   if (!response.ok) {
-    throw new Error((await response.text()) || `Request failed with ${response.status}`)
+    if (response.status === 401) {
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+    }
+    if (response.status === 403) {
+      throw new Error('Bạn không có quyền thực hiện thao tác này.')
+    }
+    throw new Error((await response.text()) || `Yêu cầu thất bại (${response.status})`)
   }
   return response.json() as Promise<T>
 }
