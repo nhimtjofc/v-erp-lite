@@ -356,25 +356,37 @@ export function ShopPage() {
               const avail = getAvailableStock(product)
               const hasVariants = (product.variants?.length ?? 0) > 0
               const discPct = product.salePriceMinor ? Math.round(((Number(product.basePriceMinor) - Number(product.salePriceMinor)) / Number(product.basePriceMinor)) * 100) : 0
+              const storeName = product.business?.name || 'V-ERP Store'
+
               return (
-                <Card key={product.id} className={`overflow-hidden transition-all hover:shadow-lg ${avail <= 0 ? 'opacity-60' : ''}`}>
-                  <div className="relative aspect-square bg-muted flex items-center justify-center">
+                <Card key={product.id} className={`group relative bg-card border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${avail <= 0 ? 'opacity-60' : 'hover:border-red-500/30'}`}>
+                  <div className="relative aspect-square bg-muted/30 flex items-center justify-center overflow-hidden">
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     ) : (
                       <Package className="h-10 w-10 text-muted-foreground/30" />
                     )}
-                    <div className="absolute top-2 left-2">
-                      <Badge variant="destructive" className="text-[10px]">-{discPct}%</Badge>
+                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                      <Badge variant="destructive" className="text-[9px] font-bold bg-red-500 hover:bg-red-600 shadow shadow-red-500/30">-{discPct}%</Badge>
                     </div>
+                    {product.business && (
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <div className="inline-flex items-center gap-1 bg-background/90 backdrop-blur-xs text-foreground px-1.5 py-0.5 rounded-md border border-border/80 text-[8px] font-semibold max-w-full truncate shadow-xs">
+                          <ShoppingBag className="h-2 w-2 text-red-500" />
+                          <span className="truncate">{storeName}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <CardContent className="p-3">
-                    <p className="font-semibold text-sm truncate">{product.name}</p>
-                    <div className="flex items-center gap-1 mt-1">
+                    <p className="font-semibold text-xs text-foreground leading-snug line-clamp-2 min-h-[2rem]">{product.name}</p>
+                    
+                    <div className="flex items-center gap-1.5 mt-1.5">
                       <span className="font-bold text-sm text-red-500">{formatUSD(Number(product.salePriceMinor))}</span>
                       <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePriceMinor))}</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2 h-8 text-xs cursor-pointer" disabled={avail <= 0} onClick={() => addToCart(product)}>
+
+                    <Button size="sm" className="w-full mt-3.5 h-8 text-[10px] font-bold cursor-pointer transition-all hover:bg-red-600 shadow-xs" disabled={avail <= 0} onClick={() => addToCart(product)}>
                       <ShoppingCart className="h-3 w-3 mr-1" />
                       {avail <= 0 ? 'Sold Out' : hasVariants ? 'Select Variant' : 'Add to Cart'}
                     </Button>
@@ -498,33 +510,45 @@ export function ShopPage() {
             const avail = getAvailableStock(product)
             const hasVariants = (product.variants?.length ?? 0) > 0
             const sale = isOnSale(product)
+            const storeName = product.business?.name || 'V-ERP Store'
+
             return (
-              <Card key={product.id} className={`overflow-hidden transition-all hover:shadow-lg ${avail <= 0 ? 'opacity-60' : ''}`}>
-                <div className="relative aspect-square bg-muted flex items-center justify-center">
+              <Card key={product.id} className={`group relative bg-card border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${avail <= 0 ? 'opacity-60' : 'hover:border-primary/30'}`}>
+                <div className="relative aspect-square bg-muted/30 flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <Package className="h-10 w-10 text-muted-foreground/30" />
                   )}
                   {sale && (
                     <div className="absolute top-2 left-2">
-                      <Badge variant="destructive" className="text-[10px]">SALE</Badge>
+                      <Badge variant="destructive" className="text-[9px] font-bold bg-red-500 hover:bg-red-600 shadow shadow-red-500/30">SALE</Badge>
+                    </div>
+                  )}
+                  {product.business && (
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <div className="inline-flex items-center gap-1 bg-background/90 backdrop-blur-xs text-foreground px-1.5 py-0.5 rounded-md border border-border/80 text-[8px] font-semibold max-w-full truncate shadow-xs">
+                        <ShoppingBag className="h-2 w-2 text-primary" />
+                        <span className="truncate">{storeName}</span>
+                      </div>
                     </div>
                   )}
                 </div>
                 <CardContent className="p-3">
-                  <p className="font-semibold text-sm truncate">{product.name}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className={`font-bold text-sm ${sale ? 'text-red-500' : ''}`}>
+                  <p className="font-semibold text-xs text-foreground leading-snug line-clamp-2 min-h-[2rem]">{product.name}</p>
+                  
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className={`font-bold text-sm ${sale ? 'text-red-500' : 'text-foreground'}`}>
                       {formatUSD(sale ? Number(product.salePriceMinor) : Number(product.basePriceMinor))}
                     </span>
                     {sale && <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePriceMinor))}</span>}
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className={`text-[10px] ${avail <= 3 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                  
+                  <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/40">
+                    <span className={`text-[9px] font-semibold px-1 py-0.5 rounded-sm ${avail <= 3 ? 'text-amber-600 bg-amber-500/10' : 'text-muted-foreground bg-muted/40'}`}>
                       {avail <= 0 ? 'Sold Out' : `${avail} left`}
                     </span>
-                    <Button size="sm" className="h-7 text-xs px-2 cursor-pointer" disabled={avail <= 0} onClick={() => addToCart(product)}>
+                    <Button size="sm" className="h-6.5 text-[10px] font-bold px-2 cursor-pointer shadow-xs transition-all hover:shadow" disabled={avail <= 0} onClick={() => addToCart(product)}>
                       {hasVariants ? 'Choose' : <Plus className="h-3 w-3" />}
                     </Button>
                   </div>
@@ -560,35 +584,88 @@ export function ShopPage() {
                   <p className="text-sm">Cart is empty</p>
                 </div>
               ) : (
-                cart.map(item => {
-                  const key = item.product.id + (item.variant ? `-${item.variant.id}` : '')
-                  const variantLabel = item.variant?.optionValues 
-                    ? ` (${Object.values(item.variant.optionValues).join(' / ')})` 
-                    : ''
-                  return (
-                    <div key={key} className="flex gap-3 bg-muted/30 rounded-xl p-3">
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                        {item.product.imageUrl ? (
-                          <img src={item.product.imageUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <Package className="h-5 w-5 text-muted-foreground/50" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{item.product.name}{variantLabel}</p>
-                        <p className="text-xs text-muted-foreground">{formatUSD(item.priceMinor)} each</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <div className="flex items-center gap-1 bg-background border rounded-lg">
-                            <button onClick={() => updateQty(item.product.id!, item.variant?.id, -1)} className="h-6 w-6 flex items-center justify-center hover:bg-muted rounded-l-lg"><Minus className="h-3 w-3" /></button>
-                            <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
-                            <button onClick={() => updateQty(item.product.id!, item.variant?.id, 1)} className="h-6 w-6 flex items-center justify-center hover:bg-muted rounded-r-lg"><Plus className="h-3 w-3" /></button>
-                          </div>
-                          <span className="font-bold text-sm">{formatUSD(item.priceMinor * item.quantity)}</span>
+                (() => {
+                  const grouped = {} as Record<string, { business?: any; items: CartItem[]; subtotal: number }>;
+                  cart.forEach(item => {
+                    const business = item.product?.business;
+                    const bizId = business?.id || 'system';
+                    if (!grouped[bizId]) {
+                      grouped[bizId] = { business, items: [], subtotal: 0 };
+                    }
+                    grouped[bizId].items.push(item);
+                    grouped[bizId].subtotal += item.priceMinor * item.quantity;
+                  });
+
+                  return Object.values(grouped).map((group, gIdx) => {
+                    const storeName = group.business?.name || 'V-ERP System Store';
+                    const storeLogo = group.business?.logoUrl;
+
+                    return (
+                      <div key={gIdx} className="border border-border/60 rounded-xl bg-card overflow-hidden shadow-xs mb-3">
+                        {/* Store Header */}
+                        <div className="flex items-center gap-2 px-3 py-2 bg-muted/20 border-b border-border/40">
+                          {storeLogo ? (
+                            <img src={storeLogo} alt={storeName} className="h-5 w-5 rounded object-cover" />
+                          ) : (
+                            <ShoppingBag className="h-4 w-4 text-primary" />
+                          )}
+                          <span className="font-semibold text-xs text-foreground truncate">{storeName}</span>
+                          {group.business ? (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1 bg-primary/5 text-primary border-primary/20">Seller</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1 bg-muted text-muted-foreground">Official</Badge>
+                          )}
+                        </div>
+
+                        {/* Store Items */}
+                        <div className="divide-y divide-border/40 p-2.5 space-y-2.5">
+                          {group.items.map((item, originalIndex) => {
+                            const variantLabel = item.variant?.optionValues 
+                              ? ` (${Object.values(item.variant.optionValues).join(' / ')})` 
+                              : '';
+                            return (
+                              <div key={originalIndex} className="flex gap-3 pt-2.5 first:pt-0">
+                                <div className="h-11 w-11 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border">
+                                  {item.product.imageUrl ? (
+                                    <img src={item.product.imageUrl} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <Package className="h-5 w-5 text-muted-foreground/50" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <p className="text-xs font-semibold truncate flex-1">{item.product.name}{variantLabel}</p>
+                                    <button 
+                                      onClick={() => updateQty(item.product.id!, item.variant?.id, -item.quantity)} 
+                                      className="text-muted-foreground hover:text-destructive p-0.5 cursor-pointer shrink-0"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground">{formatUSD(item.priceMinor)} each</p>
+                                  <div className="flex items-center justify-between mt-1.5">
+                                    <div className="flex items-center gap-1 bg-background border rounded-md p-0.5">
+                                      <button onClick={() => updateQty(item.product.id!, item.variant?.id, -1)} className="h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"><Minus className="h-2.5 w-2.5" /></button>
+                                      <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                                      <button onClick={() => updateQty(item.product.id!, item.variant?.id, 1)} className="h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"><Plus className="h-2.5 w-2.5" /></button>
+                                    </div>
+                                    <span className="font-bold text-xs">{formatUSD(item.priceMinor * item.quantity)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Store Subtotal Footer */}
+                        <div className="px-3 py-1.5 bg-muted/5 border-t border-border/30 flex justify-between items-center text-[10px] text-muted-foreground">
+                          <span>Store subtotal:</span>
+                          <span className="font-semibold text-foreground">{formatUSD(group.subtotal)}</span>
                         </div>
                       </div>
-                    </div>
-                  )
-                })
+                    );
+                  })
+                })()
               )}
             </div>
             {cart.length > 0 && (
@@ -754,6 +831,52 @@ export function ShopPage() {
                 <span className="text-muted-foreground">Shopping as:</span> <strong className="text-foreground">{myCustomerProfile.firstName} {myCustomerProfile.lastName} ({myCustomerProfile.email})</strong>
               </div>
             )}
+
+            {/* Review Items dropdown grouped by Seller */}
+            <div className="border border-border/60 rounded-xl p-3 bg-muted/5 space-y-2">
+              <details className="group cursor-pointer">
+                <summary className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wide select-none">
+                  <span className="flex items-center gap-1.5"><ShoppingBag className="h-3.5 w-3.5" /> Review Items ({cart.reduce((s, i) => s + i.quantity, 0)})</span>
+                  <span className="text-[10px] group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div className="space-y-3 pt-2 mt-2 border-t border-border/40 max-h-48 overflow-y-auto">
+                  {(() => {
+                    const grouped = {} as Record<string, { name: string; items: CartItem[]; subtotal: number }>;
+                    cart.forEach(item => {
+                      const bizId = item.product.business?.id || 'system';
+                      const bizName = item.product.business?.name || 'V-ERP System Store';
+                      if (!grouped[bizId]) {
+                        grouped[bizId] = { name: bizName, items: [], subtotal: 0 };
+                      }
+                      grouped[bizId].items.push(item);
+                      grouped[bizId].subtotal += item.priceMinor * item.quantity;
+                    });
+
+                    return Object.values(grouped).map((group, idx) => (
+                      <div key={idx} className="border border-border/40 rounded-lg bg-muted/10 p-2 space-y-1">
+                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/20 pb-0.5 mb-1 flex justify-between">
+                          <span>{group.name}</span>
+                          <span className="text-foreground font-semibold">Sub: {formatUSD(group.subtotal)}</span>
+                        </div>
+                        {group.items.map((item, i) => {
+                          const variantLabel = item.variant?.optionValues 
+                            ? ` (${Object.values(item.variant.optionValues).join('/')})` 
+                            : '';
+                          return (
+                            <div key={i} className="flex justify-between items-center text-[11px]">
+                              <span className="text-muted-foreground truncate flex-1">
+                                {item.product.name}{variantLabel} × {item.quantity}
+                              </span>
+                              <span className="font-medium ml-2 shrink-0">{formatUSD(item.priceMinor * item.quantity)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </details>
+            </div>
 
             <div>
               <Label>Full Name *</Label>

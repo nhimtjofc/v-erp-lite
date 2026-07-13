@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-=======
 -- Convert money columns from major units to integer minor units.
-
->>>>>>> 071fbf0d4336084f5ba6ada3f2e1628e362b054f
 -- Product
 ALTER TABLE products CHANGE COLUMN base_price base_price_minor DECIMAL(19, 2);
 UPDATE products SET base_price_minor = base_price_minor * 100;
@@ -70,8 +66,5 @@ ALTER TABLE vouchers MODIFY COLUMN min_order_value_minor BIGINT NOT NULL DEFAULT
 ALTER TABLE vouchers CHANGE COLUMN max_discount_amount max_discount_amount_minor DECIMAL(19, 2);
 UPDATE vouchers SET max_discount_amount_minor = max_discount_amount_minor * 100 WHERE max_discount_amount_minor IS NOT NULL;
 ALTER TABLE vouchers MODIFY COLUMN max_discount_amount_minor BIGINT NULL;
-<<<<<<< HEAD
-=======
 
->>>>>>> 071fbf0d4336084f5ba6ada3f2e1628e362b054f
 ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS currency CHAR(3) NOT NULL DEFAULT 'USD';
