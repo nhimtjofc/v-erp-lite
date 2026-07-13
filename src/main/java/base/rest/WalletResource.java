@@ -1,5 +1,7 @@
 package base.rest;
 
+import base.entity.Business;
+import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
 import base.model.Money;
@@ -16,6 +18,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -114,6 +117,33 @@ public class WalletResource {
                 .stream()
                 .map(WalletResponse::from)
                 .toList();
+    }
+
+    /**
+     * The wallet of the currently logged-in seller.
+     *
+     * Resolution (single seam for the seller dashboard): authenticated user
+     * -> the business they own ({@code business.created_by}) -> that business's
+     * SELLER wallet. The wallet is created on demand if it doesn't exist yet, so
+     * a freshly-onboarded seller still gets a (zero-balance) wallet.
+     */
+    @GET
+    @Path("/me")
+    @Transactional
+    public WalletResponse myWallet(@QueryParam("currency") @DefaultValue("VND") String currency) {
+        User user = caller.resolveUser();
+        if (user == null) {
+            throw new NotFoundException("Không xác định được người dùng đang đăng nhập");
+        }
+        Business business = Business.find(
+                "createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()
+        ).firstResult();
+        if (business == null) {
+            throw new NotFoundException("Tài khoản chưa gắn với cửa hàng nào để có ví người bán");
+        }
+        Wallet wallet = walletService.getOrCreateWallet(
+                caller.tenantCode(), "SELLER", business.getId(), currency, user.getId());
+        return WalletResponse.from(wallet);
     }
 
     @POST
