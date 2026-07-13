@@ -129,6 +129,15 @@ public class PaymentGatewayService {
         return hmacSha256(payload, MOCK_SECRET);
     }
 
+    // Test-support: package-private aliases for security tests in the same package
+    String signPayloadForTest(String intentId, String transactionId, long amountMinor) {
+        return signPayload(intentId, transactionId, amountMinor);
+    }
+
+    String hmacSha256ForTest(String data) {
+        return hmacSha256(data, MOCK_SECRET);
+    }
+
     private String hmacSha256(String data, String secret) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
