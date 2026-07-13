@@ -95,7 +95,10 @@ public class OrderResource {
     public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
-        boolean isCustomer = securityIdentity.hasRole("customer");
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
 
         UUID customerId = null;
         if (isCustomer) {
@@ -198,7 +201,11 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        if (securityIdentity.hasRole("customer")) {
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
             if (c == null || !order.getCustomer().getId().equals(c.getId())) {
                 throw new ForbiddenException("You are not allowed to view this order");
@@ -220,7 +227,11 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        if (securityIdentity.hasRole("customer")) {
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
             if (c == null || !order.getCustomer().getId().equals(c.getId())) {
                 throw new ForbiddenException("You are not allowed to view this order history");
