@@ -186,7 +186,7 @@ public class OrderResource {
 
     @POST
     @Path("/checkout")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     @Transactional
     public Response checkoutOrder(CheckoutRequest request) {
         if (request == null) {
