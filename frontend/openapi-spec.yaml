@@ -1997,6 +1997,7 @@ paths:
         - admin
         - businessOwner
         - operator
+        - customer
   /api/orders/checkout:
     post:
       operationId: checkoutOrder
@@ -2025,6 +2026,8 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+        - operator
+        - customer
   /api/orders/stats:
     get:
       operationId: getStats
@@ -2111,6 +2114,7 @@ paths:
         - admin
         - businessOwner
         - operator
+        - customer
     delete:
       operationId: deleteOrder
       parameters:
@@ -2165,6 +2169,7 @@ paths:
         - admin
         - businessOwner
         - operator
+        - customer
   /api/orders/{id}/status:
     put:
       operationId: updateStatus

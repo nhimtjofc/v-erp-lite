@@ -48,6 +48,9 @@ async function apiRequest<T>(path: string): Promise<T> {
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   const response = await fetch(`${API_BASE}/api${path}`, { headers })
+  if (response.status === 204) {
+    return null as unknown as T
+  }
   if (!response.ok) {
     if (response.status === 401) {
       throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
