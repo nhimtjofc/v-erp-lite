@@ -366,6 +366,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
+      pathname.startsWith('/admin/payouts') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =

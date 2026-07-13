@@ -12,6 +12,8 @@ import {
   Building,
   Receipt,
   Tag,
+  Wallet,
+  Banknote,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -57,6 +59,15 @@ export const navGroups: NavGroup[] = [
     items: [
       { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
       { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
+    ],
+  },
+  {
+    labelKey: 'nav:finance',
+    items: [
+      // Seller wallet: business staff only (matches WalletResource roles).
+      { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner', 'operator'] },
+      // Admin payout approval dashboard: admin only.
+      { labelKey: 'nav:payouts', to: '/admin/payouts', icon: Banknote, adminOnly: true },
     ],
   },
   {

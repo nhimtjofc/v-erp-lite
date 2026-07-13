@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -44,6 +45,7 @@ import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCustomersNewRouteImport } from './routes/_authenticated/customers/new'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers/$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin/tenants'
+import { Route as AuthenticatedAdminPayoutsRouteImport } from './routes/_authenticated/admin/payouts'
 import { Route as AuthenticatedAdminTenantsIndexRouteImport } from './routes/_authenticated/admin/tenants/index'
 import { Route as AuthenticatedAdminTenantsIdRouteImport } from './routes/_authenticated/admin/tenants/$id'
 
@@ -58,6 +60,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
@@ -236,6 +243,12 @@ const AuthenticatedAdminTenantsRoute =
     path: '/admin/tenants',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminPayoutsRoute =
+  AuthenticatedAdminPayoutsRouteImport.update({
+    id: '/admin/payouts',
+    path: '/admin/payouts',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminTenantsIndexRoute =
   AuthenticatedAdminTenantsIndexRouteImport.update({
     id: '/',
@@ -264,6 +277,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
+  '/wallet': typeof AuthenticatedWalletRoute
+  '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
@@ -296,6 +311,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
+  '/wallet': typeof AuthenticatedWalletRoute
+  '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
@@ -334,7 +351,9 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/shop': typeof AuthenticatedShopRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRoute
+  '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/customers/new': typeof AuthenticatedCustomersNewRoute
@@ -374,6 +393,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/shop'
     | '/vouchers'
+    | '/wallet'
+    | '/admin/payouts'
     | '/admin/tenants'
     | '/customers/$id'
     | '/customers/new'
@@ -406,6 +427,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/shop'
     | '/vouchers'
+    | '/wallet'
+    | '/admin/payouts'
     | '/customers/$id'
     | '/customers/new'
     | '/orders/$id'
@@ -443,7 +466,9 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/shop'
     | '/_authenticated/vouchers'
+    | '/_authenticated/wallet'
     | '/_authenticated/'
+    | '/_authenticated/admin/payouts'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/customers/$id'
     | '/_authenticated/customers/new'
@@ -493,6 +518,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/wallet': {
+      id: '/_authenticated/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof AuthenticatedWalletRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/vouchers': {
@@ -719,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTenantsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/payouts': {
+      id: '/_authenticated/admin/payouts'
+      path: '/admin/payouts'
+      fullPath: '/admin/payouts'
+      preLoaderRoute: typeof AuthenticatedAdminPayoutsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/tenants/': {
       id: '/_authenticated/admin/tenants/'
       path: '/'
@@ -865,7 +904,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedShopRoute: typeof AuthenticatedShopRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRoute
+  AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAdminPayoutsRoute: typeof AuthenticatedAdminPayoutsRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRouteWithChildren
 }
 
@@ -881,7 +922,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedShopRoute: AuthenticatedShopRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRoute,
+  AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAdminPayoutsRoute: AuthenticatedAdminPayoutsRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRouteWithChildren,
 }
 

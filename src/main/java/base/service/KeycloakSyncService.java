@@ -22,7 +22,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.panache.common.Page;
 
 /**
  * Synchronises app-DB users with Keycloak so local dev iteration does not
@@ -319,8 +318,16 @@ public class KeycloakSyncService {
     // ── user sync ─────────────────────────────────────────────────────
 
     void syncUsers(SyncResult result) {
-        User.findAll().page(Page.ofSize(100)).stream()
-                .forEach(user -> syncUser((User) user, result));
+        // Materialize the list before iterating: syncUser makes Keycloak REST
+        // calls and opens a REQUIRES_NEW transaction to persist keycloak_id, which
+        // interleaves DB writes/reads on the connection. Streaming an open
+        // ResultSet across those calls closes the cursor mid-iteration
+        // ("ResultSet is closed"). listAll() reads everything up front — the same
+        // pattern syncOrgMemberships already uses.
+        List<User> users = User.listAll();
+        for (User user : users) {
+            syncUser(user, result);
+        }
     }
 
     void syncUser(User user, SyncResult result) {
