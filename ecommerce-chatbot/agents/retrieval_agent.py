@@ -1,3 +1,11 @@
+import sys
+import os
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 import os
 import google.generativeai as genai
 from pinecone import Pinecone
@@ -9,24 +17,24 @@ class RetrievalAgent:
     """Handles product discovery by querying Vector DB and generating responses."""
     
     def __init__(self):
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            genai.configure(api_key=gemini_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
         
-        # Khởi tạo kết nối Pinecone Bắt Buộc
         self.pinecone_api_key = os.environ.get("PINECONE_API_KEY")
         try:
             self.pc = Pinecone(api_key=self.pinecone_api_key)
             self.index = self.pc.Index("ecommerce-products")
-            print("✅ RetrievalAgent đã kết nối thẳng vào Pinecone Vector DB!")
         except Exception as e:
-            print(f"❌ RetrievalAgent lỗi kết nối Pinecone: {e}")
             self.index = None
-        
+            
     def _search_db(self, query):
         """Thuật toán tìm kiếm Vector Database."""
         if not self.index:
             return []
 
-        print(f"🔍 [Pinecone] Đang lục tìm Vector DB cho câu hỏi: '{query}'")
+
         
         # 1. Biến câu hỏi của khách thành Vector
         result = genai.embed_content(
@@ -51,7 +59,7 @@ class RetrievalAgent:
                 return "Dạ hiện tại em không tìm thấy dữ liệu nào phù hợp với yêu cầu của anh/chị trên hệ thống Pinecone ạ."
                 
             # Format bối cảnh từ dữ liệu trả về của Pinecone
-            context_str = "\n".join([f"- {p['name']} (Màu {p['color']}): Giá {p['price']}, Còn {p['stock']} cái." for p in retrieved_products])
+            context_str = "\n".join([f"- {p['name']} - {p.get('description', '')}: Giá {p.get('price', 'N/A')}, Còn {p.get('stock', 0)} cái." for p in retrieved_products])
             
             prompt = f"""
             Bạn là chuyên viên tư vấn bán hàng cực kỳ chuyên nghiệp và thân thiện.

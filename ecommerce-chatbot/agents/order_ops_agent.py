@@ -1,3 +1,11 @@
+import sys
+import os
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 import os
 import google.generativeai as genai
 
@@ -8,7 +16,7 @@ def get_order_status(order_id: str) -> str:
     Args:
         order_id: Mã đơn hàng cần tra cứu (ví dụ: 'ORD-123', '123')
     """
-    print(f"\n🔧 [Function Call] AI tự động kích hoạt hệ thống: GET /api/orders/{order_id}...")
+    print(f"\n[Function Call] AI tu dong kich hoat he thong: GET /api/orders/{order_id}...")
     
     # Mô phỏng API trả về từ Database ERP thực tế
     mock_orders = {
@@ -40,7 +48,7 @@ class OrderOpsAgent:
         
     def handle_query(self, query: str) -> str:
         """Xử lý câu hỏi của khách hàng."""
-        print(f"📦 [Order Ops Agent] Đang xử lý yêu cầu: '{query}'")
+        pass
         
         # 3. Kích hoạt tính năng cho phép AI tự động chạy hàm khi cần thiết
         chat = self.model.start_chat(enable_automatic_function_calling=True)

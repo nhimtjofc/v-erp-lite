@@ -1,4 +1,12 @@
 import os
+os.environ["PYTHONIOENCODING"] = "utf-8"
+import sys
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -18,13 +26,14 @@ class RouterAgent:
         """
         Determines the intent and routes to the correct agent via LLM parsing.
         """
-        print(f"RouterAgent is analyzing intent for: '{query}'")
+        pass
         prompt = f"""
-        Analyze the following e-commerce user query and classify it into exactly one of these two intents:
-        1. "ORDER_OPS": If the user is asking about an order status, shipping, returns, or where their package is.
-        2. "RETRIEVAL": If the user is looking for a product, comparing products, or asking for recommendations.
+        Analyze the following e-commerce user query and classify it into exactly one of these three intents:
+        1. "ORDER_OPS": If the user is asking about an order status, shipping, returns, order count, or package location.
+        2. "STORE_STATS": If the user is asking about product count, inventory total, or store statistics (e.g., "bao nhiêu sản phẩm", "có bao nhiêu mặt hàng", "tổng số sản phẩm").
+        3. "RETRIEVAL": If the user is asking to find/buy specific products, product pricing, or general shopping advice.
         
-        Respond with ONLY the intent name (ORDER_OPS or RETRIEVAL), nothing else.
+        Respond with ONLY the intent name (ORDER_OPS, STORE_STATS, or RETRIEVAL), nothing else.
         User Query: "{query}"
         """
         
@@ -33,7 +42,8 @@ class RouterAgent:
             intent = response.text.strip().upper()
             if "ORDER_OPS" in intent:
                 return "ORDER_OPS"
+            elif "STORE_STATS" in intent:
+                return "STORE_STATS"
             return "RETRIEVAL"
         except Exception as e:
-            print(f"Error calling Gemini: {e}")
             return "RETRIEVAL" # Fallback

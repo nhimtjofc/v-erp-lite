@@ -35,22 +35,33 @@ def sync_products_to_vector_db():
             print(f"✅ Đã tạo Index '{index_name}'!")
             
         index = pc.Index(index_name)
+        print("Đang xóa dữ liệu cũ trong Pinecone...")
+        index.delete(delete_all=True)
         
-        # Dữ liệu mẫu từ ERP
-        mock_db = [
-            {"id": "1", "name": "Giày chạy bộ Nike Air Zoom", "color": "đỏ", "size": "40, 41, 42", "price": "2,500,000 VND", "stock": 15},
-            {"id": "2", "name": "Áo thun nam cotton basic", "color": "xanh", "size": "M, L, XL", "price": "350,000 VND", "stock": 50},
-            {"id": "3", "name": "Balo laptop chống nước", "color": "đen", "size": "Freesize", "price": "850,000 VND", "stock": 5},
-            {"id": "4", "name": "Điện thoại iPhone 15 Pro Max", "color": "titan tự nhiên", "size": "256GB", "price": "29,990,000 VND", "stock": 10},
-            {"id": "5", "name": "Điện thoại Samsung Galaxy S24 Ultra", "color": "đen", "size": "512GB", "price": "33,990,000 VND", "stock": 8},
-            {"id": "6", "name": "Laptop MacBook Air M3", "color": "bạc", "size": "13 inch, 16GB RAM", "price": "27,500,000 VND", "stock": 12},
-            {"id": "7", "name": "Tai nghe AirPods Pro 2", "color": "trắng", "size": "Tiêu chuẩn", "price": "5,500,000 VND", "stock": 30},
-            {"id": "8", "name": "Đồng hồ Apple Watch Series 9", "color": "hồng", "size": "41mm", "price": "9,200,000 VND", "stock": 20}
-        ]
+        import mysql.connector
+        
+        print("Đang kết nối Database MariaDB...")
+        db_connection = mysql.connector.connect(
+            host="localhost",
+            port=3307,
+            user="v-erp",
+            password="v-erp-secret",
+            database="v-erp-lite"
+        )
+        cursor = db_connection.cursor(dictionary=True)
+        cursor.execute("SELECT id, name, description, base_price_minor, currency, stock_quantity FROM products")
+        db_products = cursor.fetchall()
+        cursor.close()
+        db_connection.close()
+
+        print(f"Tìm thấy {len(db_products)} sản phẩm trong DB!")
         
         vectors_to_upsert = []
-        for item in mock_db:
-            text_to_embed = f"Sản phẩm: {item['name']}, Màu sắc: {item['color']}, Kích thước: {item['size']}, Giá: {item['price']}, Tồn kho: {item['stock']}"
+        for item in db_products:
+            price_formatted = f"{item['base_price_minor'] / 100:,.2f} {item['currency']}"
+            desc = item['description'] or ""
+            text_to_embed = f"Sản phẩm: {item['name']}\nMô tả: {desc}\nGiá: {price_formatted}\nTồn kho: {item['stock_quantity']}"
+            
             print(f"Đang nhúng (embedding) sản phẩm: {item['name']}...")
             
             # Gọi Gemini để chuyển text thành Vector
@@ -63,7 +74,13 @@ def sync_products_to_vector_db():
             vectors_to_upsert.append({
                 "id": str(item["id"]),
                 "values": embedding,
-                "metadata": item
+                "metadata": {
+                    "id": str(item["id"]),
+                    "name": item["name"],
+                    "description": desc,
+                    "price": price_formatted,
+                    "stock": item["stock_quantity"]
+                }
             })
             
         print("Đang đẩy toàn bộ Vector lên Pinecone Cloud...")
