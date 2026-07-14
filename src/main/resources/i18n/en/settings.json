@@ -27,6 +27,40 @@
   "effectiveFeatures": "Effective Features",
   "emailSignaturePlaceholder": "Enter your email signature...",
   "viewEffectiveFeatures": "View effective feature settings",
+  "woocommerce": {
+    "title": "WooCommerce Integration",
+    "description": "Tenant-scoped storefront connection and health status.",
+    "loading": "Checking the WooCommerce connection...",
+    "loadError": "The WooCommerce connection status could not be loaded.",
+    "retry": "Try again",
+    "refresh": "Check again",
+    "refreshing": "Checking...",
+    "storeUrl": "Store URL",
+    "connection": "Connection",
+    "health": "Health",
+    "secret": "Server-side secret",
+    "secretConfigured": "Configured",
+    "secretNotConfigured": "Not configured",
+    "lastChecked": "Last checked",
+    "lastConnected": "Last connected",
+    "notAvailable": "Not available",
+    "mappedEntities": "ERP ↔ Woo mappings",
+    "webhookEvents": "Webhook events",
+    "connectionStatuses": {
+      "connected": "Connected",
+      "configured": "Configured; handshake pending",
+      "disconnected": "Disconnected",
+      "notConfigured": "Not configured",
+      "disabled": "Disabled",
+      "error": "Connection error"
+    },
+    "healthStatuses": {
+      "up": "Healthy",
+      "down": "Down",
+      "degraded": "Degraded",
+      "unknown": "Unknown"
+    }
+  },
   "featureDescriptions": {
     "canManageCustomers": "Access customer management module",
     "canManageBusiness": "Access business info management",
