@@ -5,7 +5,7 @@ import { PackagePlus, Plus, Search, Tags } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
 import type { Category } from '@/shared/api/catalog'
-import { useMeQuery, useGetWooCommerceCatalogSummaryQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
+import { useMeQuery, useGetCatalogSyncSummaryQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -21,7 +21,7 @@ function formatMoney(value?: number | null, language?: string) {
 export function ProductsPage() {
   const { t, i18n } = useTranslation(['catalog', 'common'])
   const { data: me, isLoading: isMeLoading } = useMeQuery()
-  const { data: wooSummary } = useGetWooCommerceCatalogSummaryQuery()
+  const { data: wooSummary } = useGetCatalogSyncSummaryQuery()
   const roleName = me?.role?.name
   const isCustomer = roleName === 'customer'
 

@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, useMutation, type UseMutationOptions, useQuery } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addItem, adjust, approve, batchApprove, batchReject, changePassword, checkoutCart, checkoutOrder, collect, completeMockPayment, create, createBusiness, createCart, createCategory, createCustomer, createIntent, createProduct, createTag, createTenant, createTenantUser, createUser, createVoucher, credit, debit, debugCaller, deleteBusiness, deleteCart, deleteCategory, deleteCustomer, deleteOrder, deleteProduct, deleteTag, deleteTenant, deleteTenantUser, deleteUser, deleteVoucher, disableMfa, ensure, export_, failMockPayment, getBusiness, getCart, getCategory, getCustomer, getEffectiveSettings, getHistory, getImage, getMyCustomerProfile, getOrCreateActive, getOrder, getPaymentIntent, getPayout, getProduct, getStats, getTag, getTenant, getTenantSettings, getTranslations, getUser, getUserSettings, getVoucher, getWallet, getWooCommerceCatalogChanges, getWooCommerceCatalogSummary, handleWebhook, health, initiateMockPayment, list, listBusinesses, listCarts, listCategories, listCustomers, listOrders, listProducts, listTags, listTenants, listTenantUsers, listTransactions, listUsers, listVouchers, listWallets, me, mfaStatus, myVouchers, type Options, putTenantSettings, putUserSettings, register, reject, removeItem, setupMfa, syncAll, syncTenant, transactions, updateBusiness, updateCategory, updateCustomer, updateItem, updateMe, updateOrder, updateProduct, updateStatus, updateTenant, updateTenantUser, updateUser, updateVoucher, uploadImage, validateVoucher, verifyMfa } from '../sdk.gen';
-import type { AddItemData, AddItemResponse, AdjustData, ApproveData, ApproveResponse, BatchApproveData, BatchRejectData, ChangePasswordData, CheckoutCartData, CheckoutCartResponse, CheckoutOrderData, CollectData, CompleteMockPaymentData, CreateBusinessData, CreateCartData, CreateCategoryData, CreateCustomerData, CreateData, CreateIntentData, CreateProductData, CreateTagData, CreateTenantData, CreateTenantUserData, CreateUserData, CreateVoucherData, CreditData, CreditResponse, DebitData, DebitResponse, DebugCallerData, DeleteBusinessData, DeleteCartData, DeleteCategoryData, DeleteCustomerData, DeleteOrderData, DeleteProductData, DeleteTagData, DeleteTenantData, DeleteTenantUserData, DeleteUserData, DeleteVoucherData, DisableMfaData, EnsureData, ExportData, FailMockPaymentData, GetBusinessData, GetBusinessResponse, GetCartData, GetCartResponse, GetCategoryData, GetCategoryResponse, GetCustomerData, GetCustomerResponse, GetEffectiveSettingsData, GetHistoryData, GetHistoryResponse, GetImageData, GetMyCustomerProfileData, GetMyCustomerProfileResponse, GetOrCreateActiveData, GetOrCreateActiveResponse, GetOrderData, GetOrderResponse, GetPaymentIntentData, GetPaymentIntentResponse, GetPayoutData, GetPayoutResponse, GetProductData, GetProductResponse, GetStatsData, GetStatsResponse, GetTagData, GetTagResponse, GetTenantData, GetTenantResponse, GetTenantSettingsData, GetTranslationsData, GetUserData, GetUserResponse, GetUserSettingsData, GetVoucherData, GetVoucherResponse, GetWalletData, GetWalletResponse, GetWooCommerceCatalogChangesData, GetWooCommerceCatalogChangesResponse, GetWooCommerceCatalogSummaryData, GetWooCommerceCatalogSummaryResponse, HandleWebhookData, HealthData, HealthResponse, InitiateMockPaymentData, ListBusinessesData, ListBusinessesResponse, ListCartsData, ListCartsResponse, ListCategoriesData, ListCategoriesResponse, ListCustomersData, ListCustomersResponse, ListData, ListOrdersData, ListOrdersResponse, ListProductsData, ListProductsResponse, ListResponse, ListTagsData, ListTagsResponse, ListTenantsData, ListTenantsResponse, ListTenantUsersData, ListTenantUsersResponse, ListTransactionsData, ListTransactionsResponse, ListUsersData, ListUsersResponse, ListVouchersData, ListVouchersResponse, ListWalletsData, ListWalletsResponse, MeData, MeResponse, MfaStatusData, MyVouchersData, MyVouchersResponse, PutTenantSettingsData, PutUserSettingsData, RegisterData, RejectData, RejectResponse, RemoveItemData, RemoveItemResponse, SetupMfaData, SyncAllData, SyncTenantData, TransactionsData, TransactionsResponse, UpdateBusinessData, UpdateBusinessResponse, UpdateCategoryData, UpdateCategoryResponse, UpdateCustomerData, UpdateCustomerResponse, UpdateItemData, UpdateItemResponse, UpdateMeData, UpdateMeResponse, UpdateOrderData, UpdateOrderResponse, UpdateProductData, UpdateProductResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantData, UpdateTenantResponse, UpdateTenantUserData, UpdateTenantUserResponse, UpdateUserData, UpdateUserResponse, UpdateVoucherData, UpdateVoucherResponse, UploadImageData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
+import { addItem, adjust, approve, batchApprove, batchReject, changePassword, checkoutCart, checkoutOrder, collect, completeMockPayment, create, createBusiness, createCart, createCategory, createCustomer, createIntent, createProduct, createTag, createTenant, createTenantUser, createUser, createVoucher, credit, debit, debugCaller, deleteBusiness, deleteCart, deleteCategory, deleteCustomer, deleteOrder, deleteProduct, deleteTag, deleteTenant, deleteTenantUser, deleteUser, deleteVoucher, disableMfa, ensure, export_, failMockPayment, getBusiness, getCart, getCatalogChanges, getCatalogSyncSummary, getCategory, getCustomer, getEffectiveSettings, getHistory, getImage, getMyCustomerProfile, getOrCreateActive, getOrder, getPaymentIntent, getPayout, getProduct, getStats, getTag, getTenant, getTenantSettings, getTranslations, getUser, getUserSettings, getVoucher, getWallet, getWooCommerceHealth, handleWebhook, health, initiateMockPayment, list, listBusinesses, listCarts, listCategories, listCustomers, listOrders, listProducts, listTags, listTenants, listTenantUsers, listTransactions, listUsers, listVouchers, listWallets, me, mfaStatus, myVouchers, myWallet, type Options, putTenantSettings, putUserSettings, register, reject, removeItem, setupMfa, syncAll, syncTenant, transactions, updateBusiness, updateCategory, updateCustomer, updateItem, updateMe, updateOrder, updateProduct, updateStatus, updateTenant, updateTenantUser, updateUser, updateVoucher, uploadImage, upsertCatalogMappings, validateVoucher, verifyMfa } from '../sdk.gen';
+import type { AddItemData, AddItemResponse, AdjustData, ApproveData, ApproveResponse, BatchApproveData, BatchRejectData, ChangePasswordData, CheckoutCartData, CheckoutCartResponse, CheckoutOrderData, CollectData, CompleteMockPaymentData, CreateBusinessData, CreateCartData, CreateCategoryData, CreateCustomerData, CreateData, CreateIntentData, CreateProductData, CreateTagData, CreateTenantData, CreateTenantUserData, CreateUserData, CreateVoucherData, CreditData, CreditResponse, DebitData, DebitResponse, DebugCallerData, DeleteBusinessData, DeleteCartData, DeleteCategoryData, DeleteCustomerData, DeleteOrderData, DeleteProductData, DeleteTagData, DeleteTenantData, DeleteTenantUserData, DeleteUserData, DeleteVoucherData, DisableMfaData, EnsureData, ExportData, FailMockPaymentData, GetBusinessData, GetBusinessResponse, GetCartData, GetCartResponse, GetCatalogChangesData, GetCatalogChangesResponse, GetCatalogSyncSummaryData, GetCatalogSyncSummaryResponse, GetCategoryData, GetCategoryResponse, GetCustomerData, GetCustomerResponse, GetEffectiveSettingsData, GetHistoryData, GetHistoryResponse, GetImageData, GetMyCustomerProfileData, GetMyCustomerProfileResponse, GetOrCreateActiveData, GetOrCreateActiveResponse, GetOrderData, GetOrderResponse, GetPaymentIntentData, GetPaymentIntentResponse, GetPayoutData, GetPayoutResponse, GetProductData, GetProductResponse, GetStatsData, GetStatsResponse, GetTagData, GetTagResponse, GetTenantData, GetTenantResponse, GetTenantSettingsData, GetTranslationsData, GetUserData, GetUserResponse, GetUserSettingsData, GetVoucherData, GetVoucherResponse, GetWalletData, GetWalletResponse, GetWooCommerceHealthData, GetWooCommerceHealthResponse, HandleWebhookData, HealthData, HealthResponse, InitiateMockPaymentData, ListBusinessesData, ListBusinessesResponse, ListCartsData, ListCartsResponse, ListCategoriesData, ListCategoriesResponse, ListCustomersData, ListCustomersResponse, ListData, ListOrdersData, ListOrdersResponse, ListProductsData, ListProductsResponse, ListResponse, ListTagsData, ListTagsResponse, ListTenantsData, ListTenantsResponse, ListTenantUsersData, ListTenantUsersResponse, ListTransactionsData, ListTransactionsResponse, ListUsersData, ListUsersResponse, ListVouchersData, ListVouchersResponse, ListWalletsData, ListWalletsResponse, MeData, MeResponse, MfaStatusData, MyVouchersData, MyVouchersResponse, MyWalletData, MyWalletResponse, PutTenantSettingsData, PutUserSettingsData, RegisterData, RejectData, RejectResponse, RemoveItemData, RemoveItemResponse, SetupMfaData, SyncAllData, SyncTenantData, TransactionsData, TransactionsResponse, UpdateBusinessData, UpdateBusinessResponse, UpdateCategoryData, UpdateCategoryResponse, UpdateCustomerData, UpdateCustomerResponse, UpdateItemData, UpdateItemResponse, UpdateMeData, UpdateMeResponse, UpdateOrderData, UpdateOrderResponse, UpdateProductData, UpdateProductResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantData, UpdateTenantResponse, UpdateTenantUserData, UpdateTenantUserResponse, UpdateUserData, UpdateUserResponse, UpdateVoucherData, UpdateVoucherResponse, UploadImageData, UpsertCatalogMappingsData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -935,6 +935,167 @@ export const getImageOptions = (options: Options<GetImageData>) => queryOptions<
  * Get Image
  */
 export const useGetImageQuery = (options: Options<GetImageData>) => useQuery(getImageOptions(options));
+
+export const getCatalogChangesQueryKey = (options?: Options<GetCatalogChangesData>) => createQueryKey('getCatalogChanges', options, false, ['WooCommerce Catalog']);
+
+/**
+ * Get Catalog Changes
+ *
+ * Returns active products modified after the 'since' timestamp, with their external WooCommerce IDs.
+ */
+export const getCatalogChangesOptions = (options?: Options<GetCatalogChangesData>) => queryOptions<GetCatalogChangesResponse, DefaultError, GetCatalogChangesResponse, ReturnType<typeof getCatalogChangesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getCatalogChanges({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getCatalogChangesQueryKey(options)
+});
+
+const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
+    const params = { ...queryKey[0] };
+    if (page.body) {
+        params.body = {
+            ...queryKey[0].body as any,
+            ...page.body as any
+        };
+    }
+    if (page.headers) {
+        params.headers = {
+            ...queryKey[0].headers,
+            ...page.headers
+        };
+    }
+    if (page.path) {
+        params.path = {
+            ...queryKey[0].path as any,
+            ...page.path as any
+        };
+    }
+    if (page.query) {
+        params.query = {
+            ...queryKey[0].query as any,
+            ...page.query as any
+        };
+    }
+    return params as unknown as typeof page;
+};
+
+export const getCatalogChangesInfiniteQueryKey = (options?: Options<GetCatalogChangesData>): QueryKey<Options<GetCatalogChangesData>> => createQueryKey('getCatalogChanges', options, true);
+
+/**
+ * Get Catalog Changes
+ *
+ * Returns active products modified after the 'since' timestamp, with their external WooCommerce IDs.
+ */
+export const getCatalogChangesInfiniteOptions = (options?: Options<GetCatalogChangesData>) => infiniteQueryOptions<GetCatalogChangesResponse, DefaultError, InfiniteData<GetCatalogChangesResponse>, QueryKey<Options<GetCatalogChangesData>>, number | Pick<QueryKey<Options<GetCatalogChangesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+// @ts-ignore
+{
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<QueryKey<Options<GetCatalogChangesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+            query: {
+                offset: pageParam
+            }
+        };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await getCatalogChanges({
+            ...options,
+            ...params,
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getCatalogChangesInfiniteQueryKey(options)
+});
+
+/**
+ * Get Catalog Changes
+ *
+ * Returns active products modified after the 'since' timestamp, with their external WooCommerce IDs.
+ */
+export const useGetCatalogChangesQuery = (options?: Options<GetCatalogChangesData>) => useQuery(getCatalogChangesOptions(options));
+
+/**
+ * Upsert Catalog Mappings
+ *
+ * Upserts WooCommerce mapping IDs and sync statuses for products and variants.
+ */
+export const upsertCatalogMappingsMutation = (options?: Partial<Options<UpsertCatalogMappingsData>>): UseMutationOptions<unknown, DefaultError, Options<UpsertCatalogMappingsData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<UpsertCatalogMappingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await upsertCatalogMappings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Upsert Catalog Mappings
+ *
+ * Upserts WooCommerce mapping IDs and sync statuses for products and variants.
+ */
+export const useUpsertCatalogMappingsMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<UpsertCatalogMappingsData>>, 'mutationFn'>>) => useMutation({ ...upsertCatalogMappingsMutation(), ...mutationOptions });
+
+export const getCatalogSyncSummaryQueryKey = (options?: Options<GetCatalogSyncSummaryData>) => createQueryKey('getCatalogSyncSummary', options, false, ['WooCommerce Catalog']);
+
+/**
+ * Get Catalog Sync Summary
+ *
+ * Returns summary statistics of the WooCommerce catalog synchronization.
+ */
+export const getCatalogSyncSummaryOptions = (options?: Options<GetCatalogSyncSummaryData>) => queryOptions<GetCatalogSyncSummaryResponse, DefaultError, GetCatalogSyncSummaryResponse, ReturnType<typeof getCatalogSyncSummaryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getCatalogSyncSummary({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getCatalogSyncSummaryQueryKey(options)
+});
+
+/**
+ * Get Catalog Sync Summary
+ *
+ * Returns summary statistics of the WooCommerce catalog synchronization.
+ */
+export const useGetCatalogSyncSummaryQuery = (options?: Options<GetCatalogSyncSummaryData>) => useQuery(getCatalogSyncSummaryOptions(options));
+
+export const getWooCommerceHealthQueryKey = (options?: Options<GetWooCommerceHealthData>) => createQueryKey('getWooCommerceHealth', options, false, ['Woo Commerce Integration Resource']);
+
+/**
+ * Get Woo Commerce Health
+ */
+export const getWooCommerceHealthOptions = (options?: Options<GetWooCommerceHealthData>) => queryOptions<GetWooCommerceHealthResponse, DefaultError, GetWooCommerceHealthResponse, ReturnType<typeof getWooCommerceHealthQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getWooCommerceHealth({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getWooCommerceHealthQueryKey(options)
+});
+
+/**
+ * Get Woo Commerce Health
+ */
+export const useGetWooCommerceHealthQuery = (options?: Options<GetWooCommerceHealthData>) => useQuery(getWooCommerceHealthOptions(options));
 
 export const listOrdersQueryKey = (options?: Options<ListOrdersData>) => createQueryKey('listOrders', options, false, ['Order Resource']);
 
@@ -2304,6 +2465,29 @@ export const ensureMutation = (options?: Partial<Options<EnsureData>>): UseMutat
  */
 export const useEnsureMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<EnsureData>>, 'mutationFn'>>) => useMutation({ ...ensureMutation(), ...mutationOptions });
 
+export const myWalletQueryKey = (options?: Options<MyWalletData>) => createQueryKey('myWallet', options, false, ['Wallet Resource']);
+
+/**
+ * My Wallet
+ */
+export const myWalletOptions = (options?: Options<MyWalletData>) => queryOptions<MyWalletResponse, DefaultError, MyWalletResponse, ReturnType<typeof myWalletQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await myWallet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: myWalletQueryKey(options)
+});
+
+/**
+ * My Wallet
+ */
+export const useMyWalletQuery = (options?: Options<MyWalletData>) => useQuery(myWalletOptions(options));
+
 export const getWalletQueryKey = (options: Options<GetWalletData>) => createQueryKey('getWallet', options, false, ['Wallet Resource']);
 
 /**
@@ -2411,35 +2595,6 @@ export const transactionsOptions = (options: Options<TransactionsData>) => query
     queryKey: transactionsQueryKey(options)
 });
 
-const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
-};
-
 export const transactionsInfiniteQueryKey = (options: Options<TransactionsData>): QueryKey<Options<TransactionsData>> => createQueryKey('transactions', options, true);
 
 /**
@@ -2471,61 +2626,3 @@ export const transactionsInfiniteOptions = (options: Options<TransactionsData>) 
  * Transactions
  */
 export const useTransactionsQuery = (options: Options<TransactionsData>) => useQuery(transactionsOptions(options));
-
-export const getWooCommerceCatalogChangesQueryKey = (options?: Options<GetWooCommerceCatalogChangesData>) => createQueryKey('getWooCommerceCatalogChanges', options);
-
-export const getWooCommerceCatalogChangesOptions = (options?: Options<GetWooCommerceCatalogChangesData>) => queryOptions<GetWooCommerceCatalogChangesResponse, DefaultError, GetWooCommerceCatalogChangesResponse, ReturnType<typeof getWooCommerceCatalogChangesQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getWooCommerceCatalogChanges({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getWooCommerceCatalogChangesQueryKey(options)
-});
-
-export const getWooCommerceCatalogChangesInfiniteQueryKey = (options?: Options<GetWooCommerceCatalogChangesData>): QueryKey<Options<GetWooCommerceCatalogChangesData>> => createQueryKey('getWooCommerceCatalogChanges', options, true);
-
-export const getWooCommerceCatalogChangesInfiniteOptions = (options?: Options<GetWooCommerceCatalogChangesData>) => infiniteQueryOptions<GetWooCommerceCatalogChangesResponse, DefaultError, InfiniteData<GetWooCommerceCatalogChangesResponse>, QueryKey<Options<GetWooCommerceCatalogChangesData>>, number | Pick<QueryKey<Options<GetWooCommerceCatalogChangesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-// @ts-ignore
-{
-    queryFn: async ({ pageParam, queryKey, signal }) => {
-        // @ts-ignore
-        const page: Pick<QueryKey<Options<GetWooCommerceCatalogChangesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
-            query: {
-                offset: pageParam
-            }
-        };
-        const params = createInfiniteParams(queryKey, page);
-        const { data } = await getWooCommerceCatalogChanges({
-            ...options,
-            ...params,
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getWooCommerceCatalogChangesInfiniteQueryKey(options)
-});
-
-export const useGetWooCommerceCatalogChangesQuery = (options?: Options<GetWooCommerceCatalogChangesData>) => useQuery(getWooCommerceCatalogChangesOptions(options));
-
-export const getWooCommerceCatalogSummaryQueryKey = (options?: Options<GetWooCommerceCatalogSummaryData>) => createQueryKey('getWooCommerceCatalogSummary', options);
-
-export const getWooCommerceCatalogSummaryOptions = (options?: Options<GetWooCommerceCatalogSummaryData>) => queryOptions<GetWooCommerceCatalogSummaryResponse, DefaultError, GetWooCommerceCatalogSummaryResponse, ReturnType<typeof getWooCommerceCatalogSummaryQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getWooCommerceCatalogSummary({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getWooCommerceCatalogSummaryQueryKey(options)
-});
-
-export const useGetWooCommerceCatalogSummaryQuery = (options?: Options<GetWooCommerceCatalogSummaryData>) => useQuery(getWooCommerceCatalogSummaryOptions(options));

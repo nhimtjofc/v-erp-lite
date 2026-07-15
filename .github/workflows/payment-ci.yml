@@ -36,12 +36,12 @@ jobs:
             sleep 5
           done
           for i in {1..30}; do
-            curl -fsS http://127.0.0.1:8181/health/ready && break
+            curl -fsS http://127.0.0.1:8181/realms/v-erp-lite/.well-known/openid-configuration && break
             sleep 5
           done
 
       - name: Run backend tests
-        run: ./gradlew test --tests "base.service.Dev2WalletServiceTest" --tests "base.service.PaymentTenantIsolationTest" --tests "base.service.PaymentModuleInvariantTest" --tests "base.service.MigrationValidationTest"
+        run: ./gradlew test --tests "base.service.WalletServiceTest" --tests "base.service.PaymentTenantIsolationTest" --tests "base.service.PaymentModuleInvariantTest" --tests "base.service.MigrationValidationTest"
 
       - name: Stop docker compose stack
         if: always()
