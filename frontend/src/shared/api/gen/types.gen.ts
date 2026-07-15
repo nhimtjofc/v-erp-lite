@@ -3418,3 +3418,45 @@ export type TransactionsResponses = {
 };
 
 export type TransactionsResponse = TransactionsResponses[keyof TransactionsResponses];
+
+export type GetWooCommerceCatalogChangesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        since?: string;
+        limit?: number;
+        offset?: number;
+    };
+    url: '/api/integrations/woocommerce/v1/catalog/changes';
+};
+
+export type GetWooCommerceCatalogChangesResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetWooCommerceCatalogChangesResponse = GetWooCommerceCatalogChangesResponses[keyof GetWooCommerceCatalogChangesResponses];
+
+export type GetWooCommerceCatalogSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/integrations/woocommerce/v1/catalog/summary';
+};
+
+export type GetWooCommerceCatalogSummaryResponses = {
+    /**
+     * OK
+     */
+    200: {
+        totalProducts?: number;
+        syncedProducts?: number;
+        lastSyncTime?: string;
+    };
+};
+
+export type GetWooCommerceCatalogSummaryResponse = GetWooCommerceCatalogSummaryResponses[keyof GetWooCommerceCatalogSummaryResponses];
