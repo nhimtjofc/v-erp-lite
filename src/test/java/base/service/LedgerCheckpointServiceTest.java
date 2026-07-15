@@ -4,6 +4,7 @@ import base.entity.LedgerCheckpoint;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
 import base.model.Money;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -15,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
+@TestTransaction
 class LedgerCheckpointServiceTest {
 
     @Inject
@@ -35,7 +37,7 @@ class LedgerCheckpointServiceTest {
         var mutation = walletService.creditAvailable(tenantId, wallet.getId(), Money.of(100_000, "VND"),
                 "DEPOSIT", "TEST", UUID.randomUUID(), actorId, null);
 
-        entityManager.clear();
+        flushAndClear();
         LedgerCheckpoint checkpoint = checkpointService.latestForWallet(tenantId, wallet.getId());
         assertNotNull(checkpoint);
         assertEquals(mutation.transaction().getId(), checkpoint.getLastTransactionId());
@@ -54,7 +56,7 @@ class LedgerCheckpointServiceTest {
         walletService.debitAvailable(tenantId, wallet.getId(), Money.of(50_000, "VND"),
                 "WITHDRAWAL", "TEST", UUID.randomUUID(), actorId, null);
 
-        entityManager.clear();
+        flushAndClear();
         LedgerCheckpoint checkpoint = checkpointService.latestForWallet(tenantId, wallet.getId());
         assertNotNull(checkpoint);
         assertEquals(150_000, checkpoint.getAvailableBalanceMinor());
@@ -71,7 +73,7 @@ class LedgerCheckpointServiceTest {
 
         walletService.holdEscrowForSeller(tenantId, sellerId, Money.of(75_000, "VND"), "ORDER", orderId, actorId, null);
 
-        entityManager.clear();
+        flushAndClear();
         LedgerCheckpoint checkpoint = checkpointService.latestForWallet(tenantId, wallet.getId());
         assertNotNull(checkpoint);
         assertEquals(0, checkpoint.getAvailableBalanceMinor());
@@ -79,7 +81,7 @@ class LedgerCheckpointServiceTest {
 
         walletService.releaseEscrowForSeller(tenantId, sellerId, Money.of(75_000, "VND"), "ORDER", orderId, actorId, null);
 
-        entityManager.clear();
+        flushAndClear();
         checkpoint = checkpointService.latestForWallet(tenantId, wallet.getId());
         assertEquals(75_000, checkpoint.getAvailableBalanceMinor());
         assertEquals(0, checkpoint.getPendingBalanceMinor());
@@ -97,7 +99,7 @@ class LedgerCheckpointServiceTest {
         walletService.creditAvailable(tenantId, wallet.getId(), Money.of(50_000, "VND"),
                 "DEPOSIT", "TEST", UUID.randomUUID(), actorId, null);
 
-        entityManager.clear();
+        flushAndClear();
         LedgerCheckpoint checkpoint = checkpointService.latestForWallet(tenantId, wallet.getId());
         assertNotNull(checkpoint);
         long checkpointSeq = checkpoint.getLastSequenceNo();
@@ -125,7 +127,7 @@ class LedgerCheckpointServiceTest {
         long projectedAvailable = checkpoint.getAvailableBalanceMinor() + deltaAvailable;
         long projectedPending = checkpoint.getPendingBalanceMinor() + deltaPending;
 
-        entityManager.clear();
+        flushAndClear();
         Wallet reloaded = walletService.getWallet(tenantId, wallet.getId());
         assertEquals(projectedAvailable, reloaded.getAvailableBalanceMinor(),
                 "Checkpoint + delta should project current available balance");
@@ -138,7 +140,7 @@ class LedgerCheckpointServiceTest {
         String tenantId = tenant();
         Wallet wallet = createWallet(tenantId);
 
-        entityManager.clear();
+        flushAndClear();
         LedgerCheckpoint checkpoint = checkpointService.latestForWallet(tenantId, wallet.getId());
         assertNull(checkpoint);
     }
@@ -154,12 +156,12 @@ class LedgerCheckpointServiceTest {
         walletService.creditAvailable(tenantA, walletA.getId(), Money.of(10_000, "VND"),
                 "DEPOSIT", "TEST", UUID.randomUUID(), actorId, null);
 
-        entityManager.clear();
+        flushAndClear();
         LedgerCheckpoint checkpointA = checkpointService.latestForWallet(tenantA, walletA.getId());
         assertNotNull(checkpointA);
         assertEquals(10_000, checkpointA.getAvailableBalanceMinor());
 
-        entityManager.clear();
+        flushAndClear();
         Wallet walletB = walletService.listWallets(tenantB, "SELLER", ownerId, null).get(0);
         LedgerCheckpoint checkpointB = checkpointService.latestForWallet(tenantB, walletB.getId());
         assertNull(checkpointB);
@@ -167,6 +169,11 @@ class LedgerCheckpointServiceTest {
 
     private Wallet createWallet(String tenantId) {
         return walletService.getOrCreateWallet(tenantId, "SELLER", UUID.randomUUID(), "VND", actorId);
+    }
+
+    private void flushAndClear() {
+        entityManager.flush();
+        entityManager.clear();
     }
 
     private String tenant() {
