@@ -1,6 +1,6 @@
 -- Webhook events log for auditing and replay
 -- tenant_id is nullable because webhooks arrive before tenant resolution
-CREATE TABLE webhook_events (
+CREATE TABLE IF NOT EXISTS webhook_events (
     id                      UUID PRIMARY KEY,
     tenant_id               VARCHAR(64),
     gateway                 VARCHAR(50) NOT NULL,
@@ -18,6 +18,6 @@ CREATE TABLE webhook_events (
     version                 BIGINT NOT NULL DEFAULT 0
 );
 
-CREATE INDEX idx_webhook_events_tenant_gateway ON webhook_events(tenant_id, gateway);
-CREATE INDEX idx_webhook_events_payment_intent ON webhook_events(payment_intent_id);
-CREATE INDEX idx_webhook_events_status ON webhook_events(status);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_tenant_gateway ON webhook_events(tenant_id, gateway);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_payment_intent ON webhook_events(payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_status ON webhook_events(status);

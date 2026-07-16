@@ -1,5 +1,28 @@
 package base.service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.OrganizationRepresentation;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import base.entity.Role;
 import base.entity.Tenant;
 import base.entity.User;
@@ -10,17 +33,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.representations.idm.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.*;
 
 /**
  * Synchronises app-DB users with Keycloak so local dev iteration does not
@@ -58,6 +70,7 @@ public class KeycloakSyncService {
     String keycloakServerUrl;
 
     private static final Logger log = LoggerFactory.getLogger(KeycloakSyncService.class);
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     // ── lifecycle hook ────────────────────────────────────────────────
 
@@ -299,7 +312,7 @@ public class KeycloakSyncService {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> jsonDecode(String json) {
         try {
-            return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json, HashMap.class);
+            return JSON.readValue(json, HashMap.class);
         } catch (Exception e) {
             return null;
         }
@@ -307,7 +320,7 @@ public class KeycloakSyncService {
 
     private static String jsonEncode(Object obj) {
         try {
-            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+            return JSON.writeValueAsString(obj);
         } catch (Exception e) {
             return "{}";
         }
@@ -315,8 +328,13 @@ public class KeycloakSyncService {
 
     // ── user sync ─────────────────────────────────────────────────────
 
-    @Transactional
     void syncUsers(SyncResult result) {
+        // Materialize the list before iterating: syncUser makes Keycloak REST
+        // calls and opens a REQUIRES_NEW transaction to persist keycloak_id, which
+        // interleaves DB writes/reads on the connection. Streaming an open
+        // ResultSet across those calls closes the cursor mid-iteration
+        // ("ResultSet is closed"). listAll() reads everything up front — the same
+        // pattern syncOrgMemberships already uses.
         List<User> users = User.listAll();
         for (User user : users) {
             syncUser(user, result);
@@ -343,11 +361,10 @@ public class KeycloakSyncService {
                 keycloak.realm(REALM).users().get(existingId).update(kcUser);
                 result.updated++;
             } else {
-                // Create new Keycloak user
+                // Create new Keycloak user (HTTP calls — no transaction)
                 String kcId = createKeycloakUser(user);
                 if (kcId != null) {
-                    user.setKeycloakId(kcId);
-                    user.persist();
+                    doPersistUserSync(user.getId(), kcId);
                     result.created++;
                 } else {
                     result.failed++;
@@ -357,6 +374,14 @@ public class KeycloakSyncService {
             result.errors.add("Failed to sync user " + user.getEmail() + ": " + e.getMessage());
             result.failed++;
             log.warn("Failed to sync user {}", user.getEmail(), e);
+        }
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void doPersistUserSync(UUID userId, String kcId) {
+        User managedUser = User.findById(userId);
+        if (managedUser != null) {
+            managedUser.setKeycloakId(kcId);
         }
     }
 
@@ -430,7 +455,7 @@ public class KeycloakSyncService {
         SyncResult sr = new SyncResult();
         syncTenantOrg(tenant, sr);
         if (!sr.errors.isEmpty()) {
-            log.warn("Org sync errors for {}: {}", tenant.getCode(), sr.errors);
+            log.error("Org sync failed for {}: {}", tenant.getCode(), sr.errors);
         }
 
         // 3. Add user to the tenant's KC organization

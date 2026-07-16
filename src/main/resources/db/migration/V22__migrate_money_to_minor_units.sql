@@ -1,5 +1,4 @@
 -- Convert money columns from major units to integer minor units.
-
 -- Product
 ALTER TABLE products CHANGE COLUMN base_price base_price_minor DECIMAL(19, 2);
 UPDATE products SET base_price_minor = base_price_minor * 100;

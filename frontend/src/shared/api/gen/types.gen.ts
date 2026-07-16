@@ -62,6 +62,55 @@ export type CartItem1 = {
     quantity?: number;
 };
 
+export type CatalogChangesResult = {
+    items?: Array<CatalogProductDto>;
+    totalCount?: number;
+    hasMore?: boolean;
+};
+
+export type CatalogMappingItem = {
+    erpId?: Uuid;
+    entityType?: string;
+    externalId?: string;
+    externalParentId?: string;
+    syncStatus?: string;
+    errorMessage?: string;
+};
+
+export type CatalogMappingSyncRequest = {
+    items?: Array<CatalogMappingItem>;
+};
+
+export type CatalogProductDto = {
+    id?: Uuid;
+    sku?: string;
+    name?: string;
+    description?: string;
+    basePriceMinor?: number;
+    salePriceMinor?: number;
+    currency?: string;
+    availableQuantity?: number;
+    externalId?: string;
+    variants?: Array<CatalogVariantDto>;
+};
+
+export type CatalogSyncSummary = {
+    totalProducts?: number;
+    syncedProducts?: number;
+    lastSyncTime?: Instant;
+};
+
+export type CatalogVariantDto = {
+    id?: Uuid;
+    sku?: string;
+    priceMinor?: number;
+    availableQuantity?: number;
+    externalId?: string;
+    optionValues?: {
+        [key: string]: string;
+    };
+};
+
 export type Category = {
     tenantId?: string;
     createdAt?: Instant;
@@ -139,6 +188,20 @@ export type EnsureWalletRequest = {
     ownerType?: string;
     ownerId?: Uuid;
     currency?: string;
+};
+
+export type HealthSnapshot = {
+    channelId?: Uuid;
+    businessId?: Uuid;
+    storeUrl?: string;
+    connectionStatus?: string;
+    healthStatus?: string;
+    secretConfigured?: boolean;
+    mappedEntityCount?: number;
+    webhookEventCount?: number;
+    lastCheckedAt?: Instant;
+    lastConnectedAt?: Instant;
+    message?: string;
 };
 
 export type InitiateMockRequest = {
@@ -1533,6 +1596,127 @@ export type GetImageResponses = {
      */
     200: unknown;
 };
+
+export type GetCatalogChangesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+        limit?: number;
+        offset?: number;
+        since?: Instant;
+    };
+    url: '/api/integrations/woocommerce/v1/catalog/changes';
+};
+
+export type GetCatalogChangesErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetCatalogChangesResponses = {
+    /**
+     * OK
+     */
+    200: CatalogChangesResult;
+};
+
+export type GetCatalogChangesResponse = GetCatalogChangesResponses[keyof GetCatalogChangesResponses];
+
+export type UpsertCatalogMappingsData = {
+    body: CatalogMappingSyncRequest;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+    };
+    url: '/api/integrations/woocommerce/v1/catalog/mappings';
+};
+
+export type UpsertCatalogMappingsErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type UpsertCatalogMappingsResponses = {
+    /**
+     * Created
+     */
+    201: unknown;
+};
+
+export type GetCatalogSyncSummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+    };
+    url: '/api/integrations/woocommerce/v1/catalog/summary';
+};
+
+export type GetCatalogSyncSummaryErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetCatalogSyncSummaryResponses = {
+    /**
+     * OK
+     */
+    200: CatalogSyncSummary;
+};
+
+export type GetCatalogSyncSummaryResponse = GetCatalogSyncSummaryResponses[keyof GetCatalogSyncSummaryResponses];
+
+export type GetWooCommerceHealthData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+    };
+    url: '/api/integrations/woocommerce/v1/health';
+};
+
+export type GetWooCommerceHealthErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetWooCommerceHealthResponses = {
+    /**
+     * OK
+     */
+    200: HealthSnapshot;
+};
+
+export type GetWooCommerceHealthResponse = GetWooCommerceHealthResponses[keyof GetWooCommerceHealthResponses];
 
 export type ListOrdersData = {
     body?: never;
@@ -3258,6 +3442,35 @@ export type EnsureResponses = {
      */
     200: unknown;
 };
+
+export type MyWalletData = {
+    body?: never;
+    path?: never;
+    query?: {
+        currency?: string;
+    };
+    url: '/api/wallets/me';
+};
+
+export type MyWalletErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type MyWalletResponses = {
+    /**
+     * OK
+     */
+    200: WalletResponse;
+};
+
+export type MyWalletResponse = MyWalletResponses[keyof MyWalletResponses];
 
 export type GetWalletData = {
     body?: never;

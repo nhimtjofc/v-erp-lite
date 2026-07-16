@@ -1,5 +1,7 @@
 package base.rest;
 
+import base.entity.Business;
+import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
 import base.model.Money;
@@ -16,6 +18,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -28,7 +31,7 @@ import java.util.UUID;
 @Path("/wallets")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "operator", "businessOwner"})
+@RolesAllowed({"admin", "businessOwner"})
 public class WalletResource {
 
     @Inject
@@ -116,6 +119,31 @@ public class WalletResource {
                 .toList();
     }
 
+    /**
+     * The wallet of the currently logged-in seller.
+     *
+     * Resolution (single seam for the seller dashboard): authenticated user
+     * -> the business they own ({@code business.created_by}) -> that business's
+     * SELLER wallet. The wallet is created on demand if it doesn't exist yet, so
+     * a freshly-onboarded seller still gets a (zero-balance) wallet.
+     */
+    @GET
+    @Path("/me")
+    @Transactional
+    public WalletResponse myWallet(@QueryParam("currency") @DefaultValue("VND") String currency) {
+        User user = caller.resolveUser();
+        if (user == null) {
+            return null;
+        }
+        Business business = Business.find("tenantId = ?1", caller.tenantCode()).firstResult();
+        if (business == null) {
+            return null;
+        }
+        Wallet wallet = walletService.getOrCreateWallet(
+                caller.tenantCode(), "SELLER", business.getId(), currency, business.getCreatedBy());
+        return WalletResponse.from(wallet);
+    }
+
     @POST
     @Path("/ensure")
     public Response ensure(EnsureWalletRequest request) {
@@ -150,7 +178,7 @@ public class WalletResource {
 
     @POST
     @Path("/{id}/credit")
-    @RolesAllowed({"admin", "operator"})
+    @RolesAllowed({"admin"})
     public WalletResponse credit(@PathParam("id") UUID id, WalletAdjustmentRequest request) {
         WalletService.WalletMutation mutation = walletService.creditAvailable(
                 caller.tenantCode(),
@@ -167,7 +195,7 @@ public class WalletResource {
 
     @POST
     @Path("/{id}/debit")
-    @RolesAllowed({"admin", "operator"})
+    @RolesAllowed({"admin"})
     public WalletResponse debit(@PathParam("id") UUID id, WalletAdjustmentRequest request) {
         WalletService.WalletMutation mutation = walletService.debitAvailable(
                 caller.tenantCode(),

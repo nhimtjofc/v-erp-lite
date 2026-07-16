@@ -26,6 +26,7 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProductResource {
 
+    // Trigger hot reload for new sample vendor products
     @Inject
     CallerContext caller;
 

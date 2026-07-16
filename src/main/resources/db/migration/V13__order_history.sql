@@ -1,5 +1,5 @@
 -- Order History: track every status change on an order for the Timeline UI
-CREATE TABLE order_history (
+CREATE TABLE IF NOT EXISTS order_history (
     id          UUID         PRIMARY KEY,
     order_id    UUID         NOT NULL,
     tenant_id   VARCHAR(64)  NOT NULL,
@@ -11,5 +11,5 @@ CREATE TABLE order_history (
     CONSTRAINT fk_order_history_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_order_history_order ON order_history(order_id);
-CREATE INDEX idx_order_history_tenant ON order_history(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_order_history_order ON order_history(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_history_tenant ON order_history(tenant_id);

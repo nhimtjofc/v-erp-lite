@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useListCustomersQuery, useMeQuery } from '@/shared/api'
 import type { Customer } from '@/shared/api'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { DataTable } from '@/shared/ui/data-table'
+import { DataTableColumnHeader } from '@/shared/ui/data-table-column-header'
+import { DataTableRowActions } from '@/shared/ui/data-table-row-actions'
 import { Badge } from '@/shared/ui/badge'
-import { Input } from '@/shared/ui/input'
-import { Link } from '@tanstack/react-router'
-import { Plus, Search } from 'lucide-react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react'
+import type { RowAction } from '@/shared/ui/data-table-row-actions'
 
 export function CustomersPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { data: me, isLoading: isMeLoading } = useMeQuery()
   const roleName = me?.role?.name
   const isCustomer = roleName === 'customer'
@@ -28,6 +31,52 @@ export function CustomersPage() {
     debouncedSearch ? { query: { search: debouncedSearch } } : undefined
   )
   const customerList = customers ?? []
+
+  const columns = useMemo<ColumnDef<Customer>[]>(() => [
+    {
+      accessorKey: 'firstName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t('common:firstName', 'First Name')} />,
+      cell: ({ row }) => <span>{row.getValue('firstName') || '-'}</span>,
+    },
+    {
+      accessorKey: 'lastName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t('common:lastName', 'Last Name')} />,
+      cell: ({ row }) => <span>{row.getValue('lastName') || '-'}</span>,
+    },
+    {
+      accessorKey: 'email',
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t('common:email', 'Email')} />,
+      cell: ({ row }) => <span>{row.getValue('email') || '-'}</span>,
+    },
+    {
+      accessorKey: 'phone',
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t('common:phone', 'Phone')} />,
+      cell: ({ row }) => <span>{row.getValue('phone') || '-'}</span>,
+    },
+    {
+      accessorKey: 'active',
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t('common:status', 'Status')} />,
+      cell: ({ row }) => (
+        <Badge variant={row.getValue('active') ? 'default' : 'secondary'}>
+          {row.getValue('active') ? t('common:active', 'Active') : t('common:inactive', 'Inactive')}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <DataTableRowActions
+          actions={[
+            {
+              label: t('common:view', 'View'),
+              icon: Eye,
+              onClick: () => navigate({ to: '/customers/$id', params: { id: row.original.id! } }),
+            },
+          ]}
+        />
+      ),
+    },
+  ], [t, navigate])
 
   if (isMeLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
@@ -48,8 +97,12 @@ export function CustomersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('nav:customers', 'Customers')}</h1>
-          <p className="text-muted-foreground mt-1">{t('common:manageCustomerRecords', 'Manage your customer records')}</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t('nav:customers', 'Customers')}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {t('common:manageCustomerRecords', 'Manage your customer records')}
+          </p>
         </div>
         <Link to="/customers/new">
           <Button>
@@ -59,65 +112,36 @@ export function CustomersPage() {
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('common:searchCustomers', 'Search customers...')}
-                className="pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">{t('common:loading', 'Loading...')}</p>
-          ) : customerList.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">{t('common:noCustomers', 'No customers found.')}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('common:name', 'Name')}</TableHead>
-                  <TableHead>{t('common:email', 'Email')}</TableHead>
-                  <TableHead>{t('common:phone', 'Phone')}</TableHead>
-                  <TableHead>{t('common:status', 'Status')}</TableHead>
-                  <TableHead>{t('common:created', 'Created')}</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customerList.map((customer) => (
-                        <TableRow key={customer.id!}>
-                    <TableCell className="font-medium">
-                      {[customer.firstName, customer.lastName].filter(Boolean).join(' ') || t('common:unnamed', 'Unnamed')}
-                    </TableCell>
-                    <TableCell>{customer.email || '-'}</TableCell>
-                    <TableCell>{customer.phone || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={customer.active ? 'default' : 'secondary'}>
-                        {customer.active ? t('common:active', 'Active') : t('common:inactive', 'Inactive')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(customer.createdAt!).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                        <Link to="/customers/$id" params={{ id: customer.id! }}>
-                        <Button variant="ghost" size="sm">{t('common:view', 'View')}</Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={customerList}
+        loading={isLoading}
+        defaultHiddenColumns={['email']}
+        searchColumnId="email"
+        searchPlaceholder={t(
+          'common:searchCustomers',
+          'Search customers...'
+        )}
+        onRowClick={(customer) =>
+          navigate({
+            to: '/customers/$id',
+            params: { id: customer.id! },
+          })
+        }
+        filterFields={[
+          { columnId: 'firstName', label: 'Name', type: 'text' },
+          { columnId: 'phone', label: 'Phone', type: 'text' },
+          {
+            columnId: 'active',
+            label: 'Status',
+            type: 'select',
+            options: [
+              { label: 'Active', value: 'true' },
+              { label: 'Inactive', value: 'false' },
+            ],
+          },
+        ]}
+      />
     </div>
   )
 }

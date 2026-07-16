@@ -9,14 +9,14 @@ export const Route = createFileRoute('/_authenticated/orders')({
     const role = me?.role?.name
 
     useEffect(() => {
-      if (role && role !== 'admin' && role !== 'businessOwner' && role !== 'operator') {
+      if (role && role !== 'admin' && role !== 'businessOwner' && role !== 'operator' && role !== 'customer') {
         router.navigate({ to: '/dashboard', replace: true })
       }
     }, [role, router])
 
     if (!role) return null
 
-    if (role !== 'admin' && role !== 'businessOwner' && role !== 'operator') {
+    if (role !== 'admin' && role !== 'businessOwner' && role !== 'operator' && role !== 'customer') {
       return null
     }
 

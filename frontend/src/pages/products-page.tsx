@@ -5,7 +5,7 @@ import { PackagePlus, Plus, Search, Tags } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
 import type { Category } from '@/shared/api/catalog'
-import { useMeQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
+import { useMeQuery, useGetCatalogSyncSummaryQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -21,11 +21,12 @@ function formatMoney(value?: number | null, language?: string) {
 export function ProductsPage() {
   const { t, i18n } = useTranslation(['catalog', 'common'])
   const { data: me, isLoading: isMeLoading } = useMeQuery()
+  const { data: wooSummary } = useGetCatalogSyncSummaryQuery()
   const roleName = me?.role?.name
   const isCustomer = roleName === 'customer'
 
   const queryClient = useQueryClient()
-  const canManageProducts = roleName === 'admin' || roleName === 'businessOwner'
+  const canManageProducts = roleName === 'admin' || roleName === 'businessOwner' || roleName === 'operator'
   const canManageTaxonomy = roleName === 'admin'
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -153,6 +154,22 @@ export function ProductsPage() {
           </Link>
         )}
       </div>
+
+      {wooSummary && (
+        <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+          <CardHeader className="py-4">
+            <CardTitle className="text-sm flex justify-between items-center text-blue-900 dark:text-blue-100">
+              <span>WooCommerce Sync Status</span>
+              <Badge variant="outline" className="bg-white dark:bg-black">
+                {wooSummary.syncedProducts} / {wooSummary.totalProducts} Synced
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-0 pb-4 text-xs text-blue-700 dark:text-blue-300">
+            Last synced: {wooSummary.lastSyncTime ? new Date(wooSummary.lastSyncTime).toLocaleString(i18n.language) : 'Never'}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>

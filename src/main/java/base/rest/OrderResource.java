@@ -20,12 +20,14 @@ import base.entity.ProductVariant;
 import base.entity.Voucher;
 import base.security.CallerContext;
 import base.service.EscrowService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -43,9 +45,15 @@ import jakarta.ws.rs.core.Response;
 public class OrderResource {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
+    private static final double TAX_RATE = 0.10;
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Inject
     EscrowService escrowService;
@@ -83,34 +91,60 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+
+        UUID customerId = null;
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+            if (c == null) {
+                return List.of();
+            }
+            customerId = c.getId();
+        }
+
         String normalizedSearch = search == null ? null : search.trim();
         String normalizedStatus = status == null ? null : status.trim();
 
-        boolean hasSearch = normalizedSearch != null && !normalizedSearch.isBlank();
-        boolean hasStatus = normalizedStatus != null && !normalizedStatus.isBlank();
-
-        if (hasSearch && hasStatus) {
-            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            String upperStatus = normalizedStatus.toUpperCase();
-            return Order.find(
-                    "tenantId = ?1 AND deletedAt IS NULL AND status = ?2 AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?3,'%')) ESCAPE '\\')",
-                    tenantCode, upperStatus, escaped
-            ).list();
-        } else if (hasSearch) {
-            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            return Order.find(
-                    "tenantId = ?1 AND deletedAt IS NULL AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',?2,'%')) ESCAPE '\\')",
-                    tenantCode, escaped
-            ).list();
-        } else if (hasStatus) {
-            return Order.list("tenantId = ?1 AND deletedAt IS NULL AND status = ?2 ORDER BY orderDate DESC", tenantCode, normalizedStatus.toUpperCase());
+        // Defensive: ensure null-safe access below even if analyzer cannot prove non-null
+        if (normalizedSearch != null && normalizedSearch.isBlank()) {
+            normalizedSearch = null;
+        }
+        if (normalizedStatus != null && normalizedStatus.isBlank()) {
+            normalizedStatus = null;
         }
 
-        return Order.list("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode);
+        boolean hasSearch = normalizedSearch != null;
+        boolean hasStatus = normalizedStatus != null;
+
+        StringBuilder query = new StringBuilder("tenantId = :tenantId AND deletedAt IS NULL");
+        Map<String, Object> params = new HashMap<>();
+        params.put("tenantId", tenantCode);
+
+        if (isCustomer) {
+            query.append(" AND customer.id = :customerId");
+            params.put("customerId", customerId);
+        }
+
+        if (hasStatus) {
+            query.append(" AND status = :status");
+            params.put("status", normalizedStatus.toUpperCase());
+        }
+
+        if (hasSearch) {
+            String escaped = normalizedSearch.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            query.append(" AND (LOWER(orderNumber) LIKE LOWER(CONCAT('%',:search,'%')) ESCAPE '\\' OR LOWER(shippingName) LIKE LOWER(CONCAT('%',:search,'%')) ESCAPE '\\' OR LOWER(shippingPhone) LIKE LOWER(CONCAT('%',:search,'%')) ESCAPE '\\')");
+            params.put("search", escaped);
+        }
+
+        query.append(" ORDER BY orderDate DESC");
+        return Order.find(query.toString(), params).list();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -124,10 +158,16 @@ public class OrderResource {
         String tenantCode = caller.tenantCode();
 
         // Count per status
+        String sql = "SELECT status, COUNT(*) FROM orders WHERE tenant_id = ?1 AND deleted_at IS NULL GROUP BY status";
+        List<Object[]> rows = Order.getEntityManager().createNativeQuery(sql)
+                .setParameter(1, tenantCode)
+                .getResultList();
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED")) {
-            long count = Order.count("tenantId = ?1 AND deletedAt IS NULL AND status = ?2", tenantCode, s);
-            countByStatus.put(s, count);
+            countByStatus.put(s, 0L);
+        }
+        for (Object[] row : rows) {
+            countByStatus.put((String) row[0], ((Number) row[1]).longValue());
         }
 
         // Total revenue (COMPLETED orders only)
@@ -138,7 +178,7 @@ public class OrderResource {
 
         // Recent 5 orders
         List<Order> recentOrders = Order.find("tenantId = ?1 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode)
-                .page(0, 5)
+                .page(io.quarkus.panache.common.Page.ofSize(5))
                 .list();
 
         Map<String, Object> result = new HashMap<>();
@@ -155,11 +195,21 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public Order getOrder(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
+        }
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+                throw new ForbiddenException("You are not allowed to view this order");
+            }
         }
         return order;
     }
@@ -170,12 +220,22 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
+        }
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+                throw new ForbiddenException("You are not allowed to view this order history");
+            }
         }
         return OrderHistory.list("order.id = ?1 ORDER BY createdAt ASC", id);
     }
@@ -186,7 +246,7 @@ public class OrderResource {
 
     @POST
     @Path("/checkout")
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     @Transactional
     public Response checkoutOrder(CheckoutRequest request) {
         if (request == null) {
@@ -318,13 +378,13 @@ public class OrderResource {
         // 5. Calculate Shipping Fee (USD)
         // Flat rate: $10. Free shipping if subtotal - discount >= $100.
         long orderAfterDiscount = subtotal - discount;
-        long shippingFee = 1000; // Flat rate: $10 (1000 minor units). Free shipping if subtotal - discount >= $100.
-        if (orderAfterDiscount >= 10000) {
+        long shippingFee = FLAT_SHIPPING_FEE_MINOR;
+        if (orderAfterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
             shippingFee = 0;
         }
 
         // 6. Calculate VAT Tax (10% of order value after discount)
-        long tax = Math.round((double) orderAfterDiscount * 0.10);
+        long tax = Math.round((double) orderAfterDiscount * TAX_RATE);
 
         // 7. Calculate Final Amount
         long finalAmount = orderAfterDiscount + shippingFee + tax;

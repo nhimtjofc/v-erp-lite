@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useRouter } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { useGetCustomerQuery, useUpdateCustomerMutation, useDeleteCustomerMutation } from '@/shared/api'
+import { useGetCustomerQuery, useUpdateCustomerMutation, useDeleteCustomerMutation, listCustomersQueryKey } from '@/shared/api'
 import type { Customer } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -31,7 +31,7 @@ export function CustomerDetailPage() {
     try {
       await updateMutation.mutateAsync({ path: { id }, body: form })
       setEditing(false)
-      queryClient.invalidateQueries({ queryKey: ['list3'] })
+      queryClient.invalidateQueries({ queryKey: listCustomersQueryKey() })
     } catch (err) {
       console.error(err)
     } finally {

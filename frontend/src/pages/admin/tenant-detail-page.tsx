@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useRouter } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useGetTenantQuery, useDeleteTenantMutation } from '@/shared/api'
+import { useGetTenantQuery, useDeleteTenantMutation, listTenantsQueryKey } from '@/shared/api'
 import {
   listTenantUsers,
   useCreateTenantUserMutation,
@@ -129,7 +129,7 @@ export function TenantDetailPage() {
     if (!confirm(t('confirmDeleteTenant'))) return
     try {
       await deleteTenantMutation.mutateAsync({ path: { id } })
-      queryClient.invalidateQueries({ queryKey: ['list7'] })
+      queryClient.invalidateQueries({ queryKey: listTenantsQueryKey() })
       router.navigate({ to: '/admin/tenants' })
     } catch (err) {
       console.error(err)

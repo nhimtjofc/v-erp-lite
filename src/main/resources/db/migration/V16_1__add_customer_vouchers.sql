@@ -1,4 +1,4 @@
-CREATE TABLE customer_voucher (
+CREATE TABLE IF NOT EXISTS customer_voucher (
     id              UUID PRIMARY KEY,
     customer_id     UUID NOT NULL,
     voucher_id      UUID NOT NULL,
@@ -10,6 +10,6 @@ CREATE TABLE customer_voucher (
     CONSTRAINT uq_cv_customer_voucher UNIQUE (customer_id, voucher_id)
 );
 
-CREATE INDEX idx_cv_customer ON customer_voucher(customer_id);
-CREATE INDEX idx_cv_voucher  ON customer_voucher(voucher_id);
-CREATE INDEX idx_cv_tenant   ON customer_voucher(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_cv_customer ON customer_voucher(customer_id);
+CREATE INDEX IF NOT EXISTS idx_cv_voucher  ON customer_voucher(voucher_id);
+CREATE INDEX IF NOT EXISTS idx_cv_tenant   ON customer_voucher(tenant_id);
