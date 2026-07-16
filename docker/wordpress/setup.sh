@@ -42,3 +42,8 @@ fi
 
 wp plugin activate woocommerce
 wp plugin is-active woocommerce
+
+if [ -d wp-content/plugins/v-erp-catalog-connector ]; then
+    wp plugin activate v-erp-catalog-connector
+    wp plugin is-active v-erp-catalog-connector
+fi
