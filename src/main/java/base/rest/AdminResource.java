@@ -78,7 +78,6 @@ public class AdminResource {
             String kcId = keycloakSync.createUserInKeycloak(user);
             if (kcId != null) {
                 user.setKeycloakId(kcId);
-                user.persist();
                 log.info("Created Keycloak user {} for {}", kcId, user.getEmail());
             } else {
                 log.warn("Keycloak user creation returned null for {} — DB user created without KC", user.getEmail());

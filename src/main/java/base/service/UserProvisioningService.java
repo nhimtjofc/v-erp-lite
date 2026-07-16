@@ -28,9 +28,6 @@ public class UserProvisioningService {
                 user.setAvatarUrl(avatarUrl);
                 modified = true;
             }
-            if (modified) {
-                user.persist();
-            }
             return user;
         }
 

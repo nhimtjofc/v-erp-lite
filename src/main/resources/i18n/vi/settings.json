@@ -27,6 +27,40 @@
   "effectiveFeatures": "Tính năng áp dụng",
   "emailSignaturePlaceholder": "Nhập chữ ký email...",
   "viewEffectiveFeatures": "Xem cài đặt tính năng áp dụng",
+  "woocommerce": {
+    "title": "Tích hợp WooCommerce",
+    "description": "Kết nối cửa hàng và trạng thái sức khỏe theo tenant hiện tại.",
+    "loading": "Đang kiểm tra kết nối WooCommerce...",
+    "loadError": "Không tải được trạng thái kết nối WooCommerce.",
+    "retry": "Thử lại",
+    "refresh": "Kiểm tra lại",
+    "refreshing": "Đang kiểm tra...",
+    "storeUrl": "URL cửa hàng",
+    "connection": "Kết nối",
+    "health": "Sức khỏe",
+    "secret": "Secret phía máy chủ",
+    "secretConfigured": "Đã cấu hình",
+    "secretNotConfigured": "Chưa cấu hình",
+    "lastChecked": "Kiểm tra gần nhất",
+    "lastConnected": "Kết nối gần nhất",
+    "notAvailable": "Chưa có",
+    "mappedEntities": "Mapping ERP ↔ Woo",
+    "webhookEvents": "Sự kiện webhook",
+    "connectionStatuses": {
+      "connected": "Đã kết nối",
+      "configured": "Đã cấu hình; chờ handshake",
+      "disconnected": "Chưa kết nối",
+      "notConfigured": "Chưa cấu hình",
+      "disabled": "Đã tắt",
+      "error": "Lỗi kết nối"
+    },
+    "healthStatuses": {
+      "up": "Khỏe",
+      "down": "Không hoạt động",
+      "degraded": "Suy giảm",
+      "unknown": "Chưa rõ"
+    }
+  },
   "featureDescriptions": {
     "canManageCustomers": "Truy cập quản lý khách hàng",
     "canManageBusiness": "Truy cập quản lý thông tin doanh nghiệp",
