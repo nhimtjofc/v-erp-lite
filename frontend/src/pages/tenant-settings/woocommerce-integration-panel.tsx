@@ -78,9 +78,15 @@ function HealthBadge({ status }: { status: string }) {
   return <Badge variant="outline">{t('settings:woocommerce.healthStatuses.unknown')}</Badge>
 }
 
-export function WooCommerceIntegrationPanel({ tenantScope }: { tenantScope?: string }) {
+export function WooCommerceIntegrationPanel({
+  tenantScope,
+  businessId,
+}: {
+  tenantScope?: string
+  businessId?: string
+}) {
   const { t, i18n } = useTranslation()
-  const query = useWooCommerceHealthQuery(tenantScope)
+  const query = useWooCommerceHealthQuery(tenantScope, businessId)
 
   if (!tenantScope || query.isLoading) {
     return (

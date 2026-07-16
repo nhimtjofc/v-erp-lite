@@ -16,19 +16,23 @@ export interface WooCommerceHealthResponse {
   message: string | null
 }
 
-async function getWooCommerceHealth(): Promise<WooCommerceHealthResponse> {
+async function getWooCommerceHealth(businessId?: string): Promise<WooCommerceHealthResponse> {
   const response = await client.get<{ 200: WooCommerceHealthResponse }, unknown, true>({
     security: [{ scheme: 'bearer', type: 'http' }],
     throwOnError: true,
     url: '/api/integrations/woocommerce/v1/health',
+    query: businessId ? { businessId } : undefined,
   })
   return response.data
 }
 
-export function useWooCommerceHealthQuery(tenantScope: string | undefined) {
+export function useWooCommerceHealthQuery(
+  tenantScope: string | undefined,
+  businessId?: string,
+) {
   return useQuery({
-    queryKey: ['woocommerce', 'health', tenantScope ?? 'unresolved'],
-    queryFn: getWooCommerceHealth,
+    queryKey: ['woocommerce', 'health', tenantScope ?? 'unresolved', businessId ?? 'default'],
+    queryFn: () => getWooCommerceHealth(businessId),
     enabled: Boolean(tenantScope),
     retry: 1,
     staleTime: 0,

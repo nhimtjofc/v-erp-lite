@@ -33,6 +33,7 @@ import { Route as AuthenticatedOrdersIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
 import { Route as AuthenticatedSettingsSecurityRouteImport } from './routes/_authenticated/settings/security'
 import { Route as AuthenticatedSettingsRegionalRouteImport } from './routes/_authenticated/settings/regional'
+import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings/integrations'
 import { Route as AuthenticatedSettingsFeaturesRouteImport } from './routes/_authenticated/settings/features'
 import { Route as AuthenticatedSettingsCurrencyRouteImport } from './routes/_authenticated/settings/currency'
 import { Route as AuthenticatedSettingsCommunicationRouteImport } from './routes/_authenticated/settings/communication'
@@ -174,6 +175,12 @@ const AuthenticatedSettingsRegionalRoute =
     path: '/regional',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsIntegrationsRoute =
+  AuthenticatedSettingsIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsFeaturesRoute =
   AuthenticatedSettingsFeaturesRouteImport.update({
     id: '/features',
@@ -291,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
@@ -324,6 +332,7 @@ export interface FileRoutesByTo {
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
@@ -366,6 +375,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/_authenticated/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/_authenticated/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/_authenticated/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/_authenticated/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/settings/communication'
     | '/settings/currency'
     | '/settings/features'
+    | '/settings/integrations'
     | '/settings/regional'
     | '/settings/security'
     | '/customers/'
@@ -440,6 +451,7 @@ export interface FileRouteTypes {
     | '/settings/communication'
     | '/settings/currency'
     | '/settings/features'
+    | '/settings/integrations'
     | '/settings/regional'
     | '/settings/security'
     | '/customers'
@@ -481,6 +493,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/communication'
     | '/_authenticated/settings/currency'
     | '/_authenticated/settings/features'
+    | '/_authenticated/settings/integrations'
     | '/_authenticated/settings/regional'
     | '/_authenticated/settings/security'
     | '/_authenticated/customers/'
@@ -665,6 +678,13 @@ declare module '@tanstack/react-router' {
       path: '/regional'
       fullPath: '/settings/regional'
       preLoaderRoute: typeof AuthenticatedSettingsRegionalRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/integrations': {
+      id: '/_authenticated/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof AuthenticatedSettingsIntegrationsRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/features': {
@@ -856,6 +876,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsCommunicationRoute: typeof AuthenticatedSettingsCommunicationRoute
   AuthenticatedSettingsCurrencyRoute: typeof AuthenticatedSettingsCurrencyRoute
   AuthenticatedSettingsFeaturesRoute: typeof AuthenticatedSettingsFeaturesRoute
+  AuthenticatedSettingsIntegrationsRoute: typeof AuthenticatedSettingsIntegrationsRoute
   AuthenticatedSettingsRegionalRoute: typeof AuthenticatedSettingsRegionalRoute
   AuthenticatedSettingsSecurityRoute: typeof AuthenticatedSettingsSecurityRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
@@ -866,6 +887,8 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsCommunicationRoute,
   AuthenticatedSettingsCurrencyRoute: AuthenticatedSettingsCurrencyRoute,
   AuthenticatedSettingsFeaturesRoute: AuthenticatedSettingsFeaturesRoute,
+  AuthenticatedSettingsIntegrationsRoute:
+    AuthenticatedSettingsIntegrationsRoute,
   AuthenticatedSettingsRegionalRoute: AuthenticatedSettingsRegionalRoute,
   AuthenticatedSettingsSecurityRoute: AuthenticatedSettingsSecurityRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,

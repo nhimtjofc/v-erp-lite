@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Users,
-  Package,
   ShoppingCart,
   ShoppingBag,
   Building2,
@@ -14,6 +13,11 @@ import {
   Tag,
   Wallet,
   Banknote,
+  Globe,
+  Coins,
+  ToggleRight,
+  MessageSquare,
+  PlugZap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -58,7 +62,20 @@ export const navGroups: NavGroup[] = [
     roles: ['operator', 'businessOwner'],
     items: [
       { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
-      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
+      {
+        labelKey: 'nav:settings',
+        to: '/settings/regional',
+        icon: Settings,
+        hideForRoles: ['customer'],
+        children: [
+          { labelKey: 'nav:regional', to: '/settings/regional', icon: Globe },
+          { labelKey: 'nav:currency', to: '/settings/currency', icon: Coins },
+          { labelKey: 'nav:features', to: '/settings/features', icon: ToggleRight },
+          { labelKey: 'nav:communication', to: '/settings/communication', icon: MessageSquare },
+          { labelKey: 'nav:security', to: '/settings/security', icon: Shield },
+          { labelKey: 'nav:integrations', to: '/settings/integrations', icon: PlugZap },
+        ],
+      },
     ],
   },
   {

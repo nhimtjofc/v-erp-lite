@@ -9,6 +9,8 @@ import {
     useWooCommerceOrdersQuery,
     useReconcileWooCommerceOrderMutation,
 } from '@/shared/api'
+import { useWooChannel } from '@/shared/woo-channel'
+import { WooChannelSelector } from '@/shared/ui/woo-channel-selector'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
@@ -301,10 +303,12 @@ export function OrdersPage() {
     const orderList = orders ?? []
 
     const tenantScope = me?.tenantId
+    const { channelId: wooChannelId } = useWooChannel(tenantScope)
     const wooOrdersQuery = useWooCommerceOrdersQuery(
         tenantScope,
         activeStatus === 'WOOCOMMERCE'
             ? {
+                  salesChannelId: wooChannelId,
                   search: debouncedSearch || undefined,
               }
             : undefined
@@ -315,7 +319,7 @@ export function OrdersPage() {
 
     const handleReconcileWooOrder = (wooOrderId: string) => {
         reconcileMutation.mutate(
-            { externalId: wooOrderId },
+            { externalId: wooOrderId, salesChannelId: wooChannelId },
             {
                 onSuccess: () => {
                     wooOrdersQuery.refetch()
@@ -520,6 +524,12 @@ export function OrdersPage() {
                 </div>
 
                 <div className="p-3">
+                    {activeStatus === 'WOOCOMMERCE' && (
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-2.5 mb-3">
+                            <span className="text-xs font-medium text-muted-foreground">Kênh đồng bộ</span>
+                            <WooChannelSelector />
+                        </div>
+                    )}
                     {isLoading ? (
                         <div className={viewMode === 'grid'
                             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
