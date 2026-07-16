@@ -62,6 +62,18 @@ export type CartItem1 = {
     quantity?: number;
 };
 
+export type WooCommerceOrderDto = {
+    wooOrderId?: string;
+    erpOrderId?: Uuid;
+    orderNumber?: string;
+    customerName?: string;
+    orderDate?: Instant;
+    finalAmountMinor?: number;
+    syncStatus?: string;
+    lastErrorMessage?: string;
+    lastAttemptedAt?: Instant;
+};
+
 export type CatalogChangesResult = {
     items?: Array<CatalogProductDto>;
     totalCount?: number;
@@ -1717,6 +1729,74 @@ export type GetWooCommerceHealthResponses = {
 };
 
 export type GetWooCommerceHealthResponse = GetWooCommerceHealthResponses[keyof GetWooCommerceHealthResponses];
+
+export type ListWooCommerceOrdersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        salesChannelId?: Uuid;
+        syncStatus?: string;
+        search?: string;
+        limit?: number;
+        offset?: number;
+    };
+    url: '/api/integrations/woocommerce/v1/orders';
+};
+
+export type ListWooCommerceOrdersErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type ListWooCommerceOrdersResponses = {
+    /**
+     * OK
+     */
+    200: Array<WooCommerceOrderDto>;
+};
+
+export type ListWooCommerceOrdersResponse = ListWooCommerceOrdersResponses[keyof ListWooCommerceOrdersResponses];
+
+export type ReconcileOrderData = {
+    body?: string;
+    path: {
+        externalId: string;
+    };
+    query?: {
+        salesChannelId?: Uuid;
+    };
+    url: '/api/integrations/woocommerce/v1/orders/{externalId}/reconcile';
+};
+
+export type ReconcileOrderErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type ReconcileOrderResponses = {
+    /**
+     * OK
+     */
+    200: Order;
+};
+
+export type ReconcileOrderResponse = ReconcileOrderResponses[keyof ReconcileOrderResponses];
 
 export type ListOrdersData = {
     body?: never;

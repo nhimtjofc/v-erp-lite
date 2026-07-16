@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { client } from './gen/client.gen'
+import type { WooCommerceOrderDto } from './gen'
 
 export interface WooCommerceHealthResponse {
   channelId: string | null
@@ -31,5 +32,62 @@ export function useWooCommerceHealthQuery(tenantScope: string | undefined) {
     enabled: Boolean(tenantScope),
     retry: 1,
     staleTime: 0,
+  })
+}
+
+async function getWooCommerceOrders(query?: {
+  salesChannelId?: string
+  syncStatus?: string
+  search?: string
+  limit?: number
+  offset?: number
+}): Promise<WooCommerceOrderDto[]> {
+  const response = await client.get<{ 200: WooCommerceOrderDto[] }, unknown, true>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    throwOnError: true,
+    url: '/api/integrations/woocommerce/v1/orders',
+    query,
+  })
+  return response.data
+}
+
+export function useWooCommerceOrdersQuery(
+  tenantScope: string | undefined,
+  query?: {
+    salesChannelId?: string
+    syncStatus?: string
+    search?: string
+    limit?: number
+    offset?: number
+  }
+) {
+  return useQuery({
+    queryKey: ['woocommerce', 'orders', tenantScope ?? 'unresolved', query],
+    queryFn: () => getWooCommerceOrders(query),
+    enabled: Boolean(tenantScope),
+    retry: 1,
+    staleTime: 0,
+  })
+}
+
+async function reconcileWooCommerceOrder(params: {
+  externalId: string
+  salesChannelId?: string
+  body?: string
+}): Promise<any> {
+  const response = await client.post<any, unknown, true>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    throwOnError: true,
+    url: '/api/integrations/woocommerce/v1/orders/{externalId}/reconcile',
+    path: { externalId: params.externalId },
+    query: params.salesChannelId ? { salesChannelId: params.salesChannelId } : undefined,
+    body: params.body ?? '',
+  })
+  return response.data
+}
+
+export function useReconcileWooCommerceOrderMutation() {
+  return useMutation({
+    mutationFn: reconcileWooCommerceOrder,
   })
 }

@@ -5,6 +5,8 @@ import {
   useGetOrderQuery,
   useUpdateStatusMutation,
   useMeQuery,
+  useWooCommerceOrdersQuery,
+  useReconcileWooCommerceOrderMutation,
 } from '@/shared/api'
 import { cartApi } from '@/shared/api/cart'
 import { Button } from '@/shared/ui/button'
@@ -17,7 +19,7 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2, Save,
+  Trash2, Save, PlugZap,
 } from 'lucide-react'
 
 interface OrderHistoryEntry {
@@ -123,6 +125,19 @@ export function OrderDetailPage() {
     path: { id },
   })
 
+  const tenantScope = me?.tenantId
+  const {
+    data: wooOrders,
+    refetch: refetchWooOrders,
+    isFetching: isWooOrdersFetching,
+  } = useWooCommerceOrdersQuery(
+    tenantScope,
+    order?.orderNumber ? { search: order.orderNumber } : undefined
+  )
+  const wooOrderInfo = wooOrders?.find((o) => o.erpOrderId === order?.id)
+
+  const reconcileMutation = useReconcileWooCommerceOrderMutation()
+
   const historyQuery = useQuery({
     queryKey: ['order-history', id],
     queryFn: () => fetchOrderHistory(id),
@@ -130,12 +145,13 @@ export function OrderDetailPage() {
   })
 
   const history = historyQuery.data ?? []
-  const isRefreshing = isOrderFetching || historyQuery.isFetching
+  const isRefreshing = isOrderFetching || historyQuery.isFetching || isWooOrdersFetching
 
   const refreshOrderPage = async () => {
     await Promise.all([
       refetchOrder(),
       historyQuery.refetch(),
+      refetchWooOrders(),
     ])
   }
 
@@ -533,6 +549,78 @@ export function OrderDetailPage() {
         </div>
 
         <div className="space-y-6">
+
+          {wooOrderInfo && (
+            <Card className="shadow-sm border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center gap-3 pb-3">
+                <PlugZap className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">WooCommerce Sync</CardTitle>
+                  <CardDescription>Order integration details</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="text-sm space-y-3">
+                <div>
+                  <span className="text-muted-foreground block text-xs">WooCommerce Order ID</span>
+                  <span className="font-semibold text-foreground">#{wooOrderInfo.wooOrderId}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-xs">Sync Status</span>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    {wooOrderInfo.syncStatus === 'SYNCED' && (
+                      <Badge className="border-transparent bg-success text-success-foreground">
+                        Synced
+                      </Badge>
+                    )}
+                    {wooOrderInfo.syncStatus === 'FAILED' && (
+                      <Badge variant="destructive">
+                        Failed
+                      </Badge>
+                    )}
+                    {wooOrderInfo.syncStatus === 'PROCESSING' && (
+                      <Badge variant="outline" className="animate-pulse">
+                        Syncing...
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {wooOrderInfo.lastErrorMessage && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs">Error Log</span>
+                    <span className="text-destructive text-xs block bg-destructive/10 border border-destructive/20 rounded p-2 mt-1 font-mono break-all whitespace-pre-wrap">
+                      {wooOrderInfo.lastErrorMessage}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground block text-xs">Last Attempt</span>
+                  <span className="font-medium text-xs">
+                    {wooOrderInfo.lastAttemptedAt ? new Date(wooOrderInfo.lastAttemptedAt).toLocaleString() : 'N/A'}
+                  </span>
+                </div>
+                {wooOrderInfo.syncStatus !== 'SYNCED' && (
+                  <Button
+                    onClick={() => {
+                      reconcileMutation.mutate(
+                        { externalId: wooOrderInfo.wooOrderId! },
+                        {
+                          onSuccess: () => {
+                            refreshOrderPage()
+                          },
+                        }
+                      )
+                    }}
+                    disabled={reconcileMutation.isPending}
+                    size="sm"
+                    className="w-full mt-2 font-semibold gap-1.5"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${reconcileMutation.isPending ? 'animate-spin' : ''}`} />
+                    {reconcileMutation.isPending ? 'Retrying...' : 'Retry Sync / Reconcile'}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
