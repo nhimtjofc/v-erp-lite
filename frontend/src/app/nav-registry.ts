@@ -14,6 +14,7 @@ import {
   Tag,
   Wallet,
   Banknote,
+  PlugZap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -59,6 +60,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
       { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
+      { labelKey: 'nav:woocommerce', to: '/settings/woocommerce', icon: PlugZap, hideForRoles: ['customer'] },
     ],
   },
   {

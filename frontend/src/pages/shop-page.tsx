@@ -26,7 +26,7 @@ import { Label } from '@/shared/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import {
   ShoppingCart, Package, Tag, Plus, Minus, X, Search, Flame,
-  ShoppingBag, ChevronRight, AlertCircle, Gift, Check,
+  ShoppingBag, ChevronRight, AlertCircle, Gift, Check, Sparkles,
 } from 'lucide-react'
 
 const FLAT_SHIPPING_FEE = 10
@@ -68,7 +68,7 @@ export function ShopPage() {
   
   // Resolve current user info
   const { data: me } = useMeQuery()
-  const isCustomerRole = me?.role?.name === 'customer'
+  const isCustomerRole = me?.role?.name === 'customer' || me?.role?.name === 'user'
 
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({
@@ -314,37 +314,71 @@ export function ShopPage() {
 
   return (
     <div className="space-y-6 relative pb-16">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight">Shop</h1>
-          <p className="text-sm text-muted-foreground mt-1">Browse products and place orders</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {vouchers.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setShowPromoDrawer(true)}
-              className="relative bg-gradient-to-r from-pink-500/10 to-rose-500/10 hover:from-pink-500/20 hover:to-rose-500/20 border-rose-200 text-rose-600 dark:text-rose-400 dark:border-rose-950 font-bold"
-            >
-              <Gift className="h-4 w-4 mr-2" />
-              Collect Vouchers
-              {vouchers.filter(v => !collectedIds.has(v.id)).length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4.5 h-4.5 flex items-center justify-center rounded-full font-bold shadow">
-                  {vouchers.filter(v => !collectedIds.has(v.id)).length}
-                </span>
+      <div className="overflow-hidden rounded-[2rem] border border-orange-200/70 bg-white/75 shadow-xl shadow-orange-100/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-none">
+        <div className="grid gap-6 p-5 md:grid-cols-[1.35fr_0.65fr] md:p-8">
+          <div className="flex flex-col justify-center">
+            <Badge className="w-fit border-transparent bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-500/15 dark:text-orange-200">
+              <Sparkles className="mr-1 h-3.5 w-3.5" />
+              Storefront for customers
+            </Badge>
+            <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-stone-950 dark:text-white md:text-5xl">
+              Browse fresh deals from every seller.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600 dark:text-slate-300 md:text-base">
+              A customer-first shopping space with vouchers, live stock, seller grouping, and checkout in one flow.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              {vouchers.length > 0 && (
+                <Button
+                  onClick={() => setShowPromoDrawer(true)}
+                  className="rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-5 font-black text-white shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-rose-600"
+                >
+                  <Gift className="h-4 w-4 mr-2" />
+                  Collect vouchers
+                  {vouchers.filter(v => !collectedIds.has(v.id)).length > 0 && (
+                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                      {vouchers.filter(v => !collectedIds.has(v.id)).length} new
+                    </span>
+                  )}
+                </Button>
               )}
-            </Button>
-          )}
-          <Button variant="outline" className="relative" onClick={() => setShowCart(true)}>
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Cart
-            {cart.length > 0 && (
-              <span className="ml-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full">
-                {cart.reduce((s, i) => s + i.quantity, 0)}
-              </span>
-            )}
-          </Button>
+              <Button
+                variant="outline"
+                className="rounded-full border-orange-200 bg-white/75 font-black text-stone-800 hover:bg-orange-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                onClick={() => setShowCart(true)}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Cart
+                {cart.length > 0 && (
+                  <span className="ml-2 rounded-full bg-stone-950 px-2 py-0.5 text-xs text-white dark:bg-white dark:text-slate-950">
+                    {cart.reduce((s, i) => s + i.quantity, 0)}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="relative min-h-48 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-600 p-5 text-white shadow-lg shadow-orange-500/25">
+            <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/20 blur-2xl" />
+            <div className="absolute -bottom-12 left-6 h-32 w-32 rounded-full bg-yellow-300/30 blur-2xl" />
+            <div className="relative flex h-full flex-col justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-white/75">Today</p>
+                <p className="mt-2 text-3xl font-black">{activeProducts.length}</p>
+                <p className="text-sm font-semibold text-white/80">active products</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
+                  <p className="text-2xl font-black">{saleProducts.length}</p>
+                  <p className="text-xs font-semibold text-white/75">hot deals</p>
+                </div>
+                <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
+                  <p className="text-2xl font-black">{vouchers.length}</p>
+                  <p className="text-xs font-semibold text-white/75">vouchers</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -494,18 +528,23 @@ export function ShopPage() {
 
       {/* All Products */}
       <div>
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <div className="mb-4 flex flex-col gap-3 rounded-3xl border border-orange-200/70 bg-white/70 p-4 shadow-sm shadow-orange-100/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight">Explore products</h2>
+            <p className="text-sm text-stone-500 dark:text-slate-400">{filteredProducts.length} items available</p>
+          </div>
+          <div className="flex flex-1 flex-wrap items-center gap-3 md:justify-end">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search products..."
-              className="pl-8 h-9"
+              className="h-10 rounded-full border-orange-200/80 bg-white/80 pl-8 dark:border-white/10 dark:bg-white/5"
             />
           </div>
           <select
-            className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm"
+            className="h-10 rounded-full border border-orange-200/80 bg-white/80 px-4 text-sm font-semibold dark:border-white/10 dark:bg-slate-950"
             value={activeCategory}
             onChange={e => setActiveCategory(e.target.value)}
           >
@@ -514,6 +553,7 @@ export function ShopPage() {
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
+          </div>
         </div>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
