@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.keycloak.admin.client.Keycloak;
@@ -363,7 +364,7 @@ public class KeycloakSyncService {
                 // Create new Keycloak user (HTTP calls — no transaction)
                 String kcId = createKeycloakUser(user);
                 if (kcId != null) {
-                    doPersistUserSync(user, kcId);
+                    doPersistUserSync(user.getId(), kcId);
                     result.created++;
                 } else {
                     result.failed++;
@@ -377,9 +378,11 @@ public class KeycloakSyncService {
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    void doPersistUserSync(User user, String kcId) {
-        user.setKeycloakId(kcId);
-        user.persist();
+    void doPersistUserSync(UUID userId, String kcId) {
+        User managedUser = User.findById(userId);
+        if (managedUser != null) {
+            managedUser.setKeycloakId(kcId);
+        }
     }
 
     // ── Keycloak user creation ────────────────────────────────────────
