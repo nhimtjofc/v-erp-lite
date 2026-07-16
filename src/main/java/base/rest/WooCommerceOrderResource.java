@@ -115,6 +115,29 @@ public class WooCommerceOrderResource {
         }
     }
 
+    @GET
+    @Path("/{externalId}/status")
+    @PermitAll
+    @Operation(summary = "Get WooCommerce Order Status", description = "Returns the current ERP fulfillment status for a WooCommerce order, keyed by the WooCommerce order ID.")
+    public Response getOrderStatus(
+            @PathParam("externalId") String externalId,
+            @QueryParam("tenantId") String tenantId,
+            @QueryParam("salesChannelId") UUID salesChannelId,
+            @HeaderParam("X-WC-Webhook-Signature") String signatureHeader
+    ) {
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new BadRequestException("Query param tenantId is required");
+        }
+        if (salesChannelId == null) {
+            throw new BadRequestException("Query param salesChannelId is required");
+        }
+
+        orderService.verifyWebhookSignature("", signatureHeader, tenantId, salesChannelId);
+
+        Map<String, Object> status = orderService.getOrderStatus(tenantId, salesChannelId, externalId);
+        return Response.ok(status).build();
+    }
+
     @POST
     @Path("/{externalId}/reconcile")
     @RolesAllowed({"admin", "operator", "businessOwner"})
