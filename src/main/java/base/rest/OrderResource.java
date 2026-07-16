@@ -19,6 +19,7 @@ import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.Voucher;
 import base.security.CallerContext;
+import base.security.PaymentAccess;
 import base.service.EscrowService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
@@ -57,6 +58,9 @@ public class OrderResource {
 
     @Inject
     EscrowService escrowService;
+
+    @Inject
+    PaymentAccess paymentAccess;
 
     public static class CartItem {
         public UUID productId;
@@ -237,7 +241,7 @@ public class OrderResource {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
         }
-        return OrderHistory.list("order.id = ?1 ORDER BY createdAt ASC", id);
+        return OrderHistory.list("order.id = ?1 ORDER BY createdAt DESC", id);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -276,6 +280,7 @@ public class OrderResource {
         if (customer == null) {
             throw new BadRequestException("Customer not found");
         }
+        paymentAccess.requireCustomerAccess(customer);
 
         // 2. Generate Order Number
         String orderNumber = "ORD-" + Instant.now().getEpochSecond() + "-" + (int)(Math.random() * 900 + 100);

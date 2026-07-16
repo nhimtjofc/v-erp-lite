@@ -415,76 +415,78 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Update Order</CardTitle>
-              <CardDescription>Edit order notes, shipping fee, discount, and VAT</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <textarea
-                  id="notes"
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={currentNotes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+          {isStaff && (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Update Order</CardTitle>
+                <CardDescription>Edit order notes, shipping fee, discount, and VAT</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shipping">Shipping Fee ($)</Label>
-                  <Input
-                    id="shipping"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={currentShipping}
-                    onChange={(e) => setShippingFee(e.target.value)}
+                  <Label htmlFor="notes">Notes</Label>
+                  <textarea
+                    id="notes"
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={currentNotes}
+                    onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discount">Discount (%)</Label>
-                  <Input
-                    id="discount"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={currentDiscount}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setDiscountPercent(val)
-                    }}
-                  />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="shipping">Shipping Fee ($)</Label>
+                    <Input
+                      id="shipping"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={currentShipping}
+                      onChange={(e) => setShippingFee(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="discount">Discount (%)</Label>
+                    <Input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={currentDiscount}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setDiscountPercent(val)
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vat">VAT (%)</Label>
+                    <Input
+                      id="vat"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={currentVat}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setVatPercent(val)
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vat">VAT (%)</Label>
-                  <Input
-                    id="vat"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={currentVat}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setVatPercent(val)
-                    }}
-                  />
-                </div>
-              </div>
-              {error && (
-                <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-              <Button onClick={() => updateOrderMutation.mutate()} disabled={updateOrderMutation.isPending}>
-                <Save className="h-4 w-4 mr-1" />
-                {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </CardContent>
-          </Card>
+                {error && (
+                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <Button onClick={() => updateOrderMutation.mutate()} disabled={updateOrderMutation.isPending}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
@@ -504,16 +506,16 @@ export function OrderDetailPage() {
                     {history.map((entry, i) => {
                       const cfg = getStatusConfig(entry.newStatus)
                       const Icon = cfg.icon
-                      const isLast = i === history.length - 1
+                      const isNewest = i === 0
                       return (
                         <li key={entry.id} className="flex gap-4 relative">
                           <div className={`relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                            isLast ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
+                            isNewest ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
                           }`}>
                             <Icon className="h-3 w-3" />
                           </div>
 
-                          <div className={`pb-6 flex-1 ${isLast ? '' : ''}`}>
+                          <div className="pb-6 flex-1">
                             <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">

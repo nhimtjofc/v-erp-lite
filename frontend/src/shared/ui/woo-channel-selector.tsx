@@ -1,5 +1,6 @@
 import { useMeQuery, useListBusinessesQuery } from '@/shared/api'
 import { useWooChannel } from '@/shared/woo-channel'
+import { useTranslation } from 'react-i18next'
 import { Store, CircleDot } from 'lucide-react'
 
 const STATUS_TONE: Record<string, string> = {
@@ -16,6 +17,7 @@ const STATUS_TONE: Record<string, string> = {
  * Integrations, Orders (Woo Sync) and catalog views.
  */
 export function WooChannelSelector({ className }: { className?: string }) {
+  const { t } = useTranslation()
   const { data: me } = useMeQuery()
   const { data: businesses, isLoading } = useListBusinessesQuery()
   const { businessId, setBusinessId, health } = useWooChannel(me?.tenantId)
@@ -31,10 +33,10 @@ export function WooChannelSelector({ className }: { className?: string }) {
         value={businessId ?? ''}
         onChange={(e) => setBusinessId(e.target.value || undefined)}
         disabled={isLoading}
-        aria-label="WooCommerce business"
+        aria-label={t('settings:woocommerce.businessSelector')}
         className="h-9 min-w-[12rem] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <option value="">Kênh mặc định của tenant</option>
+        <option value="">{t('settings:woocommerce.defaultChannel')}</option>
         {list.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name ?? b.id}
@@ -43,7 +45,9 @@ export function WooChannelSelector({ className }: { className?: string }) {
       </select>
 
       {health.isFetching ? (
-        <span className="text-xs text-muted-foreground animate-pulse">Đang kiểm tra…</span>
+        <span className="text-xs text-muted-foreground animate-pulse">
+          {t('settings:woocommerce.checkingChannel')}
+        </span>
       ) : status ? (
         <span className={`flex items-center gap-1 text-xs font-medium ${tone}`}>
           <CircleDot className="h-3 w-3" />
