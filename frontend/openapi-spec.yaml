@@ -988,6 +988,28 @@ components:
           type: string
         signature:
           type: string
+    WooCommerceOrderDto:
+      type: object
+      properties:
+        wooOrderId:
+          type: string
+        erpOrderId:
+          $ref: "#/components/schemas/UUID"
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        orderDate:
+          $ref: "#/components/schemas/Instant"
+        finalAmountMinor:
+          type: integer
+          format: int64
+        syncStatus:
+          type: string
+        lastErrorMessage:
+          type: string
+        lastAttemptedAt:
+          $ref: "#/components/schemas/Instant"
   securitySchemes:
     SecurityScheme:
       type: openIdConnect
@@ -2185,6 +2207,7 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - operator
         - businessOwner
   /api/integrations/woocommerce/v1/health:
     get:
@@ -2208,6 +2231,133 @@ paths:
       summary: Get Woo Commerce Health
       tags:
       - Woo Commerce Integration Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/integrations/woocommerce/v1/orders:
+    get:
+      summary: List WooCommerce Orders Sync Status
+      description: Returns synced and failed WooCommerce orders with their sync details.
+      operationId: listWooCommerceOrders
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: syncStatus
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WooCommerceOrderDto"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      summary: Receive WooCommerce Order Webhook
+      description: Endpoint called by WooCommerce to sync new/updated orders to V-ERP.
+      operationId: createOrder
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: query
+        schema:
+          type: string
+      - name: X-WC-Webhook-Delivery-ID
+        in: header
+        schema:
+          type: string
+      - name: X-WC-Webhook-Signature
+        in: header
+        schema:
+          type: string
+      - name: X-WC-Webhook-Topic
+        in: header
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+  /api/integrations/woocommerce/v1/orders/{externalId}/reconcile:
+    post:
+      summary: Reconcile / Retry Order Sync
+      description: Triggers a retry of a failed or stuck WooCommerce order webhook.
+      operationId: reconcileOrder
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: externalId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - admin
@@ -2477,6 +2627,36 @@ paths:
         "400":
           description: Bad Request
       summary: Create Intent
+      tags:
+      - Payment Intent Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+        - customer
+  /api/payment-intents/order/{orderId}:
+    get:
+      operationId: listOrderPaymentIntents
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentIntent"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List Order Payment Intents
       tags:
       - Payment Intent Resource
       security:
@@ -4111,6 +4291,8 @@ paths:
 tags:
 - name: WooCommerce Catalog
   description: Endpoints for WooCommerce plugin catalog synchronization
+- name: WooCommerce Orders
+  description: Endpoints for WooCommerce order synchronization
 info:
   title: v-erp-lite API
   version: 1.0-SNAPSHOT

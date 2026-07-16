@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { useListOrdersQuery, type Order, useMeQuery } from '@/shared/api'
+import {
+    useListOrdersQuery,
+    type Order,
+    useMeQuery,
+    useWooCommerceOrdersQuery,
+    useReconcileWooCommerceOrderMutation,
+} from '@/shared/api'
+import { useWooChannel } from '@/shared/woo-channel'
+import { WooChannelSelector } from '@/shared/ui/woo-channel-selector'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
@@ -11,7 +19,7 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
     Plus, Search, Eye, TrendingUp, ShoppingBag, Clock, CheckCircle2,
     Package, ChevronRight, Truck, XCircle, Filter, RotateCcw,
-    ArrowUpRight, Trash2,
+    ArrowUpRight, Trash2, PlugZap, RefreshCw,
 } from 'lucide-react'
 
 interface OrderStats {
@@ -81,6 +89,11 @@ const STATUS_CONFIG: Record<string, {
         bg: 'bg-red-50 dark:bg-red-900/20', dot: 'bg-red-500',
         icon: XCircle, badgeVariant: 'destructive',
     },
+    WOOCOMMERCE: {
+        label: 'WooCommerce', color: 'text-indigo-600 dark:text-indigo-400',
+        bg: 'bg-indigo-50 dark:bg-indigo-900/20', dot: 'bg-indigo-500',
+        icon: PlugZap, badgeVariant: 'indigo',
+    },
 }
 
 const STATUS_TABS = [
@@ -90,6 +103,7 @@ const STATUS_TABS = [
     { key: 'SHIPPED', label: 'Shipped' },
     { key: 'COMPLETED', label: 'Completed' },
     { key: 'CANCELLED', label: 'Cancelled' },
+    { key: 'WOOCOMMERCE', label: 'WooCommerce Sync' },
 ] as const
 
 function getStatusCfg(status: string) {
@@ -281,12 +295,45 @@ export function OrdersPage() {
 
     const queryParams: any = {}
     if (debouncedSearch) queryParams.search = debouncedSearch
-    if (activeStatus) queryParams.status = activeStatus
+    if (activeStatus && activeStatus !== 'WOOCOMMERCE') queryParams.status = activeStatus
 
-    const { data: orders, isLoading, refetch } = useListOrdersQuery(
+    const { data: orders, isLoading: isOrdersLoading, refetch } = useListOrdersQuery(
         Object.keys(queryParams).length > 0 ? { query: queryParams } : undefined
     )
     const orderList = orders ?? []
+
+    const tenantScope = me?.tenantId
+    const { channelId: wooChannelId } = useWooChannel(tenantScope)
+    const wooOrdersQuery = useWooCommerceOrdersQuery(
+        tenantScope,
+        activeStatus === 'WOOCOMMERCE'
+            ? {
+                  salesChannelId: wooChannelId,
+                  search: debouncedSearch || undefined,
+              }
+            : undefined
+    )
+    const wooOrdersList = wooOrdersQuery.data ?? []
+
+    const reconcileMutation = useReconcileWooCommerceOrderMutation()
+
+    const handleReconcileWooOrder = (wooOrderId: string) => {
+        reconcileMutation.mutate(
+            { externalId: wooOrderId, salesChannelId: wooChannelId },
+            {
+                onSuccess: () => {
+                    wooOrdersQuery.refetch()
+                    refetch()
+                    fetchOrderStats().then(setStats)
+                },
+                onError: (err) => {
+                    alert(err instanceof Error ? err.message : 'Failed to reconcile order')
+                }
+            }
+        )
+    }
+
+    const isLoading = activeStatus === 'WOOCOMMERCE' ? wooOrdersQuery.isLoading : isOrdersLoading
 
     const deleteMutation = useMutation({
         mutationFn: deleteOrder,
@@ -441,7 +488,9 @@ export function OrdersPage() {
 
                 <div className="flex items-center gap-0.5 px-3 py-2 overflow-x-auto">
                     {STATUS_TABS.map((tab) => {
-                        const count = tab.key
+                        const count = tab.key === 'WOOCOMMERCE'
+                            ? wooOrdersList.length
+                            : tab.key
                             ? (stats ? (stats.countByStatus[tab.key] ?? 0) : orderList.filter(o => o.status?.toUpperCase() === tab.key).length)
                             : (stats ? stats.totalOrders : orderList.length)
                         const isActive = activeStatus === tab.key
@@ -475,6 +524,12 @@ export function OrdersPage() {
                 </div>
 
                 <div className="p-3">
+                    {activeStatus === 'WOOCOMMERCE' && (
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-2.5 mb-3">
+                            <span className="text-xs font-medium text-muted-foreground">Kênh đồng bộ</span>
+                            <WooChannelSelector />
+                        </div>
+                    )}
                     {isLoading ? (
                         <div className={viewMode === 'grid'
                             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
@@ -484,7 +539,7 @@ export function OrdersPage() {
                                 <div key={i} className="animate-pulse bg-muted rounded-xl h-[120px]" />
                             ))}
                         </div>
-                    ) : orderList.length === 0 ? (
+                    ) : (activeStatus === 'WOOCOMMERCE' ? wooOrdersList.length === 0 : orderList.length === 0) ? (
                         <div className="text-center py-16 space-y-3">
                             <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                                 <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
@@ -492,19 +547,83 @@ export function OrdersPage() {
                             <div>
                                 <p className="font-semibold text-foreground">Không tìm thấy đơn hàng</p>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    {activeStatus
+                                    {activeStatus === 'WOOCOMMERCE'
+                                        ? 'Không tìm thấy dữ liệu đồng bộ WooCommerce nào'
+                                        : activeStatus
                                         ? `Không có đơn hàng nào ở trạng thái "${getStatusCfg(activeStatus).label}"`
                                         : 'Chưa có đơn hàng nào. Hãy tạo đơn đầu tiên!'
                                     }
                                 </p>
                             </div>
-                            {!activeStatus && (
+                            {activeStatus !== 'WOOCOMMERCE' && !activeStatus && (
                                 <Link to="/orders/new">
                                     <Button size="sm" className="mt-1 gap-2">
                                         <Plus className="h-4 w-4" /> Tạo đơn mới
                                     </Button>
                                 </Link>
                             )}
+                        </div>
+                    ) : activeStatus === 'WOOCOMMERCE' ? (
+                        <div className="space-y-3">
+                            {wooOrdersList.map((wooOrder) => (
+                                <div
+                                    key={wooOrder.wooOrderId}
+                                    className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/40 transition-all duration-200"
+                                >
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-foreground">WooCommerce Order #{wooOrder.wooOrderId}</span>
+                                            {wooOrder.syncStatus === 'SYNCED' && (
+                                                <Badge className="border-transparent bg-success text-success-foreground text-[10px] px-1.5 py-0.5">
+                                                    Synced
+                                                </Badge>
+                                            )}
+                                            {wooOrder.syncStatus === 'FAILED' && (
+                                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                                                    Failed
+                                                </Badge>
+                                            )}
+                                            {wooOrder.syncStatus === 'PROCESSING' && (
+                                                <Badge variant="outline" className="animate-pulse text-[10px] px-1.5 py-0.5">
+                                                    Syncing...
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            Khách hàng: <span className="font-medium text-foreground">{wooOrder.customerName}</span> · 
+                                            Ngày đặt: <span className="font-medium text-foreground">{wooOrder.orderDate ? new Date(wooOrder.orderDate).toLocaleDateString() : 'N/A'}</span>
+                                        </div>
+                                        {wooOrder.orderNumber && (
+                                            <div className="text-xs text-muted-foreground font-mono">
+                                                ERP Order: <Link to="/orders/$id" params={{ id: wooOrder.erpOrderId! }} className="text-primary hover:underline font-bold">{wooOrder.orderNumber}</Link>
+                                            </div>
+                                        )}
+                                        {wooOrder.lastErrorMessage && (
+                                            <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded p-1.5 mt-1 font-mono break-all whitespace-pre-wrap max-w-lg">
+                                                Lỗi: {wooOrder.lastErrorMessage}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                                        <div className="text-right">
+                                            <div className="font-bold text-foreground">{formatUSD(Number(wooOrder.finalAmountMinor))}</div>
+                                            <div className="text-xs text-muted-foreground">Tổng tiền</div>
+                                        </div>
+                                        {wooOrder.syncStatus !== 'SYNCED' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleReconcileWooOrder(wooOrder.wooOrderId!)}
+                                                disabled={reconcileMutation.isPending}
+                                                className="gap-1 shadow-sm font-semibold animate-none"
+                                            >
+                                                <RefreshCw className={`h-3 w-3 ${reconcileMutation.isPending ? 'animate-spin' : ''}`} />
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

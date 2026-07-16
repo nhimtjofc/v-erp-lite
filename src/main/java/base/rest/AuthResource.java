@@ -233,8 +233,7 @@ public class AuthResource {
             String kcId = keycloakSync.createUserInKeycloak(user);
             if (kcId != null) {
                 user.setKeycloakId(kcId);
-                user.persist();
-                
+
                 // Override password with user's password
                 keycloakSync.setPassword(kcId, request.password);
             } else {

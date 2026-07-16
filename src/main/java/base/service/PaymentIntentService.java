@@ -72,6 +72,17 @@ public class PaymentIntentService {
         return intent;
     }
 
+    public List<PaymentIntent> listOrderIntents(String tenantId, UUID orderId) {
+        if (orderId == null) {
+            throw new BadRequestException("Vui lòng nhập mã đơn hàng");
+        }
+        return PaymentIntent.list(
+                "tenantId = ?1 and orderId = ?2 order by createdAt desc",
+                tenantId,
+                orderId
+        );
+    }
+
     public List<PaymentTransaction> listTransactions(String tenantId, UUID intentId) {
         getIntent(tenantId, intentId);
         return PaymentTransaction.list(

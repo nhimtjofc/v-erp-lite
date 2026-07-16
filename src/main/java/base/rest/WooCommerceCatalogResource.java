@@ -46,6 +46,7 @@ public class WooCommerceCatalogResource {
 
     @GET
     @Path("/summary")
+    @RolesAllowed({"admin", "operator", "businessOwner"})
     @Operation(summary = "Get Catalog Sync Summary", description = "Returns summary statistics of the WooCommerce catalog synchronization.")
     public CatalogSyncSummary getCatalogSyncSummary(
             @QueryParam("businessId") UUID businessId) {

@@ -42,10 +42,3 @@ fi
 
 wp plugin activate woocommerce
 wp plugin is-active woocommerce
-
-# Activate V-ERP plugins (if present)
-for plugin in v-erp-woo-checkout; do
-    if [ -d "/var/www/html/wp-content/plugins/$plugin" ]; then
-        wp plugin activate "$plugin" 2>/dev/null || true
-    fi
-done

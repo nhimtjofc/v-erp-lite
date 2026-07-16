@@ -21,7 +21,6 @@ import {
   findLabel,
   Select,
 } from './settings-shared'
-import { WooCommerceIntegrationPanel } from './woocommerce-integration-panel'
 
 export function RegionalPage() {
   const { t } = useTranslation()
@@ -81,10 +80,6 @@ export function RegionalPage() {
 
   return (
     <div className="space-y-6">
-      <WooCommerceIntegrationPanel tenantScope={me?.tenantId} />
-
-      <div className="border-t border-border/50" />
-
       {/* Header */}
       <div className="flex items-center gap-3">
         <Globe className="h-6 w-6 text-muted-foreground" />

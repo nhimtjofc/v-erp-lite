@@ -32,6 +32,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 /**
@@ -356,8 +357,9 @@ public class KeycloakSyncService {
 
             if (existingId != null) {
                 // Update existing user — build full representation from DB
-                UserRepresentation kcUser = userToRepresentation(user);
-                kcUser.setId(existingId);
+                UserRepresentation kcUser = keycloak.realm(REALM).users()
+                        .get(existingId).toRepresentation();
+                applyAppUserFields(kcUser, user, false);
                 keycloak.realm(REALM).users().get(existingId).update(kcUser);
                 result.updated++;
             } else {
@@ -371,9 +373,10 @@ public class KeycloakSyncService {
                 }
             }
         } catch (Exception e) {
-            result.errors.add("Failed to sync user " + user.getEmail() + ": " + e.getMessage());
+            String reason = describeKeycloakException(e);
+            result.errors.add("Failed to sync user " + user.getEmail() + ": " + reason);
             result.failed++;
-            log.warn("Failed to sync user {}", user.getEmail(), e);
+            log.warn("Failed to sync user {}: {}", user.getEmail(), reason, e);
         }
     }
 
@@ -399,7 +402,7 @@ public class KeycloakSyncService {
         try {
             response = keycloak.realm(REALM).users().create(kcUser);
         } catch (Exception e) {
-            log.warn("Keycloak user creation failed for {}: {}", user.getEmail(), e.getMessage());
+            log.warn("Keycloak user creation failed for {}: {}", user.getEmail(), describeKeycloakException(e));
             return null;
         }
 
@@ -484,7 +487,7 @@ public class KeycloakSyncService {
             }
             assignRealmRole(keycloakId, roleName);
         } catch (Exception e) {
-            log.warn("Failed to update role in Keycloak for user {}: {}", keycloakId, e.getMessage());
+            log.warn("Failed to update role in Keycloak for user {}: {}", keycloakId, describeKeycloakException(e));
         }
     }
 
@@ -498,7 +501,7 @@ public class KeycloakSyncService {
             kcUser.setEnabled(false);
             keycloak.realm(REALM).users().get(keycloakId).update(kcUser);
         } catch (Exception e) {
-            log.warn("Failed to disable Keycloak user {}: {}", keycloakId, e.getMessage());
+            log.warn("Failed to disable Keycloak user {}: {}", keycloakId, describeKeycloakException(e));
         }
     }
 
@@ -511,7 +514,14 @@ public class KeycloakSyncService {
      */
     private UserRepresentation userToRepresentation(User user) {
         UserRepresentation kcUser = new UserRepresentation();
-        kcUser.setUsername(user.getEmail());
+        applyAppUserFields(kcUser, user, true);
+        return kcUser;
+    }
+
+    private void applyAppUserFields(UserRepresentation kcUser, User user, boolean updateUsername) {
+        if (updateUsername) {
+            kcUser.setUsername(user.getEmail());
+        }
         kcUser.setEmail(user.getEmail());
         kcUser.setFirstName(user.getFirstName());
         kcUser.setLastName(user.getLastName());
@@ -519,10 +529,33 @@ public class KeycloakSyncService {
         kcUser.setEmailVerified(true);
 
         Map<String, List<String>> attrs = new HashMap<>();
+        if (kcUser.getAttributes() != null) {
+            attrs.putAll(kcUser.getAttributes());
+        }
         attrs.put("tenant_code", List.of(user.getTenantId()));
         kcUser.setAttributes(attrs);
+    }
 
-        return kcUser;
+    private String describeKeycloakException(Exception e) {
+        if (e instanceof WebApplicationException wae && wae.getResponse() != null) {
+            Response response = wae.getResponse();
+            String body = null;
+            try {
+                if (response.hasEntity()) {
+                    body = response.readEntity(String.class);
+                }
+            } catch (Exception ignored) {
+                // Response entities can be consumed once; status + message is
+                // still more useful than hiding the original exception.
+            }
+
+            String status = response.getStatus() + " " + response.getStatusInfo().getReasonPhrase();
+            if (body != null && !body.isBlank()) {
+                return status + " - " + body;
+            }
+            return status + " - " + e.getMessage();
+        }
+        return e.getMessage();
     }
 
     private void setPassword(String userId) {

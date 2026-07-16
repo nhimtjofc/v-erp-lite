@@ -5,6 +5,8 @@ import {
   useGetOrderQuery,
   useUpdateStatusMutation,
   useMeQuery,
+  useWooCommerceOrdersQuery,
+  useReconcileWooCommerceOrderMutation,
 } from '@/shared/api'
 import { cartApi } from '@/shared/api/cart'
 import { Button } from '@/shared/ui/button'
@@ -17,7 +19,7 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2, Save,
+  Trash2, Save, PlugZap,
 } from 'lucide-react'
 
 interface OrderHistoryEntry {
@@ -123,6 +125,19 @@ export function OrderDetailPage() {
     path: { id },
   })
 
+  const tenantScope = me?.tenantId
+  const {
+    data: wooOrders,
+    refetch: refetchWooOrders,
+    isFetching: isWooOrdersFetching,
+  } = useWooCommerceOrdersQuery(
+    tenantScope,
+    order?.orderNumber ? { search: order.orderNumber } : undefined
+  )
+  const wooOrderInfo = wooOrders?.find((o) => o.erpOrderId === order?.id)
+
+  const reconcileMutation = useReconcileWooCommerceOrderMutation()
+
   const historyQuery = useQuery({
     queryKey: ['order-history', id],
     queryFn: () => fetchOrderHistory(id),
@@ -130,12 +145,13 @@ export function OrderDetailPage() {
   })
 
   const history = historyQuery.data ?? []
-  const isRefreshing = isOrderFetching || historyQuery.isFetching
+  const isRefreshing = isOrderFetching || historyQuery.isFetching || isWooOrdersFetching
 
   const refreshOrderPage = async () => {
     await Promise.all([
       refetchOrder(),
       historyQuery.refetch(),
+      refetchWooOrders(),
     ])
   }
 
@@ -399,76 +415,78 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Update Order</CardTitle>
-              <CardDescription>Edit order notes, shipping fee, discount, and VAT</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <textarea
-                  id="notes"
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={currentNotes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+          {isStaff && (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Update Order</CardTitle>
+                <CardDescription>Edit order notes, shipping fee, discount, and VAT</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shipping">Shipping Fee ($)</Label>
-                  <Input
-                    id="shipping"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={currentShipping}
-                    onChange={(e) => setShippingFee(e.target.value)}
+                  <Label htmlFor="notes">Notes</Label>
+                  <textarea
+                    id="notes"
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={currentNotes}
+                    onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discount">Discount (%)</Label>
-                  <Input
-                    id="discount"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={currentDiscount}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setDiscountPercent(val)
-                    }}
-                  />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="shipping">Shipping Fee ($)</Label>
+                    <Input
+                      id="shipping"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={currentShipping}
+                      onChange={(e) => setShippingFee(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="discount">Discount (%)</Label>
+                    <Input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={currentDiscount}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setDiscountPercent(val)
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vat">VAT (%)</Label>
+                    <Input
+                      id="vat"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={currentVat}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setVatPercent(val)
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vat">VAT (%)</Label>
-                  <Input
-                    id="vat"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={currentVat}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) setVatPercent(val)
-                    }}
-                  />
-                </div>
-              </div>
-              {error && (
-                <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-              <Button onClick={() => updateOrderMutation.mutate()} disabled={updateOrderMutation.isPending}>
-                <Save className="h-4 w-4 mr-1" />
-                {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </CardContent>
-          </Card>
+                {error && (
+                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <Button onClick={() => updateOrderMutation.mutate()} disabled={updateOrderMutation.isPending}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">
@@ -488,16 +506,16 @@ export function OrderDetailPage() {
                     {history.map((entry, i) => {
                       const cfg = getStatusConfig(entry.newStatus)
                       const Icon = cfg.icon
-                      const isLast = i === history.length - 1
+                      const isNewest = i === 0
                       return (
                         <li key={entry.id} className="flex gap-4 relative">
                           <div className={`relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                            isLast ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
+                            isNewest ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
                           }`}>
                             <Icon className="h-3 w-3" />
                           </div>
 
-                          <div className={`pb-6 flex-1 ${isLast ? '' : ''}`}>
+                          <div className="pb-6 flex-1">
                             <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
@@ -533,6 +551,78 @@ export function OrderDetailPage() {
         </div>
 
         <div className="space-y-6">
+
+          {wooOrderInfo && (
+            <Card className="shadow-sm border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center gap-3 pb-3">
+                <PlugZap className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">WooCommerce Sync</CardTitle>
+                  <CardDescription>Order integration details</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="text-sm space-y-3">
+                <div>
+                  <span className="text-muted-foreground block text-xs">WooCommerce Order ID</span>
+                  <span className="font-semibold text-foreground">#{wooOrderInfo.wooOrderId}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-xs">Sync Status</span>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    {wooOrderInfo.syncStatus === 'SYNCED' && (
+                      <Badge className="border-transparent bg-success text-success-foreground">
+                        Synced
+                      </Badge>
+                    )}
+                    {wooOrderInfo.syncStatus === 'FAILED' && (
+                      <Badge variant="destructive">
+                        Failed
+                      </Badge>
+                    )}
+                    {wooOrderInfo.syncStatus === 'PROCESSING' && (
+                      <Badge variant="outline" className="animate-pulse">
+                        Syncing...
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {wooOrderInfo.lastErrorMessage && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs">Error Log</span>
+                    <span className="text-destructive text-xs block bg-destructive/10 border border-destructive/20 rounded p-2 mt-1 font-mono break-all whitespace-pre-wrap">
+                      {wooOrderInfo.lastErrorMessage}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground block text-xs">Last Attempt</span>
+                  <span className="font-medium text-xs">
+                    {wooOrderInfo.lastAttemptedAt ? new Date(wooOrderInfo.lastAttemptedAt).toLocaleString() : 'N/A'}
+                  </span>
+                </div>
+                {wooOrderInfo.syncStatus !== 'SYNCED' && (
+                  <Button
+                    onClick={() => {
+                      reconcileMutation.mutate(
+                        { externalId: wooOrderInfo.wooOrderId! },
+                        {
+                          onSuccess: () => {
+                            refreshOrderPage()
+                          },
+                        }
+                      )
+                    }}
+                    disabled={reconcileMutation.isPending}
+                    size="sm"
+                    className="w-full mt-2 font-semibold gap-1.5"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${reconcileMutation.isPending ? 'animate-spin' : ''}`} />
+                    {reconcileMutation.isPending ? 'Retrying...' : 'Retry Sync / Reconcile'}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3">

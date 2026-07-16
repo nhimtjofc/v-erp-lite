@@ -2,6 +2,7 @@ package base.rest;
 
 import base.entity.PaymentIntent;
 import base.security.CallerContext;
+import base.security.PaymentAccess;
 import base.service.PaymentGatewayService;
 import base.service.PaymentIntentService;
 import jakarta.annotation.security.RolesAllowed;
@@ -33,6 +34,9 @@ public class MockPaymentResource {
     @Inject
     PaymentIntentService paymentIntentService;
 
+    @Inject
+    PaymentAccess paymentAccess;
+
     public static class InitiateMockRequest {
         public UUID paymentIntentId;
     }
@@ -48,13 +52,15 @@ public class MockPaymentResource {
 
         String tenantCode = caller.tenantCode();
         PaymentIntent intent = paymentIntentService.getIntent(tenantCode, request.paymentIntentId);
+        paymentAccess.requireIntentAccess(intent);
 
-        if (!"REQUIRES_PAYMENT_METHOD".equals(intent.getStatus())) {
+        if (!java.util.List.of("REQUIRES_PAYMENT_METHOD", "PROCESSING").contains(intent.getStatus())) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "PaymentIntent is not in a payable state", "status", intent.getStatus()))
                     .build();
         }
 
+        intent = paymentIntentService.confirmIntent(tenantCode, intent.getId(), caller.userId());
         PaymentGatewayService.MockGatewayResponse gatewayResponse = paymentGatewayService.initiatePayment(intent, "MOCK");
 
         return Response.ok(Map.of(
@@ -80,6 +86,7 @@ public class MockPaymentResource {
 
         String tenantCode = caller.tenantCode();
         PaymentIntent intent = paymentIntentService.getIntent(tenantCode, intentId);
+        paymentAccess.requireIntentAccess(intent);
 
         if ("SUCCEEDED".equals(intent.getStatus())) {
             return Response.ok(Map.of("status", "ALREADY_PROCESSED")).build();
@@ -111,6 +118,7 @@ public class MockPaymentResource {
 
         String tenantCode = caller.tenantCode();
         PaymentIntent intent = paymentIntentService.getIntent(tenantCode, intentId);
+        paymentAccess.requireIntentAccess(intent);
 
         if ("SUCCEEDED".equals(intent.getStatus())) {
             return Response.status(Response.Status.BAD_REQUEST)

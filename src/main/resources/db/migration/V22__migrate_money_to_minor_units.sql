@@ -66,5 +66,4 @@ ALTER TABLE vouchers MODIFY COLUMN min_order_value_minor BIGINT NOT NULL DEFAULT
 ALTER TABLE vouchers CHANGE COLUMN max_discount_amount max_discount_amount_minor DECIMAL(19, 2);
 UPDATE vouchers SET max_discount_amount_minor = max_discount_amount_minor * 100 WHERE max_discount_amount_minor IS NOT NULL;
 ALTER TABLE vouchers MODIFY COLUMN max_discount_amount_minor BIGINT NULL;
-
 ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS currency CHAR(3) NOT NULL DEFAULT 'USD';
