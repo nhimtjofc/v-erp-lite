@@ -255,9 +255,14 @@ export function ShopPage() {
       setShowCart(false)
       setShowCheckout(false)
       setSelectedVoucherId('')
-      const order = data?.data
-      if (order?.id) {
-        navigate({ to: '/orders/$id', params: { id: order.id } })
+      const result = data as { id?: string; data?: { id?: string } }
+      const orderId = result.data?.id ?? result.id
+      if (orderId) {
+        if (isCustomerRole) {
+          navigate({ to: '/orders/payment', search: { orderId } })
+        } else {
+          navigate({ to: '/orders/$id', params: { id: orderId } })
+        }
       }
     },
     onError: (err: any) => {

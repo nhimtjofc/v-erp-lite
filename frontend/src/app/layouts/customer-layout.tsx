@@ -54,6 +54,11 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
     { to: '/profile', icon: <User className="h-5 w-5" />, label: t('nav:profile') },
   ]
 
+  const isNavActive = (path: string) =>
+    location.pathname === path ||
+    location.pathname.startsWith(`${path}/`) ||
+    (path === '/shop' && location.pathname === '/')
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#fff8ef] text-stone-950 dark:bg-slate-950 dark:text-slate-50">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -78,9 +83,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
 
           <nav className="hidden items-center gap-1 rounded-full border border-orange-200/80 bg-white/70 p-1 shadow-sm dark:border-white/10 dark:bg-white/5 md:flex">
             {navItems.map((item) => {
-              const isActive =
-                location.pathname === item.to ||
-                (item.to === '/shop' && location.pathname === '/')
+              const isActive = isNavActive(item.to)
               return (
                 <Link
                   key={item.to}
@@ -100,7 +103,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-2 py-1.5 text-sm outline-none transition-all hover:shadow-md hover:shadow-orange-100 data-[state=open]:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:shadow-none">
+            <DropdownMenuTrigger className="ml-auto flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-2 py-1.5 text-sm outline-none transition-all hover:shadow-md hover:shadow-orange-100 data-[state=open]:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:shadow-none">
               <Avatar className="h-9 w-9 ring-2 ring-orange-200 dark:ring-orange-500/20">
                 <AvatarFallback className="bg-gradient-to-br from-orange-500 to-rose-500 text-xs font-bold text-white">
                   {initials}
@@ -169,9 +172,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-orange-200/80 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/90 md:hidden">
         <div className="flex items-center justify-around h-16 px-2">
           {navItems.map((item) => {
-            const isActive =
-              location.pathname === item.to ||
-              (item.to === '/shop' && location.pathname === '/')
+            const isActive = isNavActive(item.to)
             return (
               <Link
                 key={item.to}

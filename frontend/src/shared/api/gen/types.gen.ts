@@ -62,18 +62,6 @@ export type CartItem1 = {
     quantity?: number;
 };
 
-export type WooCommerceOrderDto = {
-    wooOrderId?: string;
-    erpOrderId?: Uuid;
-    orderNumber?: string;
-    customerName?: string;
-    orderDate?: Instant;
-    finalAmountMinor?: number;
-    syncStatus?: string;
-    lastErrorMessage?: string;
-    lastAttemptedAt?: Instant;
-};
-
 export type CatalogChangesResult = {
     items?: Array<CatalogProductDto>;
     totalCount?: number;
@@ -532,6 +520,18 @@ export type WebhookPayload = {
     amountMinor?: number;
     currency?: string;
     signature?: string;
+};
+
+export type WooCommerceOrderDto = {
+    wooOrderId?: string;
+    erpOrderId?: Uuid;
+    orderNumber?: string;
+    customerName?: string;
+    orderDate?: Instant;
+    finalAmountMinor?: number;
+    syncStatus?: string;
+    lastErrorMessage?: string;
+    lastAttemptedAt?: Instant;
 };
 
 export type ListTenantUsersData = {
@@ -1734,11 +1734,11 @@ export type ListWooCommerceOrdersData = {
     body?: never;
     path?: never;
     query?: {
-        salesChannelId?: Uuid;
-        syncStatus?: string;
-        search?: string;
         limit?: number;
         offset?: number;
+        salesChannelId?: Uuid;
+        search?: string;
+        syncStatus?: string;
     };
     url: '/api/integrations/woocommerce/v1/orders';
 };
@@ -1763,8 +1763,30 @@ export type ListWooCommerceOrdersResponses = {
 
 export type ListWooCommerceOrdersResponse = ListWooCommerceOrdersResponses[keyof ListWooCommerceOrdersResponses];
 
+export type CreateOrderData = {
+    body: string;
+    headers?: {
+        'X-WC-Webhook-Delivery-ID'?: string;
+        'X-WC-Webhook-Signature'?: string;
+        'X-WC-Webhook-Topic'?: string;
+    };
+    path?: never;
+    query?: {
+        salesChannelId?: Uuid;
+        tenantId?: string;
+    };
+    url: '/api/integrations/woocommerce/v1/orders';
+};
+
+export type CreateOrderResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type ReconcileOrderData = {
-    body?: string;
+    body: string;
     path: {
         externalId: string;
     };
@@ -1775,10 +1797,6 @@ export type ReconcileOrderData = {
 };
 
 export type ReconcileOrderErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
     /**
      * Not Authorized
      */
@@ -1793,10 +1811,8 @@ export type ReconcileOrderResponses = {
     /**
      * OK
      */
-    200: Order;
+    200: unknown;
 };
-
-export type ReconcileOrderResponse = ReconcileOrderResponses[keyof ReconcileOrderResponses];
 
 export type ListOrdersData = {
     body?: never;
@@ -2065,6 +2081,35 @@ export type CreateIntentResponses = {
      */
     200: unknown;
 };
+
+export type ListOrderPaymentIntentsData = {
+    body?: never;
+    path: {
+        orderId: Uuid;
+    };
+    query?: never;
+    url: '/api/payment-intents/order/{orderId}';
+};
+
+export type ListOrderPaymentIntentsErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type ListOrderPaymentIntentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<PaymentIntent>;
+};
+
+export type ListOrderPaymentIntentsResponse = ListOrderPaymentIntentsResponses[keyof ListOrderPaymentIntentsResponses];
 
 export type GetPaymentIntentData = {
     body?: never;

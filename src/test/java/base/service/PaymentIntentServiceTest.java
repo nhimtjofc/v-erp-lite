@@ -8,6 +8,7 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -114,6 +115,44 @@ class PaymentIntentServiceTest {
 
         assertEquals(first.getId(), second.getId());
         assertEquals(first.getStatus(), second.getStatus());
+    }
+
+    @Test
+    void listOrderIntentsIsScopedToTenantAndOrder() {
+        String tenantId = tenant();
+        var firstOrder = testDataFactory.seedOrder(tenantId, new java.math.BigDecimal("50000"));
+        var secondOrder = testDataFactory.seedOrder(tenantId, new java.math.BigDecimal("25000"));
+
+        PaymentIntent first = paymentIntentService.createIntent(
+                tenantId,
+                firstOrder.order().getId(),
+                firstOrder.customer().getId(),
+                50_000,
+                "VND",
+                "list-first-" + UUID.randomUUID(),
+                actorId
+        );
+        paymentIntentService.createIntent(
+                tenantId,
+                secondOrder.order().getId(),
+                secondOrder.customer().getId(),
+                25_000,
+                "VND",
+                "list-second-" + UUID.randomUUID(),
+                actorId
+        );
+
+        List<PaymentIntent> intents = paymentIntentService.listOrderIntents(
+                tenantId,
+                firstOrder.order().getId()
+        );
+
+        assertEquals(1, intents.size());
+        assertEquals(first.getId(), intents.getFirst().getId());
+        assertTrue(paymentIntentService.listOrderIntents(
+                "other-" + tenantId,
+                firstOrder.order().getId()
+        ).isEmpty());
     }
 
     // ─── Split Payment / Settlement ─────────────────────────────────

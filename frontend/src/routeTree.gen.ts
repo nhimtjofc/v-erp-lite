@@ -34,6 +34,7 @@ import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedSettingsWoocommerceRouteImport } from './routes/_authenticated/settings/woocommerce'
 import { Route as AuthenticatedSettingsSecurityRouteImport } from './routes/_authenticated/settings/security'
 import { Route as AuthenticatedSettingsRegionalRouteImport } from './routes/_authenticated/settings/regional'
+import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings/integrations'
 import { Route as AuthenticatedSettingsFeaturesRouteImport } from './routes/_authenticated/settings/features'
 import { Route as AuthenticatedSettingsCurrencyRouteImport } from './routes/_authenticated/settings/currency'
 import { Route as AuthenticatedSettingsCommunicationRouteImport } from './routes/_authenticated/settings/communication'
@@ -182,6 +183,12 @@ const AuthenticatedSettingsRegionalRoute =
     path: '/regional',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsIntegrationsRoute =
+  AuthenticatedSettingsIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsFeaturesRoute =
   AuthenticatedSettingsFeaturesRouteImport.update({
     id: '/features',
@@ -306,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/settings/woocommerce': typeof AuthenticatedSettingsWoocommerceRoute
@@ -341,6 +349,7 @@ export interface FileRoutesByTo {
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/settings/woocommerce': typeof AuthenticatedSettingsWoocommerceRoute
@@ -385,6 +394,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/_authenticated/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/_authenticated/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/_authenticated/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/_authenticated/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/_authenticated/settings/woocommerce': typeof AuthenticatedSettingsWoocommerceRoute
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/settings/communication'
     | '/settings/currency'
     | '/settings/features'
+    | '/settings/integrations'
     | '/settings/regional'
     | '/settings/security'
     | '/settings/woocommerce'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/settings/communication'
     | '/settings/currency'
     | '/settings/features'
+    | '/settings/integrations'
     | '/settings/regional'
     | '/settings/security'
     | '/settings/woocommerce'
@@ -506,6 +518,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/communication'
     | '/_authenticated/settings/currency'
     | '/_authenticated/settings/features'
+    | '/_authenticated/settings/integrations'
     | '/_authenticated/settings/regional'
     | '/_authenticated/settings/security'
     | '/_authenticated/settings/woocommerce'
@@ -698,6 +711,13 @@ declare module '@tanstack/react-router' {
       path: '/regional'
       fullPath: '/settings/regional'
       preLoaderRoute: typeof AuthenticatedSettingsRegionalRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/integrations': {
+      id: '/_authenticated/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof AuthenticatedSettingsIntegrationsRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/features': {
@@ -898,6 +918,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsCommunicationRoute: typeof AuthenticatedSettingsCommunicationRoute
   AuthenticatedSettingsCurrencyRoute: typeof AuthenticatedSettingsCurrencyRoute
   AuthenticatedSettingsFeaturesRoute: typeof AuthenticatedSettingsFeaturesRoute
+  AuthenticatedSettingsIntegrationsRoute: typeof AuthenticatedSettingsIntegrationsRoute
   AuthenticatedSettingsRegionalRoute: typeof AuthenticatedSettingsRegionalRoute
   AuthenticatedSettingsSecurityRoute: typeof AuthenticatedSettingsSecurityRoute
   AuthenticatedSettingsWoocommerceRoute: typeof AuthenticatedSettingsWoocommerceRoute
@@ -909,6 +930,8 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsCommunicationRoute,
   AuthenticatedSettingsCurrencyRoute: AuthenticatedSettingsCurrencyRoute,
   AuthenticatedSettingsFeaturesRoute: AuthenticatedSettingsFeaturesRoute,
+  AuthenticatedSettingsIntegrationsRoute:
+    AuthenticatedSettingsIntegrationsRoute,
   AuthenticatedSettingsRegionalRoute: AuthenticatedSettingsRegionalRoute,
   AuthenticatedSettingsSecurityRoute: AuthenticatedSettingsSecurityRoute,
   AuthenticatedSettingsWoocommerceRoute: AuthenticatedSettingsWoocommerceRoute,

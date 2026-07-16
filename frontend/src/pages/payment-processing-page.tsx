@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ElementType } from 'react'
 import { Link } from '@tanstack/react-router'
 import QRCode from 'qrcode'
 import {
-  type MockPaymentSessionResponse,
   type PaymentIntent,
   useCompleteMockPaymentMutation,
   useCreateIntentMutation,
@@ -36,6 +35,14 @@ import {
 
 interface PaymentProcessingPageProps {
   orderId: string
+}
+
+interface MockPaymentSessionResponse {
+  gateway: string
+  gatewayTransactionId: string
+  paymentUrl: string
+  qrCodeContent: string
+  expiresAt: string
 }
 
 type PaymentMethod = 'MOCK_QR'
@@ -130,7 +137,7 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
             orderId,
             idempotencyKey: `payment:${orderId}:${crypto.randomUUID()}`,
           },
-        })
+        }) as PaymentIntent
       }
 
       if (payableIntent.status === 'SUCCEEDED') {
@@ -144,7 +151,7 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
 
       const createdSession = await initiateMutation.mutateAsync({
         body: { paymentIntentId: payableIntent.id },
-      })
+      }) as MockPaymentSessionResponse
       setSession(createdSession)
       await intentsQuery.refetch()
     } catch (error) {
@@ -153,12 +160,11 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
   }
 
   async function completePayment() {
-    if (!activeIntentId || !session?.gatewayTransactionId) return
+    if (!activeIntentId) return
     setActionError('')
     try {
       await completeMutation.mutateAsync({
         path: { intentId: activeIntentId },
-        body: { gatewayTransactionId: session.gatewayTransactionId },
       })
       await intentsQuery.refetch()
     } catch (error) {
@@ -167,12 +173,11 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
   }
 
   async function failPayment() {
-    if (!activeIntentId || !session?.gatewayTransactionId) return
+    if (!activeIntentId) return
     setActionError('')
     try {
       await failMutation.mutateAsync({
         path: { intentId: activeIntentId },
-        body: { gatewayTransactionId: session.gatewayTransactionId },
       })
       setSession(null)
       await intentsQuery.refetch()

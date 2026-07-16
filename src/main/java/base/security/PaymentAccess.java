@@ -13,6 +13,17 @@ public class PaymentAccess {
     @Inject
     CallerContext caller;
 
+    public void requireCustomerAccess(Customer customer) {
+        if (customer == null || !isCustomerOnly()) {
+            return;
+        }
+
+        Customer authenticatedCustomer = resolveCustomer();
+        if (!customer.getId().equals(authenticatedCustomer.getId())) {
+            throw new ForbiddenException("You are not allowed to checkout for this customer");
+        }
+    }
+
     public void requireOrderAccess(Order order) {
         if (order == null || !isCustomerOnly()) {
             return;

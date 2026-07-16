@@ -348,7 +348,7 @@ Có thể giải thích rằng phê duyệt payout sử dụng transaction, ki�
 
 ## 8. Trình diễn tích hợp WooCommerce
 
-Đăng nhập `owner@v-erp.com`, sau đó mở **Settings -> Regional**.
+Đăng nhập `owner@v-erp.com`, sau đó mở **Settings -> Integrations**.
 
 Tại card WooCommerce, bấm **Kiểm tra lại/Refresh** và trình diễn:
 
@@ -453,7 +453,7 @@ Nếu thời gian bị rút ngắn:
 3. Trên màn hình QR, mô phỏng thất bại một lần, thử lại rồi mô phỏng thành công; mở chi tiết đơn để chỉ ra trạng thái **Đã thanh toán**.
 4. Chuyển đơn sang `COMPLETED`, chạy lại truy vấn ví và cho thấy tiền chuyển từ pending sang available.
 5. Mở **Wallet** của owner và **Payouts** của admin.
-6. Kết thúc tại **Settings -> Regional -> WooCommerce** và trình bày các đảm bảo kỹ thuật của integration.
+6. Kết thúc tại **Settings -> Integrations**, chọn kênh WooCommerce và trình bày health check, tiến độ catalog cùng các đảm bảo kỹ thuật của integration.
 
 ## 12. Những điều không nên khẳng định khi hỏi đáp
 

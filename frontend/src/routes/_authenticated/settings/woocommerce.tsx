@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { WooCommercePage } from '@/pages/woocommerce-page'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/settings/woocommerce')({
-  component: WooCommercePage,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/integrations' })
+  },
 })
