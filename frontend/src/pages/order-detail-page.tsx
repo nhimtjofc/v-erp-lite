@@ -506,16 +506,16 @@ export function OrderDetailPage() {
                     {history.map((entry, i) => {
                       const cfg = getStatusConfig(entry.newStatus)
                       const Icon = cfg.icon
-                      const isLast = i === history.length - 1
+                      const isNewest = i === 0
                       return (
                         <li key={entry.id} className="flex gap-4 relative">
                           <div className={`relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                            isLast ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
+                            isNewest ? cfg.dotClass : 'border-border bg-background text-muted-foreground'
                           }`}>
                             <Icon className="h-3 w-3" />
                           </div>
 
-                          <div className={`pb-6 flex-1 ${isLast ? '' : ''}`}>
+                          <div className="pb-6 flex-1">
                             <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">

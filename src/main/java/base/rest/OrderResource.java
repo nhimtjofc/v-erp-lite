@@ -241,7 +241,7 @@ public class OrderResource {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
         }
-        return OrderHistory.list("order.id = ?1 ORDER BY createdAt ASC", id);
+        return OrderHistory.list("order.id = ?1 ORDER BY createdAt DESC", id);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
