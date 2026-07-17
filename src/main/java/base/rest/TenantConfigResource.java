@@ -27,7 +27,7 @@ public class TenantConfigResource {
      * Get the tenant-level settings (admin / businessOwner).
      */
     @GET
-    @RolesAllowed({"admin", "businessOwner"})
+    @RolesAllowed({"admin", "businessOwner", "operator"})
     public Response getTenantSettings() {
         return Response.ok(Map.of("settings", service.getTenantSettings(caller.tenantCode()))).build();
     }
