@@ -69,6 +69,7 @@ export function ShopPage() {
   // Resolve current user info
   const { data: me } = useMeQuery()
   const isCustomerRole = me?.role?.name === 'customer' || me?.role?.name === 'user'
+  const isStaffRole = ['admin', 'operator', 'businessOwner'].includes(me?.role?.name ?? '')
 
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({
@@ -448,8 +449,8 @@ export function ShopPage() {
         </div>
       )}
 
-      {/* Voucher Banner Grid Shelf */}
-      {vouchers.length > 0 && (
+      {/* Customers can browse voucher cards; staff use the two compact entry points above/below. */}
+      {!isStaffRole && vouchers.length > 0 && (
         <div className="bg-gradient-to-r from-muted/50 to-muted/20 border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
