@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
 import os
@@ -30,6 +31,15 @@ from agents.order_ops_agent import OrderOpsAgent
 from agents.stats_agent import StatsAgent
 
 app = FastAPI(title="Ecommerce AI Chatbot")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 print("SERVER IS STARTING. API KEY IS:", os.environ.get("GEMINI_API_KEY"))
 router = RouterAgent()
 retrieval = RetrievalAgent()

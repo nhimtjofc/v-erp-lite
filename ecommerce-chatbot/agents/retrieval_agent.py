@@ -61,15 +61,25 @@ class RetrievalAgent:
             # Format bối cảnh từ dữ liệu trả về của Pinecone
             context_str = "\n".join([f"- {p['name']} - {p.get('description', '')}: Giá {p.get('price', 'N/A')}, Còn {p.get('stock', 0)} cái." for p in retrieved_products])
             
+            # Lấy tổng số sản phẩm từ CSDL để AI không bị nhầm lẫn
+            from agents.stats_agent import get_total_products_count
+            total_stats = get_total_products_count()
+            
             prompt = f"""
             Bạn là chuyên viên tư vấn bán hàng cực kỳ chuyên nghiệp và thân thiện.
             Dựa vào DỮ LIỆU TỪ PINECONE CLOUD sau đây, hãy trả lời câu hỏi của khách hàng.
+            
+            THÔNG TIN TỔNG QUAN CỬA HÀNG:
+            {total_stats}
+            
+            [DỮ LIỆU TOP 4 SẢN PHẨM PHÙ HỢP NHẤT ĐƯỢC KÉO TỪ PINECONE]:
+            {context_str}
+            (Lưu ý: Trên đây chỉ là 4 sản phẩm liên quan nhất được trích xuất từ database dựa trên câu hỏi của khách, KHÔNG PHẢI toàn bộ sản phẩm của cửa hàng).
+            
             Quy tắc:
             - KHÔNG được bịa ra sản phẩm không có trong danh sách.
             - Trả lời ngắn gọn, tự nhiên, thêm emoji cho sinh động.
-            
-            [DỮ LIỆU ĐƯỢC KÉO TỪ PINECONE]:
-            {context_str}
+            - Trả lời đúng trọng tâm tất cả các vế câu hỏi của khách hàng.
             
             [CÂU HỎI CỦA KHÁCH]: "{query}"
             """
