@@ -416,6 +416,47 @@ public class WooCommerceOrderService {
         return order;
     }
 
+    public Map<String, Object> getOrderStatus(String tenantId, UUID salesChannelId, String externalId) {
+        ExternalEntityMapping mapping = ExternalEntityMapping.findByExternalId(
+                tenantId, salesChannelId, "ORDER", externalId
+        );
+        if (mapping == null) {
+            throw new jakarta.ws.rs.NotFoundException("Order mapping not found for external ID: " + externalId);
+        }
+
+        Order order = Order.find("id = ?1 and tenantId = ?2", mapping.getErpEntityId(), tenantId).firstResult();
+        if (order == null) {
+            throw new jakarta.ws.rs.NotFoundException("ERP order not found for mapping");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderId", order.getId().toString());
+        result.put("orderNumber", order.getOrderNumber());
+        result.put("status", order.getStatus());
+        result.put("subtotalAmountMinor", order.getSubtotalAmountMinor());
+        result.put("shippingFeeMinor", order.getShippingFeeMinor());
+        result.put("taxAmountMinor", order.getTaxAmountMinor());
+        result.put("finalAmountMinor", order.getFinalAmountMinor());
+        result.put("updatedAt", order.getUpdatedAt() != null ? order.getUpdatedAt().toString() : null);
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        if (order.getItems() != null) {
+            for (OrderItem item : order.getItems()) {
+                Map<String, Object> itemMap = new HashMap<>();
+                String productName = item.getProduct() != null ? item.getProduct().getName() : "";
+                itemMap.put("productName", productName);
+                itemMap.put("sku", item.getProduct() != null ? item.getProduct().getSku() : "");
+                itemMap.put("quantity", item.getQuantity());
+                itemMap.put("unitPriceMinor", item.getUnitPriceMinor());
+                itemMap.put("subtotalAmountMinor", item.getSubtotalAmountMinor());
+                items.add(itemMap);
+            }
+        }
+        result.put("items", items);
+
+        return result;
+    }
+
     @Transactional
     public Order updateOrderWebhook(String tenantId, UUID salesChannelId, String externalEventId, JsonNode orderNode, WebhookEvent event) {
         String wooOrderId = orderNode.path("id").asText();

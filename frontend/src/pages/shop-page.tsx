@@ -134,7 +134,6 @@ export function ShopPage() {
   })
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
-  const [showPromoDrawer, setShowPromoDrawer] = useState(false)
   const [error, setError] = useState('')
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>('')
 
@@ -335,35 +334,6 @@ export function ShopPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600 dark:text-slate-300 md:text-base">
               A customer-first shopping space with vouchers, live stock, seller grouping, and checkout in one flow.
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              {vouchers.length > 0 && (
-                <Button
-                  onClick={() => setShowPromoDrawer(true)}
-                  className="rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-5 font-black text-white shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-rose-600"
-                >
-                  <Gift className="h-4 w-4 mr-2" />
-                  Collect vouchers
-                  {vouchers.filter(v => !collectedIds.has(v.id)).length > 0 && (
-                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                      {vouchers.filter(v => !collectedIds.has(v.id)).length} new
-                    </span>
-                  )}
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                className="rounded-full border-orange-200 bg-white/75 font-black text-stone-800 hover:bg-orange-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-                onClick={() => setShowCart(true)}
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Cart
-                {cart.length > 0 && (
-                  <span className="ml-2 rounded-full bg-stone-950 px-2 py-0.5 text-xs text-white dark:bg-white dark:text-slate-950">
-                    {cart.reduce((s, i) => s + i.quantity, 0)}
-                  </span>
-                )}
-              </Button>
-            </div>
           </div>
 
           <div className="relative min-h-48 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-600 p-5 text-white shadow-lg shadow-orange-500/25">
@@ -659,118 +629,27 @@ export function ShopPage() {
         </>
       )}
 
-      {/* Floating Promotion FAB */}
-      {vouchers.length > 0 && (
-        <button
-          onClick={() => setShowPromoDrawer(true)}
-          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-pink-500 to-rose-500 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all hover:rotate-6 cursor-pointer flex items-center justify-center border border-white/20 focus:outline-none"
-          title="Promo Vouchers"
-        >
-          <Gift className="h-6 w-6 text-white" />
-          {vouchers.filter(v => !collectedIds.has(v.id)).length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 border border-white text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">
-              {vouchers.filter(v => !collectedIds.has(v.id)).length}
+      {/* Floating Cart FAB */}
+      <button
+        onClick={() => setShowCart(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 text-white px-4 py-3 shadow-2xl hover:scale-105 active:scale-95 transition-all hover:shadow-orange-500/30 cursor-pointer border border-white/20 focus:outline-none group"
+        title="View Cart"
+      >
+        <div className="relative">
+          <ShoppingCart className="h-5 w-5 transition-transform group-hover:-rotate-6" />
+          {cart.length > 0 && (
+            <span className="absolute -top-2.5 -right-2.5 bg-stone-950 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border border-white dark:bg-white dark:text-stone-950">
+              {cart.reduce((s, i) => s + i.quantity, 0)}
             </span>
           )}
-        </button>
-      )}
-
-      {/* Sliding Promotion Drawer */}
-      {showPromoDrawer && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs" onClick={() => setShowPromoDrawer(false)} />
-          <div className="fixed top-0 right-0 h-full z-50 w-full sm:w-[400px] bg-background border-l border-border shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-4 py-4 border-b">
-              <div>
-                <h2 className="font-bold text-lg flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-rose-500 animate-pulse" /> Promotion Vouchers
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Collect vouchers to save on your orders</p>
-              </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPromoDrawer(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {vouchers.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Gift className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No vouchers available</p>
-                </div>
-              ) : (
-                vouchers.map((voucher: any) => {
-                  const isCollected = collectedIds.has(voucher.id)
-                  return (
-                    <div
-                      key={voucher.id}
-                      className="relative flex items-stretch h-28 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-border bg-card group"
-                    >
-                      {/* Ticket Left Section */}
-                      <div className="flex flex-col items-center justify-center w-24 bg-gradient-to-br from-pink-500 via-rose-500 to-orange-500 text-white p-2 text-center shrink-0 select-none relative">
-                        {/* Perforated holes */}
-                        <div className="absolute top-0 bottom-0 -right-1.5 flex flex-col justify-between py-1.5 z-10 w-3">
-                          {[...Array(5)].map((_, idx) => (
-                            <div key={idx} className="w-2.5 h-2.5 rounded-full bg-background" />
-                          ))}
-                        </div>
-                        <span className="text-xl font-black tracking-tight leading-none">
-                          {voucher.discountType === 'PERCENTAGE' ? `${Number(voucher.discountValue)}%` : `$${Number(voucher.discountValue)}`}
-                        </span>
-                        <span className="text-[9px] font-black uppercase tracking-wider mt-1 opacity-90">OFF</span>
-                      </div>
-
-                      {/* Ticket Right Section */}
-                      <div className="flex-1 p-3 flex flex-col justify-between min-w-0 bg-muted/10">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-black text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide">
-                              {voucher.code}
-                            </span>
-                            {voucher.maxDiscountAmountMinor && (
-                              <span className="text-[9px] text-muted-foreground font-medium">
-                                Max ${Number(voucher.maxDiscountAmountMinor)}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="font-bold text-xs text-foreground mt-1.5 truncate group-hover:text-primary transition-colors">
-                            {voucher.name}
-                          </h3>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {Number(voucher.minOrderValueMinor) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}` : 'No Min. Spend'}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-1 gap-2">
-                          <span className="text-[9px] text-muted-foreground truncate">
-                            {voucher.endTime ? `Exp: ${new Date(voucher.endTime).toLocaleDateString()}` : 'No Expiry'}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant={isCollected ? 'ghost' : 'secondary'}
-                            className={`h-7 px-2.5 text-[10px] font-bold rounded-md cursor-pointer transition-all ${
-                              isCollected
-                                ? 'text-success hover:bg-success/10 bg-success/5 border border-success/15'
-                                : 'bg-primary text-primary-foreground hover:bg-primary/95 shadow-sm'
-                            }`}
-                            disabled={isCollected || collectMutation.isPending}
-                            onClick={() => collectMutation.mutate({ path: { id: voucher.id! }, query: { customerId } })}
-                          >
-                            {isCollected ? (
-                              <span className="flex items-center gap-0.5"><Check className="h-3 w-3 stroke-[3]" />Collected</span>
-                            ) : (
-                              <span className="flex items-center gap-0.5"><Gift className="h-3 w-3" />Collect</span>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        </>
-      )}
+        </div>
+        <span className="font-bold text-sm">Cart</span>
+        {cart.length > 0 && (
+          <span className="text-xs font-black border-l border-white/20 pl-2">
+            {formatUSD(cartTotal)}
+          </span>
+        )}
+      </button>
 
       {/* Checkout Dialog */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>

@@ -1,0 +1,79 @@
+.v-erp-admin .v-erp-ok {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.v-erp-admin .v-erp-err {
+    color: #dc3232;
+    font-weight: 600;
+}
+
+.v-erp-admin .v-erp-health-grid {
+    display: flex;
+    gap: 2em;
+    flex-wrap: wrap;
+}
+
+.v-erp-admin .v-erp-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 1.5em;
+    flex: 1 1 400px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.v-erp-admin .v-erp-card h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: .5em;
+}
+
+.v-erp-admin .v-erp-card .form-table th {
+    width: 180px;
+}
+
+.v-erp-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: .85em;
+    font-weight: 600;
+}
+
+.v-erp-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.v-erp-status-confirmed {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.v-erp-status-shipped {
+    background: #e8daef;
+    color: #6c3483;
+}
+
+.v-erp-status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.v-erp-status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+section.v-erp-fulfillment {
+    margin-top: 2em;
+    padding: 1em 1.5em;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+section.v-erp-fulfillment h2 {
+    margin-top: 0;
+}
