@@ -19,7 +19,7 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
     Plus, Search, Eye, TrendingUp, ShoppingBag, Clock, CheckCircle2,
     Package, ChevronRight, Truck, XCircle, Filter, RotateCcw,
-    ArrowUpRight, Trash2, PlugZap, RefreshCw,
+    ArrowUpRight, Trash2, PlugZap, RefreshCw, CreditCard,
 } from 'lucide-react'
 
 interface OrderStats {
@@ -139,13 +139,17 @@ function OrderCard({
     order,
     onClick,
     onDelete,
+    onPayment,
     canDelete,
+    showPaymentAction,
     isDeleting,
 }: {
     order: Order
     onClick: () => void
     onDelete: () => void
+    onPayment: () => void
     canDelete: boolean
+    showPaymentAction: boolean
     isDeleting: boolean
 }) {
     const customerFirst = order.customer?.firstName ?? ''
@@ -205,11 +209,24 @@ function OrderCard({
                         }
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="font-bold text-foreground">
-                        {formatUSD(Number(order.finalAmountMinor))}
+                <div className="flex items-center gap-2">
+                    {showPaymentAction && (
+                        <Button
+                            size="sm"
+                            onClick={(event) => {
+                                event.stopPropagation()
+                                onPayment()
+                            }}
+                        >
+                            <CreditCard className="h-3.5 w-3.5" /> Payment
+                        </Button>
+                    )}
+                    <div className="text-right">
+                        <div className="font-bold text-foreground">
+                            {formatUSD(Number(order.finalAmountMinor))}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Total</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Total</div>
                 </div>
             </div>
 
@@ -633,7 +650,9 @@ export function OrdersPage() {
                                     order={order}
                                     onClick={() => navigate({ to: '/orders/$id', params: { id: order.id! } })}
                                     onDelete={() => handleDeleteOrder(order)}
+                                    onPayment={() => navigate({ to: '/orders/payment', search: { orderId: order.id! } })}
                                     canDelete={canDeleteOrder(order)}
+                                    showPaymentAction={isCustomer && order.status?.toUpperCase() === 'PENDING'}
                                     isDeleting={deletingOrderId === order.id}
                                 />
                             ))}
@@ -673,6 +692,17 @@ export function OrdersPage() {
                                         <div className="text-right shrink-0">
                                             <div className="font-bold text-sm">{formatUSD(Number(order.finalAmountMinor))}</div>
                                         </div>
+                                        {isCustomer && status === 'PENDING' && (
+                                            <Button
+                                                size="sm"
+                                                onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    navigate({ to: '/orders/payment', search: { orderId: order.id! } })
+                                                }}
+                                            >
+                                                <CreditCard className="h-3.5 w-3.5" /> Payment
+                                            </Button>
+                                        )}
                                         {canDeleteOrder(order) ? (
                                             <Button
                                                 variant="ghost"

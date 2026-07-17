@@ -61,6 +61,9 @@ public class PaymentService {
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(intent.getCustomerId())) {
             throw new BadRequestException("Payment customer does not match order customer");
         }
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new BadRequestException("Only PENDING orders can be settled");
+        }
 
         Money finalAmount = Money.of(order.getFinalAmountMinor(), order.getCurrency());
         if (finalAmount.getAmountMinor() != intent.getAmountMinor()) {
@@ -108,6 +111,8 @@ public class PaymentService {
             );
         }
 
+        // Payment and fulfillment are separate lifecycles. A successful payment
+        // leaves the order PENDING until staff explicitly confirms it.
         return records;
     }
 

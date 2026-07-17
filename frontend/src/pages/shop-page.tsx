@@ -276,13 +276,16 @@ export function ShopPage() {
   const [customerAddress, setCustomerAddress] = useState('')
   const [shippingNote, setShippingNote] = useState('')
 
-  // Pre-populate shipping fields when customer profile or selected customer changes
+  // Pre-populate checkout from the customer profile, with the signed-in account
+  // as a fallback for profiles created before account details were synchronized.
   useEffect(() => {
-    if (isCustomerRole && myCustomerProfile) {
-      setCustomerName(`${myCustomerProfile.firstName ?? ''} ${myCustomerProfile.lastName ?? ''}`.trim())
-      setCustomerEmail(myCustomerProfile.email ?? '')
-      setCustomerPhone(myCustomerProfile.phone ?? '')
-      setCustomerAddress(myCustomerProfile.address ?? '')
+    if (isCustomerRole) {
+      const firstName = myCustomerProfile?.firstName?.trim() || me?.firstName?.trim() || ''
+      const lastName = myCustomerProfile?.lastName?.trim() || me?.lastName?.trim() || ''
+      setCustomerName(`${firstName} ${lastName}`.trim())
+      setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
+      setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
+      setCustomerAddress(myCustomerProfile?.address ?? '')
     } else if (!isCustomerRole && selectedCustomerId && customers) {
       const found = customers.find(c => c.id === selectedCustomerId)
       if (found) {
@@ -292,7 +295,7 @@ export function ShopPage() {
         setCustomerAddress(found.address ?? '')
       }
     }
-  }, [isCustomerRole, myCustomerProfile, selectedCustomerId, customers])
+  }, [isCustomerRole, me, myCustomerProfile, selectedCustomerId, customers])
 
   async function handleCheckout() {
     if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
@@ -991,6 +994,11 @@ export function ShopPage() {
                 <span className="text-primary">{formatUSD(finalAmountMinor)}</span>
               </div>
             </div>
+            {isCustomerRole && (
+              <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Your order is saved as Pending. You can pay now, or return to the shop and complete payment later from Orders.
+              </p>
+            )}
           </div>
           <DialogFooter className="pt-4">
             <Button variant="outline" className="cursor-pointer" onClick={() => setShowCheckout(false)}>Cancel</Button>

@@ -319,8 +319,8 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                 {actionError && <PaymentAlert message={actionError} />}
 
                 <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-between">
-                  <Link to="/orders/$id" params={{ id: orderId }}>
-                    <Button variant="ghost" className="w-full sm:w-auto">Thanh toán sau</Button>
+                  <Link to="/shop">
+                    <Button variant="ghost" className="w-full sm:w-auto">Tiếp tục mua sắm · Thanh toán sau</Button>
                   </Link>
                   <Button onClick={() => void startPayment()} disabled={isBusy} className="sm:min-w-44">
                     {isBusy ? <LoaderCircle className="animate-spin" /> : <LockKeyhole />}
@@ -374,6 +374,10 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                     </Button>
                   </div>
                 </div>
+
+                <Link to="/shop" className="block">
+                  <Button variant="ghost" className="w-full">Tiếp tục mua sắm · Thanh toán sau</Button>
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -495,7 +499,7 @@ function PaymentResult({
             </h1>
             <p className="mt-2 text-muted-foreground">
               {success
-                ? `Đã ghi nhận ${amount} cho đơn ${orderNumber ?? orderId}.`
+                ? `Đã ghi nhận ${amount} cho đơn ${orderNumber ?? orderId}. Đơn hàng vẫn ở trạng thái Pending cho đến khi nhân viên xác nhận.`
                 : 'Đơn hàng vẫn được giữ ở trạng thái chờ. Bạn có thể tạo một lần thanh toán mới.'}
             </p>
           </div>

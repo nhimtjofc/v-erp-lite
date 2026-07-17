@@ -19,7 +19,7 @@ import { formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2, Save, PlugZap,
+  Trash2, Save, PlugZap, CreditCard,
 } from 'lucide-react'
 
 interface OrderHistoryEntry {
@@ -102,6 +102,7 @@ export function OrderDetailPage() {
   const queryClient = useQueryClient()
   const { data: me } = useMeQuery()
   const isAdmin = me?.role?.name === 'admin'
+  const isCustomer = me?.role?.name === 'customer'
   const isStaff = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [showStatusDialog, setShowStatusDialog] = useState(false)
@@ -288,6 +289,14 @@ export function OrderDetailPage() {
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
+
+          {isCustomer && isPending && (
+            <Link to="/orders/payment" search={{ orderId: id }}>
+              <Button size="sm">
+                <CreditCard className="h-4 w-4 mr-1.5" /> Payment
+              </Button>
+            </Link>
+          )}
 
           {canDelete && (
             <Button

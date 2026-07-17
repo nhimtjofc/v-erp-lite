@@ -236,15 +236,18 @@ export function CartPage() {
   const [customerAddress, setCustomerAddress] = useState('')
   const [shippingNote, setShippingNote] = useState('')
 
-  // Pre-populate customer checkout info when profile loads
+  // Pre-populate checkout from the customer profile, with the signed-in account
+  // as a fallback for profiles created before account details were synchronized.
   useEffect(() => {
-    if (isCustomer && myCustomerProfile) {
-      setCustomerName(`${myCustomerProfile.firstName ?? ''} ${myCustomerProfile.lastName ?? ''}`.trim())
-      setCustomerEmail(myCustomerProfile.email ?? '')
-      setCustomerPhone(myCustomerProfile.phone ?? '')
-      setCustomerAddress(myCustomerProfile.address ?? '')
+    if (isCustomer) {
+      const firstName = myCustomerProfile?.firstName?.trim() || me?.firstName?.trim() || ''
+      const lastName = myCustomerProfile?.lastName?.trim() || me?.lastName?.trim() || ''
+      setCustomerName(`${firstName} ${lastName}`.trim())
+      setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
+      setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
+      setCustomerAddress(myCustomerProfile?.address ?? '')
     }
-  }, [isCustomer, myCustomerProfile])
+  }, [isCustomer, me, myCustomerProfile])
 
   // Checkout Mutation for Customer
   const customerCheckoutMutation = useCheckoutOrderMutation({
@@ -628,6 +631,17 @@ export function CartPage() {
               </div>
 
               <div className="space-y-1.5">
+                <Label htmlFor="checkoutEmail">Email tài khoản</Label>
+                <Input
+                  id="checkoutEmail"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="email@example.com"
+                />
+              </div>
+
+              <div className="space-y-1.5">
                 <Label htmlFor="shippingPhone">Số điện thoại liên lạc</Label>
                 <Input
                   id="shippingPhone"
@@ -682,6 +696,10 @@ export function CartPage() {
                   <span className="text-primary">{formatUSD(buyerFinalAmountMinor)}</span>
                 </div>
               </div>
+
+              <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Đơn hàng sẽ được lưu ở trạng thái Pending. Bạn có thể thanh toán ngay hoặc quay lại cửa hàng và thanh toán sau trong mục Đơn hàng.
+              </p>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
