@@ -360,9 +360,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
     const adminAllowed =
       pathname === '/dashboard' ||
+      pathname.startsWith('/business') ||
       pathname.startsWith('/customers') ||
       pathname.startsWith('/products') ||
       pathname.startsWith('/orders') ||
+      pathname.startsWith('/settings') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
@@ -405,24 +407,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
             {t(group.labelKey)}
           </div>
           <div className="space-y-0.5">
-            {items.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  activeProps={{
-                    className:
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium bg-sidebar-accent text-sidebar-accent-foreground transition-colors',
-                  }}
-                  onClick={onNavigate}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {t(item.labelKey)}
-                </Link>
-              )
-            })}
+            {items.map((item) => (
+              <SidebarNavItem
+                key={item.to + ':' + item.labelKey}
+                item={item}
+                collapsed={false}
+                onNavigate={onNavigate}
+              />
+            ))}
           </div>
         </div>
       )
@@ -538,7 +530,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <UserIcon className="h-4 w-4" />
                   {t('nav:profile')}
                 </DropdownMenuLinkItem>
-                {role !== 'admin' && role !== 'customer' && role !== 'user' && (
+                {role !== 'admin' && role !== 'customer' && role !== 'user' && role !== 'operator' && (
                   <DropdownMenuLinkItem
                     className="cursor-pointer"
                     onClick={() => router.navigate({ to: '/business' })}

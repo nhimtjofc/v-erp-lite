@@ -4,6 +4,7 @@ import base.entity.Order;
 import base.entity.PaymentIntent;
 import base.entity.PaymentTransaction;
 import base.security.CallerContext;
+import base.security.PaymentAccess;
 import base.service.PaymentIntentService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -34,6 +35,9 @@ public class PaymentIntentResource {
     @Inject
     PaymentIntentService paymentIntentService;
 
+    @Inject
+    PaymentAccess paymentAccess;
+
     public static class CreateIntentRequest {
         public UUID orderId;
         public String idempotencyKey;
@@ -55,6 +59,7 @@ public class PaymentIntentResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
+        paymentAccess.requireOrderAccess(order);
 
         if (order.getCustomer() == null) {
             throw new BadRequestException("Order does not have a customer associated");
@@ -78,16 +83,36 @@ public class PaymentIntentResource {
     }
 
     @GET
+    @Path("/order/{orderId}")
+    @RolesAllowed({"admin", "businessOwner", "customer"})
+    public List<PaymentIntent> listOrderPaymentIntents(@PathParam("orderId") UUID orderId) {
+        Order order = Order.find(
+                "id = ?1 and tenantId = ?2 and deletedAt IS NULL",
+                orderId,
+                caller.tenantCode()
+        ).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        paymentAccess.requireOrderAccess(order);
+        return paymentIntentService.listOrderIntents(caller.tenantCode(), orderId);
+    }
+
+    @GET
     @Path("/{id}")
     @RolesAllowed({"admin", "businessOwner", "customer"})
     public PaymentIntent getPaymentIntent(@PathParam("id") UUID id) {
-        return paymentIntentService.getIntent(caller.tenantCode(), id);
+        PaymentIntent intent = paymentIntentService.getIntent(caller.tenantCode(), id);
+        paymentAccess.requireIntentAccess(intent);
+        return intent;
     }
 
     @GET
     @Path("/{id}/transactions")
     @RolesAllowed({"admin", "businessOwner", "customer"})
     public List<PaymentTransaction> listTransactions(@PathParam("id") UUID id) {
+        PaymentIntent intent = paymentIntentService.getIntent(caller.tenantCode(), id);
+        paymentAccess.requireIntentAccess(intent);
         return paymentIntentService.listTransactions(caller.tenantCode(), id);
     }
 }

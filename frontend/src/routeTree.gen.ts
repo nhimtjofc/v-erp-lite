@@ -31,8 +31,10 @@ import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
 import { Route as AuthenticatedOrdersIndexRouteImport } from './routes/_authenticated/orders/index'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
+import { Route as AuthenticatedSettingsWoocommerceRouteImport } from './routes/_authenticated/settings/woocommerce'
 import { Route as AuthenticatedSettingsSecurityRouteImport } from './routes/_authenticated/settings/security'
 import { Route as AuthenticatedSettingsRegionalRouteImport } from './routes/_authenticated/settings/regional'
+import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings/integrations'
 import { Route as AuthenticatedSettingsFeaturesRouteImport } from './routes/_authenticated/settings/features'
 import { Route as AuthenticatedSettingsCurrencyRouteImport } from './routes/_authenticated/settings/currency'
 import { Route as AuthenticatedSettingsCommunicationRouteImport } from './routes/_authenticated/settings/communication'
@@ -40,6 +42,7 @@ import { Route as AuthenticatedProfileSecurityRouteImport } from './routes/_auth
 import { Route as AuthenticatedProfilePreferencesRouteImport } from './routes/_authenticated/profile/preferences'
 import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
 import { Route as AuthenticatedProductsIdRouteImport } from './routes/_authenticated/products/$id'
+import { Route as AuthenticatedOrdersPaymentRouteImport } from './routes/_authenticated/orders/payment'
 import { Route as AuthenticatedOrdersNewRouteImport } from './routes/_authenticated/orders/new'
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders/$id'
 import { Route as AuthenticatedCustomersNewRouteImport } from './routes/_authenticated/customers/new'
@@ -162,6 +165,12 @@ const AuthenticatedCustomersIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedCustomersRoute,
   } as any)
+const AuthenticatedSettingsWoocommerceRoute =
+  AuthenticatedSettingsWoocommerceRouteImport.update({
+    id: '/woocommerce',
+    path: '/woocommerce',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsSecurityRoute =
   AuthenticatedSettingsSecurityRouteImport.update({
     id: '/security',
@@ -172,6 +181,12 @@ const AuthenticatedSettingsRegionalRoute =
   AuthenticatedSettingsRegionalRouteImport.update({
     id: '/regional',
     path: '/regional',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsIntegrationsRoute =
+  AuthenticatedSettingsIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedSettingsFeaturesRoute =
@@ -215,6 +230,12 @@ const AuthenticatedProductsIdRoute = AuthenticatedProductsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedProductsRoute,
 } as any)
+const AuthenticatedOrdersPaymentRoute =
+  AuthenticatedOrdersPaymentRouteImport.update({
+    id: '/payment',
+    path: '/payment',
+    getParentRoute: () => AuthenticatedOrdersRoute,
+  } as any)
 const AuthenticatedOrdersNewRoute = AuthenticatedOrdersNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -284,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/customers/new': typeof AuthenticatedCustomersNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/orders/new': typeof AuthenticatedOrdersNewRoute
+  '/orders/payment': typeof AuthenticatedOrdersPaymentRoute
   '/products/$id': typeof AuthenticatedProductsIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
@@ -291,8 +313,10 @@ export interface FileRoutesByFullPath {
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
+  '/settings/woocommerce': typeof AuthenticatedSettingsWoocommerceRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
   '/orders/': typeof AuthenticatedOrdersIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
@@ -317,6 +341,7 @@ export interface FileRoutesByTo {
   '/customers/new': typeof AuthenticatedCustomersNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/orders/new': typeof AuthenticatedOrdersNewRoute
+  '/orders/payment': typeof AuthenticatedOrdersPaymentRoute
   '/products/$id': typeof AuthenticatedProductsIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
@@ -324,8 +349,10 @@ export interface FileRoutesByTo {
   '/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
+  '/settings/woocommerce': typeof AuthenticatedSettingsWoocommerceRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/orders': typeof AuthenticatedOrdersIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
@@ -359,6 +386,7 @@ export interface FileRoutesById {
   '/_authenticated/customers/new': typeof AuthenticatedCustomersNewRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/_authenticated/orders/new': typeof AuthenticatedOrdersNewRoute
+  '/_authenticated/orders/payment': typeof AuthenticatedOrdersPaymentRoute
   '/_authenticated/products/$id': typeof AuthenticatedProductsIdRoute
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/profile/preferences': typeof AuthenticatedProfilePreferencesRoute
@@ -366,8 +394,10 @@ export interface FileRoutesById {
   '/_authenticated/settings/communication': typeof AuthenticatedSettingsCommunicationRoute
   '/_authenticated/settings/currency': typeof AuthenticatedSettingsCurrencyRoute
   '/_authenticated/settings/features': typeof AuthenticatedSettingsFeaturesRoute
+  '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/_authenticated/settings/regional': typeof AuthenticatedSettingsRegionalRoute
   '/_authenticated/settings/security': typeof AuthenticatedSettingsSecurityRoute
+  '/_authenticated/settings/woocommerce': typeof AuthenticatedSettingsWoocommerceRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/orders/': typeof AuthenticatedOrdersIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
@@ -400,6 +430,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/$id'
     | '/orders/new'
+    | '/orders/payment'
     | '/products/$id'
     | '/products/new'
     | '/profile/preferences'
@@ -407,8 +438,10 @@ export interface FileRouteTypes {
     | '/settings/communication'
     | '/settings/currency'
     | '/settings/features'
+    | '/settings/integrations'
     | '/settings/regional'
     | '/settings/security'
+    | '/settings/woocommerce'
     | '/customers/'
     | '/orders/'
     | '/products/'
@@ -433,6 +466,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/$id'
     | '/orders/new'
+    | '/orders/payment'
     | '/products/$id'
     | '/products/new'
     | '/profile/preferences'
@@ -440,8 +474,10 @@ export interface FileRouteTypes {
     | '/settings/communication'
     | '/settings/currency'
     | '/settings/features'
+    | '/settings/integrations'
     | '/settings/regional'
     | '/settings/security'
+    | '/settings/woocommerce'
     | '/customers'
     | '/orders'
     | '/products'
@@ -474,6 +510,7 @@ export interface FileRouteTypes {
     | '/_authenticated/customers/new'
     | '/_authenticated/orders/$id'
     | '/_authenticated/orders/new'
+    | '/_authenticated/orders/payment'
     | '/_authenticated/products/$id'
     | '/_authenticated/products/new'
     | '/_authenticated/profile/preferences'
@@ -481,8 +518,10 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/communication'
     | '/_authenticated/settings/currency'
     | '/_authenticated/settings/features'
+    | '/_authenticated/settings/integrations'
     | '/_authenticated/settings/regional'
     | '/_authenticated/settings/security'
+    | '/_authenticated/settings/woocommerce'
     | '/_authenticated/customers/'
     | '/_authenticated/orders/'
     | '/_authenticated/products/'
@@ -653,6 +692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomersIndexRouteImport
       parentRoute: typeof AuthenticatedCustomersRoute
     }
+    '/_authenticated/settings/woocommerce': {
+      id: '/_authenticated/settings/woocommerce'
+      path: '/woocommerce'
+      fullPath: '/settings/woocommerce'
+      preLoaderRoute: typeof AuthenticatedSettingsWoocommerceRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/security': {
       id: '/_authenticated/settings/security'
       path: '/security'
@@ -665,6 +711,13 @@ declare module '@tanstack/react-router' {
       path: '/regional'
       fullPath: '/settings/regional'
       preLoaderRoute: typeof AuthenticatedSettingsRegionalRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/integrations': {
+      id: '/_authenticated/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof AuthenticatedSettingsIntegrationsRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/features': {
@@ -715,6 +768,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/products/$id'
       preLoaderRoute: typeof AuthenticatedProductsIdRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/orders/payment': {
+      id: '/_authenticated/orders/payment'
+      path: '/payment'
+      fullPath: '/orders/payment'
+      preLoaderRoute: typeof AuthenticatedOrdersPaymentRouteImport
+      parentRoute: typeof AuthenticatedOrdersRoute
     }
     '/_authenticated/orders/new': {
       id: '/_authenticated/orders/new'
@@ -808,12 +868,14 @@ const AuthenticatedCustomersRouteWithChildren =
 interface AuthenticatedOrdersRouteChildren {
   AuthenticatedOrdersIdRoute: typeof AuthenticatedOrdersIdRoute
   AuthenticatedOrdersNewRoute: typeof AuthenticatedOrdersNewRoute
+  AuthenticatedOrdersPaymentRoute: typeof AuthenticatedOrdersPaymentRoute
   AuthenticatedOrdersIndexRoute: typeof AuthenticatedOrdersIndexRoute
 }
 
 const AuthenticatedOrdersRouteChildren: AuthenticatedOrdersRouteChildren = {
   AuthenticatedOrdersIdRoute: AuthenticatedOrdersIdRoute,
   AuthenticatedOrdersNewRoute: AuthenticatedOrdersNewRoute,
+  AuthenticatedOrdersPaymentRoute: AuthenticatedOrdersPaymentRoute,
   AuthenticatedOrdersIndexRoute: AuthenticatedOrdersIndexRoute,
 }
 
@@ -856,8 +918,10 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsCommunicationRoute: typeof AuthenticatedSettingsCommunicationRoute
   AuthenticatedSettingsCurrencyRoute: typeof AuthenticatedSettingsCurrencyRoute
   AuthenticatedSettingsFeaturesRoute: typeof AuthenticatedSettingsFeaturesRoute
+  AuthenticatedSettingsIntegrationsRoute: typeof AuthenticatedSettingsIntegrationsRoute
   AuthenticatedSettingsRegionalRoute: typeof AuthenticatedSettingsRegionalRoute
   AuthenticatedSettingsSecurityRoute: typeof AuthenticatedSettingsSecurityRoute
+  AuthenticatedSettingsWoocommerceRoute: typeof AuthenticatedSettingsWoocommerceRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -866,8 +930,11 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsCommunicationRoute,
   AuthenticatedSettingsCurrencyRoute: AuthenticatedSettingsCurrencyRoute,
   AuthenticatedSettingsFeaturesRoute: AuthenticatedSettingsFeaturesRoute,
+  AuthenticatedSettingsIntegrationsRoute:
+    AuthenticatedSettingsIntegrationsRoute,
   AuthenticatedSettingsRegionalRoute: AuthenticatedSettingsRegionalRoute,
   AuthenticatedSettingsSecurityRoute: AuthenticatedSettingsSecurityRoute,
+  AuthenticatedSettingsWoocommerceRoute: AuthenticatedSettingsWoocommerceRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

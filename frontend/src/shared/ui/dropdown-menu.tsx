@@ -14,19 +14,15 @@ const DropdownMenuContent = React.forwardRef<
   }
 >(({ className, align = 'end', sideOffset = 4, ...props }, ref) => (
   <Menu.Portal>
-    <Menu.Positioner align={align} sideOffset={sideOffset}>
+    <Menu.Positioner align={align} sideOffset={sideOffset} className="z-50">
       <Menu.Popup
         ref={ref}
         className={cn(
-          'z-50 min-w-56 rounded-lg border bg-popover p-1 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          'flex min-w-56 flex-col rounded-lg border bg-popover p-1 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
           className
         )}
         {...props}
-      >
-        <Menu.Viewport className="flex flex-col">
-          {props.children}
-        </Menu.Viewport>
-      </Menu.Popup>
+      />
     </Menu.Positioner>
   </Menu.Portal>
 ))

@@ -113,6 +113,98 @@ components:
         quantity:
           type: integer
           format: int32
+    CatalogChangesResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogProductDTO"
+        totalCount:
+          type: integer
+          format: int64
+        hasMore:
+          type: boolean
+    CatalogMappingItem:
+      type: object
+      properties:
+        erpId:
+          $ref: "#/components/schemas/UUID"
+        entityType:
+          type: string
+        externalId:
+          type: string
+        externalParentId:
+          type: string
+        syncStatus:
+          type: string
+        errorMessage:
+          type: string
+    CatalogMappingSyncRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogMappingItem"
+    CatalogProductDTO:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        basePriceMinor:
+          type: integer
+          format: int64
+        salePriceMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        availableQuantity:
+          type: integer
+          format: int32
+        externalId:
+          type: string
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogVariantDTO"
+    CatalogSyncSummary:
+      type: object
+      properties:
+        totalProducts:
+          type: integer
+          format: int64
+        syncedProducts:
+          type: integer
+          format: int64
+        lastSyncTime:
+          $ref: "#/components/schemas/Instant"
+    CatalogVariantDTO:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        sku:
+          type: string
+        priceMinor:
+          type: integer
+          format: int64
+        availableQuantity:
+          type: integer
+          format: int32
+        externalId:
+          type: string
+        optionValues:
+          type: object
+          additionalProperties:
+            type: string
     Category:
       type: object
       properties:
@@ -251,6 +343,33 @@ components:
         ownerId:
           $ref: "#/components/schemas/UUID"
         currency:
+          type: string
+    HealthSnapshot:
+      type: object
+      properties:
+        channelId:
+          $ref: "#/components/schemas/UUID"
+        businessId:
+          $ref: "#/components/schemas/UUID"
+        storeUrl:
+          type: string
+        connectionStatus:
+          type: string
+        healthStatus:
+          type: string
+        secretConfigured:
+          type: boolean
+        mappedEntityCount:
+          type: integer
+          format: int64
+        webhookEventCount:
+          type: integer
+          format: int64
+        lastCheckedAt:
+          $ref: "#/components/schemas/Instant"
+        lastConnectedAt:
+          $ref: "#/components/schemas/Instant"
+        message:
           type: string
     InitiateMockRequest:
       type: object
@@ -869,6 +988,28 @@ components:
           type: string
         signature:
           type: string
+    WooCommerceOrderDto:
+      type: object
+      properties:
+        wooOrderId:
+          type: string
+        erpOrderId:
+          $ref: "#/components/schemas/UUID"
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        orderDate:
+          $ref: "#/components/schemas/Instant"
+        finalAmountMinor:
+          type: integer
+          format: int64
+        syncStatus:
+          type: string
+        lastErrorMessage:
+          type: string
+        lastAttemptedAt:
+          $ref: "#/components/schemas/Instant"
   securitySchemes:
     SecurityScheme:
       type: openIdConnect
@@ -1964,6 +2105,264 @@ paths:
       summary: Get Image
       tags:
       - Image Resource
+  /api/integrations/woocommerce/v1/catalog/changes:
+    get:
+      summary: Get Catalog Changes
+      description: "Returns active products modified after the 'since' timestamp,\
+        \ with their external WooCommerce IDs."
+      operationId: getCatalogChanges
+      tags:
+      - WooCommerce Catalog
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: since
+        in: query
+        schema:
+          $ref: "#/components/schemas/Instant"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogChangesResult"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+  /api/integrations/woocommerce/v1/catalog/mappings:
+    post:
+      summary: Upsert Catalog Mappings
+      description: Upserts WooCommerce mapping IDs and sync statuses for products
+        and variants.
+      operationId: upsertCatalogMappings
+      tags:
+      - WooCommerce Catalog
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogMappingSyncRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+  /api/integrations/woocommerce/v1/catalog/summary:
+    get:
+      summary: Get Catalog Sync Summary
+      description: Returns summary statistics of the WooCommerce catalog synchronization.
+      operationId: getCatalogSyncSummary
+      tags:
+      - WooCommerce Catalog
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogSyncSummary"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/integrations/woocommerce/v1/health:
+    get:
+      operationId: getWooCommerceHealth
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthSnapshot"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Woo Commerce Health
+      tags:
+      - Woo Commerce Integration Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+  /api/integrations/woocommerce/v1/orders:
+    get:
+      summary: List WooCommerce Orders Sync Status
+      description: Returns synced and failed WooCommerce orders with their sync details.
+      operationId: listWooCommerceOrders
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: syncStatus
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WooCommerceOrderDto"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
+    post:
+      summary: Receive WooCommerce Order Webhook
+      description: Endpoint called by WooCommerce to sync new/updated orders to V-ERP.
+      operationId: createOrder
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: query
+        schema:
+          type: string
+      - name: X-WC-Webhook-Delivery-ID
+        in: header
+        schema:
+          type: string
+      - name: X-WC-Webhook-Signature
+        in: header
+        schema:
+          type: string
+      - name: X-WC-Webhook-Topic
+        in: header
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+  /api/integrations/woocommerce/v1/orders/{externalId}/reconcile:
+    post:
+      summary: Reconcile / Retry Order Sync
+      description: Triggers a retry of a failed or stuck WooCommerce order webhook.
+      operationId: reconcileOrder
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: externalId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - admin
+        - operator
+        - businessOwner
   /api/orders:
     get:
       operationId: listOrders
@@ -1997,6 +2396,7 @@ paths:
         - admin
         - businessOwner
         - operator
+        - customer
   /api/orders/checkout:
     post:
       operationId: checkoutOrder
@@ -2025,6 +2425,8 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+        - operator
+        - customer
   /api/orders/stats:
     get:
       operationId: getStats
@@ -2111,6 +2513,7 @@ paths:
         - admin
         - businessOwner
         - operator
+        - customer
     delete:
       operationId: deleteOrder
       parameters:
@@ -2165,6 +2568,7 @@ paths:
         - admin
         - businessOwner
         - operator
+        - customer
   /api/orders/{id}/status:
     put:
       operationId: updateStatus
@@ -2223,6 +2627,36 @@ paths:
         "400":
           description: Bad Request
       summary: Create Intent
+      tags:
+      - Payment Intent Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+        - customer
+  /api/payment-intents/order/{orderId}:
+    get:
+      operationId: listOrderPaymentIntents
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentIntent"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List Order Payment Intents
       tags:
       - Payment Intent Resource
       security:
@@ -2431,7 +2865,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
     post:
       operationId: create
@@ -2459,7 +2892,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
   /api/payouts/batch-approve:
     post:
@@ -2550,7 +2982,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
   /api/payouts/{id}:
     get:
       operationId: getPayout
@@ -2577,7 +3008,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
   /api/payouts/{id}/approve:
     post:
@@ -2605,7 +3035,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
   /api/payouts/{id}/reject:
     post:
       operationId: reject
@@ -2632,7 +3061,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
   /api/products:
     get:
       operationId: listProducts
@@ -3634,7 +4062,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
   /api/wallets/ensure:
     post:
@@ -3663,7 +4090,33 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
+        - businessOwner
+  /api/wallets/me:
+    get:
+      operationId: myWallet
+      parameters:
+      - name: currency
+        in: query
+        schema:
+          type: string
+          default: VND
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: My Wallet
+      tags:
+      - Wallet Resource
+      security:
+      - SecurityScheme:
+        - admin
         - businessOwner
   /api/wallets/{id}:
     get:
@@ -3691,7 +4144,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
   /api/wallets/{id}/adjust:
     post:
@@ -3761,7 +4213,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
   /api/wallets/{id}/debit:
     post:
       operationId: debit
@@ -3796,7 +4247,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
   /api/wallets/{id}/transactions:
     get:
       operationId: transactions
@@ -3837,8 +4287,12 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
+tags:
+- name: WooCommerce Catalog
+  description: Endpoints for WooCommerce plugin catalog synchronization
+- name: WooCommerce Orders
+  description: Endpoints for WooCommerce order synchronization
 info:
   title: v-erp-lite API
   version: 1.0-SNAPSHOT

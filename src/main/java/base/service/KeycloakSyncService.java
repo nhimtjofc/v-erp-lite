@@ -1,5 +1,28 @@
 package base.service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.OrganizationRepresentation;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import base.entity.Role;
 import base.entity.Tenant;
 import base.entity.User;
@@ -9,19 +32,8 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.representations.idm.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Synchronises app-DB users with Keycloak so local dev iteration does not
@@ -345,31 +357,35 @@ public class KeycloakSyncService {
 
             if (existingId != null) {
                 // Update existing user — build full representation from DB
-                UserRepresentation kcUser = userToRepresentation(user);
-                kcUser.setId(existingId);
+                UserRepresentation kcUser = keycloak.realm(REALM).users()
+                        .get(existingId).toRepresentation();
+                applyAppUserFields(kcUser, user, false);
                 keycloak.realm(REALM).users().get(existingId).update(kcUser);
                 result.updated++;
             } else {
                 // Create new Keycloak user (HTTP calls — no transaction)
                 String kcId = createKeycloakUser(user);
                 if (kcId != null) {
-                    doPersistUserSync(user, kcId);
+                    doPersistUserSync(user.getId(), kcId);
                     result.created++;
                 } else {
                     result.failed++;
                 }
             }
         } catch (Exception e) {
-            result.errors.add("Failed to sync user " + user.getEmail() + ": " + e.getMessage());
+            String reason = describeKeycloakException(e);
+            result.errors.add("Failed to sync user " + user.getEmail() + ": " + reason);
             result.failed++;
-            log.warn("Failed to sync user {}", user.getEmail(), e);
+            log.warn("Failed to sync user {}: {}", user.getEmail(), reason, e);
         }
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    void doPersistUserSync(User user, String kcId) {
-        user.setKeycloakId(kcId);
-        user.persist();
+    void doPersistUserSync(UUID userId, String kcId) {
+        User managedUser = User.findById(userId);
+        if (managedUser != null) {
+            managedUser.setKeycloakId(kcId);
+        }
     }
 
     // ── Keycloak user creation ────────────────────────────────────────
@@ -386,7 +402,7 @@ public class KeycloakSyncService {
         try {
             response = keycloak.realm(REALM).users().create(kcUser);
         } catch (Exception e) {
-            log.warn("Keycloak user creation failed for {}: {}", user.getEmail(), e.getMessage());
+            log.warn("Keycloak user creation failed for {}: {}", user.getEmail(), describeKeycloakException(e));
             return null;
         }
 
@@ -471,7 +487,7 @@ public class KeycloakSyncService {
             }
             assignRealmRole(keycloakId, roleName);
         } catch (Exception e) {
-            log.warn("Failed to update role in Keycloak for user {}: {}", keycloakId, e.getMessage());
+            log.warn("Failed to update role in Keycloak for user {}: {}", keycloakId, describeKeycloakException(e));
         }
     }
 
@@ -485,7 +501,7 @@ public class KeycloakSyncService {
             kcUser.setEnabled(false);
             keycloak.realm(REALM).users().get(keycloakId).update(kcUser);
         } catch (Exception e) {
-            log.warn("Failed to disable Keycloak user {}: {}", keycloakId, e.getMessage());
+            log.warn("Failed to disable Keycloak user {}: {}", keycloakId, describeKeycloakException(e));
         }
     }
 
@@ -498,7 +514,14 @@ public class KeycloakSyncService {
      */
     private UserRepresentation userToRepresentation(User user) {
         UserRepresentation kcUser = new UserRepresentation();
-        kcUser.setUsername(user.getEmail());
+        applyAppUserFields(kcUser, user, true);
+        return kcUser;
+    }
+
+    private void applyAppUserFields(UserRepresentation kcUser, User user, boolean updateUsername) {
+        if (updateUsername) {
+            kcUser.setUsername(user.getEmail());
+        }
         kcUser.setEmail(user.getEmail());
         kcUser.setFirstName(user.getFirstName());
         kcUser.setLastName(user.getLastName());
@@ -506,10 +529,33 @@ public class KeycloakSyncService {
         kcUser.setEmailVerified(true);
 
         Map<String, List<String>> attrs = new HashMap<>();
+        if (kcUser.getAttributes() != null) {
+            attrs.putAll(kcUser.getAttributes());
+        }
         attrs.put("tenant_code", List.of(user.getTenantId()));
         kcUser.setAttributes(attrs);
+    }
 
-        return kcUser;
+    private String describeKeycloakException(Exception e) {
+        if (e instanceof WebApplicationException wae && wae.getResponse() != null) {
+            Response response = wae.getResponse();
+            String body = null;
+            try {
+                if (response.hasEntity()) {
+                    body = response.readEntity(String.class);
+                }
+            } catch (Exception ignored) {
+                // Response entities can be consumed once; status + message is
+                // still more useful than hiding the original exception.
+            }
+
+            String status = response.getStatus() + " " + response.getStatusInfo().getReasonPhrase();
+            if (body != null && !body.isBlank()) {
+                return status + " - " + body;
+            }
+            return status + " - " + e.getMessage();
+        }
+        return e.getMessage();
     }
 
     private void setPassword(String userId) {

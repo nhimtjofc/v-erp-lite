@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Users,
-  Package,
   ShoppingCart,
   ShoppingBag,
   Building2,
@@ -14,6 +13,11 @@ import {
   Tag,
   Wallet,
   Banknote,
+  Globe,
+  Coins,
+  ToggleRight,
+  MessageSquare,
+  PlugZap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -55,17 +59,30 @@ export const navGroups: NavGroup[] = [
   },
   {
     labelKey: 'nav:businessAdmin',
-    roles: ['operator', 'businessOwner'],
+    roles: ['admin', 'operator', 'businessOwner'],
     items: [
-      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
-      { labelKey: 'nav:settings', to: '/settings/regional', icon: Settings, hideForRoles: ['customer'] },
+      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer', 'operator'] },
+      {
+        labelKey: 'nav:settings',
+        to: '/settings/regional',
+        icon: Settings,
+        hideForRoles: ['customer'],
+        children: [
+          { labelKey: 'nav:regional', to: '/settings/regional', icon: Globe },
+          { labelKey: 'nav:currency', to: '/settings/currency', icon: Coins },
+          { labelKey: 'nav:features', to: '/settings/features', icon: ToggleRight },
+          { labelKey: 'nav:communication', to: '/settings/communication', icon: MessageSquare },
+          { labelKey: 'nav:security', to: '/settings/security', icon: Shield },
+          { labelKey: 'nav:integrations', to: '/settings/integrations', icon: PlugZap },
+        ],
+      },
     ],
   },
   {
     labelKey: 'nav:finance',
     items: [
       // Seller wallet: business staff only (matches WalletResource roles).
-      { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner', 'operator'] },
+      { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner'] },
       // Admin payout approval dashboard: admin only.
       { labelKey: 'nav:payouts', to: '/admin/payouts', icon: Banknote, adminOnly: true },
     ],
