@@ -11,8 +11,8 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -236,8 +236,16 @@ public class PayoutService {
     }
 
     private String toCsvRow(PayoutRequest payout, int index) {
-        BigDecimal amount = BigDecimal.valueOf(payout.getAmountMinor())
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        int fractionDigits;
+        try {
+            fractionDigits = Currency.getInstance(payout.getCurrency()).getDefaultFractionDigits();
+        } catch (IllegalArgumentException ignored) {
+            fractionDigits = 2;
+        }
+        if (fractionDigits < 0) {
+            fractionDigits = 2;
+        }
+        BigDecimal amount = BigDecimal.valueOf(payout.getAmountMinor(), fractionDigits);
         return String.format("%d,%s,%s,%s,%s,%s,%s,%s,%s",
                 index,
                 escapeCsv(payout.getId().toString()),

@@ -148,6 +148,18 @@ class PayoutServiceTest {
                 .toList());
     }
 
+    @Test
+    void csvExportUsesTheCurrenciesMinorUnitScale() {
+        String tenantId = tenant();
+        Wallet wallet = createFundedWallet(tenantId, 100_000);
+        payoutService.createPayout(
+                tenantId, wallet.getId(), 50_000, "VND", "VCB", "123", "Seller", actorId);
+
+        String csv = payoutService.generateCsv(tenantId, "FLAGGED");
+
+        assertTrue(csv.contains(",50000,VND,FLAGGED,"));
+    }
+
     private Wallet createFundedWallet(String tenantId, long amountMinor) {
         Wallet wallet = walletService.getOrCreateWallet(tenantId, "SELLER", UUID.randomUUID(), "VND", actorId);
         walletService.creditAvailable(

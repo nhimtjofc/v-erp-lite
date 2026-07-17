@@ -29,6 +29,7 @@ function AuthenticatedShell() {
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
       pathname.startsWith('/orders') ||
+      pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 
     if (!customerAllowed) {

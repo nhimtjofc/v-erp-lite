@@ -54,6 +54,10 @@ public class PayoutResource {
         public String reason;
     }
 
+    public static class ScreenPayoutRequest {
+        public UUID walletId;
+    }
+
     public static class PayoutResponse {
         public UUID id;
         public UUID walletId;
@@ -120,6 +124,25 @@ public class PayoutResource {
         response.minimumThresholdMinor = payoutAutomationService.minimumThresholdMinor();
         response.lastStatus = history.isEmpty() ? null : history.getFirst().getStatus();
         return response;
+    }
+
+    @POST
+    @Path("/screen")
+    @RolesAllowed("businessOwner")
+    @Transactional
+    public PayoutResponse screenMyPayout(ScreenPayoutRequest request) {
+        if (request == null || request.walletId == null) {
+            throw new BadRequestException("walletId is required");
+        }
+        Wallet wallet = requireOwnWallet(request.walletId);
+        if (wallet.getAvailableBalanceMinor() < payoutAutomationService.minimumThresholdMinor()) {
+            throw new BadRequestException("Available balance is below the automated payout threshold");
+        }
+        PayoutRequest payout = payoutAutomationService.processWallet(wallet.getId());
+        if (payout == null) {
+            throw new BadRequestException("Wallet is not currently eligible for payout screening");
+        }
+        return PayoutResponse.from(payout);
     }
 
     @GET

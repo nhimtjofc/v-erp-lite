@@ -329,8 +329,9 @@ export function OrdersPage() {
     const navigate = useNavigate()
     const { data: me, isLoading: isMeLoading } = useMeQuery()
     const roleName = me?.role?.name
-    const isCustomer = roleName === 'customer'
+    const isCustomer = roleName === 'customer' || roleName === 'user'
     const isAdmin = roleName === 'admin'
+    const canAccessPayment = ['admin', 'businessOwner', 'operator', 'customer', 'user'].includes(roleName ?? '')
 
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -693,7 +694,7 @@ export function OrdersPage() {
                                     onDelete={() => handleDeleteOrder(order)}
                                     onPayment={() => navigate({ to: '/orders/payment', search: { orderId: order.id! } })}
                                     canDelete={canDeleteOrder(order)}
-                                    showPaymentAction={isCustomer && ['PENDING', 'PENDING_PAYMENT'].includes(order.status?.toUpperCase() ?? '')}
+                                    showPaymentAction={canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(order.status?.toUpperCase() ?? '')}
                                     isDeleting={deletingOrderId === order.id}
                                 />
                             ))}
@@ -733,7 +734,7 @@ export function OrdersPage() {
                                         <div className="text-right shrink-0">
                                             <div className="font-bold text-sm">{formatUSD(Number(order.finalAmountMinor))}</div>
                                         </div>
-                                        {isCustomer && ['PENDING', 'PENDING_PAYMENT'].includes(status) && (
+                                        {canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(status) && (
                                             <Button
                                                 size="sm"
                                                 onClick={(event) => {

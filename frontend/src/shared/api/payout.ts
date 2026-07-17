@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { approve, list, reject, status } from './gen/sdk.gen'
+import { approve, list, reject, screenMyPayout, status } from './gen/sdk.gen'
 import type { PayoutResponse, PayoutStatusResponse } from './gen/types.gen'
 
 export type PayoutRequest = PayoutResponse
@@ -40,6 +40,18 @@ export function usePayoutStatusQuery(walletId?: string) {
       return response.data
     },
     enabled: !!walletId,
+  })
+}
+
+export function useRunPayoutScreeningMutation() {
+  return useMutation({
+    mutationFn: async (walletId: string) => {
+      const response = await screenMyPayout({
+        body: { walletId },
+        throwOnError: true,
+      })
+      return response.data
+    },
   })
 }
 

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useGetOrderQuery,
+  useConfirmReceiptMutation,
   useUpdateStatusMutation,
   useOwnerDecisionMutation,
   listOrdersQueryKey,
@@ -10,6 +11,12 @@ import {
   useWooCommerceOrdersQuery,
   useReconcileWooCommerceOrderMutation,
 } from '@/shared/api'
+import {
+  useOrderEscrowQuery,
+  useOrderPaymentActivityQuery,
+  useOrderRefundsQuery,
+  type OrderPaymentAttempt,
+} from '@/shared/api/order-details'
 import { cartApi } from '@/shared/api/cart'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
@@ -17,11 +24,11 @@ import { Badge } from '@/shared/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { formatUSD } from '@/shared/utils/currency'
+import { formatMoneyMinor, formatUSD } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2, Save, PlugZap, CreditCard,
+  Trash2, Save, PlugZap, CreditCard, Shield, RotateCcw, KeyRound,
 } from 'lucide-react'
 
 interface OrderHistoryEntry {
@@ -126,14 +133,131 @@ async function deleteOrder(orderId: string): Promise<void> {
   }
 }
 
+function paymentBadgeClass(status?: string): string {
+  switch (status?.toUpperCase()) {
+    case 'SUCCEEDED':
+    case 'SUCCESS':
+      return 'border-success/30 bg-success/10 text-success'
+    case 'FAILED':
+    case 'CANCELLED':
+      return 'border-destructive/30 bg-destructive/10 text-destructive'
+    case 'PROCESSING':
+      return 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+    default:
+      return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+  }
+}
+
+function PaymentActivityCard({
+  attempts,
+  isLoading,
+  isError,
+  orderId,
+  payable,
+}: {
+  attempts: OrderPaymentAttempt[]
+  isLoading: boolean
+  isError: boolean
+  orderId: string
+  payable: boolean
+}) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-row items-center gap-3">
+        <CreditCard className="h-5 w-5 text-primary" />
+        <div>
+          <CardTitle className="text-lg">Payment Activity</CardTitle>
+          <CardDescription>PaymentIntent lifecycle and gateway attempts from the backend</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading payment activity...</p>
+        ) : isError ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            Payment activity could not be loaded for this order.
+          </div>
+        ) : attempts.length === 0 ? (
+          <div className="space-y-3 rounded-lg border border-dashed p-4 text-sm">
+            <p className="text-muted-foreground">No PaymentIntent has been created yet.</p>
+            {payable && (
+              <Link to="/orders/payment" search={{ orderId }}>
+                <Button size="sm"><CreditCard className="mr-1.5 h-4 w-4" /> Open payment checkout</Button>
+              </Link>
+            )}
+          </div>
+        ) : (
+          attempts.map(({ intent, transactions }, index) => (
+            <div key={intent.id} className="space-y-3 rounded-lg border p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={paymentBadgeClass(intent.status)}>
+                      {intent.status ?? 'UNKNOWN'}
+                    </Badge>
+                    {index === 0 && <Badge variant="secondary">Latest</Badge>}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Created {intent.createdAt ? new Date(intent.createdAt).toLocaleString() : '—'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Expires {intent.expiresAt ? new Date(intent.expiresAt).toLocaleString() : '—'}
+                  </p>
+                </div>
+                <span className="font-semibold">
+                  {formatMoneyMinor(Number(intent.amountMinor ?? 0), intent.currency ?? 'USD')}
+                </span>
+              </div>
+
+              <div className="flex min-w-0 items-start gap-2 rounded-md bg-muted/50 p-2 text-xs">
+                <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <span className="text-muted-foreground">Idempotency key</span>
+                  <code className="block truncate font-mono" title={intent.idempotencyKey}>{intent.idempotencyKey ?? '—'}</code>
+                </div>
+              </div>
+
+              {transactions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No gateway transaction recorded yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {transactions.map((transaction) => (
+                    <div key={transaction.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-xs">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{transaction.gateway ?? 'Gateway'}</span>
+                          <Badge variant="outline" className={paymentBadgeClass(transaction.status)}>
+                            {transaction.status ?? 'UNKNOWN'}
+                          </Badge>
+                        </div>
+                        <code className="mt-1 block max-w-56 truncate font-mono text-muted-foreground" title={transaction.gatewayTransactionId}>
+                          {transaction.gatewayTransactionId ?? '—'}
+                        </code>
+                      </div>
+                      <span className="text-muted-foreground">
+                        {transaction.createdAt ? new Date(transaction.createdAt).toLocaleString() : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function OrderDetailPage() {
   const { id } = useParams({ from: '/_authenticated/orders/$id' })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: me } = useMeQuery()
   const isAdmin = me?.role?.name === 'admin'
-  const isCustomer = me?.role?.name === 'customer'
+  const isCustomer = me?.role?.name === 'customer' || me?.role?.name === 'user'
   const isOwner = me?.role?.name === 'businessOwner'
+  const canAccessPayment = isAdmin || isOwner || me?.role?.name === 'operator' || isCustomer
   const isStaff = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [showStatusDialog, setShowStatusDialog] = useState(false)
@@ -180,13 +304,26 @@ export function OrderDetailPage() {
   })
 
   const history = historyQuery.data ?? []
-  const isRefreshing = isOrderFetching || historyQuery.isFetching || isWooOrdersFetching
+  const escrowQuery = useOrderEscrowQuery(id)
+  const refundQuery = useOrderRefundsQuery(id)
+  const paymentActivityQuery = useOrderPaymentActivityQuery(id, canAccessPayment)
+  const escrowRecords = escrowQuery.data
+  const refundRecords = refundQuery.data
+  const isRefreshing = isOrderFetching
+    || historyQuery.isFetching
+    || isWooOrdersFetching
+    || escrowQuery.isFetching
+    || refundQuery.isFetching
+    || paymentActivityQuery.isFetching
 
   const refreshOrderPage = async () => {
     await Promise.all([
       refetchOrder(),
       historyQuery.refetch(),
       refetchWooOrders(),
+      escrowQuery.refetch(),
+      refundQuery.refetch(),
+      paymentActivityQuery.refetch(),
     ])
   }
 
@@ -219,6 +356,17 @@ export function OrderDetailPage() {
       setDecisionError(null)
     },
     onError: (err) => setDecisionError(err instanceof Error ? err.message : 'Unable to submit owner decision.'),
+  })
+
+  const confirmReceiptMutation = useConfirmReceiptMutation({
+    onSuccess: async () => {
+      await refreshOrderPage()
+      await queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      setStatusError(null)
+    },
+    onError: (err) => {
+      setStatusError(err instanceof Error ? err.message : 'Unable to confirm receipt.')
+    },
   })
 
   const deleteMutation = useMutation({
@@ -347,7 +495,7 @@ export function OrderDetailPage() {
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
 
-          {isCustomer && isPendingPayment && (
+          {canAccessPayment && isPendingPayment && (
             <Link to="/orders/payment" search={{ orderId: id }}>
               <Button size="sm">
                 <CreditCard className="h-4 w-4 mr-1.5" /> Payment
@@ -380,6 +528,16 @@ export function OrderDetailPage() {
           {isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
           {isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
           {isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete</Button>}
+          {isCustomer && status === 'DELIVERED' && (
+            <Button
+              onClick={() => confirmReceiptMutation.mutate({ path: { id } })}
+              disabled={confirmReceiptMutation.isPending}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+              {confirmReceiptMutation.isPending ? 'Confirming...' : 'Confirm received'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -393,6 +551,16 @@ export function OrderDetailPage() {
         <div className="rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm">
           Owner decision deadline: <strong>{new Date(order.ownerDecisionDeadline).toLocaleString()}</strong>. Funds remain in escrow after acceptance.
         </div>
+      )}
+
+      {canAccessPayment && (
+        <PaymentActivityCard
+          attempts={paymentActivityQuery.data}
+          isLoading={paymentActivityQuery.isLoading}
+          isError={paymentActivityQuery.isError}
+          orderId={id}
+          payable={isPendingPayment}
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -755,6 +923,73 @@ export function OrderDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {escrowRecords && escrowRecords.length > 0 && (
+            <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3">
+                <Shield className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">Escrow Records</CardTitle>
+                  <CardDescription>Funds held and released for this order</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {escrowRecords.map((record) => (
+                  <div key={record.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={
+                          record.status === 'RELEASED' ? 'default' :
+                          record.status === 'REFUNDED' ? 'destructive' : 'secondary'
+                        }>
+                          {record.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Release due: {record.releaseDueAt ? new Date(record.releaseDueAt).toLocaleDateString() : '—'}
+                      </p>
+                    </div>
+                    <span className="font-semibold">
+                      {formatMoneyMinor(Number(record.amountMinor ?? 0), record.currency ?? order.currency ?? 'USD')}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {refundRecords && refundRecords.length > 0 && (
+            <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3">
+                <RotateCcw className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">Refund Details</CardTitle>
+                  <CardDescription>Payment refunds for this order</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {refundRecords.map((refund) => (
+                  <div key={refund.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={refund.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                          {refund.status}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{refund.gateway}</span>
+                      </div>
+                      {refund.reason && (
+                        <p className="text-xs text-muted-foreground italic">"{refund.reason}"</p>
+                      )}
+                      <p className="text-xs text-muted-foreground font-mono">Refund ID: {refund.gatewayRefundId}</p>
+                    </div>
+                    <span className="font-semibold text-destructive">
+                      -{formatMoneyMinor(Number(refund.amountMinor ?? 0), refund.currency ?? order.currency ?? 'USD')}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

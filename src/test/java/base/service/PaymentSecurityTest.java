@@ -333,6 +333,22 @@ class PaymentSecurityTest {
     }
 
     @Test
+    void mockGatewaySessionKeepsStableTransactionIdForIntent() {
+        String tenantId = tenant();
+        var seed = testDataFactory.seedOrder(tenantId, new java.math.BigDecimal("50000"));
+        PaymentIntent intent = paymentIntentService.createIntent(
+                tenantId, seed.order().getId(), seed.customer().getId(),
+                50_000, "VND", "stable-session-" + UUID.randomUUID(), actorId);
+
+        var first = paymentGatewayService.initiatePayment(intent, "MOCK");
+        var second = paymentGatewayService.initiatePayment(intent, "MOCK");
+
+        assertEquals(first.gatewayTransactionId(), second.gatewayTransactionId());
+        assertEquals(first.paymentUrl(), second.paymentUrl());
+        assertEquals(first.qrCodeContent(), second.qrCodeContent());
+    }
+
+    @Test
     void validRawPayloadSignatureVerified() {
         String payload = "{\"status\":\"SUCCESS\"}";
         String sig = paymentGatewayService.hmacSha256ForTest(payload);

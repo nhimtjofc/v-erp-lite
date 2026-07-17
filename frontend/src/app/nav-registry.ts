@@ -18,6 +18,7 @@ import {
   ToggleRight,
   MessageSquare,
   PlugZap,
+  Bell,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -55,6 +56,7 @@ export const navGroups: NavGroup[] = [
       { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
       { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
       { labelKey: 'nav:cart', to: '/cart', icon: ShoppingCart },
+      { labelKey: 'nav:notifications', to: '/notifications', icon: Bell },
     ],
   },
   {

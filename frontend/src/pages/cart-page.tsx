@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { AlertCircle, Minus, Plus, ShoppingCart, Trash2, Building2, Tag, ChevronRight, ShoppingBag, Info, Percent } from 'lucide-react'
+import { AlertCircle, Minus, Plus, ShoppingCart, Trash2, Building2, Tag, ChevronRight, ShoppingBag, Info, Percent, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cartApi } from '@/shared/api/cart'
 import { catalogApi } from '@/shared/api/catalog'
@@ -30,6 +30,10 @@ interface CartItem {
   variant?: any
   quantity: number
   priceMinor: number
+}
+
+function cartBusinessId(item: CartItem): string {
+  return item.product.business?.id ?? 'unassigned'
 }
 
 function formatMoney(value?: number | null) {
@@ -193,6 +197,27 @@ export function CartPage() {
       return []
     }
   })
+  const [checkoutBusinessId, setCheckoutBusinessId] = useState('')
+
+  const buyerBusinessIds = useMemo(
+    () => Array.from(new Set(buyerCart.map(cartBusinessId))),
+    [buyerCart],
+  )
+
+  useEffect(() => {
+    if (buyerBusinessIds.length === 0) {
+      setCheckoutBusinessId('')
+      return
+    }
+    if (!buyerBusinessIds.includes(checkoutBusinessId)) {
+      setCheckoutBusinessId(buyerBusinessIds[0])
+    }
+  }, [buyerBusinessIds, checkoutBusinessId])
+
+  const checkoutItems = useMemo(
+    () => buyerCart.filter((item) => cartBusinessId(item) === checkoutBusinessId),
+    [buyerCart, checkoutBusinessId],
+  )
 
   useEffect(() => {
     if (isCustomer) {
@@ -254,8 +279,7 @@ export function CartPage() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
       queryClient.invalidateQueries({ queryKey: myVouchersQueryKey() })
-      setBuyerCart([])
-      localStorage.setItem('buyer_cart', '[]')
+      setBuyerCart((current) => current.filter((item) => cartBusinessId(item) !== checkoutBusinessId))
       setShowCheckout(false)
       setSelectedVoucherId('')
       const result = data as { id?: string; data?: { id?: string } }
@@ -271,8 +295,8 @@ export function CartPage() {
 
   // Customer calculation variables
   const buyerCartTotal = useMemo(() => {
-    return buyerCart.reduce((sum, item) => sum + item.priceMinor * item.quantity, 0)
-  }, [buyerCart])
+    return checkoutItems.reduce((sum, item) => sum + item.priceMinor * item.quantity, 0)
+  }, [checkoutItems])
 
   const selectedVoucher = useMemo(() => {
     if (!selectedVoucherId || !collectedVoucherList.length) return null
@@ -324,6 +348,10 @@ export function CartPage() {
   }
 
   const handlePlaceOrder = () => {
+    if (!checkoutBusinessId || checkoutItems.length === 0) {
+      setError('Vui lòng chọn một cửa hàng để tạo đơn và thanh toán.')
+      return
+    }
     if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
       setError('Vui lòng điền đầy đủ tên, số điện thoại và địa chỉ giao hàng')
       return
@@ -336,7 +364,7 @@ export function CartPage() {
         shippingPhone: customerPhone.trim(),
         shippingAddress: customerAddress.trim(),
         shippingNote: shippingNote.trim() || undefined,
-        items: buyerCart.map(item => ({
+        items: checkoutItems.map(item => ({
           productId: item.product.id,
           productVariantId: item.variant?.id ?? null,
           quantity: item.quantity,
@@ -401,13 +429,30 @@ export function CartPage() {
             {/* Left: Cart items list grouped by vendor */}
             <div className="space-y-4">
               {Object.entries(groupedCart).map(([bizId, group]) => (
-                <Card key={bizId} className="shadow-sm overflow-hidden border border-border">
+                <Card
+                  key={bizId}
+                  className={`shadow-sm overflow-hidden border ${checkoutBusinessId === bizId ? 'border-primary ring-1 ring-primary/30' : 'border-border'}`}
+                >
                   <div className="bg-muted/30 px-4 py-3 border-b border-border flex items-center gap-2">
                     <Building2 className="h-4.5 w-4.5 text-primary shrink-0" />
                     <span className="font-bold text-sm text-foreground">{group.business.name}</span>
                     <Badge variant="outline" className="ml-2 bg-background border-primary/20 text-primary text-xs px-2 py-0">
                       Cửa hàng
                     </Badge>
+                    <Button
+                      type="button"
+                      variant={checkoutBusinessId === bizId ? 'default' : 'outline'}
+                      size="sm"
+                      className="ml-auto"
+                      onClick={() => {
+                        setCheckoutBusinessId(bizId)
+                        setSelectedVoucherId('')
+                        setError('')
+                      }}
+                    >
+                      {checkoutBusinessId === bizId && <CheckCircle2 className="mr-1 h-4 w-4" />}
+                      {checkoutBusinessId === bizId ? 'Đang thanh toán' : 'Thanh toán cửa hàng này'}
+                    </Button>
                   </div>
                   <CardContent className="p-0 divide-y divide-border">
                     {group.items.map((item, idx) => {
@@ -545,6 +590,11 @@ export function CartPage() {
                   <CardTitle className="text-base">Tóm tắt đơn hàng</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {buyerBusinessIds.length > 1 && (
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                      Giỏ hàng có {buyerBusinessIds.length} cửa hàng. Mỗi cửa hàng tạo một đơn và một phiên thanh toán riêng để đúng luồng xác nhận của chủ cửa hàng.
+                    </div>
+                  )}
                   <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tổng tiền hàng</span>
@@ -600,8 +650,9 @@ export function CartPage() {
                     className="w-full cursor-pointer shadow-md hover:shadow-lg transition-all"
                     size="lg"
                     onClick={() => setShowCheckout(true)}
+                    disabled={!checkoutBusinessId || checkoutItems.length === 0}
                   >
-                    Tiến hành thanh toán
+                    Thanh toán cửa hàng đã chọn
                   </Button>
                 </CardContent>
               </Card>
@@ -615,7 +666,7 @@ export function CartPage() {
             <DialogHeader>
               <DialogTitle className="text-lg font-bold">Thông tin nhận hàng</DialogTitle>
               <DialogDescription>
-                Vui lòng nhập chính xác thông tin nhận hàng bên dưới.
+                Vui lòng nhập chính xác thông tin nhận hàng. Đơn này gồm {checkoutItems.length} dòng sản phẩm từ một cửa hàng.
               </DialogDescription>
             </DialogHeader>
 
@@ -698,7 +749,7 @@ export function CartPage() {
               </div>
 
               <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                Đơn hàng sẽ được lưu ở trạng thái Pending. Bạn có thể thanh toán ngay hoặc quay lại cửa hàng và thanh toán sau trong mục Đơn hàng.
+                Sau khi tạo đơn, ứng dụng sẽ mở phiên thanh toán MockPay. Các sản phẩm của cửa hàng khác vẫn được giữ trong giỏ để thanh toán riêng.
               </p>
             </div>
 

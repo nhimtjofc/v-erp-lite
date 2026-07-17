@@ -12,6 +12,7 @@ import {
 import {
   PAYOUT_STATUS_META,
   usePayoutStatusQuery,
+  useRunPayoutScreeningMutation,
   useSellerPayoutsQuery,
 } from '@/shared/api/payout'
 import { formatMoneyMinor } from '@/shared/utils/currency'
@@ -29,7 +30,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
-import { Banknote, CalendarClock, Clock, Coins, Landmark, TrendingUp, Wallet } from 'lucide-react'
+import { AlertCircle, CalendarClock, Clock, Coins, Landmark, RefreshCw, ShieldCheck, TrendingUp, Wallet } from 'lucide-react'
 
 const WALLET_ROLES = ['businessOwner']
 
@@ -146,13 +147,43 @@ function BankDetailsDialog({
 
 function PayoutStatusWidget({ wallet }: { wallet: SellerWallet }) {
   const [bankOpen, setBankOpen] = useState(false)
+  const [screeningMessage, setScreeningMessage] = useState('')
+  const [screeningError, setScreeningError] = useState('')
+  const queryClient = useQueryClient()
   const { data: payoutStatus, isLoading } = usePayoutStatusQuery(wallet.id)
+  const runScreening = useRunPayoutScreeningMutation()
   const bankConfigured = Boolean(wallet.bankName && wallet.bankAccountNumber && wallet.bankAccountHolder)
+  const minimumThreshold = Number(payoutStatus?.minimumThresholdMinor ?? 0)
+  const availableBalance = Number(wallet.availableBalanceMinor ?? 0)
+  const isEligible = Boolean(wallet.id) && bankConfigured && availableBalance >= minimumThreshold
+
+  const handleRunScreening = async () => {
+    setScreeningMessage('')
+    setScreeningError('')
+    try {
+      const payout = await runScreening.mutateAsync(wallet.id!)
+      const status = payout?.status ?? 'CREATED'
+      setScreeningMessage(
+        status === 'PAID'
+          ? 'Payout passed screening and the mock bank transfer completed.'
+          : `Payout screening completed with status ${status}${payout?.flagReason ? `: ${payout.flagReason}` : '.'}`,
+      )
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['seller-wallet'] }),
+        queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['seller-payouts'] }),
+        queryClient.invalidateQueries({ queryKey: ['payout-status'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-payouts'] }),
+      ])
+    } catch (cause) {
+      setScreeningError(cause instanceof Error ? cause.message : 'Unable to run payout screening.')
+    }
+  }
 
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3">
+        <CardHeader className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <CardTitle className="flex items-center gap-2">
               <CalendarClock className="h-5 w-5 text-primary" /> Automated payout status
@@ -161,25 +192,47 @@ function PayoutStatusWidget({ wallet }: { wallet: SellerWallet }) {
               Eligible balances are screened automatically; admin only sees exceptions.
             </p>
           </div>
-          <Button variant="outline" onClick={() => setBankOpen(true)}>
-            <Landmark className="mr-2 h-4 w-4" /> {bankConfigured ? 'Update bank details' : 'Add bank details'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setBankOpen(true)}>
+              <Landmark className="mr-2 h-4 w-4" /> {bankConfigured ? 'Update bank details' : 'Add bank details'}
+            </Button>
+            <Button onClick={handleRunScreening} disabled={!isEligible || runScreening.isPending}>
+              {runScreening.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Run payout check
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <p className="text-xs text-muted-foreground">Last payout</p>
-            <p className="font-semibold">{isLoading ? 'Loading…' : formatDate(payoutStatus?.lastPayoutAt)}</p>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Last payout</p>
+              <p className="font-semibold">{isLoading ? 'Loading…' : formatDate(payoutStatus?.lastPayoutAt)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Next scheduled run</p>
+              <p className="font-semibold">{isLoading ? 'Loading…' : formatDate(payoutStatus?.nextScheduledRunAt)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Minimum eligible balance</p>
+              <p className="font-semibold">
+                {formatMoneyMinor(minimumThreshold, wallet.currency ?? 'VND')}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Next scheduled run</p>
-            <p className="font-semibold">{isLoading ? 'Loading…' : formatDate(payoutStatus?.nextScheduledRunAt)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Minimum eligible balance</p>
-            <p className="font-semibold">
-              {formatMoneyMinor(Number(payoutStatus?.minimumThresholdMinor ?? 0), wallet.currency ?? 'VND')}
-            </p>
-          </div>
+          {!bankConfigured && (
+            <p className="text-sm text-muted-foreground">Add bank details before running payout screening.</p>
+          )}
+          {bankConfigured && availableBalance < minimumThreshold && (
+            <p className="text-sm text-muted-foreground">The available balance is below the payout threshold.</p>
+          )}
+          {screeningMessage && (
+            <div className="rounded-md border border-success/30 bg-success/10 p-3 text-sm text-success">{screeningMessage}</div>
+          )}
+          {screeningError && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {screeningError}
+            </div>
+          )}
         </CardContent>
       </Card>
       <BankDetailsDialog open={bankOpen} onOpenChange={setBankOpen} wallet={wallet} />

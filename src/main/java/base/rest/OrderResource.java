@@ -13,9 +13,11 @@ import java.util.UUID;
 import base.entity.Customer;
 import base.entity.Business;
 import base.entity.CustomerVoucher;
+import base.entity.EscrowRecord;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.OrderItem;
+import base.entity.PaymentRefund;
 import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.Voucher;
@@ -271,6 +273,58 @@ public class OrderResource {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Escrow Records
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GET
+    @Path("/{id}/escrow")
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    public List<EscrowRecord> getEscrowRecords(@PathParam("id") UUID id) {
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessOwnerAccess(order);
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+                throw new ForbiddenException("You are not allowed to view escrow records for this order");
+            }
+        }
+        return EscrowRecord.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Payment Refunds
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GET
+    @Path("/{id}/refunds")
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    public List<PaymentRefund> getRefunds(@PathParam("id") UUID id) {
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessOwnerAccess(order);
+        boolean isCustomer = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+                throw new ForbiddenException("You are not allowed to view refunds for this order");
+            }
+        }
+        return PaymentRefund.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Checkout
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -470,6 +524,44 @@ public class OrderResource {
                 caller.tenantCode(), id, owner, request.decision, request.reason, caller.userId());
     }
 
+    @POST
+    @Path("/{id}/confirm-receipt")
+    @RolesAllowed("customer")
+    @Transactional
+    public Order confirmReceipt(@PathParam("id") UUID id) {
+        boolean isCustomerOnly = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can confirm receipt");
+        }
+
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        paymentAccess.requireOrderAccess(order);
+
+        String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if ("COMPLETED".equals(oldStatus)) {
+            return order;
+        }
+        if (!"DELIVERED".equals(oldStatus)) {
+            throw new BadRequestException("Only a delivered order can be confirmed as received");
+        }
+
+        UUID userId = caller.userId();
+        completeOrder(order, tenantCode, userId);
+        order.setStatus("COMPLETED");
+        order.setUpdatedBy(userId);
+        persistHistory(order, oldStatus, "COMPLETED", "Buyer confirmed receipt", userId, tenantCode);
+        return order;
+    }
+
     @PUT
     @Path("/{id}/status")
     @RolesAllowed({"admin", "businessOwner", "operator"})
@@ -570,36 +662,9 @@ public class OrderResource {
             }
         }
 
-        // Award points & update membership tier upon order completion
+        // Award points, update membership, and release escrow on completion.
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
-            Customer customer = order.getCustomer();
-            if (customer != null) {
-                long amount = order.getFinalAmountMinor();
-                if (customer.getTotalSpendMinor() == null) {
-                    customer.setTotalSpendMinor(0L);
-                }
-                customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
-                // 1 point per 100 units of minor currency
-                int earnedPoints = (int) (amount / 100);
-                customer.setPoints(customer.getPoints() + earnedPoints);
-
-                // Update tier dynamically based on new totalSpend
-                long totalSpend = customer.getTotalSpendMinor();
-                if (totalSpend >= 300000) {
-                    customer.setTier("DIAMOND");
-                } else if (totalSpend >= 100000) {
-                    customer.setTier("PLATINUM");
-                } else if (totalSpend >= 20000) {
-                    customer.setTier("GOLD");
-                } else {
-                    customer.setTier("SILVER");
-                }
-            }
-        }
-
-        if (List.of("DELIVERED", "COMPLETED").contains(newStatus)
-                && !List.of("DELIVERED", "COMPLETED").contains(oldStatus)) {
-            escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
+            completeOrder(order, tenantCode, userId);
         }
 
         if ("CANCELLED".equals(newStatus) && !"CANCELLED".equals(oldStatus)) {
@@ -708,6 +773,30 @@ public class OrderResource {
         history.setNote(note);
         history.setCreatedBy(userId);
         history.persist();
+    }
+
+    private void completeOrder(Order order, String tenantCode, UUID userId) {
+        Customer customer = order.getCustomer();
+        if (customer != null) {
+            long amount = order.getFinalAmountMinor();
+            if (customer.getTotalSpendMinor() == null) {
+                customer.setTotalSpendMinor(0L);
+            }
+            customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
+            customer.setPoints(customer.getPoints() + (int) (amount / 100));
+
+            long totalSpend = customer.getTotalSpendMinor();
+            if (totalSpend >= 300000) {
+                customer.setTier("DIAMOND");
+            } else if (totalSpend >= 100000) {
+                customer.setTier("PLATINUM");
+            } else if (totalSpend >= 20000) {
+                customer.setTier("GOLD");
+            } else {
+                customer.setTier("SILVER");
+            }
+        }
+        escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
     }
 
     private void requireBusinessOwnerAccess(Order order) {

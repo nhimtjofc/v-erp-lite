@@ -34,7 +34,7 @@ public class PaymentGatewayService {
             throw new IllegalArgumentException("PaymentIntent is required");
         }
         String normalizedGateway = normalizeGateway(gateway);
-        String transactionId = generateTransactionId(normalizedGateway);
+        String transactionId = transactionIdForIntent(normalizedGateway, intent.getId());
 
         String paymentUrl = buildMockPaymentUrl(intent, transactionId, normalizedGateway);
         String qrContent = buildQrCodeContent(intent, transactionId, normalizedGateway);
@@ -112,6 +112,15 @@ public class PaymentGatewayService {
             default -> "MOCK";
         };
         return prefix + "_" + Instant.now().toEpochMilli() + "_" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private String transactionIdForIntent(String gateway, UUID intentId) {
+        String prefix = switch (normalizeGateway(gateway)) {
+            case "VNPAY" -> "VNP";
+            case "STRIPE" -> "STR";
+            default -> "MOCK";
+        };
+        return prefix + "_" + intentId.toString().replace("-", "");
     }
 
     private String buildMockPaymentUrl(PaymentIntent intent, String transactionId, String gateway) {

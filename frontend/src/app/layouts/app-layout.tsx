@@ -31,11 +31,13 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronDown,
+    Bell,
 } from 'lucide-react'
 import type { User } from 'oidc-client-ts'
 import { useTheme } from '@/shared/hooks/use-theme'
 import { getInitials } from '@/shared/utils/user'
 import { useAuthStore } from '@/shared/store/auth-store'
+import { useNotificationCountQuery } from '@/shared/api/notifications'
 
 /* ------------------------------------------------------------------ */
 /*  Base UI Menu recursive item list for collapsed sidebar popups      */
@@ -348,6 +350,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const isAdmin = role === 'admin'
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const homePath = role === 'admin' ? '/orders' : role === 'customer' || role === 'user' ? '/shop' : '/dashboard'
+  const { data: notifCount } = useNotificationCountQuery()
+  const unreadCount = notifCount?.unread ?? 0
 
     const initials = getInitials(user)
 
@@ -369,6 +373,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
       pathname.startsWith('/admin/payouts') ||
+      pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =
@@ -501,6 +506,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Button>
 
           <div className="ml-auto flex items-center gap-3">
+            <Link to="/notifications" className="relative">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Bell className="h-4.5 w-4.5" />
+              </Button>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent">
                 <Avatar className="h-7 w-7">

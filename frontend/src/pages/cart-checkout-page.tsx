@@ -8,6 +8,7 @@ import {
     myVouchersOptions,
     listOrdersQueryKey,
     type Customer,
+    type Order,
     type Product,
     type ProductVariant,
 } from '@/shared/api'
@@ -844,11 +845,11 @@ export function CartCheckoutPage() {
     const [error, setError] = useState('')
 
     const checkoutMutation = useCheckoutOrderMutation({
-        onSuccess: (data: any) => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
-            const createdOrder = data?.data
+            const createdOrder = data as Order
             if (createdOrder?.id) {
-                navigate({ to: '/orders/$id', params: { id: createdOrder.id } })
+                navigate({ to: '/orders/payment', search: { orderId: createdOrder.id } })
             } else {
                 navigate({ to: '/orders' })
             }
