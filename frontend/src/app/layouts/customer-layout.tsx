@@ -67,7 +67,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         <div className="absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-amber-200/35 blur-3xl dark:bg-cyan-500/10" />
       </div>
 
-      <header className="relative z-30 border-b border-orange-200/70 bg-white/75 px-4 py-3 shadow-sm shadow-orange-100/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-none">
+      <header className="relative z-[80] border-b border-orange-200/70 bg-white/75 px-4 py-3 shadow-sm shadow-orange-100/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-none">
         <div className="mx-auto flex max-w-7xl items-center gap-4">
           <Link to="/shop" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-500 text-white shadow-lg shadow-orange-500/25">
@@ -161,7 +161,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
                 Hi {displayName.split('@')[0]}, ready to browse?
               </h1>
             </div>
-            <div className="rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
+            <div className="pointer-events-none rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
               Fast checkout · Vouchers · Live stock
             </div>
           </div>
