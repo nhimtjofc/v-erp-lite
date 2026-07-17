@@ -3,6 +3,8 @@ package base.rest;
 import base.entity.Role;
 import base.entity.Tenant;
 import base.entity.User;
+import base.entity.VendorRiskEvent;
+import base.security.CallerContext;
 import base.service.KeycloakSyncService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -36,6 +38,9 @@ public class AdminResource {
 
     @Inject
     KeycloakSyncService keycloakSync;
+
+    @Inject
+    CallerContext caller;
 
     // ──────────────────────────────────────────────
     // Tenant management
@@ -172,6 +177,36 @@ public class AdminResource {
 
         user.delete();
         return Response.noContent().build();
+    }
+
+    // ──────────────────────────────────────────────
+    // Vendor Risk Events
+    // ──────────────────────────────────────────────
+
+    @GET
+    @Path("/risk-events")
+    public List<VendorRiskEvent> listRiskEvents(
+            @QueryParam("ownerId") UUID ownerId,
+            @QueryParam("resolved") Boolean resolved
+    ) {
+        StringBuilder query = new StringBuilder("FROM VendorRiskEvent WHERE tenantId = ?1");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        params.add(caller.tenantCode());
+
+        if (ownerId != null) {
+            query.append(" AND ownerId = ?").append(params.size() + 1);
+            params.add(ownerId);
+        }
+        if (resolved != null) {
+            if (resolved) {
+                query.append(" AND resolvedAt IS NOT NULL");
+            } else {
+                query.append(" AND resolvedAt IS NULL");
+            }
+        }
+        query.append(" ORDER BY occurredAt DESC");
+
+        return VendorRiskEvent.find(query.toString(), params.toArray()).list();
     }
 
     /**

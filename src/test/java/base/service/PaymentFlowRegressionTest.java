@@ -2,6 +2,7 @@ package base.service;
 
 import base.entity.EscrowRecord;
 import base.entity.LedgerCheckpoint;
+import base.entity.Order;
 import base.entity.PaymentIntent;
 import base.entity.PayoutRequest;
 import base.entity.Wallet;
@@ -79,6 +80,8 @@ class PaymentFlowRegressionTest {
                 actorId
         );
         assertEquals("SUCCEEDED", succeeded.getStatus());
+        Order paidOrder = Order.findById(seed.order().getId());
+        assertEquals("PAID_ESCROW", paidOrder.getStatus());
 
         // 3. Verify escrow created (seller gets 95_000 after 5% commission, platform gets 5_000)
         List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, seed.order().getId());
@@ -130,12 +133,12 @@ class PaymentFlowRegressionTest {
                 "Test Seller",
                 actorId
         );
-        assertEquals("PENDING", payout.getStatus());
+        assertEquals("FLAGGED", payout.getStatus());
         assertEquals(40_000, payout.getAmountMinor());
 
         // 7. Admin approves payout
         PayoutRequest approved = payoutService.approvePayout(tenantId, payout.getId(), actorId);
-        assertEquals("APPROVED", approved.getStatus());
+        assertEquals("PAID", approved.getStatus());
 
         // 8. Verify final balances: 95_000 - 40_000 = 55_000
         sellerWallet = freshWallet(tenantId, escrow.getSellerWallet().getId());
@@ -160,7 +163,7 @@ class PaymentFlowRegressionTest {
 
         // 11. Idempotency: re-approving same payout returns the same result
         PayoutRequest reapproved = payoutService.approvePayout(tenantId, payout.getId(), actorId);
-        assertEquals("APPROVED", reapproved.getStatus());
+        assertEquals("PAID", reapproved.getStatus());
         sellerWallet = freshWallet(tenantId, escrow.getSellerWallet().getId());
         assertEquals(55_000, sellerWallet.getAvailableBalanceMinor());
 

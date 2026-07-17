@@ -2,6 +2,7 @@ package base.service;
 
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
+import base.entity.PayoutRequest;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -104,6 +106,38 @@ public class WalletService {
                 "tenantId = ?1 and wallet.id = ?2 order by createdAt desc",
                 tenantId, walletId
         ).page(offset / Math.max(limit, 1), Math.max(limit, 1)).list();
+    }
+
+    @Transactional
+    public Wallet updateBankDetails(String tenantId, UUID walletId, String bankName,
+                                    String bankAccountNumber, String bankAccountHolder, UUID actorId) {
+        if (bankName == null || bankName.isBlank()
+                || bankAccountNumber == null || bankAccountNumber.isBlank()
+                || bankAccountHolder == null || bankAccountHolder.isBlank()) {
+            throw new BadRequestException("Bank name, account number, and account holder are required");
+        }
+        Wallet wallet = walletForUpdate(tenantId, walletId);
+        boolean changed = !bankName.trim().equals(wallet.getBankName())
+                || !bankAccountNumber.trim().equals(wallet.getBankAccountNumber())
+                || !bankAccountHolder.trim().equals(wallet.getBankAccountHolder());
+        if (!changed) {
+            return wallet;
+        }
+
+        wallet.setBankName(bankName.trim());
+        wallet.setBankAccountNumber(bankAccountNumber.trim());
+        wallet.setBankAccountHolder(bankAccountHolder.trim());
+        wallet.setBankDetailsUpdatedAt(Instant.now());
+        wallet.setUpdatedBy(actorId);
+
+        List<PayoutRequest> staleFlagged = PayoutRequest.list(
+                "tenantId = ?1 and wallet.id = ?2 and status = 'FLAGGED'", tenantId, walletId);
+        for (PayoutRequest payout : staleFlagged) {
+            payout.setStatus("REJECTED");
+            payout.setFlagReason(payout.getFlagReason() + " | Bank details changed after screening");
+            payout.setUpdatedBy(actorId);
+        }
+        return wallet;
     }
 
     @Transactional
@@ -298,6 +332,7 @@ public class WalletService {
         if (wallet == null) {
             throw new NotFoundException("Không tìm thấy ví");
         }
+        entityManager.refresh(wallet, LockModeType.PESSIMISTIC_WRITE);
         return wallet;
     }
 

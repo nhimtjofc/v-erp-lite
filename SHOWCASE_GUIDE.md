@@ -10,10 +10,11 @@ Câu chuyện nên trình bày theo thứ tự sau:
 2. Backend tự tính lại giá, giảm giá, phí vận chuyển, thuế và tồn kho; sau đó giữ tồn kho và tạo đơn hàng.
 3. API thanh toán tạo `PaymentIntent` có idempotency và hoàn tất thanh toán qua mock gateway.
 4. Thanh toán thành công tạo khoản escrow cho người bán và ghi nhận hoa hồng nền tảng.
-5. Nhân viên xử lý đơn theo luồng `PENDING -> CONFIRMED -> SHIPPED -> COMPLETED`.
-6. Khi đơn hoàn tất, tiền escrow được chuyển từ số dư chờ sang số dư khả dụng của người bán.
-7. Người bán gửi yêu cầu rút tiền; quản trị viên phê duyệt hoặc từ chối.
-8. Phần tích hợp WooCommerce thể hiện health check, trạng thái đồng bộ catalog, nhận đơn bằng HMAC, mapping, reconcile và chống xử lý webhook trùng lặp.
+5. Chủ doanh nghiệp nhận đơn đã thanh toán, sau đó chấp nhận hoặc từ chối. Nhánh từ chối tự hoàn tiền, trả tồn kho và thông báo cho người mua.
+6. Nhánh chấp nhận đi qua `OWNER_ACCEPTED -> FULFILLING -> DELIVERED`; người mua xác nhận đã nhận hàng để chuyển sang `COMPLETED`.
+7. Khi người mua xác nhận, tiền escrow được chuyển từ số dư chờ sang số dư khả dụng của người bán.
+8. Ví người bán tự sàng lọc payout. Payout bình thường được tự động thanh toán; chỉ ngoại lệ/rủi ro mới đi vào hàng đợi admin.
+9. Phần tích hợp WooCommerce thể hiện health check, trạng thái đồng bộ catalog, nhận đơn bằng HMAC, mapping, reconcile và chống xử lý webhook trùng lặp.
 
 Lưu ý quan trọng về phạm vi: storefront React đã có luồng thanh toán dành cho người mua, gồm chọn phương thức, tạo `PaymentIntent`, QR mock, polling trạng thái, kết quả thành công/thất bại và thử lại. Gateway hiện vẫn là mock phục vụ demo, chỉ được backend bật trong profile dev/test và mặc định tắt ở production; chưa kết nối nhà cung cấp tài chính thật. WordPress/WooCommerce local và adapter phía ERP đã được triển khai, nhưng nhánh hiện tại chưa có custom WordPress plugin để tự động đưa sản phẩm ERP lên storefront WooCommerce.
 
@@ -31,9 +32,9 @@ Các tài khoản V-ERP được seed đều dùng mật khẩu `password` sau k
 
 | Tài khoản | Vai trò | Phần demo phù hợp |
 |---|---|---|
-| `admin@v-erp.com` | Admin | Storefront, sản phẩm, đơn hàng, voucher, duyệt payout |
+| `admin@v-erp.com` | Admin | Sản phẩm, đơn hàng, voucher, hàng đợi payout/risk |
 | `operator@v-erp.com` | Operator | Xử lý đơn hàng |
-| `owner@v-erp.com` | Chủ doanh nghiệp | Cài đặt WooCommerce, ví người bán, yêu cầu payout |
+| `owner@v-erp.com` | Chủ doanh nghiệp | Nhận/từ chối đơn, fulfillment, ví và payout tự động |
 
 Có thể tạo tài khoản người mua từ tab **Đăng ký**. Nên dùng email dễ nhớ như `showcase.buyer@v-erp.com` và mật khẩu ít nhất tám ký tự.
 
@@ -124,7 +125,7 @@ docker compose exec wordpress php -r "echo file_get_contents('http://host.docker
 
 ### Phần A — Giới thiệu storefront
 
-Đăng nhập bằng tài khoản người mua. Có thể dùng `admin@v-erp.com` nếu muốn hạn chế việc đổi tài khoản lúc bắt đầu.
+Đăng nhập bằng tài khoản người mua đã tạo ở tab **Đăng ký**. Không dùng admin cho luồng chính vì bước xác nhận đã nhận hàng chỉ dành cho đúng người mua của đơn.
 
 Mở **Shop/Cửa hàng** và trình diễn:
 
@@ -142,14 +143,15 @@ Lời dẫn gợi ý: “Trình duyệt không tự quyết định số tiền 
 
 1. Thêm **Cờ Tỷ Phú Catan** vào giỏ với số lượng **2**.
 2. Thu thập và áp dụng `WELCOME10`. Voucher yêu cầu đơn tối thiểu 5.000 minor ($50), nên hai sản phẩm Catan ($70) bảo đảm đủ điều kiện.
-3. Mở checkout.
-4. Kiểm tra họ tên, số điện thoại, địa chỉ và ghi chú giao hàng.
-5. Xác nhận đặt hàng.
-6. Ứng dụng tự chuyển sang `/orders/payment?orderId=<UUID>` để bắt đầu thanh toán.
+3. Nếu giỏ có sản phẩm của nhiều doanh nghiệp, chọn **Cửa hàng Board Game**. Mỗi lần checkout tạo đúng một đơn cho một người bán; sản phẩm của người bán khác vẫn ở lại trong giỏ.
+4. Mở checkout.
+5. Kiểm tra họ tên, số điện thoại, địa chỉ và ghi chú giao hàng.
+6. Xác nhận đặt hàng.
+7. Ứng dụng tự chuyển sang `/orders/payment?orderId=<UUID>` để bắt đầu thanh toán.
 
 Sau khi thanh toán, mở trang chi tiết đơn và trình diễn:
 
-- mã đơn và trạng thái `PENDING`;
+- mã đơn và trạng thái `PENDING_PAYMENT` trước khi trả tiền, sau đó là `PAID_ESCROW`;
 - thông tin khách hàng và giao nhận;
 - sản phẩm cùng tổng tiền do server tính;
 - thông tin voucher/giảm giá;
@@ -175,7 +177,7 @@ Mở **Orders/Đơn hàng** và trình diễn:
 - đơn vừa tạo;
 - lịch sử và các bước chuyển trạng thái hợp lệ.
 
-Chưa chuyển đơn mới sang `COMPLETED`. Phần thanh toán cần đưa tiền vào escrow trước.
+Không chuyển tắt đơn sang `COMPLETED`. Sau thanh toán, hãy đổi sang tài khoản owner để trình diễn quyết định nhận đơn và fulfillment đúng vai trò.
 
 ## 6. Trình diễn thanh toán và escrow
 
@@ -187,17 +189,18 @@ Ngay sau checkout, ứng dụng mở màn hình **Hoàn tất thanh toán**. Tr�
 2. Chỉ ra **MockPay QR** là phương thức đang hoạt động. **VNPay** và **Thẻ quốc tế** được khóa với nhãn **Sắp hỗ trợ**, không nên nói đây là gateway thật.
 3. Bấm **Tiếp tục thanh toán**. Hệ thống tạo hoặc tái sử dụng `PaymentIntent`, chuyển trạng thái sang `PROCESSING`, tạo đúng một mã giao dịch mock và hiển thị QR.
 4. Giải thích màn hình đang polling backend mỗi hai giây; trạng thái hiển thị không phải biến cục bộ giả lập ở trình duyệt.
-5. Bấm **Mô phỏng thất bại**. Cho người xem thấy màn hình kết quả thất bại và đơn vẫn ở trạng thái `PENDING`.
+5. Bấm **Mô phỏng thất bại**. Cho người xem thấy màn hình kết quả thất bại và đơn vẫn ở trạng thái `PENDING_PAYMENT`.
 6. Bấm **Thử thanh toán lại**. Hệ thống tạo một `PaymentIntent` mới với idempotency key mới rồi hiển thị QR mới.
 7. Bấm **Mô phỏng thành công**. Cho người xem thấy màn hình thành công, số tiền và mã đơn.
-8. Bấm **Xem chi tiết đơn hàng**. Card **Thanh toán** phải hiển thị **Đã thanh toán**, số tiền và mã `PaymentIntent`; trạng thái xử lý đơn vẫn là `PENDING`.
-9. Bấm refresh để chứng minh trạng thái thanh toán được đọc lại từ backend và không mất khi tải lại trang.
+8. Bấm **Xem chi tiết đơn hàng**. Trạng thái đơn là `PAID_ESCROW`. Card **Thanh toán** hiển thị intent, số tiền, transaction mock và trạng thái thành công; card **Escrow** hiển thị khoản tiền đang được giữ cho người bán.
+9. Bấm refresh để chứng minh payment, transaction và escrow được đọc lại từ backend và không mất khi tải lại trang.
+10. Mở **Notifications** để chỉ ra khu vực thông báo và badge chưa đọc. Owner chấp nhận hoặc từ chối đơn ở bước sau sẽ tạo thông báo mới tại đây.
 
-Lời dẫn gợi ý: “Trạng thái đơn hàng và trạng thái thanh toán là hai state machine độc lập. Thanh toán thành công chưa có nghĩa là đơn đã giao; nhân viên vẫn phải xác nhận, giao và hoàn tất đơn.”
+Lời dẫn gợi ý: “Trạng thái đơn hàng và trạng thái thanh toán là hai state machine độc lập. Thanh toán thành công chỉ đưa tiền vào escrow; owner vẫn phải cam kết xử lý đơn và người mua là người xác nhận đã nhận hàng.”
 
 ### Kiểm chứng kỹ thuật tùy chọn qua API
 
-Phần này không bắt buộc khi thời gian ngắn. Nếu muốn trình diễn lại toàn bộ API tạo/thanh toán, hãy tạo một đơn `PENDING` thứ hai; đơn đã thanh toán trên giao diện sẽ được backend bảo vệ khỏi thanh toán trùng.
+Phần này không bắt buộc khi thời gian ngắn. Toàn bộ luồng chính đã có trên frontend. Nếu muốn kiểm tra sâu hơn, hãy tạo một đơn `PENDING_PAYMENT` thứ hai; đơn đã thanh toán trên giao diện sẽ được backend bảo vệ khỏi thanh toán trùng.
 
 Mở một cửa sổ PowerShell mới. Các lệnh sau lấy access token admin qua direct-access grant của Keycloak.
 
@@ -309,15 +312,20 @@ Kết quả kế toán mong đợi:
 - mọi số tiền được lưu bằng đơn vị nhỏ nhất dạng số nguyên, không dùng số thực;
 - ledger chỉ cho phép ghi thêm và mỗi dòng liên kết với đơn hàng.
 
-### Hoàn tất đơn và giải ngân escrow
+### Owner nhận đơn, giao hàng và người mua giải ngân escrow
 
-Quay lại trang chi tiết đơn và chuyển lần lượt:
+Luồng này thực hiện hoàn toàn trên frontend:
 
-1. `PENDING -> CONFIRMED`
-2. `CONFIRMED -> SHIPPED`
-3. `SHIPPED -> COMPLETED`
+1. Đăng nhập `owner@v-erp.com` / `password`, mở **Orders** và tab **Owner decision**.
+2. Mở đơn `PAID_ESCROW`. Chỉ ra hạn owner phải phản hồi, payment activity và escrow ngay trên trang chi tiết.
+3. Bấm **Accept**. Đơn chuyển sang `OWNER_ACCEPTED` và người mua nhận notification.
+4. Bấm **Start fulfillment**, sau đó **Mark delivered** để đi qua `FULFILLING -> DELIVERED`.
+5. Đăng nhập lại tài khoản người mua, mở **Orders**, vào đơn vừa giao và bấm **Confirm received**.
+6. Kiểm tra đơn chuyển sang `COMPLETED`, escrow chuyển sang `RELEASED`, timeline có bước buyer xác nhận và số dư khả dụng của owner tăng.
 
-Thêm ghi chú ngắn ở mỗi bước. Sau đó tải lại ví người bán bằng PowerShell:
+Nhánh lỗi cũng đã có trên frontend: từ một đơn `PAID_ESCROW` khác, owner bấm **Decline**, nhập lý do và chọn **Decline and refund**. Trang chi tiết hiển thị refund, tồn kho giữ được trả lại và buyer nhận notification.
+
+Nếu muốn đối chiếu ví qua API sau khi buyer xác nhận:
 
 ```powershell
 $sellerUsdWallet = Invoke-RestMethod `
@@ -326,25 +334,25 @@ $sellerUsdWallet = Invoke-RestMethod `
 $sellerUsdWallet | Format-List availableBalanceMinor, pendingBalanceMinor, currency
 ```
 
-Kết quả mong đợi: tiền của người bán chuyển từ số dư chờ sang số dư khả dụng. Timeline ghi lại mọi lần đổi trạng thái; khi hoàn tất, hệ thống cũng cập nhật tổng chi tiêu, điểm và hạng thành viên của khách.
+Kết quả mong đợi: tiền của người bán chỉ chuyển từ số dư chờ sang số dư khả dụng sau khi buyer xác nhận. Timeline ghi lại mọi lần đổi trạng thái; khi hoàn tất, hệ thống cũng cập nhật tổng chi tiêu, điểm và hạng thành viên của khách.
 
 ## 7. Trình diễn ví và payout trên giao diện
 
-Đây là luồng tài chính riêng có giao diện đầy đủ, sử dụng ví VND đã được seed.
+Đây là luồng tài chính có giao diện đầy đủ, sử dụng ví VND đã được seed. Owner không nhập số tiền rút thủ công: hệ thống sàng lọc toàn bộ số dư đủ điều kiện, tự thanh toán trường hợp bình thường và chỉ chuyển ngoại lệ cho admin.
 
 1. Đăng xuất và đăng nhập `owner@v-erp.com` / `password`.
 2. Mở **Wallet/Ví**.
-3. Trình diễn số dư khả dụng `5.000.000 VND` và lịch sử giao dịch chỉ ghi thêm.
-4. Chọn chức năng yêu cầu rút tiền.
-5. Yêu cầu một khoản nhỏ, ví dụ `100000 VND`, cùng thông tin ngân hàng demo.
-6. Trình diễn payout mới có trạng thái `PENDING`.
-7. Đăng xuất và đăng nhập `admin@v-erp.com` / `password`.
-8. Mở **Payouts**.
-9. Trình diễn bộ lọc chờ duyệt/đã duyệt/từ chối.
-10. Phê duyệt yêu cầu và nhập lý do.
-11. Quay lại ví người bán để cho thấy số dư khả dụng đã giảm và có ledger entry cho payout.
+3. Trình diễn available/pending balance, lịch sử ledger chỉ ghi thêm, lịch sử payout và card **Automated payout status**.
+4. Bấm **Add/Update bank details** và nhập ngân hàng, số tài khoản, chủ tài khoản demo. Thay đổi thông tin ngân hàng làm payout kế tiếp bị flag để bảo vệ người bán.
+5. Bấm **Run payout check**. UI gọi cùng pipeline sàng lọc tự động như scheduler, nhưng cho kết quả ngay để showcase.
+6. Trình diễn payout mới có trạng thái `FLAGGED`, lý do flag và lịch chạy kế tiếp.
+7. Đăng xuất và đăng nhập `admin@v-erp.com` / `password`, sau đó mở **Payouts**.
+8. Trình diễn dashboard ngoại lệ: số payout bị flag, tổng tiền, risk events chưa xử lý và bảng chi tiết.
+9. Chọn một hay nhiều payout để dùng **batch approve/reject**, hoặc mở review từng payout. Nút **Approve and pay** gọi mock bank-transfer adapter ngay; reject bắt buộc có lý do.
+10. Bấm **Export CSV** để xuất hàng đợi ngoại lệ. Giá trị VND giữ đúng đơn vị, không bị chia 100.
+11. Quay lại ví owner để cho thấy payout `PAID`, số dư khả dụng đã giảm và ledger có dòng `PAYOUT` liên kết với payout request.
 
-Có thể giải thích rằng phê duyệt payout sử dụng transaction, kiểm tra số dư và locking để tránh rút quá số dư khi có nhiều request đồng thời.
+Có thể giải thích rằng scheduler xử lý payout bình thường mà không cần admin; hàng đợi admin chỉ là exception queue. Approval sử dụng transaction, kiểm tra số dư, idempotency và pessimistic locking để tránh rút trùng hoặc rút quá số dư.
 
 ## 8. Trình diễn tích hợp WooCommerce
 
@@ -433,7 +441,15 @@ Chạy lại riêng đoạn lấy token ở đầu phần 6 để làm mới `$h
 
 ### PaymentIntent từ chối đơn hàng
 
-Dùng một đơn mới ở trạng thái `PENDING`. Đơn đã thanh toán, hoàn tất hoặc hủy không thể bắt đầu luồng thanh toán bình thường. Đơn phải chứa sản phẩm liên kết với một doanh nghiệp; sản phẩm Board Game được đề xuất đáp ứng điều kiện này.
+Dùng một đơn mới ở trạng thái `PENDING_PAYMENT`. Đơn đã thanh toán, hoàn tất hoặc hủy không thể bắt đầu luồng thanh toán bình thường. Đơn phải chứa sản phẩm liên kết với một doanh nghiệp; sản phẩm Board Game được đề xuất đáp ứng điều kiện này.
+
+### Checkout báo đơn có nhiều người bán
+
+Quay lại giỏ và chọn một doanh nghiệp trước khi checkout. Mỗi đơn, payment intent và quyết định owner chỉ thuộc một người bán; các sản phẩm của doanh nghiệp khác được giữ lại trong giỏ cho lần checkout sau.
+
+### Nút Run payout check bị khóa
+
+Kiểm tra owner đã cấu hình đủ tên ngân hàng, số tài khoản và chủ tài khoản, đồng thời số dư khả dụng đạt ngưỡng hiển thị trên card **Automated payout status**. Sau khi cập nhật thông tin ngân hàng, tải lại ví rồi chạy lại screening.
 
 ### Cổng đang bị chiếm
 
@@ -450,9 +466,9 @@ Nếu thời gian bị rút ngắn:
 
 1. Mở **Shop**, thêm Catan và checkout.
 2. Trình diễn đơn vừa tạo và tồn kho đã được giữ.
-3. Trên màn hình QR, mô phỏng thất bại một lần, thử lại rồi mô phỏng thành công; mở chi tiết đơn để chỉ ra trạng thái **Đã thanh toán**.
-4. Chuyển đơn sang `COMPLETED`, chạy lại truy vấn ví và cho thấy tiền chuyển từ pending sang available.
-5. Mở **Wallet** của owner và **Payouts** của admin.
+3. Trên màn hình QR, mô phỏng thất bại một lần, thử lại rồi mô phỏng thành công; mở chi tiết đơn để chỉ ra payment transaction, `PAID_ESCROW` và escrow đang giữ.
+4. Owner accept đơn, chuyển sang fulfillment và delivered; buyer bấm **Confirm received** để giải ngân escrow.
+5. Mở **Wallet** của owner, cập nhật bank details và chạy payout screening; mở **Payouts** của admin để duyệt ngoại lệ.
 6. Kết thúc tại **Settings -> Integrations**, chọn kênh WooCommerce và trình bày health check, tiến độ catalog cùng các đảm bảo kỹ thuật của integration.
 
 ## 12. Những điều không nên khẳng định khi hỏi đáp
@@ -464,4 +480,4 @@ Không nên nói rằng:
 - refund/return hoặc quyết toán marketplace nhiều người bán đã sẵn sàng production;
 - tài khoản demo, wildcard CORS hoặc HMAC local là cấu hình production.
 
-Tóm tắt an toàn: “Nhóm đã hoàn thành storefront, checkout, màn hình thanh toán người mua bằng mock gateway, vòng đời đơn hàng, payment/ledger/escrow/payout và adapter phía ERP cho WooCommerce. Phần còn lại để productize là tích hợp nhà cung cấp thanh toán thật, xử lý callback/webhook production và custom WordPress connector.”
+Tóm tắt an toàn: “Nhóm đã hoàn thành storefront, checkout một người bán mỗi đơn, màn hình thanh toán người mua bằng mock gateway, payment activity, owner decision, notification, refund khi owner từ chối, escrow giải ngân khi buyer xác nhận, ví và payout tự động có exception queue cho admin, cùng adapter phía ERP cho WooCommerce. Phần còn lại để productize là tích hợp nhà cung cấp thanh toán/ngân hàng thật, xử lý callback/webhook production và custom WordPress connector.”

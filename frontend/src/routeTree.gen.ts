@@ -19,6 +19,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCartRouteImport } from './routes/_authenticated/cart'
@@ -100,6 +101,12 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -292,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof AuthenticatedCartRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRouteWithChildren
@@ -333,6 +341,7 @@ export interface FileRoutesByTo {
   '/businesses': typeof AuthenticatedBusinessesRoute
   '/cart': typeof AuthenticatedCartRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
@@ -372,6 +381,7 @@ export interface FileRoutesById {
   '/_authenticated/cart': typeof AuthenticatedCartRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/customers'
     | '/dashboard'
+    | '/notifications'
     | '/orders'
     | '/products'
     | '/profile'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/businesses'
     | '/cart'
     | '/dashboard'
+    | '/notifications'
     | '/shop'
     | '/vouchers'
     | '/wallet'
@@ -496,6 +508,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cart'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/notifications'
     | '/_authenticated/orders'
     | '/_authenticated/products'
     | '/_authenticated/profile'
@@ -606,6 +619,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -965,6 +985,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCartRoute: typeof AuthenticatedCartRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
@@ -983,6 +1004,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCartRoute: AuthenticatedCartRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,

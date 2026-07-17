@@ -21,16 +21,19 @@ import {
   Sun,
   Moon,
   Sparkles,
+  Bell,
 } from 'lucide-react'
 import { useTheme } from '@/shared/hooks/use-theme'
 import { getInitials } from '@/shared/utils/user'
 import { useAuthStore } from '@/shared/store/auth-store'
 import { cn } from '@/shared/lib/cn'
+import { useNotificationCountQuery } from '@/shared/api/notifications'
 
 interface CustomerNavItem {
   to: string
   icon: ReactNode
   label: string
+  badge?: number
 }
 
 export function CustomerLayout({ children }: { children: ReactNode }) {
@@ -38,6 +41,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   const { isDark, setIsDark } = useTheme()
   const { t } = useTranslation()
   const { data: me } = useMeQuery()
+  const { data: notificationCount } = useNotificationCountQuery()
   const location = useLocation()
 
   const initials = getInitials(user)
@@ -51,6 +55,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
     { to: '/shop', icon: <ShoppingBag className="h-5 w-5" />, label: t('nav:shop') },
     { to: '/cart', icon: <ShoppingCart className="h-5 w-5" />, label: t('nav:cart') },
     { to: '/orders', icon: <Receipt className="h-5 w-5" />, label: t('nav:orders') },
+    { to: '/notifications', icon: <Bell className="h-5 w-5" />, label: t('nav:notifications', 'Notifications'), badge: Number(notificationCount?.unread ?? 0) },
     { to: '/profile', icon: <User className="h-5 w-5" />, label: t('nav:profile') },
   ]
 
@@ -67,7 +72,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         <div className="absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-amber-200/35 blur-3xl dark:bg-cyan-500/10" />
       </div>
 
-      <header className="relative z-30 border-b border-orange-200/70 bg-white/75 px-4 py-3 shadow-sm shadow-orange-100/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-none">
+      <header className="relative z-[80] border-b border-orange-200/70 bg-white/75 px-4 py-3 shadow-sm shadow-orange-100/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-none">
         <div className="mx-auto flex max-w-7xl items-center gap-4">
           <Link to="/shop" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-500 text-white shadow-lg shadow-orange-500/25">
@@ -97,6 +102,11 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
                 >
                   {item.icon}
                   {item.label}
+                  {Boolean(item.badge) && (
+                    <span className="min-w-5 rounded-full bg-destructive px-1.5 py-0.5 text-center text-[10px] font-bold text-destructive-foreground">
+                      {item.badge! > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -161,7 +171,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
                 Hi {displayName.split('@')[0]}, ready to browse?
               </h1>
             </div>
-            <div className="rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
+            <div className="pointer-events-none rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
               Fast checkout · Vouchers · Live stock
             </div>
           </div>
@@ -186,11 +196,16 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
               >
                 <div
                   className={cn(
-                    'flex items-center justify-center w-10 h-10 rounded-xl transition-all',
+                    'relative flex items-center justify-center w-10 h-10 rounded-xl transition-all',
                     isActive && 'bg-orange-500/10 shadow-inner'
                   )}
                 >
                   {item.icon}
+                  {Boolean(item.badge) && (
+                    <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-destructive px-1 text-[9px] font-bold leading-4 text-destructive-foreground">
+                      {item.badge! > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] font-semibold leading-none">{item.label}</span>
               </Link>

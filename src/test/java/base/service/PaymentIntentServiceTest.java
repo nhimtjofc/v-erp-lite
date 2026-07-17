@@ -1,6 +1,7 @@
 package base.service;
 
 import base.entity.PaymentIntent;
+import base.entity.Order;
 import base.model.Money;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -47,6 +48,10 @@ class PaymentIntentServiceTest {
         intent = paymentIntentService.markSucceeded(tenantId, intent.getId(), "MOCK",
                 "gw-sm-" + UUID.randomUUID(), actorId);
         assertEquals("SUCCEEDED", intent.getStatus());
+        Order paidOrder = Order.findById(seed.order().getId());
+        assertEquals("PAID_ESCROW", paidOrder.getStatus(),
+                "Successful payment must wait for an explicit owner decision");
+        assertNotNull(paidOrder.getOwnerDecisionDeadline());
     }
 
     @Test

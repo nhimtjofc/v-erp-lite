@@ -16,10 +16,11 @@ import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
 import { Link } from '@tanstack/react-router'
 import { formatUSD } from '@/shared/utils/currency'
+import { OwnerOrderQueue } from './owner-order-queue'
 import {
     Plus, Search, Eye, TrendingUp, ShoppingBag, Clock, CheckCircle2,
     Package, ChevronRight, Truck, XCircle, Filter, RotateCcw,
-    ArrowUpRight, Trash2, PlugZap, RefreshCw,
+    ArrowUpRight, Trash2, PlugZap, RefreshCw, CreditCard,
 } from 'lucide-react'
 
 interface OrderStats {
@@ -64,6 +65,41 @@ const STATUS_CONFIG: Record<string, {
     icon: React.ElementType
     badgeVariant: string
 }> = {
+    PENDING_PAYMENT: {
+        label: 'Pending payment', color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500',
+        icon: CreditCard, badgeVariant: 'warning',
+    },
+    PAID_ESCROW: {
+        label: 'Awaiting owner', color: 'text-violet-600 dark:text-violet-400',
+        bg: 'bg-violet-50 dark:bg-violet-900/20', dot: 'bg-violet-500',
+        icon: Clock, badgeVariant: 'warning',
+    },
+    OWNER_ACCEPTED: {
+        label: 'Owner accepted', color: 'text-blue-600 dark:text-blue-400',
+        bg: 'bg-blue-50 dark:bg-blue-900/20', dot: 'bg-blue-500',
+        icon: CheckCircle2, badgeVariant: 'info',
+    },
+    FULFILLING: {
+        label: 'Fulfilling', color: 'text-orange-600 dark:text-orange-400',
+        bg: 'bg-orange-50 dark:bg-orange-900/20', dot: 'bg-orange-500',
+        icon: Package, badgeVariant: 'orange',
+    },
+    DELIVERED: {
+        label: 'Delivered', color: 'text-emerald-600 dark:text-emerald-400',
+        bg: 'bg-emerald-50 dark:bg-emerald-900/20', dot: 'bg-emerald-500',
+        icon: Truck, badgeVariant: 'success',
+    },
+    OWNER_DECLINED: {
+        label: 'Owner declined', color: 'text-red-500 dark:text-red-400',
+        bg: 'bg-red-50 dark:bg-red-900/20', dot: 'bg-red-500',
+        icon: XCircle, badgeVariant: 'destructive',
+    },
+    REFUNDED: {
+        label: 'Refunded', color: 'text-slate-600 dark:text-slate-400',
+        bg: 'bg-slate-50 dark:bg-slate-900/20', dot: 'bg-slate-500',
+        icon: RotateCcw, badgeVariant: 'secondary',
+    },
     PENDING: {
         label: 'Pending', color: 'text-amber-600 dark:text-amber-400',
         bg: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500',
@@ -103,12 +139,19 @@ const STATUS_CONFIG: Record<string, {
 
 const STATUS_TABS = [
     { key: '', label: 'All Orders' },
-    { key: 'PENDING', label: 'Pending' },
-    { key: 'CONFIRMED', label: 'Confirmed' },
-    { key: 'SHIPPING', label: 'Shipping' },
-    { key: 'SHIPPED', label: 'Shipped' },
+    { key: 'PENDING_PAYMENT', label: 'Pending payment' },
+    { key: 'PAID_ESCROW', label: 'Owner decision' },
+    { key: 'OWNER_ACCEPTED', label: 'Accepted' },
+    { key: 'FULFILLING', label: 'Fulfilling' },
+    { key: 'DELIVERED', label: 'Delivered' },
     { key: 'COMPLETED', label: 'Completed' },
+    { key: 'OWNER_DECLINED', label: 'Declined' },
+    { key: 'REFUNDED', label: 'Refunded' },
     { key: 'CANCELLED', label: 'Cancelled' },
+    { key: 'PENDING', label: 'Legacy pending' },
+    { key: 'CONFIRMED', label: 'Legacy confirmed' },
+    { key: 'SHIPPING', label: 'Legacy shipping' },
+    { key: 'SHIPPED', label: 'Legacy shipped' },
     { key: 'WOOCOMMERCE', label: 'WooCommerce Sync' },
 ] as const
 
@@ -145,13 +188,17 @@ function OrderCard({
     order,
     onClick,
     onDelete,
+    onPayment,
     canDelete,
+    showPaymentAction,
     isDeleting,
 }: {
     order: Order
     onClick: () => void
     onDelete: () => void
+    onPayment: () => void
     canDelete: boolean
+    showPaymentAction: boolean
     isDeleting: boolean
 }) {
     const customerFirst = order.customer?.firstName ?? ''
@@ -160,7 +207,7 @@ function OrderCard({
     const initials = getInitials(customerFirst, customerLast)
     const avatarColor = getAvatarColor(customerName)
     const itemCount = order.items?.length ?? 0
-    const status = order.status?.toUpperCase() ?? 'PENDING'
+    const status = order.status?.toUpperCase() ?? 'PENDING_PAYMENT'
     const cfg = getStatusCfg(status)
     const Icon = cfg.icon
     const orderDate = new Date(order.orderDate!)
@@ -185,7 +232,7 @@ function OrderCard({
                 </div>
 
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.color} shrink-0`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${status === 'PENDING' ? 'animate-pulse' : ''}`} />
+                    <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${status === 'PAID_ESCROW' ? 'animate-pulse' : ''}`} />
                     {cfg.label}
                 </div>
             </div>
@@ -211,11 +258,24 @@ function OrderCard({
                         }
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="font-bold text-foreground">
-                        {formatUSD(Number(order.finalAmountMinor))}
+                <div className="flex items-center gap-2">
+                    {showPaymentAction && (
+                        <Button
+                            size="sm"
+                            onClick={(event) => {
+                                event.stopPropagation()
+                                onPayment()
+                            }}
+                        >
+                            <CreditCard className="h-3.5 w-3.5" /> Payment
+                        </Button>
+                    )}
+                    <div className="text-right">
+                        <div className="font-bold text-foreground">
+                            {formatUSD(Number(order.finalAmountMinor))}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Total</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Total</div>
                 </div>
             </div>
 
@@ -279,8 +339,9 @@ export function OrdersPage() {
     const navigate = useNavigate()
     const { data: me, isLoading: isMeLoading } = useMeQuery()
     const roleName = me?.role?.name
-    const isCustomer = roleName === 'customer'
+    const isCustomer = roleName === 'customer' || roleName === 'user'
     const isAdmin = roleName === 'admin'
+    const canAccessPayment = ['admin', 'businessOwner', 'operator', 'customer', 'user'].includes(roleName ?? '')
 
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -417,6 +478,8 @@ export function OrdersPage() {
                 </div>
             )}
 
+            {roleName === 'businessOwner' && <OwnerOrderQueue />}
+
             {!isCustomer && stats && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard
@@ -435,7 +498,7 @@ export function OrdersPage() {
                     />
                     <StatCard
                         label="Chờ xử lý"
-                        value={((stats.countByStatus.PENDING ?? 0) + (stats.countByStatus.CONFIRMED ?? 0)).toString()}
+                        value={((stats.countByStatus.PAID_ESCROW ?? 0) + (stats.countByStatus.OWNER_ACCEPTED ?? 0) + (stats.countByStatus.FULFILLING ?? 0)).toString()}
                         sub="Cần hành động"
                         icon={Clock}
                         gradient="from-amber-500 to-orange-600"
@@ -639,7 +702,9 @@ export function OrdersPage() {
                                     order={order}
                                     onClick={() => navigate({ to: '/orders/$id', params: { id: order.id! } })}
                                     onDelete={() => handleDeleteOrder(order)}
+                                    onPayment={() => navigate({ to: '/orders/payment', search: { orderId: order.id! } })}
                                     canDelete={canDeleteOrder(order)}
+                                    showPaymentAction={canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(order.status?.toUpperCase() ?? '')}
                                     isDeleting={deletingOrderId === order.id}
                                 />
                             ))}
@@ -650,7 +715,7 @@ export function OrdersPage() {
                                 const customerFirst = order.customer?.firstName ?? ''
                                 const customerLast = order.customer?.lastName ?? ''
                                 const customerName = [customerFirst, customerLast].filter(Boolean).join(' ') || 'Unnamed'
-                                const status = order.status?.toUpperCase() ?? 'PENDING'
+                                const status = order.status?.toUpperCase() ?? 'PENDING_PAYMENT'
                                 const cfg = getStatusCfg(status)
                                 const itemCount = order.items?.length ?? 0
 
@@ -679,6 +744,17 @@ export function OrdersPage() {
                                         <div className="text-right shrink-0">
                                             <div className="font-bold text-sm">{formatUSD(Number(order.finalAmountMinor))}</div>
                                         </div>
+                                        {canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(status) && (
+                                            <Button
+                                                size="sm"
+                                                onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    navigate({ to: '/orders/payment', search: { orderId: order.id! } })
+                                                }}
+                                            >
+                                                <CreditCard className="h-3.5 w-3.5" /> Payment
+                                            </Button>
+                                        )}
                                         {canDeleteOrder(order) ? (
                                             <Button
                                                 variant="ghost"

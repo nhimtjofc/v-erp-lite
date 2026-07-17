@@ -275,13 +275,16 @@ export function ShopPage() {
   const [customerAddress, setCustomerAddress] = useState('')
   const [shippingNote, setShippingNote] = useState('')
 
-  // Pre-populate shipping fields when customer profile or selected customer changes
+  // Pre-populate checkout from the customer profile, with the signed-in account
+  // as a fallback for profiles created before account details were synchronized.
   useEffect(() => {
-    if (isCustomerRole && myCustomerProfile) {
-      setCustomerName(`${myCustomerProfile.firstName ?? ''} ${myCustomerProfile.lastName ?? ''}`.trim())
-      setCustomerEmail(myCustomerProfile.email ?? '')
-      setCustomerPhone(myCustomerProfile.phone ?? '')
-      setCustomerAddress(myCustomerProfile.address ?? '')
+    if (isCustomerRole) {
+      const firstName = myCustomerProfile?.firstName?.trim() || me?.firstName?.trim() || ''
+      const lastName = myCustomerProfile?.lastName?.trim() || me?.lastName?.trim() || ''
+      setCustomerName(`${firstName} ${lastName}`.trim())
+      setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
+      setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
+      setCustomerAddress(myCustomerProfile?.address ?? '')
     } else if (!isCustomerRole && selectedCustomerId && customers) {
       const found = customers.find(c => c.id === selectedCustomerId)
       if (found) {
@@ -291,7 +294,7 @@ export function ShopPage() {
         setCustomerAddress(found.address ?? '')
       }
     }
-  }, [isCustomerRole, myCustomerProfile, selectedCustomerId, customers])
+  }, [isCustomerRole, me, myCustomerProfile, selectedCustomerId, customers])
 
   async function handleCheckout() {
     if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
@@ -412,89 +415,6 @@ export function ShopPage() {
                     </Button>
                   </CardContent>
                 </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Voucher Banner Grid Shelf */}
-      {vouchers.length > 0 && (
-        <div className="bg-gradient-to-r from-muted/50 to-muted/20 border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
-              <h2 className="font-black text-xl">Exclusive Store Vouchers</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">Collect & save at checkout</span>
-          </div>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {vouchers.slice(0, 6).map((voucher: any) => {
-              const isCollected = collectedIds.has(voucher.id)
-              return (
-                <div
-                  key={voucher.id}
-                  className="relative flex items-stretch h-28 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-border bg-card group"
-                >
-                  {/* Perforated coupon visual */}
-                  <div className="flex flex-col items-center justify-center w-24 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-2 text-center shrink-0 select-none relative">
-                    {/* Circle punch holes on perforations */}
-                    <div className="absolute top-0 bottom-0 -right-1.5 flex flex-col justify-between py-1.5 z-10 w-3">
-                      {[...Array(5)].map((_, idx) => (
-                        <div key={idx} className="w-2.5 h-2.5 rounded-full bg-background" />
-                      ))}
-                    </div>
-                    <span className="text-2xl font-black tracking-tight leading-none">
-                      {voucher.discountType === 'PERCENTAGE' ? `${Number(voucher.discountValue)}%` : `$${Number(voucher.discountValue)}`}
-                    </span>
-                    <span className="text-[9px] font-black uppercase tracking-wider mt-1 opacity-90">OFF</span>
-                  </div>
-
-                  {/* Coupon Details */}
-                  <div className="flex-1 p-3 flex flex-col justify-between min-w-0 bg-muted/10">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-black text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide">
-                          {voucher.code}
-                        </span>
-                        {voucher.maxDiscountAmountMinor && (
-                          <span className="text-[9px] text-muted-foreground font-medium">
-                            Max ${Number(voucher.maxDiscountAmountMinor)}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-bold text-xs text-foreground mt-1.5 truncate group-hover:text-primary transition-colors">
-                        {voucher.name}
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {Number(voucher.minOrderValueMinor) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}` : 'No Min. Spend'}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-1 gap-2">
-                      <span className="text-[9px] text-muted-foreground truncate">
-                        {voucher.endTime ? `Exp: ${new Date(voucher.endTime).toLocaleDateString()}` : 'No Expiry'}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant={isCollected ? 'ghost' : 'secondary'}
-                        className={`h-7 px-2.5 text-[10px] font-bold rounded-md cursor-pointer transition-all ${
-                          isCollected
-                            ? 'text-success hover:bg-success/10 bg-success/5 border border-success/15'
-                            : 'bg-primary text-primary-foreground hover:bg-primary/95 shadow-sm'
-                        }`}
-                        disabled={isCollected || collectMutation.isPending}
-                        onClick={() => collectMutation.mutate({ path: { id: voucher.id! }, query: { customerId } })}
-                      >
-                        {isCollected ? (
-                          <span className="flex items-center gap-0.5"><Check className="h-3 w-3 stroke-[3]" />Collected</span>
-                        ) : (
-                          <span className="flex items-center gap-0.5"><Gift className="h-3 w-3" />Collect</span>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
               )
             })}
           </div>
@@ -953,6 +873,11 @@ export function ShopPage() {
                 <span className="text-primary">{formatUSD(finalAmountMinor)}</span>
               </div>
             </div>
+            {isCustomerRole && (
+              <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Your order is saved as Pending. You can pay now, or return to the shop and complete payment later from Orders.
+              </p>
+            )}
           </div>
           <DialogFooter className="pt-4">
             <Button variant="outline" className="cursor-pointer" onClick={() => setShowCheckout(false)}>Cancel</Button>

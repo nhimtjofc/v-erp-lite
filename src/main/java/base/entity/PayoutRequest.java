@@ -3,6 +3,7 @@ package base.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -26,7 +27,13 @@ public class PayoutRequest extends BaseEntity {
     private String currency;
 
     @Column(nullable = false)
-    private String status; // PENDING, APPROVED, REJECTED
+    private String status; // AUTO_APPROVED, FLAGGED, APPROVED, REJECTED, PAID
+
+    @Column(name = "auto_approved", nullable = false)
+    private boolean autoApproved;
+
+    @Column(name = "flag_reason", columnDefinition = "TEXT")
+    private String flagReason;
 
     @Column(name = "bank_name", nullable = false)
     private String bankName;
@@ -36,4 +43,13 @@ public class PayoutRequest extends BaseEntity {
 
     @Column(name = "bank_account_holder", nullable = false)
     private String bankAccountHolder;
+
+    @Column(name = "idempotency_key", nullable = false, length = 255)
+    private String idempotencyKey;
+
+    @Column(name = "transfer_reference")
+    private String transferReference;
+
+    @Column(name = "paid_at")
+    private Instant paidAt;
 }
