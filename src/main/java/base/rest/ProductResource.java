@@ -4,6 +4,8 @@ import base.entity.Category;
 import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.Tag;
+import base.entity.Business;
+import base.entity.User;
 import base.security.CallerContext;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -46,6 +48,17 @@ public class ProductResource {
         Map<String, Object> params = new HashMap<>();
         params.put("tenantId", tenantCode);
 
+        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
+            User user = caller.resolveUser();
+            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+            if (business != null) {
+                query.append(" AND p.business.id = :businessId");
+                params.put("businessId", business.getId());
+            } else {
+                query.append(" AND p.business.id IS NULL");
+            }
+        }
+
         if (categoryId != null) {
             query.append(" AND p.category.id = :categoryId");
             params.put("categoryId", categoryId);
@@ -73,6 +86,13 @@ public class ProductResource {
         if (product == null) {
             throw new NotFoundException("Product not found");
         }
+        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
+            User user = caller.resolveUser();
+            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
+                throw new ForbiddenException("You are not allowed to view this product");
+            }
+        }
         return product;
     }
 
@@ -86,6 +106,14 @@ public class ProductResource {
         product.setCreatedBy(caller.userId());
         product.setCategory(resolveCategory(product));
         product.setTags(resolveTags(product));
+        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
+            User user = caller.resolveUser();
+            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            if (business == null) {
+                throw new BadRequestException("Owner must have a business first");
+            }
+            product.setBusiness(business);
+        }
 
         if (product.getVariants() != null) {
             for (ProductVariant variant : product.getVariants()) {
@@ -109,6 +137,13 @@ public class ProductResource {
         Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (product == null) {
             throw new NotFoundException("Product not found");
+        }
+        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
+            User user = caller.resolveUser();
+            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
+                throw new ForbiddenException("You are not allowed to modify this product");
+            }
         }
         product.setCategory(resolveCategory(updated));
         product.setTags(resolveTags(updated));
@@ -175,6 +210,17 @@ public class ProductResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response deleteProduct(@PathParam("id") UUID id) {
+        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
+            Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
+            if (product == null) {
+                throw new NotFoundException("Product not found");
+            }
+            User user = caller.resolveUser();
+            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
+                throw new ForbiddenException("You are not allowed to delete this product");
+            }
+        }
         long deleted = Product.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Product not found");
