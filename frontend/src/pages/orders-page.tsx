@@ -74,6 +74,11 @@ const STATUS_CONFIG: Record<string, {
         bg: 'bg-blue-50 dark:bg-blue-900/20', dot: 'bg-blue-500',
         icon: CheckCircle2, badgeVariant: 'info',
     },
+    SHIPPING: {
+        label: 'Shipping', color: 'text-violet-600 dark:text-violet-400',
+        bg: 'bg-violet-50 dark:bg-violet-900/20', dot: 'bg-violet-500',
+        icon: Package, badgeVariant: 'info',
+    },
     SHIPPED: {
         label: 'Shipped', color: 'text-orange-600 dark:text-orange-400',
         bg: 'bg-orange-50 dark:bg-orange-900/20', dot: 'bg-orange-500',
@@ -100,6 +105,7 @@ const STATUS_TABS = [
     { key: '', label: 'All Orders' },
     { key: 'PENDING', label: 'Pending' },
     { key: 'CONFIRMED', label: 'Confirmed' },
+    { key: 'SHIPPING', label: 'Shipping' },
     { key: 'SHIPPED', label: 'Shipped' },
     { key: 'COMPLETED', label: 'Completed' },
     { key: 'CANCELLED', label: 'Cancelled' },

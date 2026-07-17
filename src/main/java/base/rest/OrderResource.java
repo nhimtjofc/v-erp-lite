@@ -167,7 +167,7 @@ public class OrderResource {
                 .setParameter(1, tenantCode)
                 .getResultList();
         Map<String, Long> countByStatus = new HashMap<>();
-        for (String s : List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED")) {
+        for (String s : List.of("PENDING", "CONFIRMED", "SHIPPING", "SHIPPED", "COMPLETED", "CANCELLED")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -447,8 +447,8 @@ public class OrderResource {
             return order;
         }
 
-        // Valid statuses: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
-        if (!List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED").contains(newStatus)) {
+        // Valid statuses: PENDING, CONFIRMED, SHIPPING, SHIPPED, COMPLETED, CANCELLED
+        if (!List.of("PENDING", "CONFIRMED", "SHIPPING", "SHIPPED", "COMPLETED", "CANCELLED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -459,8 +459,8 @@ public class OrderResource {
         UUID userId = caller.userId();
 
         // Stock and Reservation Lifecycle Management
-        // 1. From PENDING/CONFIRMED to CANCELLED: release reserved quantity
-        if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        // 1. From PENDING/CONFIRMED/SHIPPING to CANCELLED: release reserved quantity
+        if (List.of("PENDING", "CONFIRMED", "SHIPPING").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -473,8 +473,8 @@ public class OrderResource {
                 }
             }
         }
-        // 2. From PENDING/CONFIRMED to SHIPPED/COMPLETED: deduct actual stock and clear reservation
-        else if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && List.of("SHIPPED", "COMPLETED").contains(newStatus)) {
+        // 2. From SHIPPING to SHIPPED: deduct actual stock and clear reservation (items leave warehouse)
+        else if ("SHIPPING".equals(oldStatus) && "SHIPPED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -672,7 +672,10 @@ public class OrderResource {
             return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
         }
         if ("CONFIRMED".equals(oldStatus)) {
-            return "SHIPPED".equals(newStatus);
+            return List.of("SHIPPING", "CANCELLED").contains(newStatus);
+        }
+        if ("SHIPPING".equals(oldStatus)) {
+            return List.of("SHIPPED", "CANCELLED").contains(newStatus);
         }
         if ("SHIPPED".equals(oldStatus)) {
             return "COMPLETED".equals(newStatus);

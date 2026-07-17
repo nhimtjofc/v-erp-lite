@@ -44,6 +44,12 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     dotClass: 'border-sky-400 bg-sky-500 text-white',
     icon: CheckCircle2,
   },
+  SHIPPING: {
+    label: 'Shipping',
+    badgeClass: 'border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
+    dotClass: 'border-violet-400 bg-violet-500 text-white',
+    icon: Package,
+  },
   SHIPPED: {
     label: 'Shipped',
     badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
@@ -241,8 +247,10 @@ export function OrderDetailPage() {
   const status = order.status?.toUpperCase() ?? 'PENDING'
   const isPending = status === 'PENDING'
   const isConfirmed = status === 'CONFIRMED'
+  const isShipping = status === 'SHIPPING'
   const isShipped = status === 'SHIPPED'
   const isFinal = status === 'COMPLETED' || status === 'CANCELLED'
+  const isCancellable = status === 'PENDING' || status === 'CONFIRMED' || status === 'SHIPPING'
   const canDelete = isAdmin && isFinal
 
   const statusCfg = getStatusConfig(status)
@@ -314,9 +322,19 @@ export function OrderDetailPage() {
                 </>
               )}
               {isConfirmed && (
-                <Button onClick={() => openStatusDialog('SHIPPED')} className="font-semibold">
-                  <Truck className="h-4 w-4 mr-1.5" /> Ship Order
+                <Button onClick={() => openStatusDialog('SHIPPING')} className="font-semibold">
+                  <Package className="h-4 w-4 mr-1.5" /> Start Shipping
                 </Button>
+              )}
+              {isShipping && (
+                <>
+                  <Button onClick={() => openStatusDialog('SHIPPED')} variant="secondary" className="font-semibold">
+                    <Truck className="h-4 w-4 mr-1.5" /> Mark Shipped
+                  </Button>
+                  <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
+                    <XCircle className="h-4 w-4 mr-1.5" /> Cancel
+                  </Button>
+                </>
               )}
               {isShipped && (
                 <Button onClick={() => openStatusDialog('COMPLETED')} variant="default" className="bg-success text-success-foreground hover:bg-success/90 font-semibold">

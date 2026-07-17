@@ -50,7 +50,7 @@ public class Order extends BaseEntity {
     private Instant orderDate = Instant.now();
 
     @Column(nullable = false, length = 50)
-    private String status; // PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
+    private String status; // PENDING, CONFIRMED, SHIPPING, SHIPPED, COMPLETED, CANCELLED
 
     @Column(name = "shipping_name", nullable = false)
     private String shippingName;

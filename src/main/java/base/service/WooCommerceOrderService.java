@@ -502,7 +502,7 @@ public class WooCommerceOrderService {
         }
 
         // Stock and Reservation updates
-        if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        if (List.of("PENDING", "CONFIRMED", "SHIPPING").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = ProductVariant.find("id = ?1 and tenantId = ?2", item.getProductVariant().getId(), tenantId)
@@ -520,7 +520,7 @@ public class WooCommerceOrderService {
                     }
                 }
             }
-        } else if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && List.of("SHIPPED", "COMPLETED").contains(newStatus)) {
+        } else if ("SHIPPING".equals(oldStatus) && "SHIPPED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = ProductVariant.find("id = ?1 and tenantId = ?2", item.getProductVariant().getId(), tenantId)
@@ -562,7 +562,9 @@ public class WooCommerceOrderService {
             case "PENDING":
                 return List.of("CONFIRMED", "CANCELLED").contains(to);
             case "CONFIRMED":
-                return List.of("SHIPPED", "CANCELLED", "COMPLETED").contains(to);
+                return List.of("SHIPPING", "CANCELLED").contains(to);
+            case "SHIPPING":
+                return List.of("SHIPPED", "CANCELLED").contains(to);
             case "SHIPPED":
                 return "COMPLETED".equals(to);
             case "COMPLETED":
