@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "wallets", uniqueConstraints = {
@@ -31,4 +32,16 @@ public class Wallet extends BaseEntity {
 
     @Column(nullable = false, length = 3)
     private String currency = "USD";
+
+    @Column(name = "bank_name")
+    private String bankName;
+
+    @Column(name = "bank_account_number")
+    private String bankAccountNumber;
+
+    @Column(name = "bank_account_holder")
+    private String bankAccountHolder;
+
+    @Column(name = "bank_details_updated_at")
+    private Instant bankDetailsUpdatedAt;
 }

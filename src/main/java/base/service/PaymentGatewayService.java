@@ -87,6 +87,24 @@ public class PaymentGatewayService {
         return expected.equals(signature.trim());
     }
 
+    /**
+     * Refund adapter seam. The lite profile uses a deterministic mock reference;
+     * a real gateway implementation must use {@code idempotencyKey} when calling
+     * the provider so retries cannot create a second refund.
+     */
+    public String refund(String gateway, String gatewayTransactionId, long amountMinor, String currency,
+                         String idempotencyKey) {
+        if (gatewayTransactionId == null || gatewayTransactionId.isBlank()) {
+            throw new IllegalArgumentException("Gateway transaction ID is required");
+        }
+        if (amountMinor <= 0) {
+            throw new IllegalArgumentException("Refund amount must be positive");
+        }
+        String stableKey = String.join(":", normalizeGateway(gateway), gatewayTransactionId,
+                String.valueOf(amountMinor), currency, idempotencyKey);
+        return "REF_" + UUID.nameUUIDFromBytes(stableKey.getBytes(StandardCharsets.UTF_8));
+    }
+
     public String generateTransactionId(String gateway) {
         String prefix = switch (normalizeGateway(gateway)) {
             case "VNPAY" -> "VNP";

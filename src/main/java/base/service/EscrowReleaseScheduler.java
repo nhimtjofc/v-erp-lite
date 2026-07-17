@@ -1,14 +1,13 @@
 package base.service;
 
-import base.entity.EscrowRecord;
+import base.entity.Order;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @ApplicationScoped
 public class EscrowReleaseScheduler {
@@ -18,33 +17,24 @@ public class EscrowReleaseScheduler {
     @Inject
     EscrowService escrowService;
 
-    // Runs every day at 1:00 AM (0 0 1 * * ?)
+    // Safety net only: elapsed time never releases escrow. It merely retries
+    // release for orders that have already reached DELIVERED or COMPLETED.
     @Scheduled(cron = "0 0 1 * * ?")
-    @Transactional
     public void autoReleaseEscrows() {
-        log.info("Starting automatic escrow release job...");
-
-        Instant now = Instant.now();
-        List<EscrowRecord> dueEscrows = EscrowRecord.find("status = ?1 and releaseDueAt <= ?2", "HELD", now).list();
+        List<Object[]> eligibleOrders = Order.getEntityManager().createQuery(
+                "select distinct e.orderId, e.tenantId from EscrowRecord e, Order o "
+                        + "where e.orderId = o.id and e.tenantId = o.tenantId and e.status = 'HELD' "
+                        + "and o.status in ('DELIVERED', 'COMPLETED')",
+                Object[].class).getResultList();
 
         int successCount = 0;
         int failCount = 0;
-        java.util.Set<String> processedOrders = new java.util.HashSet<>();
-
-        for (EscrowRecord escrow : dueEscrows) {
-            String orderKey = escrow.getTenantId() + ":" + escrow.getOrderId();
-            if (processedOrders.contains(orderKey)) {
-                continue; // Already processed this order in a previous iteration
-            }
-
+        for (Object[] eligible : eligibleOrders) {
             try {
-                // Delegate to EscrowService to handle business checks and wallet changes
-                // Pass null for actorId since this is a system background job
-                escrowService.releaseOrderEscrow(escrow.getTenantId(), escrow.getOrderId(), null);
-                processedOrders.add(orderKey);
+                escrowService.releaseOrderEscrow((String) eligible[1], (UUID) eligible[0], null);
                 successCount++;
             } catch (Exception e) {
-                log.error("Failed to auto-release escrow for order: " + escrow.getOrderId(), e);
+                log.error("Failed to release eligible escrow for order: " + eligible[0], e);
                 failCount++;
             }
         }

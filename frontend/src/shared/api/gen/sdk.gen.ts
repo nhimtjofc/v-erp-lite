@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddItemData, AddItemErrors, AddItemResponses, AdjustData, AdjustErrors, AdjustResponses, ApproveData, ApproveErrors, ApproveResponses, BatchApproveData, BatchApproveErrors, BatchApproveResponses, BatchRejectData, BatchRejectErrors, BatchRejectResponses, ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckoutCartData, CheckoutCartErrors, CheckoutCartResponses, CheckoutOrderData, CheckoutOrderErrors, CheckoutOrderResponses, CollectData, CollectErrors, CollectResponses, CompleteMockPaymentData, CompleteMockPaymentErrors, CompleteMockPaymentResponses, CreateBusinessData, CreateBusinessErrors, CreateBusinessResponses, CreateCartData, CreateCartErrors, CreateCartResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCustomerData, CreateCustomerErrors, CreateCustomerResponses, CreateData, CreateErrors, CreateIntentData, CreateIntentErrors, CreateIntentResponses, CreateOrderData, CreateOrderResponses, CreateProductData, CreateProductErrors, CreateProductResponses, CreateResponses, CreateTagData, CreateTagErrors, CreateTagResponses, CreateTenantData, CreateTenantErrors, CreateTenantResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, CreateUserData, CreateUserErrors, CreateUserResponses, CreateVoucherData, CreateVoucherErrors, CreateVoucherResponses, CreditData, CreditErrors, CreditResponses, DebitData, DebitErrors, DebitResponses, DebugCallerData, DebugCallerResponses, DeleteBusinessData, DeleteBusinessErrors, DeleteBusinessResponses, DeleteCartData, DeleteCartErrors, DeleteCartResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCustomerData, DeleteCustomerErrors, DeleteCustomerResponses, DeleteOrderData, DeleteOrderErrors, DeleteOrderResponses, DeleteProductData, DeleteProductErrors, DeleteProductResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, DeleteTenantData, DeleteTenantErrors, DeleteTenantResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, DeleteVoucherData, DeleteVoucherErrors, DeleteVoucherResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, EnsureData, EnsureErrors, EnsureResponses, ExportData, ExportErrors, ExportResponses, FailMockPaymentData, FailMockPaymentErrors, FailMockPaymentResponses, GetBusinessData, GetBusinessErrors, GetBusinessResponses, GetCartData, GetCartErrors, GetCartResponses, GetCatalogChangesData, GetCatalogChangesErrors, GetCatalogChangesResponses, GetCatalogSyncSummaryData, GetCatalogSyncSummaryErrors, GetCatalogSyncSummaryResponses, GetCategoryData, GetCategoryResponses, GetCustomerData, GetCustomerErrors, GetCustomerResponses, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetHistoryData, GetHistoryErrors, GetHistoryResponses, GetImageData, GetImageResponses, GetMyCustomerProfileData, GetMyCustomerProfileErrors, GetMyCustomerProfileResponses, GetOrCreateActiveData, GetOrCreateActiveErrors, GetOrCreateActiveResponses, GetOrderData, GetOrderErrors, GetOrderResponses, GetPaymentIntentData, GetPaymentIntentErrors, GetPaymentIntentResponses, GetPayoutData, GetPayoutErrors, GetPayoutResponses, GetProductData, GetProductResponses, GetStatsData, GetStatsErrors, GetStatsResponses, GetTagData, GetTagResponses, GetTenantData, GetTenantErrors, GetTenantResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserData, GetUserErrors, GetUserResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, GetVoucherData, GetVoucherErrors, GetVoucherResponses, GetWalletData, GetWalletErrors, GetWalletResponses, GetWooCommerceHealthData, GetWooCommerceHealthErrors, GetWooCommerceHealthResponses, HandleWebhookData, HandleWebhookErrors, HandleWebhookResponses, HealthData, HealthResponses, InitiateMockPaymentData, InitiateMockPaymentErrors, InitiateMockPaymentResponses, ListBusinessesData, ListBusinessesErrors, ListBusinessesResponses, ListCartsData, ListCartsErrors, ListCartsResponses, ListCategoriesData, ListCategoriesResponses, ListCustomersData, ListCustomersErrors, ListCustomersResponses, ListData, ListErrors, ListOrderPaymentIntentsData, ListOrderPaymentIntentsErrors, ListOrderPaymentIntentsResponses, ListOrdersData, ListOrdersErrors, ListOrdersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, ListResponses, ListTagsData, ListTagsResponses, ListTenantsData, ListTenantsErrors, ListTenantsResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, ListVouchersData, ListVouchersErrors, ListVouchersResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, ListWooCommerceOrdersData, ListWooCommerceOrdersErrors, ListWooCommerceOrdersResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, MyVouchersData, MyVouchersErrors, MyVouchersResponses, MyWalletData, MyWalletErrors, MyWalletResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, ReconcileOrderData, ReconcileOrderErrors, ReconcileOrderResponses, RegisterData, RegisterErrors, RegisterResponses, RejectData, RejectErrors, RejectResponses, RemoveItemData, RemoveItemErrors, RemoveItemResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, TransactionsData, TransactionsErrors, TransactionsResponses, UpdateBusinessData, UpdateBusinessErrors, UpdateBusinessResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateCustomerData, UpdateCustomerErrors, UpdateCustomerResponses, UpdateItemData, UpdateItemErrors, UpdateItemResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateOrderData, UpdateOrderErrors, UpdateOrderResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses, UpdateStatusData, UpdateStatusErrors, UpdateStatusResponses, UpdateTenantData, UpdateTenantErrors, UpdateTenantResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UpdateVoucherData, UpdateVoucherErrors, UpdateVoucherResponses, UploadImageData, UploadImageResponses, UpsertCatalogMappingsData, UpsertCatalogMappingsErrors, UpsertCatalogMappingsResponses, ValidateVoucherData, ValidateVoucherErrors, ValidateVoucherResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
+import type { AddItemData, AddItemErrors, AddItemResponses, AdjustData, AdjustErrors, AdjustResponses, ApproveData, ApproveErrors, ApproveResponses, BatchApproveData, BatchApproveErrors, BatchApproveResponses, BatchRejectData, BatchRejectErrors, BatchRejectResponses, ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckoutCartData, CheckoutCartErrors, CheckoutCartResponses, CheckoutOrderData, CheckoutOrderErrors, CheckoutOrderResponses, CollectData, CollectErrors, CollectResponses, CompleteMockPaymentData, CompleteMockPaymentErrors, CompleteMockPaymentResponses, CreateBusinessData, CreateBusinessErrors, CreateBusinessResponses, CreateCartData, CreateCartErrors, CreateCartResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCustomerData, CreateCustomerErrors, CreateCustomerResponses, CreateIntentData, CreateIntentErrors, CreateIntentResponses, CreateOrderData, CreateOrderResponses, CreateProductData, CreateProductErrors, CreateProductResponses, CreateTagData, CreateTagErrors, CreateTagResponses, CreateTenantData, CreateTenantErrors, CreateTenantResponses, CreateTenantUserData, CreateTenantUserErrors, CreateTenantUserResponses, CreateUserData, CreateUserErrors, CreateUserResponses, CreateVoucherData, CreateVoucherErrors, CreateVoucherResponses, CreditData, CreditErrors, CreditResponses, DebitData, DebitErrors, DebitResponses, DebugCallerData, DebugCallerResponses, DeleteBusinessData, DeleteBusinessErrors, DeleteBusinessResponses, DeleteCartData, DeleteCartErrors, DeleteCartResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCustomerData, DeleteCustomerErrors, DeleteCustomerResponses, DeleteOrderData, DeleteOrderErrors, DeleteOrderResponses, DeleteProductData, DeleteProductErrors, DeleteProductResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, DeleteTenantData, DeleteTenantErrors, DeleteTenantResponses, DeleteTenantUserData, DeleteTenantUserErrors, DeleteTenantUserResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, DeleteVoucherData, DeleteVoucherErrors, DeleteVoucherResponses, DisableMfaData, DisableMfaErrors, DisableMfaResponses, EnsureData, EnsureErrors, EnsureResponses, ExportData, ExportErrors, ExportResponses, FailMockPaymentData, FailMockPaymentErrors, FailMockPaymentResponses, GetBusinessData, GetBusinessErrors, GetBusinessResponses, GetCartData, GetCartErrors, GetCartResponses, GetCatalogChangesData, GetCatalogChangesErrors, GetCatalogChangesResponses, GetCatalogSyncSummaryData, GetCatalogSyncSummaryErrors, GetCatalogSyncSummaryResponses, GetCategoryData, GetCategoryResponses, GetCustomerData, GetCustomerErrors, GetCustomerResponses, GetEffectiveSettingsData, GetEffectiveSettingsErrors, GetEffectiveSettingsResponses, GetHistoryData, GetHistoryErrors, GetHistoryResponses, GetImageData, GetImageResponses, GetMyCustomerProfileData, GetMyCustomerProfileErrors, GetMyCustomerProfileResponses, GetOrCreateActiveData, GetOrCreateActiveErrors, GetOrCreateActiveResponses, GetOrderData, GetOrderErrors, GetOrderResponses, GetPaymentIntentData, GetPaymentIntentErrors, GetPaymentIntentResponses, GetPayoutData, GetPayoutErrors, GetPayoutResponses, GetProductData, GetProductResponses, GetStatsData, GetStatsErrors, GetStatsResponses, GetTagData, GetTagResponses, GetTenantData, GetTenantErrors, GetTenantResponses, GetTenantSettingsData, GetTenantSettingsErrors, GetTenantSettingsResponses, GetTranslationsData, GetTranslationsResponses, GetUserData, GetUserErrors, GetUserResponses, GetUserSettingsData, GetUserSettingsErrors, GetUserSettingsResponses, GetVoucherData, GetVoucherErrors, GetVoucherResponses, GetWalletData, GetWalletErrors, GetWalletResponses, GetWooCommerceHealthData, GetWooCommerceHealthErrors, GetWooCommerceHealthResponses, HandleWebhookData, HandleWebhookErrors, HandleWebhookResponses, HealthData, HealthResponses, InitiateMockPaymentData, InitiateMockPaymentErrors, InitiateMockPaymentResponses, ListBusinessesData, ListBusinessesErrors, ListBusinessesResponses, ListCartsData, ListCartsErrors, ListCartsResponses, ListCategoriesData, ListCategoriesResponses, ListCustomersData, ListCustomersErrors, ListCustomersResponses, ListData, ListErrors, ListOrderPaymentIntentsData, ListOrderPaymentIntentsErrors, ListOrderPaymentIntentsResponses, ListOrdersData, ListOrdersErrors, ListOrdersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, ListResponses, ListTagsData, ListTagsResponses, ListTenantsData, ListTenantsErrors, ListTenantsResponses, ListTenantUsersData, ListTenantUsersErrors, ListTenantUsersResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, ListVouchersData, ListVouchersErrors, ListVouchersResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, ListWooCommerceOrdersData, ListWooCommerceOrdersErrors, ListWooCommerceOrdersResponses, MeData, MeErrors, MeResponses, MfaStatusData, MfaStatusErrors, MfaStatusResponses, MyVouchersData, MyVouchersErrors, MyVouchersResponses, MyWalletData, MyWalletErrors, MyWalletResponses, OwnerDecisionData, OwnerDecisionErrors, OwnerDecisionResponses, PutTenantSettingsData, PutTenantSettingsErrors, PutTenantSettingsResponses, PutUserSettingsData, PutUserSettingsErrors, PutUserSettingsResponses, ReconcileOrderData, ReconcileOrderErrors, ReconcileOrderResponses, RegisterData, RegisterErrors, RegisterResponses, RejectData, RejectErrors, RejectResponses, RemoveItemData, RemoveItemErrors, RemoveItemResponses, SetupMfaData, SetupMfaErrors, SetupMfaResponses, StatusData, StatusErrors, StatusResponses, SyncAllData, SyncAllErrors, SyncAllResponses, SyncTenantData, SyncTenantErrors, SyncTenantResponses, TransactionsData, TransactionsErrors, TransactionsResponses, UpdateBusinessData, UpdateBusinessErrors, UpdateBusinessResponses, UpdateCategoryData, UpdateCategoryErrors, UpdateCategoryResponses, UpdateCustomerData, UpdateCustomerErrors, UpdateCustomerResponses, UpdateItemData, UpdateItemErrors, UpdateItemResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpdateMyBankDetailsData, UpdateMyBankDetailsErrors, UpdateMyBankDetailsResponses, UpdateOrderData, UpdateOrderErrors, UpdateOrderResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses, UpdateStatusData, UpdateStatusErrors, UpdateStatusResponses, UpdateTenantData, UpdateTenantErrors, UpdateTenantResponses, UpdateTenantUserData, UpdateTenantUserErrors, UpdateTenantUserResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UpdateVoucherData, UpdateVoucherErrors, UpdateVoucherResponses, UploadImageData, UploadImageResponses, UpsertCatalogMappingsData, UpsertCatalogMappingsErrors, UpsertCatalogMappingsResponses, ValidateVoucherData, ValidateVoucherErrors, ValidateVoucherResponses, VerifyMfaData, VerifyMfaErrors, VerifyMfaResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -575,6 +575,19 @@ export const getHistory = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
+ * Owner Decision
+ */
+export const ownerDecision = <ThrowOnError extends boolean = false>(options: Options<OwnerDecisionData, ThrowOnError>): RequestResult<OwnerDecisionResponses, OwnerDecisionErrors, ThrowOnError> => (options.client ?? client).post<OwnerDecisionResponses, OwnerDecisionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}/owner-decision',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Update Status
  */
 export const updateStatus = <ThrowOnError extends boolean = false>(options: Options<UpdateStatusData, ThrowOnError>): RequestResult<UpdateStatusResponses, UpdateStatusErrors, ThrowOnError> => (options.client ?? client).put<UpdateStatusResponses, UpdateStatusErrors, ThrowOnError>({
@@ -680,19 +693,6 @@ export const list = <ThrowOnError extends boolean = false>(options?: Options<Lis
 });
 
 /**
- * Create
- */
-export const create = <ThrowOnError extends boolean = false>(options: Options<CreateData, ThrowOnError>): RequestResult<CreateResponses, CreateErrors, ThrowOnError> => (options.client ?? client).post<CreateResponses, CreateErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payouts',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * Batch Approve
  */
 export const batchApprove = <ThrowOnError extends boolean = false>(options: Options<BatchApproveData, ThrowOnError>): RequestResult<BatchApproveResponses, BatchApproveErrors, ThrowOnError> => (options.client ?? client).post<BatchApproveResponses, BatchApproveErrors, ThrowOnError>({
@@ -728,6 +728,15 @@ export const export_ = <ThrowOnError extends boolean = false>(options?: Options<
 });
 
 /**
+ * Status
+ */
+export const status = <ThrowOnError extends boolean = false>(options?: Options<StatusData, ThrowOnError>): RequestResult<StatusResponses, StatusErrors, ThrowOnError> => (options?.client ?? client).get<StatusResponses, StatusErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payouts/status',
+    ...options
+});
+
+/**
  * Get Payout
  */
 export const getPayout = <ThrowOnError extends boolean = false>(options: Options<GetPayoutData, ThrowOnError>): RequestResult<GetPayoutResponses, GetPayoutErrors, ThrowOnError> => (options.client ?? client).get<GetPayoutResponses, GetPayoutErrors, ThrowOnError>({
@@ -751,7 +760,11 @@ export const approve = <ThrowOnError extends boolean = false>(options: Options<A
 export const reject = <ThrowOnError extends boolean = false>(options: Options<RejectData, ThrowOnError>): RequestResult<RejectResponses, RejectErrors, ThrowOnError> => (options.client ?? client).post<RejectResponses, RejectErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payouts/{id}/reject',
-    ...options
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -1143,6 +1156,19 @@ export const myWallet = <ThrowOnError extends boolean = false>(options?: Options
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/wallets/me',
     ...options
+});
+
+/**
+ * Update My Bank Details
+ */
+export const updateMyBankDetails = <ThrowOnError extends boolean = false>(options: Options<UpdateMyBankDetailsData, ThrowOnError>): RequestResult<UpdateMyBankDetailsResponses, UpdateMyBankDetailsErrors, ThrowOnError> => (options.client ?? client).put<UpdateMyBankDetailsResponses, UpdateMyBankDetailsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/wallets/me/bank-details',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

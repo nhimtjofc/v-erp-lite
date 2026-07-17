@@ -222,7 +222,7 @@ public class CartResource {
         order.setCustomer(cart.getCustomer());
         order.setTenantId(caller.tenantCode());
         order.setCreatedBy(caller.userId());
-        order.setStatus("PENDING");
+        order.setStatus("PENDING_PAYMENT");
 
         order.setOrderNumber("ORD-" + System.currentTimeMillis());
         String name = cart.getCustomer().getFirstName() != null ? cart.getCustomer().getFirstName() : "";
@@ -236,21 +236,32 @@ public class CartResource {
         order.setShippingAddress(cart.getCustomer().getAddress() != null ? cart.getCustomer().getAddress() : "N/A");
 
         long total = 0;
+        Business orderBusiness = null;
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
-            int qty = cartItem.getQuantity();
-
-            if (product.getStockQuantity() < qty) {
-                throw new BadRequestException("Insufficient stock for product: " + product.getSku());
+            if (product.getBusiness() == null) {
+                throw new BadRequestException("Every product in an order must belong to a business");
             }
-            product.setStockQuantity(product.getStockQuantity() - qty);
+            if (orderBusiness == null) {
+                orderBusiness = product.getBusiness();
+            } else if (!orderBusiness.getId().equals(product.getBusiness().getId())) {
+                throw new BadRequestException("Multi-vendor order decisions are not supported; checkout one vendor at a time");
+            }
+            int qty = cartItem.getQuantity();
 
             ProductVariant variant = cartItem.getVariant();
             if (variant != null) {
-                if (variant.getStockQuantity() < qty) {
+                if (variant.getAvailableQuantity() < qty) {
                     throw new BadRequestException("Insufficient stock for variant: " + variant.getSku());
                 }
-                variant.setStockQuantity(variant.getStockQuantity() - qty);
+                variant.setReservedQuantity(variant.getReservedQuantity() + qty);
+                variant.setUpdatedBy(caller.userId());
+            } else {
+                if (product.getAvailableQuantity() < qty) {
+                    throw new BadRequestException("Insufficient stock for product: " + product.getSku());
+                }
+                product.setReservedQuantity(product.getReservedQuantity() + qty);
+                product.setUpdatedBy(caller.userId());
             }
 
             OrderItem orderItem = new OrderItem();
@@ -266,6 +277,7 @@ public class CartResource {
             order.getItems().add(orderItem);
             total += subtotal;
         }
+        order.setBusiness(orderBusiness);
 
         order.setSubtotalAmountMinor(total);
 

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import base.entity.Customer;
+import base.entity.Business;
 import base.entity.CustomerVoucher;
 import base.entity.Order;
 import base.entity.OrderHistory;
@@ -18,9 +19,11 @@ import base.entity.OrderItem;
 import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.Voucher;
+import base.entity.User;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
+import base.service.OrderFulfillmentService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -60,6 +63,9 @@ public class OrderResource {
     EscrowService escrowService;
 
     @Inject
+    OrderFulfillmentService fulfillmentService;
+
+    @Inject
     PaymentAccess paymentAccess;
 
     public static class CartItem {
@@ -81,6 +87,11 @@ public class OrderResource {
     public static class StatusUpdateRequest {
         public String status;
         public String note;
+    }
+
+    public static class OwnerDecisionRequest {
+        public String decision;
+        public String reason;
     }
 
     public static class OrderUpdateRequest {
@@ -113,6 +124,10 @@ public class OrderResource {
             customerId = c.getId();
         }
 
+        boolean isOwner = securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("operator");
+
         String normalizedSearch = search == null ? null : search.trim();
         String normalizedStatus = status == null ? null : status.trim();
 
@@ -135,6 +150,10 @@ public class OrderResource {
             query.append(" AND customer.id = :customerId");
             params.put("customerId", customerId);
         }
+        if (isOwner) {
+            params.put("ownerUserId", caller.resolveUser().getId());
+            query.append(" AND business.createdBy = :ownerUserId");
+        }
 
         if (hasStatus) {
             query.append(" AND status = :status");
@@ -147,7 +166,11 @@ public class OrderResource {
             params.put("search", escaped);
         }
 
-        query.append(" ORDER BY orderDate DESC");
+        if ("PAID_ESCROW".equalsIgnoreCase(normalizedStatus)) {
+            query.append(" ORDER BY ownerDecisionDeadline ASC");
+        } else {
+            query.append(" ORDER BY orderDate DESC");
+        }
         return Order.find(query.toString(), params).list();
     }
 
@@ -167,7 +190,8 @@ public class OrderResource {
                 .setParameter(1, tenantCode)
                 .getResultList();
         Map<String, Long> countByStatus = new HashMap<>();
-        for (String s : List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED")) {
+        for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
+                "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -205,6 +229,7 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
+        requireBusinessOwnerAccess(order);
         boolean isCustomer = securityIdentity.hasRole("customer")
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
@@ -231,6 +256,7 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
+        requireBusinessOwnerAccess(order);
         boolean isCustomer = securityIdentity.hasRole("customer")
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
@@ -292,6 +318,7 @@ public class OrderResource {
         order.setId(UUID.randomUUID());
         order.setTenantId(tenantCode);
         order.setCreatedBy(userId);
+        Business orderBusiness = null;
 
         for (CartItem item : request.items) {
             if (item.quantity <= 0) {
@@ -302,6 +329,14 @@ public class OrderResource {
             Product product = Product.find("id = ?1 and tenantId = ?2", item.productId, tenantCode).firstResult();
             if (product == null) {
                 throw new BadRequestException("Product not found");
+            }
+            if (product.getBusiness() == null) {
+                throw new BadRequestException("Every product in an order must belong to a business");
+            }
+            if (orderBusiness == null) {
+                orderBusiness = product.getBusiness();
+            } else if (!orderBusiness.getId().equals(product.getBusiness().getId())) {
+                throw new BadRequestException("Multi-vendor order decisions are not supported; checkout one vendor at a time");
             }
 
             long unitPrice;
@@ -396,9 +431,10 @@ public class OrderResource {
 
         // 8. Populate Order Details
         order.setCustomer(customer);
+        order.setBusiness(orderBusiness);
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
-        order.setStatus("PENDING");
+        order.setStatus("PENDING_PAYMENT");
         order.setShippingName(request.shippingName);
         order.setShippingPhone(request.shippingPhone);
         order.setShippingAddress(request.shippingAddress);
@@ -412,8 +448,7 @@ public class OrderResource {
 
         order.persist();
 
-        // 9. Write initial OrderHistory record (order created as PENDING)
-        persistHistory(order, null, "PENDING", "Order created", userId, tenantCode);
+        persistHistory(order, null, "PENDING_PAYMENT", "Order created", userId, tenantCode);
 
         return Response.created(URI.create("/api/orders/" + order.getId())).entity(order).build();
     }
@@ -421,6 +456,19 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
     // Update Status
     // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{id}/owner-decision")
+    @RolesAllowed({"businessOwner"})
+    @Transactional
+    public Order ownerDecision(@PathParam("id") UUID id, OwnerDecisionRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
+        User owner = caller.resolveUser();
+        return fulfillmentService.decide(
+                caller.tenantCode(), id, owner, request.decision, request.reason, caller.userId());
+    }
 
     @PUT
     @Path("/{id}/status")
@@ -439,6 +487,7 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
+        requireBusinessOwnerAccess(order);
 
         String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
         String newStatus = request.status.trim().toUpperCase();
@@ -447,8 +496,8 @@ public class OrderResource {
             return order;
         }
 
-        // Valid statuses: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
-        if (!List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED").contains(newStatus)) {
+        if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
+                "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -459,8 +508,9 @@ public class OrderResource {
         UUID userId = caller.userId();
 
         // Stock and Reservation Lifecycle Management
-        // 1. From PENDING/CONFIRMED to CANCELLED: release reserved quantity
-        if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        // Unpaid cancellation releases reservations. Paid declines are handled
+        // only by the owner-decision endpoint so the payment refund is atomic.
+        if (List.of("PENDING", "PENDING_PAYMENT", "CONFIRMED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -473,8 +523,9 @@ public class OrderResource {
                 }
             }
         }
-        // 2. From PENDING/CONFIRMED to SHIPPED/COMPLETED: deduct actual stock and clear reservation
-        else if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && List.of("SHIPPED", "COMPLETED").contains(newStatus)) {
+        // Inventory becomes committed when fulfillment starts.
+        else if (List.of("PENDING", "CONFIRMED", "OWNER_ACCEPTED").contains(oldStatus)
+                && List.of("SHIPPED", "FULFILLING", "DELIVERED", "COMPLETED").contains(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -544,6 +595,10 @@ public class OrderResource {
                     customer.setTier("SILVER");
                 }
             }
+        }
+
+        if (List.of("DELIVERED", "COMPLETED").contains(newStatus)
+                && !List.of("DELIVERED", "COMPLETED").contains(oldStatus)) {
             escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
         }
 
@@ -574,6 +629,7 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
+        requireBusinessOwnerAccess(order);
 
         BigDecimal discountPct = request.discountPercent != null ? request.discountPercent : order.getDiscountPercent();
         BigDecimal vatPct = request.vatPercent != null ? request.vatPercent : order.getVatPercent();
@@ -632,7 +688,7 @@ public class OrderResource {
         }
 
         String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("COMPLETED", "CANCELLED").contains(status)) {
+        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED").contains(status)) {
             throw new BadRequestException("Only completed or cancelled orders can be deleted");
         }
 
@@ -654,6 +710,20 @@ public class OrderResource {
         history.persist();
     }
 
+    private void requireBusinessOwnerAccess(Order order) {
+        boolean isOwnerOnly = securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("operator");
+        if (!isOwnerOnly) {
+            return;
+        }
+        User owner = caller.resolveUser();
+        if (order.getBusiness() == null || order.getBusiness().getCreatedBy() == null
+                || !order.getBusiness().getCreatedBy().equals(owner.getId())) {
+            throw new ForbiddenException("You are not allowed to access this vendor order");
+        }
+    }
+
     private void validatePercent(String label, BigDecimal value) {
         if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(ONE_HUNDRED) > 0) {
             throw new BadRequestException(label + " must be between 0 and 100");
@@ -668,6 +738,21 @@ public class OrderResource {
     }
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
+        if ("PENDING_PAYMENT".equals(oldStatus)) {
+            return "CANCELLED".equals(newStatus);
+        }
+        if ("OWNER_ACCEPTED".equals(oldStatus)) {
+            return "FULFILLING".equals(newStatus);
+        }
+        if ("FULFILLING".equals(oldStatus)) {
+            return "DELIVERED".equals(newStatus);
+        }
+        if ("DELIVERED".equals(oldStatus)) {
+            return "COMPLETED".equals(newStatus);
+        }
+        if ("OWNER_DECLINED".equals(oldStatus)) {
+            return "REFUNDED".equals(newStatus);
+        }
         if ("PENDING".equals(oldStatus)) {
             return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
         }

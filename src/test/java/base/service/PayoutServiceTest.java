@@ -46,7 +46,8 @@ class PayoutServiceTest {
                 actorId
         );
 
-        assertEquals("PENDING", payout.getStatus());
+        assertEquals("FLAGGED", payout.getStatus());
+        assertFalse(payout.isAutoApproved());
         assertEquals(50_000, payout.getAmountMinor());
         assertEquals("VND", payout.getCurrency());
         assertEquals("VCB", payout.getBankName());
@@ -77,8 +78,9 @@ class PayoutServiceTest {
         PayoutRequest approved = payoutService.approvePayout(tenantId, payout.getId(), actorId);
         PayoutRequest approvedRetry = payoutService.approvePayout(tenantId, payout.getId(), actorId);
 
-        assertEquals("APPROVED", approved.getStatus());
-        assertEquals("APPROVED", approvedRetry.getStatus());
+        assertEquals("PAID", approved.getStatus());
+        assertEquals("PAID", approvedRetry.getStatus());
+        assertNotNull(approved.getTransferReference());
         assertEquals(60_000, freshWallet(tenantId, wallet.getId()).getAvailableBalanceMinor());
 
         List<WalletTransaction> transactions = walletService.listTransactions(tenantId, wallet.getId());
@@ -101,7 +103,7 @@ class PayoutServiceTest {
 
         assertThrows(BadRequestException.class, () -> payoutService.approvePayout(tenantId, payout.getId(), actorId));
 
-        assertEquals("PENDING", payoutService.getPayout(tenantId, payout.getId()).getStatus());
+        assertEquals("FLAGGED", payoutService.getPayout(tenantId, payout.getId()).getStatus());
         assertEquals(10_000, freshWallet(tenantId, wallet.getId()).getAvailableBalanceMinor());
         assertEquals(1, WalletTransaction.count("tenantId = ?1 and wallet.id = ?2", tenantId, wallet.getId()));
     }
@@ -138,9 +140,9 @@ class PayoutServiceTest {
 
         assertThrows(BadRequestException.class, () -> payoutService.rejectPayout(tenantA, payoutA.getId(), actorId));
         assertThrows(NotFoundException.class, () -> payoutService.getPayout(tenantB, payoutA.getId()));
-        assertEquals(1, payoutService.listPayouts(tenantA, null, "APPROVED").size());
-        assertEquals(0, payoutService.listPayouts(tenantB, null, "APPROVED").size());
-        assertEquals(List.of(payoutB.getId()), payoutService.listPayouts(tenantB, walletB.getId(), "PENDING")
+        assertEquals(1, payoutService.listPayouts(tenantA, null, "PAID").size());
+        assertEquals(0, payoutService.listPayouts(tenantB, null, "PAID").size());
+        assertEquals(List.of(payoutB.getId()), payoutService.listPayouts(tenantB, walletB.getId(), "FLAGGED")
                 .stream()
                 .map(PayoutRequest::getId)
                 .toList());

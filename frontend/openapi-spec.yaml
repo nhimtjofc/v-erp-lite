@@ -2,6 +2,11 @@
 openapi: 3.1.1
 components:
   schemas:
+    ActionRequest:
+      type: object
+      properties:
+        reason:
+          type: string
     AddItemRequest:
       type: object
       properties:
@@ -12,6 +17,15 @@ components:
         quantity:
           type: integer
           format: int32
+    BankDetailsRequest:
+      type: object
+      properties:
+        bankName:
+          type: string
+        bankAccountNumber:
+          type: string
+        bankAccountHolder:
+          type: string
     Business:
       type: object
       properties:
@@ -275,22 +289,6 @@ components:
           $ref: "#/components/schemas/UUID"
         idempotencyKey:
           type: string
-    CreatePayoutRequest:
-      type: object
-      properties:
-        walletId:
-          $ref: "#/components/schemas/UUID"
-        amountMinor:
-          type: integer
-          format: int64
-        currency:
-          type: string
-        bankName:
-          type: string
-        bankAccountNumber:
-          type: string
-        bankAccountHolder:
-          type: string
     Customer:
       type: object
       properties:
@@ -421,6 +419,8 @@ components:
           $ref: "#/components/schemas/Instant"
         status:
           type: string
+        ownerDecisionDeadline:
+          $ref: "#/components/schemas/Instant"
         shippingName:
           type: string
         shippingPhone:
@@ -527,6 +527,13 @@ components:
           type: number
         vatPercent:
           type: number
+    OwnerDecisionRequest:
+      type: object
+      properties:
+        decision:
+          type: string
+        reason:
+          type: string
     PasswordChangeRequest:
       type: object
       properties:
@@ -610,16 +617,36 @@ components:
           type: string
         status:
           type: string
+        autoApproved:
+          type: boolean
+        flagReason:
+          type: string
         bankName:
           type: string
         bankAccountNumber:
           type: string
         bankAccountHolder:
           type: string
+        transferReference:
+          type: string
+        paidAt:
+          $ref: "#/components/schemas/Instant"
         createdAt:
           $ref: "#/components/schemas/Instant"
         updatedAt:
           $ref: "#/components/schemas/Instant"
+    PayoutStatusResponse:
+      type: object
+      properties:
+        lastPayoutAt:
+          $ref: "#/components/schemas/Instant"
+        nextScheduledRunAt:
+          $ref: "#/components/schemas/Instant"
+        minimumThresholdMinor:
+          type: integer
+          format: int64
+        lastStatus:
+          type: string
     Product:
       type: object
       properties:
@@ -943,6 +970,14 @@ components:
           format: int64
         currency:
           type: string
+        bankName:
+          type: string
+        bankAccountNumber:
+          type: string
+        bankAccountHolder:
+          type: string
+        bankDetailsUpdatedAt:
+          $ref: "#/components/schemas/Instant"
         createdAt:
           $ref: "#/components/schemas/Instant"
         updatedAt:
@@ -2569,6 +2604,40 @@ paths:
         - businessOwner
         - operator
         - customer
+  /api/orders/{id}/owner-decision:
+    post:
+      operationId: ownerDecision
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OwnerDecisionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Owner Decision
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - businessOwner
   /api/orders/{id}/status:
     put:
       operationId: updateStatus
@@ -2838,10 +2907,6 @@ paths:
     get:
       operationId: list
       parameters:
-      - name: status
-        in: query
-        schema:
-          type: string
       - name: walletId
         in: query
         schema:
@@ -2860,33 +2925,6 @@ paths:
         "403":
           description: Not Allowed
       summary: List
-      tags:
-      - Payout Resource
-      security:
-      - SecurityScheme:
-        - admin
-        - businessOwner
-    post:
-      operationId: create
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreatePayoutRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-        "401":
-          description: Not Authorized
-        "403":
-          description: Not Allowed
-        "400":
-          description: Bad Request
-      summary: Create
       tags:
       - Payout Resource
       security:
@@ -2962,11 +3000,6 @@ paths:
   /api/payouts/export:
     get:
       operationId: export
-      parameters:
-      - name: status
-        in: query
-        schema:
-          type: string
       responses:
         "200":
           description: OK
@@ -2982,6 +3015,32 @@ paths:
       security:
       - SecurityScheme:
         - admin
+  /api/payouts/status:
+    get:
+      operationId: status
+      parameters:
+      - name: walletId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutStatusResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Status
+      tags:
+      - Payout Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
   /api/payouts/{id}:
     get:
       operationId: getPayout
@@ -3044,6 +3103,12 @@ paths:
         required: true
         schema:
           $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActionRequest"
+        required: true
       responses:
         "200":
           description: OK
@@ -3055,6 +3120,8 @@ paths:
           description: Not Authorized
         "403":
           description: Not Allowed
+        "400":
+          description: Bad Request
       summary: Reject
       tags:
       - Payout Resource
@@ -4062,7 +4129,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - businessOwner
   /api/wallets/ensure:
     post:
       operationId: ensure
@@ -4090,7 +4156,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - businessOwner
   /api/wallets/me:
     get:
       operationId: myWallet
@@ -4117,6 +4182,40 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - businessOwner
+  /api/wallets/me/bank-details:
+    put:
+      operationId: updateMyBankDetails
+      parameters:
+      - name: currency
+        in: query
+        schema:
+          type: string
+          default: VND
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankDetailsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Update My Bank Details
+      tags:
+      - Wallet Resource
+      security:
+      - SecurityScheme:
         - businessOwner
   /api/wallets/{id}:
     get:

@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useGetOrderQuery,
   useUpdateStatusMutation,
+  useOwnerDecisionMutation,
+  listOrdersQueryKey,
   useMeQuery,
   useWooCommerceOrdersQuery,
   useReconcileWooCommerceOrderMutation,
@@ -32,6 +34,34 @@ interface OrderHistoryEntry {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClass: string; icon: React.ElementType }> = {
+  PENDING_PAYMENT: {
+    label: 'Pending payment', badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white', icon: CreditCard,
+  },
+  PAID_ESCROW: {
+    label: 'Awaiting owner decision', badgeClass: 'border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
+    dotClass: 'border-violet-400 bg-violet-500 text-white', icon: Clock,
+  },
+  OWNER_ACCEPTED: {
+    label: 'Owner accepted', badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    dotClass: 'border-sky-400 bg-sky-500 text-white', icon: CheckCircle2,
+  },
+  FULFILLING: {
+    label: 'Fulfilling', badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    dotClass: 'border-orange-400 bg-orange-500 text-white', icon: Package,
+  },
+  DELIVERED: {
+    label: 'Delivered', badgeClass: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    dotClass: 'border-emerald-400 bg-emerald-500 text-white', icon: Truck,
+  },
+  OWNER_DECLINED: {
+    label: 'Owner declined', badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
+    dotClass: 'border-red-400 bg-red-500 text-white', icon: XCircle,
+  },
+  REFUNDED: {
+    label: 'Refunded', badgeClass: 'border-slate-500/30 bg-slate-500/15 text-slate-700 dark:text-slate-300',
+    dotClass: 'border-slate-400 bg-slate-500 text-white', icon: RefreshCw,
+  },
   PENDING: {
     label: 'Pending',
     badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
@@ -103,12 +133,16 @@ export function OrderDetailPage() {
   const { data: me } = useMeQuery()
   const isAdmin = me?.role?.name === 'admin'
   const isCustomer = me?.role?.name === 'customer'
+  const isOwner = me?.role?.name === 'businessOwner'
   const isStaff = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
   const [statusNote, setStatusNote] = useState('')
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false)
+  const [declineReason, setDeclineReason] = useState('')
+  const [decisionError, setDecisionError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notes, setNotes] = useState<string | null>(null)
@@ -174,6 +208,19 @@ export function OrderDetailPage() {
     },
   })
 
+  const ownerDecisionMutation = useOwnerDecisionMutation({
+    onSuccess: async () => {
+      await refreshOrderPage()
+      await queryClient.invalidateQueries({
+        queryKey: listOrdersQueryKey({ query: { status: 'PAID_ESCROW' } }),
+      })
+      setShowDeclineDialog(false)
+      setDeclineReason('')
+      setDecisionError(null)
+    },
+    onError: (err) => setDecisionError(err instanceof Error ? err.message : 'Unable to submit owner decision.'),
+  })
+
   const deleteMutation = useMutation({
     mutationFn: deleteOrder,
     onSuccess: async () => {
@@ -220,6 +267,18 @@ export function OrderDetailPage() {
     })
   }
 
+  const submitOwnerDecision = (decision: 'ACCEPT' | 'DECLINE') => {
+    if (decision === 'DECLINE' && !declineReason.trim()) {
+      setDecisionError('A decline reason is required.')
+      return
+    }
+    setDecisionError(null)
+    ownerDecisionMutation.mutate({
+      path: { id },
+      body: { decision, reason: decision === 'DECLINE' ? declineReason.trim() : undefined },
+    })
+  }
+
   if (isLoading) {
     return <div className="text-center py-10 text-muted-foreground">Loading order details...</div>
   }
@@ -240,10 +299,8 @@ export function OrderDetailPage() {
   }
 
   const status = order.status?.toUpperCase() ?? 'PENDING'
-  const isPending = status === 'PENDING'
-  const isConfirmed = status === 'CONFIRMED'
-  const isShipped = status === 'SHIPPED'
-  const isFinal = status === 'COMPLETED' || status === 'CANCELLED'
+  const isPendingPayment = status === 'PENDING' || status === 'PENDING_PAYMENT'
+  const isFinal = ['COMPLETED', 'CANCELLED', 'OWNER_DECLINED', 'REFUNDED'].includes(status)
   const canDelete = isAdmin && isFinal
 
   const statusCfg = getStatusConfig(status)
@@ -290,7 +347,7 @@ export function OrderDetailPage() {
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
 
-          {isCustomer && isPending && (
+          {isCustomer && isPendingPayment && (
             <Link to="/orders/payment" search={{ orderId: id }}>
               <Button size="sm">
                 <CreditCard className="h-4 w-4 mr-1.5" /> Payment
@@ -310,36 +367,31 @@ export function OrderDetailPage() {
             </Button>
           )}
 
-          {isStaff && !isFinal && (
+          {isOwner && status === 'PAID_ESCROW' && (
             <>
-              {isPending && (
-                <>
-                  <Button onClick={() => openStatusDialog('CONFIRMED')} variant="secondary" className="font-semibold">
-                    <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm
-                  </Button>
-                  <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                    <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-                  </Button>
-                </>
-              )}
-              {isConfirmed && (
-                <Button onClick={() => openStatusDialog('SHIPPED')} className="font-semibold">
-                  <Truck className="h-4 w-4 mr-1.5" /> Ship Order
-                </Button>
-              )}
-              {isShipped && (
-                <Button onClick={() => openStatusDialog('COMPLETED')} variant="default" className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
-                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
-                </Button>
-              )}
+              <Button onClick={() => submitOwnerDecision('ACCEPT')} disabled={ownerDecisionMutation.isPending} className="font-semibold">
+                <CheckCircle2 className="h-4 w-4 mr-1.5" /> Accept
+              </Button>
+              <Button onClick={() => setShowDeclineDialog(true)} disabled={ownerDecisionMutation.isPending} variant="destructive" className="font-semibold">
+                <XCircle className="h-4 w-4 mr-1.5" /> Decline
+              </Button>
             </>
           )}
+          {isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
+          {isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
+          {isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete</Button>}
         </div>
       </div>
 
       {deleteError && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
           {deleteError}
+        </div>
+      )}
+      {decisionError && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{decisionError}</div>}
+      {status === 'PAID_ESCROW' && order.ownerDecisionDeadline && (
+        <div className="rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm">
+          Owner decision deadline: <strong>{new Date(order.ownerDecisionDeadline).toLocaleString()}</strong>. Funds remain in escrow after acceptance.
         </div>
       )}
 
@@ -739,6 +791,26 @@ export function OrderDetailPage() {
               variant={pendingStatus === 'CANCELLED' ? 'destructive' : 'default'}
             >
               {updateStatusMutation.isPending ? 'Updating...' : `Set to ${pendingStatus}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Decline order</DialogTitle>
+            <DialogDescription>The buyer will be notified and refunded to the original payment method.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="decline-reason">Reason</Label>
+            <textarea id="decline-reason" rows={4} value={declineReason} onChange={(event) => setDeclineReason(event.target.value)} className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm" />
+            {decisionError && <p className="text-sm text-destructive">{decisionError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeclineDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => submitOwnerDecision('DECLINE')} disabled={ownerDecisionMutation.isPending || !declineReason.trim()}>
+              {ownerDecisionMutation.isPending ? 'Declining…' : 'Decline and refund'}
             </Button>
           </DialogFooter>
         </DialogContent>

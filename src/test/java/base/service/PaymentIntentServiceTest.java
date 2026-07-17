@@ -49,8 +49,9 @@ class PaymentIntentServiceTest {
                 "gw-sm-" + UUID.randomUUID(), actorId);
         assertEquals("SUCCEEDED", intent.getStatus());
         Order paidOrder = Order.findById(seed.order().getId());
-        assertEquals("PENDING", paidOrder.getStatus(),
-                "Successful payment must not advance the fulfillment status");
+        assertEquals("PAID_ESCROW", paidOrder.getStatus(),
+                "Successful payment must wait for an explicit owner decision");
+        assertNotNull(paidOrder.getOwnerDecisionDeadline());
     }
 
     @Test

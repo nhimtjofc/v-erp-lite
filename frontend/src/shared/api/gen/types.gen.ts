@@ -4,10 +4,20 @@ export type ClientOptions = {
     baseUrl: `${string}://openapi-spec.yaml` | (string & {});
 };
 
+export type ActionRequest = {
+    reason?: string;
+};
+
 export type AddItemRequest = {
     productId?: Uuid;
     variantId?: Uuid;
     quantity?: number;
+};
+
+export type BankDetailsRequest = {
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountHolder?: string;
 };
 
 export type Business = {
@@ -153,15 +163,6 @@ export type CreateIntentRequest = {
     idempotencyKey?: string;
 };
 
-export type CreatePayoutRequest = {
-    walletId?: Uuid;
-    amountMinor?: number;
-    currency?: string;
-    bankName?: string;
-    bankAccountNumber?: string;
-    bankAccountHolder?: string;
-};
-
 export type Customer = {
     tenantId?: string;
     createdAt?: Instant;
@@ -230,6 +231,7 @@ export type Order = {
     orderNumber?: string;
     orderDate?: Instant;
     status?: string;
+    ownerDecisionDeadline?: Instant;
     shippingName?: string;
     shippingPhone?: string;
     shippingAddress?: string;
@@ -283,6 +285,11 @@ export type OrderUpdateRequest = {
     vatPercent?: number;
 };
 
+export type OwnerDecisionRequest = {
+    decision?: string;
+    reason?: string;
+};
+
 export type PasswordChangeRequest = {
     newPassword?: string;
 };
@@ -326,11 +333,22 @@ export type PayoutResponse = {
     amountMinor?: number;
     currency?: string;
     status?: string;
+    autoApproved?: boolean;
+    flagReason?: string;
     bankName?: string;
     bankAccountNumber?: string;
     bankAccountHolder?: string;
+    transferReference?: string;
+    paidAt?: Instant;
     createdAt?: Instant;
     updatedAt?: Instant;
+};
+
+export type PayoutStatusResponse = {
+    lastPayoutAt?: Instant;
+    nextScheduledRunAt?: Instant;
+    minimumThresholdMinor?: number;
+    lastStatus?: string;
 };
 
 export type Product = {
@@ -496,6 +514,10 @@ export type WalletResponse = {
     availableBalanceMinor?: number;
     pendingBalanceMinor?: number;
     currency?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountHolder?: string;
+    bankDetailsUpdatedAt?: Instant;
     createdAt?: Instant;
     updatedAt?: Instant;
 };
@@ -2020,6 +2042,39 @@ export type GetHistoryResponses = {
 
 export type GetHistoryResponse = GetHistoryResponses[keyof GetHistoryResponses];
 
+export type OwnerDecisionData = {
+    body: OwnerDecisionRequest;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/orders/{id}/owner-decision';
+};
+
+export type OwnerDecisionErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type OwnerDecisionResponses = {
+    /**
+     * OK
+     */
+    200: Order;
+};
+
+export type OwnerDecisionResponse = OwnerDecisionResponses[keyof OwnerDecisionResponses];
+
 export type UpdateStatusData = {
     body: StatusUpdateRequest;
     path: {
@@ -2279,7 +2334,6 @@ export type ListData = {
     body?: never;
     path?: never;
     query?: {
-        status?: string;
         walletId?: Uuid;
     };
     url: '/api/payouts';
@@ -2304,35 +2358,6 @@ export type ListResponses = {
 };
 
 export type ListResponse = ListResponses[keyof ListResponses];
-
-export type CreateData = {
-    body: CreatePayoutRequest;
-    path?: never;
-    query?: never;
-    url: '/api/payouts';
-};
-
-export type CreateErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type CreateResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
 
 export type BatchApproveData = {
     body: {
@@ -2399,9 +2424,7 @@ export type BatchRejectResponses = {
 export type ExportData = {
     body?: never;
     path?: never;
-    query?: {
-        status?: string;
-    };
+    query?: never;
     url: '/api/payouts/export';
 };
 
@@ -2422,6 +2445,35 @@ export type ExportResponses = {
      */
     200: unknown;
 };
+
+export type StatusData = {
+    body?: never;
+    path?: never;
+    query?: {
+        walletId?: Uuid;
+    };
+    url: '/api/payouts/status';
+};
+
+export type StatusErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type StatusResponses = {
+    /**
+     * OK
+     */
+    200: PayoutStatusResponse;
+};
+
+export type StatusResponse = StatusResponses[keyof StatusResponses];
 
 export type GetPayoutData = {
     body?: never;
@@ -2482,7 +2534,7 @@ export type ApproveResponses = {
 export type ApproveResponse = ApproveResponses[keyof ApproveResponses];
 
 export type RejectData = {
-    body?: never;
+    body: ActionRequest;
     path: {
         id: Uuid;
     };
@@ -2491,6 +2543,10 @@ export type RejectData = {
 };
 
 export type RejectErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
     /**
      * Not Authorized
      */
@@ -3596,6 +3652,39 @@ export type MyWalletResponses = {
 };
 
 export type MyWalletResponse = MyWalletResponses[keyof MyWalletResponses];
+
+export type UpdateMyBankDetailsData = {
+    body: BankDetailsRequest;
+    path?: never;
+    query?: {
+        currency?: string;
+    };
+    url: '/api/wallets/me/bank-details';
+};
+
+export type UpdateMyBankDetailsErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type UpdateMyBankDetailsResponses = {
+    /**
+     * OK
+     */
+    200: WalletResponse;
+};
+
+export type UpdateMyBankDetailsResponse = UpdateMyBankDetailsResponses[keyof UpdateMyBankDetailsResponses];
 
 export type GetWalletData = {
     body?: never;
