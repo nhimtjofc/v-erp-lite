@@ -5,3 +5,4 @@ google-generativeai
 python-dotenv
 pinecone
 mysql-connector-python
+requests
