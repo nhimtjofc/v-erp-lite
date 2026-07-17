@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import base.entity.Customer;
 import base.entity.Business;
+import base.entity.Customer;
 import base.entity.CustomerVoucher;
 import base.entity.EscrowRecord;
 import base.entity.Order;
@@ -20,9 +20,8 @@ import base.entity.OrderItem;
 import base.entity.PaymentRefund;
 import base.entity.Product;
 import base.entity.ProductVariant;
-import base.entity.Voucher;
 import base.entity.User;
-import base.entity.Business;
+import base.entity.Voucher;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
@@ -154,9 +153,6 @@ public class OrderResource {
             params.put("customerId", customerId);
         }
 
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
         if (isOwner) {
             User user = caller.resolveUser();
             Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
