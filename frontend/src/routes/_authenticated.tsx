@@ -4,6 +4,7 @@ import { getUser } from '@/shared/auth'
 import { useMeQuery } from '@/shared/api'
 import { AppLayout } from '@/app/layouts/app-layout'
 import { CustomerLayout } from '@/app/layouts/customer-layout'
+import { ChatWidget } from '@/shared/ui/chat-widget'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async () => {
@@ -46,15 +47,21 @@ function AuthenticatedShell() {
 
   if (isStorefrontUser) {
     return (
-      <CustomerLayout>
-        <Outlet />
-      </CustomerLayout>
+      <>
+        <CustomerLayout>
+          <Outlet />
+        </CustomerLayout>
+        <ChatWidget />
+      </>
     )
   }
 
   return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
+    <>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+      <ChatWidget />
+    </>
   )
 }

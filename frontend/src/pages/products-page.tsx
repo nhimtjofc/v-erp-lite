@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { PackagePlus, Plus, Search, Tags } from 'lucide-react'
+import { PackagePlus, Plus, Search, Tags, Edit3 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
-import type { Category } from '@/shared/api/catalog'
+import type { Category, Product } from '@/shared/api/catalog'
 import { useMeQuery, useGetCatalogSyncSummaryQuery } from '@/shared/api/gen/@tanstack/react-query.gen'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 
 function formatMoney(value?: number | null, language?: string) {
   if (value === null || value === undefined) return '-'
@@ -32,6 +33,7 @@ export function ProductsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [tagId, setTagId] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [newCategory, setNewCategory] = useState('')
   const [newCategoryParentId, setNewCategoryParentId] = useState('')
   const [newTag, setNewTag] = useState('')
@@ -219,17 +221,16 @@ export function ProductsPage() {
                   <TableRow>
                     <TableHead>{t('product')}</TableHead>
                     <TableHead>{t('sku')}</TableHead>
-                    <TableHead>{t('category')}</TableHead>
-                    <TableHead>{t('basePriceMinor')}</TableHead>
-                    <TableHead>{t('salePriceMinor')}</TableHead>
                     <TableHead>{t('stockQuantity')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    {canManageProducts && <TableHead></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow
+                      key={product.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setSelectedProduct(product)}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {product.imageUrl ? (
@@ -244,62 +245,13 @@ export function ProductsPage() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium">{product.name}</p>
-                            {product.description && (
-                              <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">
-                                {product.description}
-                              </p>
-                            )}
-                            {product.options && product.options.length > 0 && (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                <span className="font-medium">{t('productOptions')}:</span>{' '}
-                                {product.options.map((o) => o.name).join(', ')}
-                              </p>
-                            )}
-                            {product.tags && product.tags.length > 0 && (
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {product.tags.map((t) => (
-                                  <span
-                                    key={t.id}
-                                    className="inline-flex items-center rounded bg-secondary/70 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground"
-                                  >
-                                    #{t.name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                            <p className="font-semibold text-sm">{product.name}</p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div>
-                          <p>{product.sku}</p>
-                          {product.variants && product.variants.length > 0 && (
-                            <span className="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400 dark:ring-blue-500/30">
-                              {t('variantCount', { count: product.variants.length })}
-                            </span>
-                          )}
-                        </div>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {product.sku}
                       </TableCell>
-                      <TableCell>
-                        {product.category
-                          ? formatCategoryName(product.category as Category, categories)
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const prices = product.variants && product.variants.length > 0
-                            ? product.variants.map((v) => v.priceMinor).filter((p) => p !== undefined && p !== null)
-                            : []
-                          const hasMultiplePrices = prices.length > 0 && new Set(prices).size > 1
-                          if (hasMultiplePrices) {
-                            const minPrice = Math.min(...prices)
-                            return t('priceFrom', { priceMinor: formatMoney(minPrice, i18n.language) })
-                          }
-                          return formatMoney(product.basePriceMinor, i18n.language)
-                        })()}
-                      </TableCell>
-                      <TableCell>{formatMoney(product.salePriceMinor, i18n.language)}</TableCell>
                       <TableCell>
                         {(() => {
                           const hasVariants = Boolean(product.variants && product.variants.length > 0)
@@ -320,48 +272,29 @@ export function ProductsPage() {
                               && availableStock > 0
                               && availableStock <= (product.lowStockThreshold ?? 0)
                           return (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={
-                                    availableStock === 0
-                                      ? 'text-destructive font-semibold'
-                                      : isLow
-                                        ? 'font-semibold text-amber-600 dark:text-amber-500'
-                                        : 'font-medium'
-                                  }
-                                >
-                                  {availableStock}
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={
+                                  availableStock === 0
+                                    ? 'text-destructive font-bold'
+                                    : isLow
+                                      ? 'font-semibold text-amber-600 dark:text-amber-500'
+                                      : 'font-medium'
+                                }
+                              >
+                                {availableStock}
+                              </span>
+                              {availableStock === 0 ? (
+                                <Badge variant="destructive" className="text-[10px] py-0 px-1.5 h-4">{t('outOfStock')}</Badge>
+                              ) : isLow ? (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30">
+                                  {t('lowStock')}
                                 </span>
-                                {availableStock === 0 ? (
-                                  <Badge variant="destructive" className="text-[10px]">{t('outOfStock')}</Badge>
-                                ) : isLow ? (
-                                  <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30">
-                                    {t('lowStock')}
-                                  </span>
-                                ) : null}
-                              </div>
-                              {reservedStock > 0 && (
-                                <p className="text-[11px] text-muted-foreground">
-                                  {t('totalStock')}: {totalStock} · {t('reservedStock')}: {reservedStock}
-                                </p>
-                              )}
+                              ) : null}
                             </div>
                           )
                         })()}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={product.active ? 'default' : 'secondary'}>
-                          {product.active ? t('active') : t('inactive')}
-                        </Badge>
-                      </TableCell>
-                      {canManageProducts && (
-                        <TableCell>
-                          <Link to="/products/$id" params={{ id: product.id! }}>
-                            <Button variant="ghost" size="sm">{t('common:edit')}</Button>
-                          </Link>
-                        </TableCell>
-                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -369,6 +302,264 @@ export function ProductsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Detailed Product Dialog */}
+        <Dialog open={!!selectedProduct} onOpenChange={(open) => { if (!open) setSelectedProduct(null) }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {selectedProduct && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between gap-4 mr-6">
+                    <div>
+                      <DialogTitle className="text-xl font-bold text-foreground">
+                        {selectedProduct.name}
+                      </DialogTitle>
+                      <DialogDescription className="font-mono text-xs text-muted-foreground mt-0.5">
+                        SKU: {selectedProduct.sku}
+                      </DialogDescription>
+                    </div>
+                    <Badge variant={selectedProduct.active ? 'default' : 'secondary'} className="shrink-0">
+                      {selectedProduct.active ? t('active') : t('inactive')}
+                    </Badge>
+                  </div>
+                </DialogHeader>
+
+                <div className="grid gap-6 md:grid-cols-2 mt-4">
+                  {/* Left Column: Image and Description */}
+                  <div className="space-y-4">
+                    <div className="relative aspect-video rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+                      {selectedProduct.imageUrl ? (
+                        <img
+                          src={selectedProduct.imageUrl}
+                          alt={selectedProduct.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Tags className="h-12 w-12 text-muted-foreground/30" />
+                      )}
+                    </div>
+
+                    {selectedProduct.description && (
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {t('descriptionField')}
+                        </h4>
+                        <p className="text-sm text-foreground bg-muted/20 p-3 rounded-lg border border-border/50 whitespace-pre-wrap">
+                          {selectedProduct.description}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-4">
+                      {selectedProduct.category && (
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            {t('category')}
+                          </h4>
+                          <span className="inline-flex items-center rounded-md bg-primary/5 border border-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                            {formatCategoryName(selectedProduct.category as Category, categories)}
+                          </span>
+                        </div>
+                      )}
+
+                      {selectedProduct.tags && selectedProduct.tags.length > 0 && (
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            {t('tags')}
+                          </h4>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedProduct.tags.map((tg: any) => (
+                              <span
+                                key={tg.id}
+                                className="inline-flex items-center rounded-full bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground border border-border"
+                              >
+                                #{tg.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Inventory & Pricing */}
+                  <div className="space-y-5">
+                    {/* Inventory Section */}
+                    <div className="border rounded-xl p-4 bg-muted/15 space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Stock Status
+                      </h4>
+                      {(() => {
+                        const hasVariants = Boolean(selectedProduct.variants && selectedProduct.variants.length > 0)
+                        const totalStock = hasVariants
+                          ? selectedProduct.variants!.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)
+                          : (selectedProduct.stockQuantity || 0)
+                        const reservedStock = hasVariants
+                          ? selectedProduct.variants!.reduce((sum, v) => sum + (v.reservedQuantity || 0), 0)
+                          : (selectedProduct.reservedQuantity || 0)
+                        const availableStock = Math.max(0, totalStock - reservedStock)
+                        const isLow = hasVariants
+                          ? selectedProduct.variants!.some(
+                              (v) => (v.lowStockThreshold ?? 0) > 0
+                                && Math.max(0, (v.stockQuantity || 0) - (v.reservedQuantity || 0)) > 0
+                                && Math.max(0, (v.stockQuantity || 0) - (v.reservedQuantity || 0)) <= (v.lowStockThreshold ?? 0),
+                            )
+                          : (selectedProduct.lowStockThreshold ?? 0) > 0
+                            && availableStock > 0
+                            && availableStock <= (selectedProduct.lowStockThreshold ?? 0)
+
+                        return (
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-background rounded-lg p-2 border">
+                              <span className="block text-[9px] text-muted-foreground uppercase font-bold">
+                                {t('stockQuantity')}
+                              </span>
+                              <span className={`block text-lg font-extrabold mt-1 ${
+                                availableStock === 0
+                                  ? 'text-destructive'
+                                  : isLow
+                                  ? 'text-amber-500'
+                                  : 'text-foreground'
+                              }`}>
+                                {availableStock}
+                              </span>
+                              {availableStock === 0 ? (
+                                <span className="text-[9px] text-destructive font-bold">{t('outOfStock')}</span>
+                              ) : isLow ? (
+                                <span className="text-[9px] text-amber-500 font-bold">{t('lowStock')}</span>
+                              ) : (
+                                <span className="text-[9px] text-emerald-500 font-bold">In Stock</span>
+                              )}
+                            </div>
+                            <div className="bg-background rounded-lg p-2 border">
+                              <span className="block text-[9px] text-muted-foreground uppercase font-bold">
+                                Total
+                              </span>
+                              <span className="block text-lg font-extrabold text-foreground mt-1">
+                                {totalStock}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground">physical</span>
+                            </div>
+                            <div className="bg-background rounded-lg p-2 border">
+                              <span className="block text-[9px] text-muted-foreground uppercase font-bold">
+                                Reserved
+                              </span>
+                              <span className="block text-lg font-extrabold text-amber-600 mt-1">
+                                {reservedStock}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground">committed</span>
+                            </div>
+                          </div>
+                        )
+                      })()}
+                    </div>
+
+                    {/* Pricing Section */}
+                    <div className="border rounded-xl p-4 bg-muted/15 space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Pricing
+                      </h4>
+                      <div className="flex gap-4">
+                        <div className="flex-1 bg-background rounded-lg p-3 border">
+                          <span className="text-[9px] text-muted-foreground uppercase font-bold block">
+                            {t('basePrice')}
+                          </span>
+                          <span className="text-base font-bold block mt-0.5">
+                            {(() => {
+                              const prices = selectedProduct.variants && selectedProduct.variants.length > 0
+                                ? selectedProduct.variants.map((v) => v.priceMinor).filter((p) => p !== undefined && p !== null)
+                                : []
+                              const hasMultiplePrices = prices.length > 0 && new Set(prices).size > 1
+                              if (hasMultiplePrices) {
+                                const minPrice = Math.min(...prices)
+                                return t('priceFrom', { priceMinor: formatMoney(minPrice, i18n.language) })
+                              }
+                              return formatMoney(selectedProduct.basePriceMinor, i18n.language)
+                            })()}
+                          </span>
+                        </div>
+                        {selectedProduct.salePriceMinor !== undefined && selectedProduct.salePriceMinor !== null && (
+                          <div className="flex-1 bg-background rounded-lg p-3 border border-red-200/60 dark:border-red-900/30">
+                            <span className="text-[9px] text-red-500 uppercase font-bold block">
+                              {t('salePrice')}
+                            </span>
+                            <span className="text-base font-bold block text-red-500 mt-0.5">
+                              {formatMoney(selectedProduct.salePriceMinor, i18n.language)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Variants Section */}
+                    {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                      <div className="border rounded-xl p-4 bg-muted/15 space-y-3">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {t('variantsList')} ({selectedProduct.variants.length})
+                        </h4>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                          {selectedProduct.variants.map((v: any) => {
+                            const optionString = Object.entries(v.optionValues || {})
+                              .map(([key, value]) => `${key}: ${value}`)
+                              .join(', ')
+                            const vAvail = Math.max(0, (v.stockQuantity || 0) - (v.reservedQuantity || 0))
+                            return (
+                              <div key={v.id} className="flex justify-between items-center text-xs p-2 rounded-lg border bg-background">
+                                <div className="min-w-0">
+                                  <p className="font-semibold truncate">{optionString || 'Default option'}</p>
+                                  <p className="text-[9px] text-muted-foreground font-mono truncate">SKU: {v.sku}</p>
+                                </div>
+                                <div className="text-right shrink-0 pl-2">
+                                  <p className="font-bold text-primary">{formatMoney(v.priceMinor, i18n.language)}</p>
+                                  <p className="text-[9px] text-muted-foreground">
+                                    {vAvail} left
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Options Section */}
+                    {selectedProduct.options && selectedProduct.options.length > 0 && !selectedProduct.variants?.length && (
+                      <div className="border rounded-xl p-4 bg-muted/15 space-y-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {t('productOptions')}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProduct.options.map((o: any) => (
+                            <div key={o.name} className="text-xs bg-background border px-2.5 py-1 rounded-md">
+                              <span className="font-bold text-muted-foreground">{o.name}: </span>
+                              <span className="font-medium text-foreground">{(o.values || []).join(', ')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter className="mt-6 border-t pt-4 flex items-center justify-between sm:justify-between">
+                  <div>
+                    {canManageProducts && (
+                      <Link to="/products/$id" params={{ id: selectedProduct.id! }}>
+                        <Button variant="outline" size="sm" className="gap-1.5">
+                          <Edit3 className="h-3.5 w-3.5" />
+                          {t('common:edit')}
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                  <Button onClick={() => setSelectedProduct(null)} size="sm">
+                    Close
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <div className="space-y-6">
           <Card>

@@ -1,0 +1,1 @@
+{"response":"🤖 Ý định: <b>STORE_STATS</b><br><hr style='border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;'>Tuyệt vời! Hiện tại cửa hàng đang có chính xác 21 sản phẩm trong hệ thống ạ. 😊"}
