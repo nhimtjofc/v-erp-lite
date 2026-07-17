@@ -71,7 +71,22 @@ export async function handleCallback(): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
-  await userManager.signoutRedirect()
+  const user = await userManager.getUser()
+
+  // Clear the SPA session before redirecting. The app returns directly to
+  // /login rather than a dedicated sign-out callback, so leaving the stored
+  // OIDC user in place would make the login page immediately authenticate it
+  // again. Keep the ID token so Keycloak can still terminate its SSO session.
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  useAuthStore.getState().setUser(null)
+  await userManager.removeUser()
+
+  try {
+    await userManager.signoutRedirect({ id_token_hint: user?.id_token })
+  } catch {
+    window.location.assign('/login')
+  }
 }
 
 export async function getAccessToken(): Promise<string | null> {
