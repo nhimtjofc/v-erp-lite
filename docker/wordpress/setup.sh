@@ -42,3 +42,12 @@ fi
 
 wp plugin activate woocommerce
 wp plugin is-active woocommerce
+
+# Activate V-ERP plugins bind-mounted from the repo (catalog: Dev 3, checkout: Dev 5).
+for plugin in v-erp-catalog-connector v-erp-woo-checkout; do
+    if [ -d "/var/www/html/wp-content/plugins/$plugin" ]; then
+        wp plugin activate "$plugin" 2>/dev/null || echo "WARN: failed to activate $plugin" >&2
+    else
+        echo "WARN: plugin $plugin not found; skipping activation" >&2
+    fi
+done
