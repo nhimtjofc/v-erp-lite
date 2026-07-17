@@ -49,6 +49,22 @@ Tài liệu này hướng dẫn chi tiết cách khởi động toàn bộ hệ 
    ```
 4. Frontend sẽ sẵn sàng hoạt động tại địa chỉ: `http://localhost:5174/`
 
+### Bước 4: Khởi chạy AI Chatbot Backend
+Hệ thống có tích hợp một trợ lý ảo AI. Để khởi chạy server AI:
+1. Mở terminal mới và di chuyển vào thư mục chatbot:
+   ```bash
+   cd ecommerce-chatbot
+   ```
+2. Cài đặt các thư viện Python:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Khởi động server FastAPI:
+   ```bash
+   python -m uvicorn mcp_server.server:app --reload --port 8000
+   ```
+4. Biểu tượng Bong bóng Chatbot ở dưới cùng bên phải Frontend sẽ tự động kết nối và hoạt động.
+
 ---
 
 ## Đăng nhập & Sử dụng hệ thống
@@ -113,6 +129,22 @@ This document provides step-by-step instructions on how to start the entire full
    npm run dev
    ```
 4. The frontend will be ready and running at: `http://localhost:5174/`
+
+### Step 4: Launch AI Chatbot Backend
+The system integrates an AI virtual assistant. To start the chatbot server:
+1. Open a new terminal window and navigate to the chatbot directory:
+   ```bash
+   cd ecommerce-chatbot
+   ```
+2. Install the required Python packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Start the FastAPI server:
+   ```bash
+   python -m uvicorn mcp_server.server:app --reload --port 8000
+   ```
+4. The Chatbot floating widget on the frontend will automatically connect and become fully functional.
 
 ---
 

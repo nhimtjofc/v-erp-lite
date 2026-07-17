@@ -61,7 +61,7 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav:businessAdmin',
     roles: ['admin', 'operator', 'businessOwner'],
     items: [
-      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
+      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer', 'operator'] },
       {
         labelKey: 'nav:settings',
         to: '/settings/regional',
