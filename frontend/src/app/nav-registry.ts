@@ -63,7 +63,7 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav:businessAdmin',
     roles: ['admin', 'operator', 'businessOwner'],
     items: [
-      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer', 'operator'] },
+      { labelKey: 'nav:business', to: '/business', icon: Building2, hideForRoles: ['customer'] },
       {
         labelKey: 'nav:settings',
         to: '/settings/regional',
@@ -83,7 +83,7 @@ export const navGroups: NavGroup[] = [
   {
     labelKey: 'nav:finance',
     items: [
-      // Seller wallet: business staff only (matches WalletResource roles).
+      // Seller wallet and payout details remain owner-only.
       { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner'] },
       // Admin payout approval dashboard: admin only.
       { labelKey: 'nav:payouts', to: '/admin/payouts', icon: Banknote, adminOnly: true },

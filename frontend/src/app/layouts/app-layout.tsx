@@ -545,7 +545,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <UserIcon className="h-4 w-4" />
                   {t('nav:profile')}
                 </DropdownMenuLinkItem>
-                {role !== 'admin' && role !== 'customer' && role !== 'user' && role !== 'operator' && (
+                {role !== 'admin' && role !== 'customer' && role !== 'user' && (
                   <DropdownMenuLinkItem
                     className="cursor-pointer"
                     onClick={() => router.navigate({ to: '/business' })}
