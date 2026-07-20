@@ -225,10 +225,14 @@ interface CartDrawerProps {
     shippingName: string
     shippingPhone: string
     shippingAddress: string
+    shippingWard: string
+    shippingProvince: string
     shippingNote: string
     onShippingNameChange: (v: string) => void
     onShippingPhoneChange: (v: string) => void
     onShippingAddressChange: (v: string) => void
+    onShippingWardChange: (v: string) => void
+    onShippingProvinceChange: (v: string) => void
     onShippingNoteChange: (v: string) => void
     collectedVouchers: any[]
     selectedVoucherId: string
@@ -250,8 +254,8 @@ interface CartDrawerProps {
 function CartDrawer({
     open, onClose, cart, onUpdateQty, onRemoveItem, onClearCart,
     customers, selectedCustomerId, onCustomerChange,
-    shippingName, shippingPhone, shippingAddress, shippingNote,
-    onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingNoteChange,
+    shippingName, shippingPhone, shippingAddress, shippingWard, shippingProvince, shippingNote,
+    onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingWardChange, onShippingProvinceChange, onShippingNoteChange,
     collectedVouchers, selectedVoucherId, onSelectVoucherId,
     discountAmount, subtotal, shippingFeeMinor, taxAmountMinor, finalAmountMinor, freeShipGap, freeShipProgress,
     onCheckout, isCheckingOut, error, paymentMethod, onPaymentMethodChange
@@ -581,11 +585,23 @@ function CartDrawer({
                                 placeholder="Số điện thoại *"
                                 className="h-9 text-sm"
                             />
+                            <Input
+                                value={shippingProvince}
+                                onChange={(e) => onShippingProvinceChange(e.target.value)}
+                                placeholder="Tỉnh/Thành phố *"
+                                className="h-9 text-sm"
+                            />
+                            <Input
+                                value={shippingWard}
+                                onChange={(e) => onShippingWardChange(e.target.value)}
+                                placeholder="Xã/Phường *"
+                                className="h-9 text-sm"
+                            />
                             <textarea
                                 className="flex min-h-[70px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                                 value={shippingAddress}
                                 onChange={(e) => onShippingAddressChange(e.target.value)}
-                                placeholder="Địa chỉ giao hàng *"
+                                placeholder="Số nhà, Tên đường *"
                             />
                             <textarea
                                 className="flex min-h-[50px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
@@ -847,6 +863,8 @@ export function CartCheckoutPage() {
     const [shippingName, setShippingName] = useState('')
     const [shippingPhone, setShippingPhone] = useState('')
     const [shippingAddress, setShippingAddress] = useState('')
+    const [shippingWard, setShippingWard] = useState('')
+    const [shippingProvince, setShippingProvince] = useState('')
     const [shippingNote, setShippingNote] = useState('')
 
     // Voucher selection and queries
@@ -1054,8 +1072,8 @@ export function CartCheckoutPage() {
     function handleCheckoutClick() {
         if (!selectedCustomerId) { setError('Vui lòng chọn khách hàng'); return }
         if (cart.length === 0) { setError('Giỏ hàng đang trống'); return }
-        if (!shippingName.trim() || !shippingPhone.trim() || !shippingAddress.trim()) {
-            setError('Vui lòng điền đầy đủ: tên, số điện thoại và địa chỉ giao hàng')
+        if (!shippingName.trim() || !shippingPhone.trim() || !shippingAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
+            setError('Vui lòng điền đầy đủ thông tin giao hàng')
             return
         }
         setError('')
@@ -1072,6 +1090,8 @@ export function CartCheckoutPage() {
                 shippingName: shippingName.trim(),
                 shippingPhone: shippingPhone.trim(),
                 shippingAddress: shippingAddress.trim(),
+                shippingWard: shippingWard.trim(),
+                shippingProvince: shippingProvince.trim(),
                 shippingNote: shippingNote.trim() || undefined,
                 paymentMethod: paymentMethod,
                 items: cart.map(line => ({
@@ -1277,10 +1297,14 @@ export function CartCheckoutPage() {
                 shippingName={shippingName}
                 shippingPhone={shippingPhone}
                 shippingAddress={shippingAddress}
+                shippingWard={shippingWard}
+                shippingProvince={shippingProvince}
                 shippingNote={shippingNote}
                 onShippingNameChange={setShippingName}
                 onShippingPhoneChange={setShippingPhone}
                 onShippingAddressChange={setShippingAddress}
+                onShippingWardChange={setShippingWard}
+                onShippingProvinceChange={setShippingProvince}
                 onShippingNoteChange={setShippingNote}
                 collectedVouchers={collectedVoucherList}
                 selectedVoucherId={selectedVoucherId}

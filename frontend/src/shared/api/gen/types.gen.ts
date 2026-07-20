@@ -149,6 +149,8 @@ export type CheckoutRequest1 = {
     shippingName?: string;
     shippingPhone?: string;
     shippingAddress?: string;
+    shippingWard?: string;
+    shippingProvince?: string;
     shippingNote?: string;
     paymentMethod?: string;
     items?: Array<CartItem1>;
@@ -268,6 +270,8 @@ export type Order = {
     shippingName?: string;
     shippingPhone?: string;
     shippingAddress?: string;
+    shippingWard?: string;
+    shippingProvince?: string;
     shippingNote?: string;
     paymentQrCodeBase64?: string;
     subtotalAmountMinor?: number;
