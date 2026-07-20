@@ -19,7 +19,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -33,7 +32,7 @@ import java.util.UUID;
 @Path("/wallets")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "businessOwner"})
+@RolesAllowed({"admin", "operator", "businessOwner", "customer"})
 public class WalletResource {
 
     @Inject
@@ -68,6 +67,7 @@ public class WalletResource {
         public String tenantId;
         public String ownerType;
         public UUID ownerId;
+        public UUID userId;
         public long availableBalanceMinor;
         public long pendingBalanceMinor;
         public String currency;
@@ -86,6 +86,7 @@ public class WalletResource {
             response.tenantId = wallet.getTenantId();
             response.ownerType = wallet.getOwnerType();
             response.ownerId = wallet.getOwnerId();
+            response.userId = wallet.getUser() == null ? null : wallet.getUser().getId();
             response.availableBalanceMinor = wallet.getAvailableBalanceMinor();
             response.pendingBalanceMinor = wallet.getPendingBalanceMinor();
             response.currency = wallet.getCurrency();
@@ -141,12 +142,11 @@ public class WalletResource {
     }
 
     /**
-     * The wallet of the currently logged-in seller.
+     * The wallet of the currently logged-in user.
      *
-     * Resolution (single seam for the seller dashboard): authenticated user
-     * -> the business they own ({@code business.created_by}) -> that business's
-     * SELLER wallet. The wallet is created on demand if it doesn't exist yet, so
-     * a freshly-onboarded seller still gets a (zero-balance) wallet.
+     * A business owner is linked to the existing SELLER wallet for their business,
+     * preserving order and payout balances. Other users receive a USER wallet.
+     * The VND wallet is created on demand if provisioning has not created it yet.
      */
     @GET
     @Path("/me")
@@ -156,13 +156,8 @@ public class WalletResource {
         if (user == null) {
             return null;
         }
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
-        if (business == null) {
-            return null;
-        }
-        Wallet wallet = walletService.getOrCreateWallet(
-                caller.tenantCode(), "SELLER", business.getId(), currency, business.getCreatedBy());
+        Wallet wallet = walletService.getOrCreateUserWallet(
+                caller.tenantCode(), user.getId(), currency, caller.userId());
         return WalletResponse.from(wallet);
     }
 
@@ -210,13 +205,8 @@ public class WalletResource {
             throw new jakarta.ws.rs.BadRequestException("Request body is required");
         }
         User user = caller.resolveUser();
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
-        if (business == null) {
-            throw new NotFoundException("No business is owned by the authenticated user");
-        }
-        Wallet wallet = walletService.getOrCreateWallet(
-                caller.tenantCode(), "SELLER", business.getId(), currency, caller.userId());
+        Wallet wallet = walletService.getOrCreateUserWallet(
+                caller.tenantCode(), user.getId(), currency, caller.userId());
         return WalletResponse.from(walletService.updateBankDetails(
                 caller.tenantCode(),
                 wallet.getId(),
@@ -281,6 +271,9 @@ public class WalletResource {
             return wallet;
         }
         User user = caller.resolveUser();
+        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())) {
+            return wallet;
+        }
         Business business = Business.find(
                 "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
         if (business == null || !"SELLER".equals(wallet.getOwnerType())

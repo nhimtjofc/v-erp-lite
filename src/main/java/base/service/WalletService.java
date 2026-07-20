@@ -1,7 +1,9 @@
 package base.service;
 
 import base.entity.Bank;
+import base.entity.Business;
 import base.entity.PayoutRequest;
+import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
 import base.model.Money;
@@ -68,6 +70,31 @@ public class WalletService {
         if (wallet == null) {
             throw new NotFoundException("Không tìm thấy ví");
         }
+        return wallet;
+    }
+
+    @Transactional
+    public Wallet getOrCreateUserWallet(String tenantId, UUID userId, String currency, UUID actorId) {
+        User user = User.find("id = ?1 and tenantId = ?2", userId, tenantId).firstResult();
+        if (user == null) {
+            throw new NotFoundException("User not found");
+        }
+        String normalizedCurrency = moneyService.normalizeCurrency(currency);
+        Business business = Business.find(
+                "tenantId = ?1 and createdBy = ?2 order by createdAt asc", tenantId, userId).firstResult();
+        Wallet wallet;
+        if (business != null) {
+            wallet = getOrCreateWallet(tenantId, "SELLER", business.getId(), normalizedCurrency, actorId);
+        } else {
+            wallet = Wallet.find(
+                    "tenantId = ?1 and user.id = ?2 and ownerType = 'USER' and currency = ?3 order by createdAt asc",
+                    tenantId, userId, normalizedCurrency).firstResult();
+            if (wallet == null) {
+                wallet = getOrCreateWallet(tenantId, "USER", userId, normalizedCurrency, actorId);
+            }
+        }
+        wallet.setUser(user);
+        wallet.setUpdatedBy(actorId);
         return wallet;
     }
 

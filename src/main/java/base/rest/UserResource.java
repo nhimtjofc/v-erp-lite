@@ -3,6 +3,7 @@ package base.rest;
 import base.entity.Role;
 import base.entity.User;
 import base.security.CallerContext;
+import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -21,6 +22,9 @@ public class UserResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    WalletService walletService;
 
     @GET
     @Path("/me")
@@ -77,6 +81,8 @@ public class UserResource {
             user.setRole(Role.findById(user.getRole().getId()));
         }
         user.persist();
+        walletService.getOrCreateUserWallet(
+                caller.tenantCode(), user.getId(), "VND", caller.userId());
         return Response.created(URI.create("/api/users/" + user.getId())).entity(user).build();
     }
 

@@ -6,6 +6,7 @@ import base.entity.User;
 import base.entity.VendorRiskEvent;
 import base.security.CallerContext;
 import base.service.KeycloakSyncService;
+import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -42,6 +43,9 @@ public class AdminResource {
     @Inject
     CallerContext caller;
 
+    @Inject
+    WalletService walletService;
+
     // ──────────────────────────────────────────────
     // Tenant management
     // ──────────────────────────────────────────────
@@ -77,6 +81,7 @@ public class AdminResource {
         user.setTenantId(tenantId);
         user.setRole(resolveRole(user.getRole()));
         user.persist();
+        walletService.getOrCreateUserWallet(tenantId, user.getId(), "VND", caller.userId());
 
         // Sync to Keycloak (create KC user, ensure org, add member)
         try {

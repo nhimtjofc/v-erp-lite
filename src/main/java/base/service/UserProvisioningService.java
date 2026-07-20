@@ -4,6 +4,7 @@ import base.entity.Customer;
 import base.entity.Role;
 import base.entity.User;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -13,6 +14,9 @@ import org.slf4j.LoggerFactory;
 public class UserProvisioningService {
 
     private static final Logger log = LoggerFactory.getLogger(UserProvisioningService.class);
+
+    @Inject
+    WalletService walletService;
 
     @Transactional
     public User provisionUser(String email, String tenantCode, String keycloakId, String firstName, String lastName, String avatarUrl) {
@@ -28,6 +32,7 @@ public class UserProvisioningService {
                 user.setAvatarUrl(avatarUrl);
                 modified = true;
             }
+            walletService.getOrCreateUserWallet(tenantCode, user.getId(), "VND", user.getId());
             return user;
         }
 
@@ -50,6 +55,7 @@ public class UserProvisioningService {
         user.setRole(role);
         user.setActive(true);
         user.persist();
+        walletService.getOrCreateUserWallet(tenantCode, user.getId(), "VND", user.getId());
 
         // Create customer profile locally immediately
         Customer customer = new Customer();

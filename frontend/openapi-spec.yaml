@@ -1142,6 +1142,8 @@ components:
           type: string
         ownerId:
           $ref: "#/components/schemas/UUID"
+        userId:
+          $ref: "#/components/schemas/UUID"
         availableBalanceMinor:
           type: integer
           format: int64
@@ -4674,7 +4676,9 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - operator
         - businessOwner
+        - customer
   /api/wallets/me/bank-details:
     put:
       operationId: updateMyBankDetails
@@ -4735,7 +4739,9 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - operator
         - businessOwner
+        - customer
   /api/wallets/{id}/adjust:
     post:
       operationId: adjust
@@ -4878,7 +4884,9 @@ paths:
       security:
       - SecurityScheme:
         - admin
+        - operator
         - businessOwner
+        - customer
 tags:
 - name: WooCommerce Catalog
   description: Endpoints for WooCommerce plugin catalog synchronization

@@ -607,6 +607,7 @@ export type WalletResponse = {
     tenantId?: string;
     ownerType?: string;
     ownerId?: Uuid;
+    userId?: Uuid;
     availableBalanceMinor?: number;
     pendingBalanceMinor?: number;
     currency?: string;

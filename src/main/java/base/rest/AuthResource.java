@@ -6,6 +6,7 @@ import base.entity.User;
 import base.security.CallerContext;
 import base.security.TotpUtil;
 import base.service.KeycloakSyncService;
+import base.service.WalletService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -32,6 +33,9 @@ public class AuthResource {
 
     @Inject
     KeycloakSyncService keycloakSync;
+
+    @Inject
+    WalletService walletService;
 
     private static final String KEYCLOAK_REALM = "v-erp-lite";
 
@@ -216,6 +220,7 @@ public class AuthResource {
         user.setRole(role);
         user.setActive(true);
         user.persist();
+        walletService.getOrCreateUserWallet(tenantCode, user.getId(), "VND", user.getId());
 
         // 2. Create customer profile locally immediately
         Customer customer = new Customer();
