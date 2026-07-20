@@ -371,14 +371,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/settings') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
-      pathname.startsWith('/cart') ||
       pathname.startsWith('/admin/payouts') ||
       pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =
       pathname.startsWith('/shop') ||
-      pathname.startsWith('/cart') ||
       pathname.startsWith('/profile') ||
       pathname.startsWith('/orders')
 

@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Users,
-  ShoppingCart,
   ShoppingBag,
   Building2,
   Settings,
@@ -55,7 +54,6 @@ export const navGroups: NavGroup[] = [
       { labelKey: 'nav:products', to: '/products', icon: ShoppingBag, hideForRoles: ['customer'] },
       { labelKey: 'nav:orders', to: '/orders', icon: Receipt },
       { labelKey: 'nav:vouchers', to: '/vouchers', icon: Tag, hideForRoles: ['customer'] },
-      { labelKey: 'nav:cart', to: '/cart', icon: ShoppingCart },
       { labelKey: 'nav:notifications', to: '/notifications', icon: Bell },
     ],
   },
