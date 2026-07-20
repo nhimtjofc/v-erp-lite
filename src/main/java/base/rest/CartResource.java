@@ -1,6 +1,7 @@
 package base.rest;
 
 import base.entity.*;
+import base.service.VietQRService;
 import base.security.CallerContext;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -24,6 +25,9 @@ public class CartResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    VietQRService vietQRService;
 
     @GET
     public List<Cart> listCarts(
@@ -222,7 +226,8 @@ public class CartResource {
         order.setCustomer(cart.getCustomer());
         order.setTenantId(caller.tenantCode());
         order.setCreatedBy(caller.userId());
-        order.setStatus("PENDING_PAYMENT");
+        String initialStatus = (request != null && "COD".equalsIgnoreCase(request.paymentMethod)) ? "PENDING" : "PENDING_PAYMENT";
+        order.setStatus(initialStatus);
 
         order.setOrderNumber("ORD-" + System.currentTimeMillis());
         String name = cart.getCustomer().getFirstName() != null ? cart.getCustomer().getFirstName() : "";
@@ -318,6 +323,26 @@ public class CartResource {
         cart.setStatus("CHECKED_OUT");
         cart.setUpdatedBy(caller.userId());
 
+        OrderHistory history = new OrderHistory();
+        history.setId(UUID.randomUUID());
+        history.setOrder(order);
+        history.setTenantId(caller.tenantCode());
+        history.setOldStatus(null);
+        history.setNewStatus(initialStatus);
+        history.setNote("Order created");
+        history.setCreatedBy(caller.userId());
+        history.persist();
+
+        if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
+            Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2", caller.tenantCode(), orderBusiness.getId()).firstResult();
+            if (wallet == null || wallet.getBankName() == null || wallet.getBankAccountNumber() == null) {
+                throw new BadRequestException("Shop owner has not configured banking information for VietQR");
+            }
+            String message = "Thanh toan " + order.getOrderNumber();
+            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), finalAmount, message);
+            order.setPaymentQrCodeBase64(qrBase64);
+        }
+
         return order;
     }
 
@@ -353,5 +378,6 @@ public class CartResource {
         public BigDecimal vatPercent;
         public Long shippingFeeMinor;
         public String notes;
+        public String paymentMethod; // e.g. COD or BANK_TRANSFER
     }
 }

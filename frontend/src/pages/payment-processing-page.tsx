@@ -303,8 +303,8 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                     <QrCode className="h-5 w-5" />
                   </span>
                   <span className="flex-1">
-                    <span className="block font-semibold">MockPay QR</span>
-                    <span className="block text-sm text-muted-foreground">Quét QR và mô phỏng callback thành công/thất bại</span>
+                    <span className="block font-semibold">Chuyển khoản VietQR</span>
+                    <span className="block text-sm text-muted-foreground">Quét mã VietQR bằng ứng dụng ngân hàng</span>
                   </span>
                   <span className={cn(
                     'flex h-5 w-5 items-center justify-center rounded-full border',

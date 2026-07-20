@@ -29,8 +29,10 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { AlertCircle, CalendarClock, Clock, Coins, Landmark, RefreshCw, ShieldCheck, TrendingUp, Wallet } from 'lucide-react'
+import { VIETNAM_BANKS } from '@/shared/utils/bank'
 
 const WALLET_ROLES = ['businessOwner']
 
@@ -122,7 +124,18 @@ function BankDetailsDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="bank-name">Bank name</Label>
-            <Input id="bank-name" value={bankName} onChange={(event) => setBankName(event.target.value)} />
+            <Select value={bankName} onValueChange={setBankName}>
+              <SelectTrigger id="bank-name">
+                <SelectValue placeholder="Select a bank" />
+              </SelectTrigger>
+              <SelectContent>
+                {VIETNAM_BANKS.map((bank) => (
+                  <SelectItem key={bank.code} value={bank.code}>
+                    {bank.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="bank-account">Account number</Label>

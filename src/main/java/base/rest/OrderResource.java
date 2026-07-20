@@ -22,10 +22,12 @@ import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.User;
 import base.entity.Voucher;
+import base.entity.Wallet;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
 import base.service.OrderFulfillmentService;
+import base.service.VietQRService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -51,8 +53,8 @@ import jakarta.ws.rs.core.Response;
 public class OrderResource {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
-    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
+    private static final long FLAT_SHIPPING_FEE_MINOR = 25000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2500000;
     private static final double TAX_RATE = 0.10;
 
     @Inject
@@ -70,6 +72,9 @@ public class OrderResource {
     @Inject
     PaymentAccess paymentAccess;
 
+    @Inject
+    VietQRService vietQRService;
+
     public static class CartItem {
         public UUID productId;
         public UUID productVariantId;
@@ -83,6 +88,7 @@ public class OrderResource {
         public String shippingPhone;
         public String shippingAddress;
         public String shippingNote;
+        public String paymentMethod; // e.g. COD or BANK_TRANSFER
         public List<CartItem> items;
     }
 
@@ -548,7 +554,10 @@ public class OrderResource {
         order.setBusiness(orderBusiness);
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
-        order.setStatus("PENDING_PAYMENT");
+        
+        String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
+        order.setStatus(initialStatus);
+        
         order.setShippingName(request.shippingName);
         order.setShippingPhone(request.shippingPhone);
         order.setShippingAddress(request.shippingAddress);
@@ -562,7 +571,27 @@ public class OrderResource {
 
         order.persist();
 
-        persistHistory(order, null, "PENDING_PAYMENT", "Order created", userId, tenantCode);
+        persistHistory(order, null, initialStatus, "Order created", userId, tenantCode);
+
+        if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
+            Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2 and currency = 'VND'", tenantCode, orderBusiness.getId()).firstResult();
+            
+            // Fallback to the first wallet if VND wallet doesn't exist (for legacy compatibility)
+            if (wallet == null) {
+                wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2", tenantCode, orderBusiness.getId()).firstResult();
+            }
+
+            if (wallet == null || wallet.getBankName() == null || wallet.getBankAccountNumber() == null) {
+                throw new jakarta.ws.rs.WebApplicationException(
+                    jakarta.ws.rs.core.Response.status(400)
+                    .entity(java.util.Map.of("message", "Shop owner has not configured banking information for VietQR"))
+                    .build()
+                );
+            }
+            String message = "Thanh toan " + orderNumber;
+            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), finalAmount, message);
+            order.setPaymentQrCodeBase64(qrBase64);
+        }
 
         return Response.created(URI.create("/api/orders/" + order.getId())).entity(order).build();
     }

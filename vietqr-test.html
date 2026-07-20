@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test VietQR Offline</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        h2 { color: #333; margin-top: 0; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #0056b3; }
+        #qr-container { margin-top: 20px; display: none; }
+        #qr-image { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; }
+        .error { color: red; margin-top: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Tạo Mã VietQR Offline</h2>
+    
+    <div class="form-group">
+        <label>Ngân hàng</label>
+        <select id="bankCode">
+            <option value="VCB">Vietcombank (VCB)</option>
+            <option value="MBB">MB Bank (MBB)</option>
+            <option value="TCB">Techcombank (TCB)</option>
+            <option value="TPB">TPBank (TPB)</option>
+            <option value="VPB">VPBank (VPB)</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>Số tài khoản</label>
+        <input type="text" id="accNo" placeholder="VD: 190333444555" value="190333444555">
+    </div>
+
+    <div class="form-group">
+        <label>Số tiền (VNĐ)</label>
+        <input type="number" id="amount" placeholder="VD: 50000" value="50000">
+    </div>
+
+    <div class="form-group">
+        <label>Nội dung chuyển khoản</label>
+        <input type="text" id="message" placeholder="VD: Thanh toan don hang" value="Thanh toán đơn hàng Tiếng Việt">
+    </div>
+
+    <button onclick="generateQR()">Tạo Mã QR ngay</button>
+
+    <div id="error-msg" class="error"></div>
+
+    <div id="qr-container">
+        <p style="color: #28a745; font-weight: bold;">Tạo thành công! Hãy lấy App ngân hàng quét thử:</p>
+        <img id="qr-image" src="" alt="VietQR">
+    </div>
+</div>
+
+<script>
+    async function generateQR() {
+        const btn = document.querySelector('button');
+        const qrContainer = document.getElementById('qr-container');
+        const qrImage = document.getElementById('qr-image');
+        const errorMsg = document.getElementById('error-msg');
+
+        btn.innerText = 'Đang xử lý...';
+        btn.disabled = true;
+        qrContainer.style.display = 'none';
+        errorMsg.innerText = '';
+
+        const payload = {
+            bankCode: document.getElementById('bankCode').value,
+            accountNumber: document.getElementById('accNo').value,
+            amount: parseInt(document.getElementById('amount').value),
+            message: document.getElementById('message').value
+        };
+
+        try {
+            const response = await fetch('http://localhost:8081/api/vietqr/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error('API lỗi hoặc chưa khởi động Quarkus!');
+            
+            const data = await response.json();
+            qrImage.src = data.qrBase64;
+            qrContainer.style.display = 'block';
+        } catch (error) {
+            errorMsg.innerText = 'Lỗi: ' + error.message + ' (Bạn đã chạy ./gradlew quarkusDev chưa?)';
+        } finally {
+            btn.innerText = 'Tạo Mã QR ngay';
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>

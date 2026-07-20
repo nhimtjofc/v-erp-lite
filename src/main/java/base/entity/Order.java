@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -68,6 +70,10 @@ public class Order extends BaseEntity {
     @Column(name = "shipping_note", columnDefinition = "TEXT")
     private String shippingNote;
 
+    @Transient
+    @JsonProperty("paymentQrCodeBase64")
+    private String paymentQrCodeBase64;
+
     @Column(name = "subtotal_amount_minor", nullable = false)
     private long subtotalAmountMinor;
 
@@ -93,7 +99,7 @@ public class Order extends BaseEntity {
     private long finalAmountMinor;
 
     @Column(nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "VND";
 
     @Column(columnDefinition = "TEXT")
     private String notes;

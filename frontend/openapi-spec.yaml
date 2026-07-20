@@ -257,6 +257,8 @@ components:
           format: int64
         notes:
           type: string
+        paymentMethod:
+          type: string
     CheckoutRequest1:
       type: object
       properties:
@@ -271,6 +273,8 @@ components:
         shippingAddress:
           type: string
         shippingNote:
+          type: string
+        paymentMethod:
           type: string
         items:
           type: array
@@ -488,6 +492,8 @@ components:
           type: string
         shippingNote:
           type: string
+        paymentQrCodeBase64:
+          type: string
         subtotalAmountMinor:
           type: integer
           format: int64
@@ -572,6 +578,20 @@ components:
         subtotalAmountMinor:
           type: integer
           format: int64
+        currency:
+          type: string
+    OrderStatusDto:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+        status:
+          type: string
+        finalAmountMinor:
+          type: integer
+          format: int64
+        orderDate:
+          $ref: "#/components/schemas/Instant"
         currency:
           type: string
     OrderUpdateRequest:
@@ -1014,6 +1034,18 @@ components:
         resolvedAt:
           $ref: "#/components/schemas/Instant"
         details:
+          type: string
+    VietQRRequest:
+      type: object
+      properties:
+        bankCode:
+          type: string
+        accountNumber:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        message:
           type: string
     Voucher:
       type: object
@@ -2078,6 +2110,50 @@ paths:
         - admin
         - businessOwner
         - operator
+  /api/chatbot/orders/{orderNumber}:
+    get:
+      operationId: getOrderStatus
+      parameters:
+      - name: orderNumber
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: X-Chatbot-Key
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatusDto"
+      summary: Get Order Status
+      tags:
+      - Chatbot Resource
+  /api/chatbot/stats:
+    get:
+      operationId: getStats
+      parameters:
+      - name: X-Chatbot-Key
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+      summary: Get Stats
+      tags:
+      - Chatbot Resource
   /api/customers:
     get:
       operationId: listCustomers
@@ -2594,6 +2670,38 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/integrations/woocommerce/v1/orders/{externalId}/status:
+    get:
+      summary: Get WooCommerce Order Status
+      description: "Returns the current ERP fulfillment status for a WooCommerce order,\
+        \ keyed by the WooCommerce order ID."
+      operationId: getOrderStatus
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: externalId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: query
+        schema:
+          type: string
+      - name: X-WC-Webhook-Signature
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
   /api/notifications:
     get:
       operationId: listNotifications
@@ -3881,6 +3989,7 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+        - operator
   /api/tenant-settings/effective:
     get:
       operationId: getEffectiveSettings
@@ -4274,6 +4383,26 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+  /api/vietqr/generate:
+    post:
+      summary: Generate a VietQR code as Base64 image
+      operationId: generate
+      tags:
+      - VietQR
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VietQRRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
   /api/vouchers:
     get:
       operationId: listVouchers
@@ -4811,6 +4940,8 @@ paths:
         - admin
         - businessOwner
 tags:
+- name: VietQR
+  description: Offline VietQR generation
 - name: WooCommerce Catalog
   description: Endpoints for WooCommerce plugin catalog synchronization
 - name: WooCommerce Orders

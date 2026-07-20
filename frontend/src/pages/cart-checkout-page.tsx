@@ -243,6 +243,8 @@ interface CartDrawerProps {
     onCheckout: () => void
     isCheckingOut: boolean
     error: string
+    paymentMethod: 'COD' | 'BANK_TRANSFER'
+    onPaymentMethodChange: (pm: 'COD' | 'BANK_TRANSFER') => void
 }
 
 function CartDrawer({
@@ -252,7 +254,7 @@ function CartDrawer({
     onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingNoteChange,
     collectedVouchers, selectedVoucherId, onSelectVoucherId,
     discountAmount, subtotal, shippingFeeMinor, taxAmountMinor, finalAmountMinor, freeShipGap, freeShipProgress,
-    onCheckout, isCheckingOut, error,
+    onCheckout, isCheckingOut, error, paymentMethod, onPaymentMethodChange
 }: CartDrawerProps) {
     const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
     const selectedVoucher = collectedVouchers.find((cv: any) => cv.voucherId === selectedVoucherId)?.voucher
@@ -593,6 +595,30 @@ function CartDrawer({
                             />
                         </div>
 
+                        {/* Payment Method */}
+                        <div className="space-y-2 mt-4">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                <Zap className="h-3.5 w-3.5" />
+                                Phương thức thanh toán
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    variant={paymentMethod === 'COD' ? 'default' : 'outline'}
+                                    className="h-10 text-xs justify-start"
+                                    onClick={() => onPaymentMethodChange('COD')}
+                                >
+                                    Tiền mặt (COD)
+                                </Button>
+                                <Button
+                                    variant={paymentMethod === 'BANK_TRANSFER' ? 'default' : 'outline'}
+                                    className="h-10 text-xs justify-start px-2"
+                                    onClick={() => onPaymentMethodChange('BANK_TRANSFER')}
+                                >
+                                    Chuyển khoản QR
+                                </Button>
+                            </div>
+                        </div>
+
                         {/* Order summary */}
                         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
                             <div className="font-semibold text-sm text-foreground mb-3">Tóm tắt đơn hàng</div>
@@ -843,12 +869,25 @@ export function CartCheckoutPage() {
     // Checkout
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [error, setError] = useState('')
+    const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
+    const [qrCodeData, setQrCodeData] = useState<{qrBase64: string, amount: number, orderNumber: string} | null>(null)
 
     const checkoutMutation = useCheckoutOrderMutation({
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
             const createdOrder = data as Order
-            if (createdOrder?.id) {
+            
+            setCart([])
+            setCartOpen(false)
+            setShowConfirmDialog(false)
+            
+            if (createdOrder?.paymentQrCodeBase64) {
+                setQrCodeData({
+                    qrBase64: createdOrder.paymentQrCodeBase64,
+                    amount: createdOrder.finalAmountMinor || 0,
+                    orderNumber: createdOrder.orderNumber || ''
+                })
+            } else if (createdOrder?.id) {
                 navigate({ to: '/orders/payment', search: { orderId: createdOrder.id } })
             } else {
                 navigate({ to: '/orders' })
@@ -1034,6 +1073,7 @@ export function CartCheckoutPage() {
                 shippingPhone: shippingPhone.trim(),
                 shippingAddress: shippingAddress.trim(),
                 shippingNote: shippingNote.trim() || undefined,
+                paymentMethod: paymentMethod,
                 items: cart.map(line => ({
                     productId: line.product.id!,
                     productVariantId: line.variant?.id ?? null,
@@ -1255,6 +1295,8 @@ export function CartCheckoutPage() {
                 onCheckout={handleCheckoutClick}
                 isCheckingOut={checkoutMutation.isPending}
                 error={error}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={setPaymentMethod}
             />
 
             {/* Variant Picker */}
@@ -1347,6 +1389,44 @@ export function CartCheckoutPage() {
                         </Button>
                         <Button onClick={handleConfirmCheckout} className="cursor-pointer" disabled={checkoutMutation.isPending}>
                             {checkoutMutation.isPending ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* QR Code Dialog */}
+            <Dialog open={!!qrCodeData} onOpenChange={(open) => !open && setQrCodeData(null)}>
+                <DialogContent className="max-w-sm text-center">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Thanh toán Đơn hàng</DialogTitle>
+                        <DialogDescription>
+                            Vui lòng mở App Ngân hàng và quét mã QR dưới đây để thanh toán.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {qrCodeData && (
+                        <div className="flex flex-col items-center justify-center p-4 space-y-4">
+                            <div className="bg-white p-2 rounded-xl shadow-sm border">
+                                <img
+                                    src={`data:image/png;base64,${qrCodeData.qrBase64}`}
+                                    alt="VietQR"
+                                    className="w-64 h-64 object-contain"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-lg font-bold text-primary">{fmt(qrCodeData.amount)}</p>
+                                <p className="text-sm font-medium">Mã đơn: <span className="text-muted-foreground">{qrCodeData.orderNumber}</span></p>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="sm:justify-center mt-2">
+                        <Button 
+                            className="w-full" 
+                            onClick={() => {
+                                setQrCodeData(null)
+                                navigate({ to: '/orders' })
+                            }}
+                        >
+                            Hoàn tất
                         </Button>
                     </DialogFooter>
                 </DialogContent>

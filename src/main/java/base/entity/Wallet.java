@@ -31,7 +31,7 @@ public class Wallet extends BaseEntity {
     private long pendingBalanceMinor = 0;
 
     @Column(nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "VND";
 
     @Column(name = "bank_name")
     private String bankName;
