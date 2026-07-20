@@ -13,11 +13,17 @@ import java.util.Map;
 import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import base.entity.Order;
+import base.entity.Wallet;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class PaymentGatewayService {
 
     private static final String MOCK_SECRET = "mock_secret_v_erp_lite_2025";
+
+    @Inject
+    VietQRService vietQRService;
 
     public record MockGatewayResponse(
             String gateway,
@@ -37,7 +43,23 @@ public class PaymentGatewayService {
         String transactionId = transactionIdForIntent(normalizedGateway, intent.getId());
 
         String paymentUrl = buildMockPaymentUrl(intent, transactionId, normalizedGateway);
+        
         String qrContent = buildQrCodeContent(intent, transactionId, normalizedGateway);
+        if ("MOCK".equals(normalizedGateway)) {
+            Order order = Order.find("id", intent.getOrderId()).firstResult();
+            if (order != null && order.getBusiness() != null) {
+                Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2 and currency = 'VND'", 
+                        intent.getTenantId(), order.getBusiness().getId()).firstResult();
+                if (wallet == null) {
+                    wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2", 
+                            intent.getTenantId(), order.getBusiness().getId()).firstResult();
+                }
+                if (wallet != null && wallet.getBankName() != null && wallet.getBankAccountNumber() != null) {
+                    qrContent = vietQRService.generateQrPayload(wallet.getBankName(), wallet.getBankAccountNumber(), intent.getAmountMinor(), "Thanh toan " + order.getOrderNumber());
+                }
+            }
+        }
+        
         String signature = signPayload(intent.getId().toString(), transactionId, intent.getAmountMinor());
 
         return new MockGatewayResponse(

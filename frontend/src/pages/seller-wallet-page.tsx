@@ -32,6 +32,7 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { AlertCircle, CalendarClock, Clock, Coins, Landmark, RefreshCw, ShieldCheck, TrendingUp, Wallet } from 'lucide-react'
+import { VIETNAM_BANKS } from '@/shared/utils/bank'
 
 const WALLET_ROLES = ['businessOwner']
 
@@ -123,24 +124,19 @@ function BankDetailsDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bank-name">Bank</Label>
-            <Select
-              value={bankId}
-              onValueChange={(value) => setBankId(value ?? '')}
-              disabled={areBanksLoading || isBanksError}
-            >
+            <Label htmlFor="bank-name">Bank name</Label>
+            <Select value={bankName} onValueChange={setBankName}>
               <SelectTrigger id="bank-name">
-                <SelectValue placeholder={areBanksLoading ? 'Loading banks…' : 'Select a bank'} />
+                <SelectValue placeholder="Select a bank" />
               </SelectTrigger>
               <SelectContent>
-                {(banks ?? []).map((bank) => bank.id && bank.name ? (
-                  <SelectItem key={bank.id} value={bank.id}>
-                    {bank.name}{bank.code && bank.code !== bank.name ? ` (${bank.code})` : ''}
+                {VIETNAM_BANKS.map((bank) => (
+                  <SelectItem key={bank.code} value={bank.code}>
+                    {bank.name}
                   </SelectItem>
-                ) : null)}
+                ))}
               </SelectContent>
             </Select>
-            {isBanksError && <p className="text-sm text-destructive">Unable to load the bank list.</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="bank-account">Account number</Label>

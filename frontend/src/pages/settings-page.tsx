@@ -12,6 +12,9 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Switch } from '@/shared/ui/switch'
 import { Badge } from '@/shared/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { VIETNAM_BANKS } from '@/shared/utils/bank'
+
 import { Separator } from '@/shared/ui/separator'
 import {
   Globe,
@@ -62,12 +65,19 @@ interface CommunicationSettings {
   defaultNotificationChannel?: string
 }
 
+interface VietQRSettings {
+  bankCode?: string
+  accountNumber?: string
+  accountName?: string
+}
+
 interface SettingsMap {
   regional?: RegionalSettings
   currency?: CurrencySettings
   security?: SecuritySettings
   features?: FeatureToggles
   communication?: CommunicationSettings
+  vietqr?: VietQRSettings
 }
 
 // ── Constants ──
@@ -197,6 +207,7 @@ export function SettingsPage() {
   const [security, setSecurity] = useState<SecuritySettings>({})
   const [features, setFeatures] = useState<FeatureToggles>({})
   const [communication, setCommunication] = useState<CommunicationSettings>({})
+  const [vietqr, setVietqr] = useState<VietQRSettings>({})
 
   // Initialize form from tenant settings
   useEffect(() => {
@@ -206,6 +217,7 @@ export function SettingsPage() {
       if (tenantSettings.security) setSecurity(tenantSettings.security)
       if (tenantSettings.features) setFeatures(tenantSettings.features)
       if (tenantSettings.communication) setCommunication(tenantSettings.communication)
+      if (tenantSettings.vietqr) setVietqr(tenantSettings.vietqr)
     }
   }, [tenantSettings])
 
@@ -222,6 +234,7 @@ export function SettingsPage() {
       if (Object.keys(security).length) body.security = security
       if (Object.keys(features).length) body.features = features
       if (Object.keys(communication).length) body.communication = communication
+      if (Object.keys(vietqr).length) body.vietqr = vietqr
 
       await putMutation.mutateAsync({ body: { settings: body as unknown as Record<string, unknown> } })
       // Sync tenant default language to current user's UI
@@ -236,7 +249,7 @@ export function SettingsPage() {
       setSaving(false)
       setTimeout(() => setMessage(null), 4000)
     }
-  }, [regional, currency, security, features, communication, putMutation])
+  }, [regional, currency, security, features, communication, vietqr, putMutation])
 
   const handleReset = useCallback(() => {
     setRegional(tenantSettings?.regional ?? {})
@@ -593,6 +606,58 @@ export function SettingsPage() {
               options={NOTIFICATION_CHANNELS}
               placeholder={`${t('common:default')} — ${findLabel(NOTIFICATION_CHANNELS, effectiveSettings?.communication?.defaultNotificationChannel)}`}
             />
+          </div>
+        </div>
+      </section>
+
+      {/* ── VietQR Settings ── */}
+      <section className="border-b border-border/50 pb-7 mb-7">
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-base font-semibold">VietQR Payment Config</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Bank Code</Label>
+            <Select
+              disabled={!isAdmin}
+              value={vietqr.bankCode ?? ''}
+              onValueChange={(val) => setVietqr((s) => ({ ...s, bankCode: val }))}
+            >
+              <SelectTrigger className="max-w-xs">
+                <SelectValue placeholder="e.g. VCB, MB, TCB" />
+              </SelectTrigger>
+              <SelectContent>
+                {VIETNAM_BANKS.map((bank) => (
+                  <SelectItem key={bank.code} value={bank.code}>
+                    {bank.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">The code of your bank (e.g., VCB for Vietcombank).</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Account Number</Label>
+            <Input
+              value={vietqr.accountNumber ?? ''}
+              onChange={(e) => setVietqr((s) => ({ ...s, accountNumber: e.target.value }))}
+              placeholder="e.g. 190333444555"
+              disabled={!isAdmin}
+              className="max-w-xs"
+            />
+            <p className="text-xs text-muted-foreground">Your bank account number to receive money.</p>
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className="text-sm font-medium">Account Name</Label>
+            <Input
+              value={vietqr.accountName ?? ''}
+              onChange={(e) => setVietqr((s) => ({ ...s, accountName: e.target.value }))}
+              placeholder="e.g. NGUYEN VAN A"
+              disabled={!isAdmin}
+              className="max-w-md"
+            />
+            <p className="text-xs text-muted-foreground">The registered name on your bank account.</p>
           </div>
         </div>
       </section>

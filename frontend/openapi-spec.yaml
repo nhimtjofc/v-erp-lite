@@ -270,6 +270,8 @@ components:
           format: int64
         notes:
           type: string
+        paymentMethod:
+          type: string
     CheckoutRequest1:
       type: object
       properties:
@@ -284,6 +286,8 @@ components:
         shippingAddress:
           type: string
         shippingNote:
+          type: string
+        paymentMethod:
           type: string
         items:
           type: array
@@ -500,6 +504,8 @@ components:
         shippingAddress:
           type: string
         shippingNote:
+          type: string
+        paymentQrCodeBase64:
           type: string
         subtotalAmountMinor:
           type: integer
@@ -1043,6 +1049,18 @@ components:
         resolvedAt:
           $ref: "#/components/schemas/Instant"
         details:
+          type: string
+    VietQRRequest:
+      type: object
+      properties:
+        bankCode:
+          type: string
+        accountNumber:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        message:
           type: string
     Voucher:
       type: object
@@ -4435,6 +4453,26 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+  /api/vietqr/generate:
+    post:
+      summary: Generate a VietQR code as Base64 image
+      operationId: generate
+      tags:
+      - VietQR
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VietQRRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
   /api/vouchers:
     get:
       operationId: listVouchers
@@ -4978,6 +5016,8 @@ paths:
         - businessOwner
         - customer
 tags:
+- name: VietQR
+  description: Offline VietQR generation
 - name: WooCommerce Catalog
   description: Endpoints for WooCommerce plugin catalog synchronization
 - name: WooCommerce Orders

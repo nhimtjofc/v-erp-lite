@@ -148,6 +148,7 @@ export type CheckoutRequest = {
     vatPercent?: number;
     shippingFeeMinor?: number;
     notes?: string;
+    paymentMethod?: string;
 };
 
 export type CheckoutRequest1 = {
@@ -157,6 +158,7 @@ export type CheckoutRequest1 = {
     shippingPhone?: string;
     shippingAddress?: string;
     shippingNote?: string;
+    paymentMethod?: string;
     items?: Array<CartItem1>;
 };
 
@@ -275,6 +277,7 @@ export type Order = {
     shippingPhone?: string;
     shippingAddress?: string;
     shippingNote?: string;
+    paymentQrCodeBase64?: string;
     subtotalAmountMinor?: number;
     discountAmountMinor?: number;
     discountPercent?: number;
@@ -558,6 +561,13 @@ export type VendorRiskEvent = {
     occurredAt?: Instant;
     resolvedAt?: Instant;
     details?: string;
+};
+
+export type VietQrRequest = {
+    bankCode?: string;
+    accountNumber?: string;
+    amount?: number;
+    message?: string;
 };
 
 export type Voucher = {
@@ -3820,6 +3830,27 @@ export type UpdateUserResponses = {
 };
 
 export type UpdateUserResponse = UpdateUserResponses[keyof UpdateUserResponses];
+
+export type GenerateData = {
+    body: VietQrRequest;
+    path?: never;
+    query?: never;
+    url: '/api/vietqr/generate';
+};
+
+export type GenerateErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type GenerateResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type ListVouchersData = {
     body?: never;

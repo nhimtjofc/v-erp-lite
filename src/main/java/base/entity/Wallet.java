@@ -37,7 +37,7 @@ public class Wallet extends BaseEntity {
     private long pendingBalanceMinor = 0;
 
     @Column(nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "VND";
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "bank_id")

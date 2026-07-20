@@ -31,6 +31,14 @@ public class UserResource {
     BusinessAccess businessAccess;
 
     @GET
+    @Path("/test-error")
+    @jakarta.annotation.security.PermitAll
+    public jakarta.ws.rs.core.Response testError() {
+        base.entity.User.find("email = ?1 and tenantId = ?2", "a", "b").firstResult();
+        return jakarta.ws.rs.core.Response.ok("ok").build();
+    }
+
+    @GET
     @Path("/me")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public User me() {

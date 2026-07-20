@@ -136,6 +136,7 @@ export function ShopPage() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [error, setError] = useState('')
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>('')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
 
   useEffect(() => {
     localStorage.setItem('buyer_cart', JSON.stringify(cart))
@@ -257,15 +258,19 @@ export function ShopPage() {
       const result = data as { id?: string; data?: { id?: string } }
       const orderId = result.data?.id ?? result.id
       if (orderId) {
-        if (isCustomerRole) {
+        if (isCustomerRole && paymentMethod === 'BANK_TRANSFER') {
           navigate({ to: '/orders/payment', search: { orderId } })
+        } else if (isCustomerRole) {
+          navigate({ to: '/orders' })
         } else {
           navigate({ to: '/orders/$id', params: { id: orderId } })
         }
       }
     },
     onError: (err: any) => {
-      setError(err?.body?.message || err?.message || 'Checkout failed')
+      let msg = err?.body?.message || err?.message || 'Checkout failed'
+      if (typeof err?.body === 'string') msg = err.body
+      setError(msg)
     },
   })
 
@@ -305,6 +310,7 @@ export function ShopPage() {
     checkoutMutation.mutate({
       body: {
         customerId,
+        paymentMethod,
         voucherCode: selectedVoucher?.code ?? undefined,
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
@@ -755,6 +761,19 @@ export function ShopPage() {
               />
             </div>
             <div>
+              <Label>Payment Method *</Label>
+              <div className="flex gap-4 mt-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="COD" checked={paymentMethod === 'COD'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Thanh toán khi nhận hàng (COD)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="BANK_TRANSFER" checked={paymentMethod === 'BANK_TRANSFER'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Chuyển khoản (VietQR)
+                </label>
+              </div>
+            </div>
+            <div>
               <Label>Note</Label>
               <textarea
                 className="flex min-h-[50px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
@@ -877,6 +896,12 @@ export function ShopPage() {
               <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 Your order is saved as Pending. You can pay now, or return to the shop and complete payment later from Orders.
               </p>
+            )}
+            {error && (
+              <div className="rounded-lg bg-destructive/15 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
             )}
           </div>
           <DialogFooter className="pt-4">
