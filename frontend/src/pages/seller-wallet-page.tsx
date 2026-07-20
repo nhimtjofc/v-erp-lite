@@ -124,7 +124,7 @@ function BankDetailsDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="bank-name">Bank name</Label>
-            <Select value={bankName} onValueChange={setBankName}>
+            <Select value={bankName} onValueChange={(val) => setBankName(val ?? '')}>
               <SelectTrigger id="bank-name">
                 <SelectValue placeholder="Select a bank" />
               </SelectTrigger>
