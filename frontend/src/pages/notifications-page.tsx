@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   useNotificationsQuery,
   useMarkNotificationReadMutation,
@@ -8,25 +8,26 @@ import {
   type Notification,
 } from '@/shared/api/notifications'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Bell, CheckCheck, ArrowLeft, Receipt } from 'lucide-react'
-
-const NOTIFICATION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-  ORDER_OWNER_ACCEPTED: { label: 'Order accepted', variant: 'default' },
-  ORDER_OWNER_DECLINED: { label: 'Order declined', variant: 'destructive' },
-}
 
 function formatDate(value?: string): string {
   return value ? new Date(value).toLocaleString() : '—'
 }
 
 export function NotificationsPage() {
+  const { t } = useTranslation('notifications')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: notifications, isLoading } = useNotificationsQuery()
   const markRead = useMarkNotificationReadMutation()
   const markAllRead = useMarkAllNotificationsReadMutation()
+
+  const NOTIFICATION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
+    ORDER_OWNER_ACCEPTED: { label: t('orderAccepted'), variant: 'default' },
+    ORDER_OWNER_DECLINED: { label: t('orderDeclined'), variant: 'destructive' },
+  }
 
   const handleMarkAllRead = async () => {
     await markAllRead.mutateAsync()
@@ -53,19 +54,19 @@ export function NotificationsPage() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link to="/orders" className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm font-medium">
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> {t('back')}
           </Link>
           <div className="flex items-center gap-2.5">
             <Bell className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
             {unreadCount > 0 && (
-              <Badge variant="destructive" className="text-xs px-2 py-0.5">{unreadCount} unread</Badge>
+              <Badge variant="destructive" className="text-xs px-2 py-0.5">{t('unread', { count: unreadCount })}</Badge>
             )}
           </div>
         </div>
         {unreadCount > 0 && (
           <Button variant="outline" size="sm" onClick={handleMarkAllRead} disabled={markAllRead.isPending}>
-            <CheckCheck className="h-4 w-4 mr-1.5" /> Mark all read
+            <CheckCheck className="h-4 w-4 mr-1.5" /> {t('markAllRead')}
           </Button>
         )}
       </div>
@@ -73,15 +74,15 @@ export function NotificationsPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="py-16 text-center text-muted-foreground">Loading notifications…</div>
+            <div className="py-16 text-center text-muted-foreground">{t('loading')}</div>
           ) : list.length === 0 ? (
             <div className="py-16 text-center space-y-3">
               <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                 <Bell className="h-8 w-8 text-muted-foreground/50" />
               </div>
               <div>
-                <p className="font-semibold">No notifications</p>
-                <p className="text-sm text-muted-foreground mt-1">You'll see updates about your orders here.</p>
+                <p className="font-semibold">{t('emptyTitle')}</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('emptyDescription')}</p>
               </div>
             </div>
           ) : (
