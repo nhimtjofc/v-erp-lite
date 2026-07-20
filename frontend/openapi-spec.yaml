@@ -17,11 +17,24 @@ components:
         quantity:
           type: integer
           format: int32
+    Bank:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        code:
+          type: string
+        name:
+          type: string
+        bin:
+          type: string
+        active:
+          type: boolean
     BankDetailsRequest:
       type: object
       properties:
-        bankName:
-          type: string
+        bankId:
+          $ref: "#/components/schemas/UUID"
         bankAccountNumber:
           type: string
         bankAccountHolder:
@@ -1092,6 +1105,8 @@ components:
           format: int64
         currency:
           type: string
+        bank:
+          $ref: "#/components/schemas/Bank"
         bankName:
           type: string
         bankAccountNumber:
@@ -1134,6 +1149,10 @@ components:
           type: integer
           format: int64
         currency:
+          type: string
+        bankId:
+          $ref: "#/components/schemas/UUID"
+        bankCode:
           type: string
         bankName:
           type: string
@@ -1521,6 +1540,56 @@ paths:
       summary: Register
       tags:
       - Auth Resource
+  /api/banks:
+    get:
+      operationId: listBanks
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bank"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: List Banks
+      tags:
+      - Bank Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+  /api/banks/{id}:
+    get:
+      operationId: getBank
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bank"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Bank
+      tags:
+      - Bank Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
   /api/businesses:
     get:
       operationId: listBusinesses

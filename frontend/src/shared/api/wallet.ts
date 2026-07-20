@@ -6,7 +6,7 @@ export type SellerWallet = WalletResponse
 export type WalletTransaction = WalletTransactionResponse
 
 export interface BankDetailsInput {
-  bankName: string
+  bankId: string
   bankAccountNumber: string
   bankAccountHolder: string
   currency?: string
@@ -48,7 +48,7 @@ export function useUpdateBankDetailsMutation() {
       const response = await updateMyBankDetails({
         query: { currency: input.currency },
         body: {
-          bankName: input.bankName,
+          bankId: input.bankId,
           bankAccountNumber: input.bankAccountNumber,
           bankAccountHolder: input.bankAccountHolder,
         },

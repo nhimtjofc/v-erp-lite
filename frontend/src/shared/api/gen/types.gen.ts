@@ -14,8 +14,16 @@ export type AddItemRequest = {
     quantity?: number;
 };
 
+export type Bank = {
+    id?: Uuid;
+    code?: string;
+    name?: string;
+    bin?: string;
+    active?: boolean;
+};
+
 export type BankDetailsRequest = {
-    bankName?: string;
+    bankId?: Uuid;
     bankAccountNumber?: string;
     bankAccountHolder?: string;
 };
@@ -578,6 +586,7 @@ export type Wallet = {
     availableBalanceMinor?: number;
     pendingBalanceMinor?: number;
     currency?: string;
+    bank?: Bank;
     bankName?: string;
     bankAccountNumber?: string;
     bankAccountHolder?: string;
@@ -601,6 +610,8 @@ export type WalletResponse = {
     availableBalanceMinor?: number;
     pendingBalanceMinor?: number;
     currency?: string;
+    bankId?: Uuid;
+    bankCode?: string;
     bankName?: string;
     bankAccountNumber?: string;
     bankAccountHolder?: string;
@@ -948,6 +959,62 @@ export type RegisterResponses = {
      */
     200: unknown;
 };
+
+export type ListBanksData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/banks';
+};
+
+export type ListBanksErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type ListBanksResponses = {
+    /**
+     * OK
+     */
+    200: Array<Bank>;
+};
+
+export type ListBanksResponse = ListBanksResponses[keyof ListBanksResponses];
+
+export type GetBankData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/banks/{id}';
+};
+
+export type GetBankErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetBankResponses = {
+    /**
+     * OK
+     */
+    200: Bank;
+};
+
+export type GetBankResponse = GetBankResponses[keyof GetBankResponses];
 
 export type ListBusinessesData = {
     body?: never;

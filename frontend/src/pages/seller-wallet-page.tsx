@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMeQuery } from '@/shared/api'
+import { useBanksQuery, useMeQuery } from '@/shared/api'
 import {
   useSellerWalletQuery,
   useUpdateBankDetailsMutation,
@@ -29,6 +29,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { AlertCircle, CalendarClock, Clock, Coins, Landmark, RefreshCw, ShieldCheck, TrendingUp, Wallet } from 'lucide-react'
 
@@ -84,19 +85,20 @@ function BankDetailsDialog({
 }) {
   const queryClient = useQueryClient()
   const updateBankDetails = useUpdateBankDetailsMutation()
-  const [bankName, setBankName] = useState(wallet.bankName ?? '')
+  const { data: banks, isLoading: areBanksLoading, isError: isBanksError } = useBanksQuery()
+  const [bankId, setBankId] = useState(wallet.bankId ?? '')
   const [accountNumber, setAccountNumber] = useState(wallet.bankAccountNumber ?? '')
   const [accountHolder, setAccountHolder] = useState(wallet.bankAccountHolder ?? '')
   const [error, setError] = useState('')
 
   const save = async () => {
-    if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
+    if (!bankId || !accountNumber.trim() || !accountHolder.trim()) {
       setError('All bank detail fields are required.')
       return
     }
     try {
       await updateBankDetails.mutateAsync({
-        bankName: bankName.trim(),
+        bankId,
         bankAccountNumber: accountNumber.trim(),
         bankAccountHolder: accountHolder.trim(),
         currency: wallet.currency,
@@ -114,15 +116,31 @@ function BankDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Bank details</DialogTitle>
+          <DialogTitle>Withdrawal bank account</DialogTitle>
           <DialogDescription>
-            Automated payouts use these details. The first payout after any change is always flagged for admin review.
+            Choose the receiving bank for owner payouts. The first payout after any change is always flagged for admin review.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bank-name">Bank name</Label>
-            <Input id="bank-name" value={bankName} onChange={(event) => setBankName(event.target.value)} />
+            <Label htmlFor="bank-name">Bank</Label>
+            <Select
+              value={bankId}
+              onValueChange={(value) => setBankId(value ?? '')}
+              disabled={areBanksLoading || isBanksError}
+            >
+              <SelectTrigger id="bank-name">
+                <SelectValue placeholder={areBanksLoading ? 'Loading banks…' : 'Select a bank'} />
+              </SelectTrigger>
+              <SelectContent>
+                {(banks ?? []).map((bank) => bank.id && bank.name ? (
+                  <SelectItem key={bank.id} value={bank.id}>
+                    {bank.name}{bank.code && bank.code !== bank.name ? ` (${bank.code})` : ''}
+                  </SelectItem>
+                ) : null)}
+              </SelectContent>
+            </Select>
+            {isBanksError && <p className="text-sm text-destructive">Unable to load the bank list.</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="bank-account">Account number</Label>
