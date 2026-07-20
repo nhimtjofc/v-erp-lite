@@ -33,6 +33,10 @@ public class Wallet extends BaseEntity {
     @Column(nullable = false, length = 3)
     private String currency = "USD";
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "bank_id")
+    private Bank bank;
+
     @Column(name = "bank_name")
     private String bankName;
 

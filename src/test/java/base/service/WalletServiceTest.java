@@ -1,5 +1,6 @@
 package base.service;
 
+import base.entity.Bank;
 import base.entity.LedgerCheckpoint;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
@@ -69,6 +70,24 @@ class WalletServiceTest {
         assertThrows(BadRequestException.class, () -> walletService.getOrCreateWallet(tenantId, "", ownerId, "VND", actorId));
         assertThrows(BadRequestException.class, () -> walletService.getOrCreateWallet(tenantId, "SELLER", null, "VND", actorId));
         assertThrows(NotFoundException.class, () -> walletService.getWallet(tenantId, UUID.randomUUID()));
+    }
+
+    @Test
+    void updateBankDetailsUsesActiveCatalogBank() {
+        String tenantId = tenant();
+        Wallet wallet = createWallet(tenantId, "VND");
+        Bank bank = Bank.find("code", "VIETCOMBANK").firstResult();
+
+        Wallet updated = walletService.updateBankDetails(
+                tenantId, wallet.getId(), bank.getId(), "0123456789", "NGUYEN VAN A", actorId);
+
+        assertEquals(bank.getId(), updated.getBank().getId());
+        assertEquals(bank.getName(), updated.getBankName());
+        assertEquals("0123456789", updated.getBankAccountNumber());
+        assertEquals("NGUYEN VAN A", updated.getBankAccountHolder());
+        assertNotNull(updated.getBankDetailsUpdatedAt());
+        assertThrows(BadRequestException.class, () -> walletService.updateBankDetails(
+                tenantId, wallet.getId(), UUID.randomUUID(), "0123456789", "NGUYEN VAN A", actorId));
     }
 
     @Test

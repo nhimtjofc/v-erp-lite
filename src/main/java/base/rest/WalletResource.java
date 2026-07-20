@@ -58,7 +58,7 @@ public class WalletResource {
     }
 
     public static class BankDetailsRequest {
-        public String bankName;
+        public UUID bankId;
         public String bankAccountNumber;
         public String bankAccountHolder;
     }
@@ -71,6 +71,8 @@ public class WalletResource {
         public long availableBalanceMinor;
         public long pendingBalanceMinor;
         public String currency;
+        public UUID bankId;
+        public String bankCode;
         public String bankName;
         public String bankAccountNumber;
         public String bankAccountHolder;
@@ -87,6 +89,8 @@ public class WalletResource {
             response.availableBalanceMinor = wallet.getAvailableBalanceMinor();
             response.pendingBalanceMinor = wallet.getPendingBalanceMinor();
             response.currency = wallet.getCurrency();
+            response.bankId = wallet.getBank() == null ? null : wallet.getBank().getId();
+            response.bankCode = wallet.getBank() == null ? null : wallet.getBank().getCode();
             response.bankName = wallet.getBankName();
             response.bankAccountNumber = wallet.getBankAccountNumber();
             response.bankAccountHolder = wallet.getBankAccountHolder();
@@ -216,7 +220,7 @@ public class WalletResource {
         return WalletResponse.from(walletService.updateBankDetails(
                 caller.tenantCode(),
                 wallet.getId(),
-                request.bankName,
+                request.bankId,
                 request.bankAccountNumber,
                 request.bankAccountHolder,
                 caller.userId()));

@@ -22,6 +22,7 @@ class MigrationValidationTest {
         assertTrue(columnExists("wallet_transactions", "sequence_no"));
         assertTrue(columnExists("wallets", "available_balance_minor"));
         assertTrue(columnExists("wallets", "pending_balance_minor"));
+        assertTrue(columnExists("wallets", "bank_id"));
         assertTrue(columnExists("banks", "code"));
         assertTrue(columnExists("banks", "bin"));
     }
