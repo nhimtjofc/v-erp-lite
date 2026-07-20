@@ -162,7 +162,7 @@ function findLabel(arr: { value: string; label: string }[], value: string | unde
   return arr.find((o) => o.value === value)?.label ?? value
 }
 
-function Select({
+function NativeSelect({
   value,
   onChange,
   options,
@@ -290,7 +290,7 @@ export function SettingsPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:timezone')}</Label>
-            <Select
+            <NativeSelect
               value={regional.timezone ?? ''}
               onChange={(v) => setRegional((s) => ({ ...s, timezone: v || undefined }))}
               options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
@@ -299,7 +299,7 @@ export function SettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:language')}</Label>
-            <Select
+            <NativeSelect
               value={regional.language ?? ''}
               onChange={(v) => setRegional((s) => ({ ...s, language: v || undefined }))}
               options={LANGUAGES}
@@ -308,7 +308,7 @@ export function SettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:dateFormat')}</Label>
-            <Select
+            <NativeSelect
               value={regional.dateFormat ?? ''}
               onChange={(v) => setRegional((s) => ({ ...s, dateFormat: v || undefined }))}
               options={DATE_FORMATS}
@@ -317,7 +317,7 @@ export function SettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:timeFormat')}</Label>
-            <Select
+            <NativeSelect
               value={regional.timeFormat ?? ''}
               onChange={(v) => setRegional((s) => ({ ...s, timeFormat: v || undefined }))}
               options={TIME_FORMATS}
@@ -336,7 +336,7 @@ export function SettingsPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:currency')}</Label>
-              <Select
+              <NativeSelect
                 value={currency.code ?? ''}
                 onChange={(v) => {
                   const found = CURRENCIES.find((c) => c.value === v)
@@ -595,7 +595,7 @@ export function SettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:defaultNotificationChannel')}</Label>
-            <Select
+            <NativeSelect
               value={communication.defaultNotificationChannel ?? ''}
               onChange={(v) =>
                 setCommunication((s) => ({
@@ -622,7 +622,7 @@ export function SettingsPage() {
             <Select
               disabled={!isAdmin}
               value={vietqr.bankCode ?? ''}
-              onValueChange={(val) => setVietqr((s) => ({ ...s, bankCode: val }))}
+              onValueChange={(val) => setVietqr((s) => ({ ...s, bankCode: val ?? undefined }))}
             >
               <SelectTrigger className="max-w-xs">
                 <SelectValue placeholder="e.g. VCB, MB, TCB" />
