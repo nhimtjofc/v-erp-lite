@@ -1,3 +1,2 @@
-ALTER TABLE orders
-ADD COLUMN shipping_ward VARCHAR(255),
-ADD COLUMN shipping_province VARCHAR(255);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_ward VARCHAR(255);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_province VARCHAR(255);
