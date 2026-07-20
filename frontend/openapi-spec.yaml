@@ -587,6 +587,20 @@ components:
           format: int64
         currency:
           type: string
+    OrderStatusDto:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+        status:
+          type: string
+        finalAmountMinor:
+          type: integer
+          format: int64
+        orderDate:
+          $ref: "#/components/schemas/Instant"
+        currency:
+          type: string
     OrderUpdateRequest:
       type: object
       properties:
@@ -984,6 +998,8 @@ components:
           $ref: "#/components/schemas/Instant"
         role:
           $ref: "#/components/schemas/Role"
+        business:
+          $ref: "#/components/schemas/Business"
         phone:
           type: string
         jobTitle:
@@ -1642,7 +1658,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
   /api/businesses/{id}:
     put:
@@ -1678,7 +1693,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
     get:
       operationId: getBusiness
@@ -1731,7 +1745,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
         - businessOwner
   /api/carts:
     get:
@@ -2149,6 +2162,50 @@ paths:
         - admin
         - businessOwner
         - operator
+  /api/chatbot/orders/{orderNumber}:
+    get:
+      operationId: getOrderStatus
+      parameters:
+      - name: orderNumber
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: X-Chatbot-Key
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatusDto"
+      summary: Get Order Status
+      tags:
+      - Chatbot Resource
+  /api/chatbot/stats:
+    get:
+      operationId: getStats
+      parameters:
+      - name: X-Chatbot-Key
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+      summary: Get Stats
+      tags:
+      - Chatbot Resource
   /api/customers:
     get:
       operationId: listCustomers
@@ -2665,6 +2722,38 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/integrations/woocommerce/v1/orders/{externalId}/status:
+    get:
+      summary: Get WooCommerce Order Status
+      description: "Returns the current ERP fulfillment status for a WooCommerce order,\
+        \ keyed by the WooCommerce order ID."
+      operationId: getOrderStatus
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: externalId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: query
+        schema:
+          type: string
+      - name: X-WC-Webhook-Signature
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
   /api/notifications:
     get:
       operationId: listNotifications
@@ -3952,6 +4041,7 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+        - operator
   /api/tenant-settings/effective:
     get:
       operationId: getEffectiveSettings

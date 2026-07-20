@@ -312,15 +312,21 @@ function TransactionHistory({ transactions, currency }: { transactions: WalletTr
 }
 
 export function SellerWalletPage() {
-  const { t } = useTranslation()
   const { data: me, isLoading: isMeLoading } = useMeQuery()
-  const { data: wallet, isLoading, isError, error } = useSellerWalletQuery()
-  const { data: transactions } = useWalletTransactionsQuery(wallet?.id)
 
   if (isMeLoading) return <div className="py-8 text-center text-muted-foreground">Loading access control…</div>
   if (!me?.role?.name || !WALLET_ROLES.includes(me.role.name)) {
     return <div className="py-8 text-center text-destructive">Only business owners can access the seller wallet.</div>
   }
+
+  return <SellerWalletContent />
+}
+
+function SellerWalletContent() {
+  const { t } = useTranslation()
+  const { data: wallet, isLoading, isError, error } = useSellerWalletQuery()
+  const { data: transactions } = useWalletTransactionsQuery(wallet?.id)
+
   if (isLoading) return <div className="py-8 text-center text-muted-foreground">Loading wallet…</div>
   if (isError || !wallet) return <div className="py-8 text-center text-destructive">{error instanceof Error ? error.message : 'Wallet unavailable.'}</div>
 

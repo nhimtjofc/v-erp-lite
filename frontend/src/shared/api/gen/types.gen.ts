@@ -317,6 +317,14 @@ export type OrderItem = {
     currency?: string;
 };
 
+export type OrderStatusDto = {
+    orderNumber?: string;
+    status?: string;
+    finalAmountMinor?: number;
+    orderDate?: Instant;
+    currency?: string;
+};
+
 export type OrderUpdateRequest = {
     notes?: string;
     shippingFeeMinor?: number;
@@ -526,6 +534,7 @@ export type User = {
     active?: boolean;
     lastLoginAt?: Instant;
     role?: Role;
+    business?: Business;
     phone?: string;
     jobTitle?: string;
     bio?: string;
@@ -1561,6 +1570,48 @@ export type UpdateCategoryResponses = {
 
 export type UpdateCategoryResponse = UpdateCategoryResponses[keyof UpdateCategoryResponses];
 
+export type GetOrderStatusData = {
+    body?: never;
+    headers?: {
+        'X-Chatbot-Key'?: string;
+    };
+    path: {
+        orderNumber: string;
+    };
+    query?: never;
+    url: '/api/chatbot/orders/{orderNumber}';
+};
+
+export type GetOrderStatusResponses = {
+    /**
+     * OK
+     */
+    200: OrderStatusDto;
+};
+
+export type GetOrderStatusResponse = GetOrderStatusResponses[keyof GetOrderStatusResponses];
+
+export type GetStatsData = {
+    body?: never;
+    headers?: {
+        'X-Chatbot-Key'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/chatbot/stats';
+};
+
+export type GetStatsResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: number;
+    };
+};
+
+export type GetStatsResponse = GetStatsResponses[keyof GetStatsResponses];
+
 export type ListCustomersData = {
     body?: never;
     path?: never;
@@ -2021,6 +2072,28 @@ export type ReconcileOrderResponses = {
     200: unknown;
 };
 
+export type GetOrderStatus2Data = {
+    body?: never;
+    headers?: {
+        'X-WC-Webhook-Signature'?: string;
+    };
+    path: {
+        externalId: string;
+    };
+    query?: {
+        salesChannelId?: Uuid;
+        tenantId?: string;
+    };
+    url: '/api/integrations/woocommerce/v1/orders/{externalId}/status';
+};
+
+export type GetOrderStatus2Responses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type ListNotificationsData = {
     body?: never;
     path?: never;
@@ -2196,14 +2269,14 @@ export type CheckoutOrderResponses = {
     200: unknown;
 };
 
-export type GetStatsData = {
+export type GetStats2Data = {
     body?: never;
     path?: never;
     query?: never;
     url: '/api/orders/stats';
 };
 
-export type GetStatsErrors = {
+export type GetStats2Errors = {
     /**
      * Not Authorized
      */
@@ -2214,7 +2287,7 @@ export type GetStatsErrors = {
     403: unknown;
 };
 
-export type GetStatsResponses = {
+export type GetStats2Responses = {
     /**
      * OK
      */
@@ -2223,7 +2296,7 @@ export type GetStatsResponses = {
     };
 };
 
-export type GetStatsResponse = GetStatsResponses[keyof GetStatsResponses];
+export type GetStats2Response = GetStats2Responses[keyof GetStats2Responses];
 
 export type DeleteOrderData = {
     body?: never;
