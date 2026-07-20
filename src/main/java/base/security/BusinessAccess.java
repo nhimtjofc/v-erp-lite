@@ -44,6 +44,42 @@ public class BusinessAccess {
         return Business.find("tenantId = ?1 and createdBy = ?2", tenantId, user.getId()).firstResult();
     }
 
+    public void synchronizeAssignment(User user, String tenantId) {
+        if (user == null || user.getRole() == null) {
+            return;
+        }
+
+        String roleName = user.getRole().getName();
+        if ("businessOwner".equals(roleName)) {
+            user.setBusiness(findForUser(user, tenantId));
+            return;
+        }
+        if (!"operator".equals(roleName)) {
+            user.setBusiness(null);
+            return;
+        }
+
+        Business assignedBusiness = user.getBusiness();
+        if (assignedBusiness != null && assignedBusiness.getId() != null) {
+            Business managedBusiness = Business.find(
+                    "id = ?1 and tenantId = ?2",
+                    assignedBusiness.getId(),
+                    tenantId
+            ).firstResult();
+            if (managedBusiness != null) {
+                user.setBusiness(managedBusiness);
+                return;
+            }
+        }
+
+        User owner = User.find(
+                "tenantId = ?1 and role.name = ?2 ORDER BY createdAt",
+                tenantId,
+                "businessOwner"
+        ).firstResult();
+        user.setBusiness(findForUser(owner, tenantId));
+    }
+
     public UUID requireCurrentBusinessId() {
         return requireCurrentBusiness().getId();
     }

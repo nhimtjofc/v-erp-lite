@@ -4,6 +4,7 @@ import base.entity.Role;
 import base.entity.Tenant;
 import base.entity.User;
 import base.entity.VendorRiskEvent;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.service.KeycloakSyncService;
 import base.service.WalletService;
@@ -46,6 +47,9 @@ public class AdminResource {
     @Inject
     WalletService walletService;
 
+    @Inject
+    BusinessAccess businessAccess;
+
     // ──────────────────────────────────────────────
     // Tenant management
     // ──────────────────────────────────────────────
@@ -80,6 +84,7 @@ public class AdminResource {
         user.setId(UUID.randomUUID());
         user.setTenantId(tenantId);
         user.setRole(resolveRole(user.getRole()));
+        businessAccess.synchronizeAssignment(user, tenantId);
         user.persist();
         walletService.getOrCreateUserWallet(tenantId, user.getId(), "VND", caller.userId());
 
@@ -114,7 +119,7 @@ public class AdminResource {
         if (tenant == null) {
             throw new NotFoundException("Tenant not found: " + tenantId);
         }
-        User user = User.findById(id);
+        User user = User.find("id = ?1 and tenantId = ?2", id, tenantId).firstResult();
         if (user == null) {
             throw new NotFoundException("User not found");
         }
@@ -126,6 +131,7 @@ public class AdminResource {
         user.setLastName(updated.getLastName());
         user.setActive(updated.isActive());
         user.setRole(resolveRole(updated.getRole()));
+        businessAccess.synchronizeAssignment(user, tenantId);
         if (updated.getEmail() != null) {
             user.setEmail(updated.getEmail());
         }
@@ -165,7 +171,7 @@ public class AdminResource {
         if (tenant == null) {
             throw new NotFoundException("Tenant not found: " + tenantId);
         }
-        User user = User.findById(id);
+        User user = User.find("id = ?1 and tenantId = ?2", id, tenantId).firstResult();
         if (user == null) {
             throw new NotFoundException("User not found");
         }

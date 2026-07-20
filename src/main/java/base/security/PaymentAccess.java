@@ -3,7 +3,6 @@ package base.security;
 import base.entity.Customer;
 import base.entity.Order;
 import base.entity.PaymentIntent;
-import base.entity.User;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
@@ -13,6 +12,9 @@ public class PaymentAccess {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    BusinessAccess businessAccess;
 
     public void requireCustomerAccess(Customer customer) {
         if (customer == null || !isCustomerOnly()) {
@@ -37,12 +39,11 @@ public class PaymentAccess {
             }
         }
 
-        if (isBusinessOwnerOnly()) {
-            User owner = caller.resolveUser();
-            if (order.getBusiness() == null || order.getBusiness().getCreatedBy() == null
-                    || !order.getBusiness().getCreatedBy().equals(owner.getId())) {
+        if (businessAccess.isScopedStaff()) {
+            if (order.getBusiness() == null) {
                 throw new ForbiddenException("You are not allowed to access payments for this vendor order");
             }
+            businessAccess.requireAccess(order.getBusiness().getId());
         }
     }
 
@@ -58,7 +59,7 @@ public class PaymentAccess {
             }
         }
 
-        if (isBusinessOwnerOnly()) {
+        if (businessAccess.isScopedStaff()) {
             Order order = Order.find(
                     "id = ?1 and tenantId = ?2 and deletedAt IS NULL",
                     intent.getOrderId(),
@@ -90,9 +91,4 @@ public class PaymentAccess {
                 && !caller.hasRole("operator");
     }
 
-    private boolean isBusinessOwnerOnly() {
-        return caller.hasRole("businessOwner")
-                && !caller.hasRole("admin")
-                && !caller.hasRole("operator");
-    }
 }

@@ -2,6 +2,7 @@ package base.rest;
 
 import base.entity.Role;
 import base.entity.User;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
@@ -25,6 +26,9 @@ public class UserResource {
 
     @Inject
     WalletService walletService;
+
+    @Inject
+    BusinessAccess businessAccess;
 
     @GET
     @Path("/me")
@@ -80,6 +84,7 @@ public class UserResource {
         if (user.getRole() != null && user.getRole().getId() != null) {
             user.setRole(Role.findById(user.getRole().getId()));
         }
+        businessAccess.synchronizeAssignment(user, caller.tenantCode());
         user.persist();
         walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), "VND", caller.userId());
@@ -106,6 +111,7 @@ public class UserResource {
         if (updated.getRole() != null && updated.getRole().getId() != null) {
             user.setRole(Role.findById(updated.getRole().getId()));
         }
+        businessAccess.synchronizeAssignment(user, caller.tenantCode());
         user.setUpdatedBy(caller.userId());
         return user;
     }
