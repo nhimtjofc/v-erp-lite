@@ -285,6 +285,10 @@ components:
           type: string
         shippingAddress:
           type: string
+        shippingWard:
+          type: string
+        shippingProvince:
+          type: string
         shippingNote:
           type: string
         paymentMethod:
@@ -502,6 +506,10 @@ components:
         shippingPhone:
           type: string
         shippingAddress:
+          type: string
+        shippingWard:
+          type: string
+        shippingProvince:
           type: string
         shippingNote:
           type: string

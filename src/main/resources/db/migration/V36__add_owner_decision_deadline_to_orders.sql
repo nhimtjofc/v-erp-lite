@@ -1,1 +1,1 @@
-ALTER TABLE orders ADD COLUMN owner_decision_deadline TIMESTAMP(6) NULL;
+ALTER TABLE orders MODIFY COLUMN owner_decision_deadline TIMESTAMP(6) NULL;

@@ -67,6 +67,12 @@ public class Order extends BaseEntity {
     @Column(name = "shipping_address", nullable = false, columnDefinition = "TEXT")
     private String shippingAddress;
 
+    @Column(name = "shipping_ward", length = 255)
+    private String shippingWard;
+
+    @Column(name = "shipping_province", length = 255)
+    private String shippingProvince;
+
     @Column(name = "shipping_note", columnDefinition = "TEXT")
     private String shippingNote;
 

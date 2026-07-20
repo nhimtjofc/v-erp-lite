@@ -91,6 +91,8 @@ public class OrderResource {
         public String shippingName;
         public String shippingPhone;
         public String shippingAddress;
+        public String shippingWard;
+        public String shippingProvince;
         public String shippingNote;
         public String paymentMethod; // e.g. COD or BANK_TRANSFER
         public List<CartItem> items;
@@ -395,6 +397,12 @@ public class OrderResource {
         if (request.shippingAddress == null || request.shippingAddress.isBlank()) {
             throw new BadRequestException("Shipping address is required");
         }
+        if (request.shippingWard == null || request.shippingWard.isBlank()) {
+            throw new BadRequestException("Shipping ward is required");
+        }
+        if (request.shippingProvince == null || request.shippingProvince.isBlank()) {
+            throw new BadRequestException("Shipping province is required");
+        }
 
         String tenantCode = caller.tenantCode();
         UUID userId = caller.userId();
@@ -539,6 +547,8 @@ public class OrderResource {
         order.setShippingName(request.shippingName);
         order.setShippingPhone(request.shippingPhone);
         order.setShippingAddress(request.shippingAddress);
+        order.setShippingWard(request.shippingWard);
+        order.setShippingProvince(request.shippingProvince);
         order.setShippingNote(request.shippingNote);
         order.setSubtotalAmountMinor(subtotal);
         order.setDiscountAmountMinor(discount);
