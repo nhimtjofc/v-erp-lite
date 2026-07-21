@@ -482,13 +482,15 @@ export function OrdersPage() {
 
             {!isCustomer && stats && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard
-                        label="Doanh thu"
-                        value={revenueStr}
-                        icon={TrendingUp}
-                        gradient="from-violet-500 to-purple-600"
-                        trend="Tổng tích lũy"
-                    />
+                    <Link to="/revenue">
+                        <StatCard
+                            label="Doanh thu"
+                            value={revenueStr}
+                            icon={TrendingUp}
+                            gradient="from-violet-500 to-purple-600"
+                            trend="Tổng tích lũy"
+                        />
+                    </Link>
                     <StatCard
                         label="Tổng đơn"
                         value={stats.totalOrders.toString()}
