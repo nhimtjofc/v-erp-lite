@@ -54,8 +54,8 @@ import jakarta.ws.rs.core.Response;
 public class OrderResource {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-    private static final long FLAT_SHIPPING_FEE_MINOR = 25000;
-    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2500000;
+    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
     private static final double TAX_RATE = 0.10;
 
     @Inject
@@ -576,8 +576,12 @@ public class OrderResource {
                     .build()
                 );
             }
+            long qrAmount = finalAmount;
+            if ("USD".equalsIgnoreCase(order.getCurrency())) {
+                qrAmount = qrAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
+            }
             String message = "Thanh toan " + orderNumber;
-            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), finalAmount, message);
+            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), qrAmount, message);
             order.setPaymentQrCodeBase64(qrBase64);
         }
 

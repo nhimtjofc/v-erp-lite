@@ -105,7 +105,7 @@ public class Order extends BaseEntity {
     private long finalAmountMinor;
 
     @Column(nullable = false, length = 3)
-    private String currency = "VND";
+    private String currency = "USD";
 
     @Column(columnDefinition = "TEXT")
     private String notes;

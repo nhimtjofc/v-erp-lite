@@ -69,8 +69,12 @@ public class PaymentService {
             return existing;
         }
 
-        Money finalAmount = Money.of(order.getFinalAmountMinor(), order.getCurrency());
-        if (finalAmount.getAmountMinor() != intent.getAmountMinor()) {
+        long expectedAmount = order.getFinalAmountMinor();
+        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(intent.getCurrency())) {
+            expectedAmount = expectedAmount * 254;
+        }
+
+        if (expectedAmount != intent.getAmountMinor()) {
             throw new BadRequestException("Payment amount does not match order total");
         }
 

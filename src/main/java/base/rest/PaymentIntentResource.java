@@ -69,12 +69,20 @@ public class PaymentIntentResource {
             throw new BadRequestException("Only orders awaiting payment can be paid for");
         }
 
+        long intentAmount = order.getFinalAmountMinor();
+        String intentCurrency = order.getCurrency();
+
+        if ("USD".equalsIgnoreCase(intentCurrency)) {
+            intentAmount = intentAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
+            intentCurrency = "VND";
+        }
+
         PaymentIntent intent = paymentIntentService.createIntent(
                 tenantCode,
                 order.getId(),
                 order.getCustomer().getId(),
-                order.getFinalAmountMinor(),
-                order.getCurrency(),
+                intentAmount,
+                intentCurrency,
                 request.idempotencyKey,
                 caller.userId()
         );
