@@ -16,6 +16,7 @@ import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
@@ -84,6 +85,11 @@ const AuthenticatedShopRoute = AuthenticatedShopRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRevenueRoute = AuthenticatedRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -303,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
@@ -342,6 +349,7 @@ export interface FileRoutesByTo {
   '/cart': typeof AuthenticatedCartRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/revenue': typeof AuthenticatedRevenueRoute
   '/shop': typeof AuthenticatedShopRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/shop': typeof AuthenticatedShopRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRoute
@@ -431,6 +440,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/products'
     | '/profile'
+    | '/revenue'
     | '/settings'
     | '/shop'
     | '/vouchers'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/dashboard'
     | '/notifications'
+    | '/revenue'
     | '/shop'
     | '/vouchers'
     | '/wallet'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '/_authenticated/orders'
     | '/_authenticated/products'
     | '/_authenticated/profile'
+    | '/_authenticated/revenue'
     | '/_authenticated/settings'
     | '/_authenticated/shop'
     | '/_authenticated/vouchers'
@@ -598,6 +610,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/revenue': {
+      id: '/_authenticated/revenue'
+      path: '/revenue'
+      fullPath: '/revenue'
+      preLoaderRoute: typeof AuthenticatedRevenueRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
@@ -989,6 +1008,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
+  AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedShopRoute: typeof AuthenticatedShopRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRoute
@@ -1008,6 +1028,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
+  AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedShopRoute: AuthenticatedShopRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRoute,

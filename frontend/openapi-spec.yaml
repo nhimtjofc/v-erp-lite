@@ -354,6 +354,43 @@ components:
           format: int64
         tier:
           type: string
+    DailyReport:
+      type: object
+      properties:
+        from:
+          $ref: "#/components/schemas/LocalDate"
+        to:
+          $ref: "#/components/schemas/LocalDate"
+        timezone:
+          type: string
+        currency:
+          type: string
+        totals:
+          $ref: "#/components/schemas/RevenueTotals"
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyRevenue"
+    DailyRevenue:
+      type: object
+      properties:
+        date:
+          $ref: "#/components/schemas/LocalDate"
+        grossRevenueMinor:
+          type: integer
+          format: int64
+        refundMinor:
+          type: integer
+          format: int64
+        netRevenueMinor:
+          type: integer
+          format: int64
+        orderCount:
+          type: integer
+          format: int64
+        refundCount:
+          type: integer
+          format: int64
     EnsureWalletRequest:
       type: object
       properties:
@@ -914,6 +951,24 @@ components:
           type: string
         phone:
           type: string
+    RevenueTotals:
+      type: object
+      properties:
+        grossRevenueMinor:
+          type: integer
+          format: int64
+        refundMinor:
+          type: integer
+          format: int64
+        netRevenueMinor:
+          type: integer
+          format: int64
+        orderCount:
+          type: integer
+          format: int64
+        refundCount:
+          type: integer
+          format: int64
     Role:
       type: object
       properties:
@@ -3878,6 +3933,47 @@ paths:
       summary: Delete Product
       tags:
       - Product Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+        - operator
+  /api/revenue/daily:
+    get:
+      operationId: getDailyRevenue
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: currency
+        in: query
+        schema:
+          type: string
+      - name: from
+        in: query
+        schema:
+          $ref: "#/components/schemas/LocalDate"
+      - name: to
+        in: query
+        schema:
+          $ref: "#/components/schemas/LocalDate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyReport"
+        "400":
+          description: Bad Request
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Daily Revenue
+      tags:
+      - Revenue Resource
       security:
       - SecurityScheme:
         - admin

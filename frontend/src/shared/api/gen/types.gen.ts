@@ -197,6 +197,24 @@ export type Customer = {
     tier?: string;
 };
 
+export type DailyReport = {
+    from?: LocalDate;
+    to?: LocalDate;
+    timezone?: string;
+    currency?: string;
+    totals?: RevenueTotals;
+    days?: Array<DailyRevenue>;
+};
+
+export type DailyRevenue = {
+    date?: LocalDate;
+    grossRevenueMinor?: number;
+    refundMinor?: number;
+    netRevenueMinor?: number;
+    orderCount?: number;
+    refundCount?: number;
+};
+
 export type EnsureWalletRequest = {
     ownerType?: string;
     ownerId?: Uuid;
@@ -483,6 +501,14 @@ export type RegisterRequest = {
     firstName?: string;
     lastName?: string;
     phone?: string;
+};
+
+export type RevenueTotals = {
+    grossRevenueMinor?: number;
+    refundMinor?: number;
+    netRevenueMinor?: number;
+    orderCount?: number;
+    refundCount?: number;
 };
 
 export type Role = {
@@ -3209,6 +3235,42 @@ export type UpdateProductResponses = {
 };
 
 export type UpdateProductResponse = UpdateProductResponses[keyof UpdateProductResponses];
+
+export type GetDailyRevenueData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+        currency?: string;
+        from?: LocalDate;
+        to?: LocalDate;
+    };
+    url: '/api/revenue/daily';
+};
+
+export type GetDailyRevenueErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetDailyRevenueResponses = {
+    /**
+     * OK
+     */
+    200: DailyReport;
+};
+
+export type GetDailyRevenueResponse = GetDailyRevenueResponses[keyof GetDailyRevenueResponses];
 
 export type SyncAllData = {
     body?: never;
