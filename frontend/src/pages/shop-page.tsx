@@ -261,7 +261,7 @@ export function ShopPage() {
         if (isCustomerRole && paymentMethod === 'BANK_TRANSFER') {
           navigate({ to: '/orders/payment', search: { orderId } })
         } else if (isCustomerRole) {
-          navigate({ to: '/orders' })
+          navigate({ to: '/shop' })
         } else {
           navigate({ to: '/orders/$id', params: { id: orderId } })
         }
