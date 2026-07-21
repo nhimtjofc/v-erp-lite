@@ -278,6 +278,8 @@ export function ShopPage() {
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
+  const [shippingWard, setShippingWard] = useState('')
+  const [shippingProvince, setShippingProvince] = useState('')
   const [shippingNote, setShippingNote] = useState('')
 
   // Pre-populate checkout from the customer profile, with the signed-in account
@@ -302,8 +304,8 @@ export function ShopPage() {
   }, [isCustomerRole, me, myCustomerProfile, selectedCustomerId, customers])
 
   async function handleCheckout() {
-    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
-      setError('Please fill in name, phone, and address')
+    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
+      setError('Please fill in all required shipping fields')
       return
     }
 
@@ -315,6 +317,8 @@ export function ShopPage() {
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
         shippingAddress: customerAddress.trim(),
+        shippingWard: shippingWard.trim(),
+        shippingProvince: shippingProvince.trim(),
         shippingNote: shippingNote.trim() || undefined,
         items: cart.map(i => ({
           productId: i.product.id!,
@@ -759,6 +763,16 @@ export function ShopPage() {
                 onChange={e => setCustomerAddress(e.target.value)}
                 placeholder="123 Main St, City"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Province/City *</Label>
+                <Input value={shippingProvince} onChange={e => setShippingProvince(e.target.value)} placeholder="Tỉnh/Thành phố" />
+              </div>
+              <div>
+                <Label>Ward/District *</Label>
+                <Input value={shippingWard} onChange={e => setShippingWard(e.target.value)} placeholder="Xã/Phường/Quận" />
+              </div>
             </div>
             <div>
               <Label>Payment Method *</Label>
