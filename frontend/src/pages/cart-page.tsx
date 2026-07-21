@@ -49,7 +49,7 @@ export function CartPage() {
   // Access Control / User Profile Info
   const { data: me, isLoading: isMeLoading } = useMeQuery()
   const role = me?.role?.name
-  const isCustomer = role === 'customer'
+  const isCustomer = role === 'customer' || role === 'user'
 
   // ==========================================
   // STAFF CART BUILDER STATE & QUERIES

@@ -10,7 +10,7 @@ i18n
   .init({
     lng: (typeof window !== 'undefined' ? localStorage.getItem('language') : null) || 'vi',
     fallbackLng: 'vi',
-    ns: ['common', 'nav', 'dashboard', 'profile', 'settings', 'admin', 'catalog'],
+    ns: ['common', 'nav', 'dashboard', 'profile', 'settings', 'admin', 'catalog', 'notifications'],
     defaultNS: 'common',
     backend: {
       loadPath: `${API_BASE}/api/i18n/{{lng}}/{{ns}}`,

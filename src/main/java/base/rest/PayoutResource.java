@@ -210,6 +210,10 @@ public class PayoutResource {
             return wallet;
         }
         User user = caller.resolveUser();
+        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())
+                && "SELLER".equals(wallet.getOwnerType())) {
+            return wallet;
+        }
         Business business = Business.find(
                 "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
         if (business == null || !"SELLER".equals(wallet.getOwnerType())

@@ -1,5 +1,6 @@
 package base.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,11 @@ public class Wallet extends BaseEntity {
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(name = "available_balance_minor", nullable = false)
     private long availableBalanceMinor = 0;
 
@@ -32,6 +38,10 @@ public class Wallet extends BaseEntity {
 
     @Column(nullable = false, length = 3)
     private String currency = "VND";
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "bank_id")
+    private Bank bank;
 
     @Column(name = "bank_name")
     private String bankName;

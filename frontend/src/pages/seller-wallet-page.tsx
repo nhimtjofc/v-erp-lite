@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMeQuery } from '@/shared/api'
+import { useBanksQuery, useMeQuery } from '@/shared/api'
 import {
   useSellerWalletQuery,
   useUpdateBankDetailsMutation,
@@ -32,7 +32,6 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { AlertCircle, CalendarClock, Clock, Coins, Landmark, RefreshCw, ShieldCheck, TrendingUp, Wallet } from 'lucide-react'
-import { VIETNAM_BANKS } from '@/shared/utils/bank'
 
 const WALLET_ROLES = ['businessOwner']
 
@@ -86,19 +85,20 @@ function BankDetailsDialog({
 }) {
   const queryClient = useQueryClient()
   const updateBankDetails = useUpdateBankDetailsMutation()
-  const [bankName, setBankName] = useState(wallet.bankName ?? '')
+  const { data: banks = [], isLoading: banksLoading } = useBanksQuery()
+  const [bankId, setBankId] = useState(wallet.bankId ?? '')
   const [accountNumber, setAccountNumber] = useState(wallet.bankAccountNumber ?? '')
   const [accountHolder, setAccountHolder] = useState(wallet.bankAccountHolder ?? '')
   const [error, setError] = useState('')
 
   const save = async () => {
-    if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
+    if (!bankId || !accountNumber.trim() || !accountHolder.trim()) {
       setError('All bank detail fields are required.')
       return
     }
     try {
       await updateBankDetails.mutateAsync({
-        bankName: bankName.trim(),
+        bankId,
         bankAccountNumber: accountNumber.trim(),
         bankAccountHolder: accountHolder.trim(),
         currency: wallet.currency,
@@ -124,14 +124,14 @@ function BankDetailsDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="bank-name">Bank name</Label>
-            <Select value={bankName} onValueChange={(val) => setBankName(val ?? '')}>
+            <Select value={bankId} onValueChange={(value) => setBankId(value ?? '')} disabled={banksLoading}>
               <SelectTrigger id="bank-name">
-                <SelectValue placeholder="Select a bank" />
+                <SelectValue placeholder={banksLoading ? 'Loading banks…' : 'Select a bank'} />
               </SelectTrigger>
               <SelectContent>
-                {VIETNAM_BANKS.map((bank) => (
-                  <SelectItem key={bank.code} value={bank.code}>
-                    {bank.name}
+                {banks.map((bank) => (
+                  <SelectItem key={bank.id} value={bank.id!}>
+                    {bank.name} ({bank.code})
                   </SelectItem>
                 ))}
               </SelectContent>

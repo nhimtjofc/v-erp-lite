@@ -4,8 +4,7 @@ import base.entity.Category;
 import base.entity.Product;
 import base.entity.ProductVariant;
 import base.entity.Tag;
-import base.entity.Business;
-import base.entity.User;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -32,6 +31,9 @@ public class ProductResource {
     @Inject
     CallerContext caller;
 
+    @Inject
+    BusinessAccess businessAccess;
+
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public List<Product> listProducts(
@@ -48,14 +50,13 @@ public class ProductResource {
         Map<String, Object> params = new HashMap<>();
         params.put("tenantId", tenantCode);
 
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+        if (businessAccess.isScopedStaff()) {
+            var business = businessAccess.findCurrentBusiness();
             if (business != null) {
                 query.append(" AND p.business.id = :businessId");
                 params.put("businessId", business.getId());
             } else {
-                query.append(" AND p.business.id IS NULL");
+                query.append(" AND p.id IS NULL");
             }
         }
 
@@ -86,12 +87,10 @@ public class ProductResource {
         if (product == null) {
             throw new NotFoundException("Product not found");
         }
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
-            if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
-                throw new ForbiddenException("You are not allowed to view this product");
-            }
+        if (product.getBusiness() != null) {
+            businessAccess.requireAccess(product.getBusiness().getId());
+        } else if (businessAccess.isScopedStaff()) {
+            throw new ForbiddenException("You are not allowed to view this product");
         }
         return product;
     }
@@ -106,13 +105,8 @@ public class ProductResource {
         product.setCreatedBy(caller.userId());
         product.setCategory(resolveCategory(product));
         product.setTags(resolveTags(product));
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
-            if (business == null) {
-                throw new BadRequestException("Owner must have a business first");
-            }
-            product.setBusiness(business);
+        if (businessAccess.isScopedStaff()) {
+            product.setBusiness(businessAccess.requireCurrentBusiness());
         }
 
         if (product.getVariants() != null) {
@@ -138,12 +132,10 @@ public class ProductResource {
         if (product == null) {
             throw new NotFoundException("Product not found");
         }
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
-            if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
-                throw new ForbiddenException("You are not allowed to modify this product");
-            }
+        if (product.getBusiness() != null) {
+            businessAccess.requireAccess(product.getBusiness().getId());
+        } else if (businessAccess.isScopedStaff()) {
+            throw new ForbiddenException("You are not allowed to modify this product");
         }
         product.setCategory(resolveCategory(updated));
         product.setTags(resolveTags(updated));
@@ -210,16 +202,14 @@ public class ProductResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response deleteProduct(@PathParam("id") UUID id) {
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
-            if (product == null) {
-                throw new NotFoundException("Product not found");
-            }
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
-            if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
-                throw new ForbiddenException("You are not allowed to delete this product");
-            }
+        Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
+        if (product == null) {
+            throw new NotFoundException("Product not found");
+        }
+        if (product.getBusiness() != null) {
+            businessAccess.requireAccess(product.getBusiness().getId());
+        } else if (businessAccess.isScopedStaff()) {
+            throw new ForbiddenException("You are not allowed to delete this product");
         }
         long deleted = Product.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {

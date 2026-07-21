@@ -1,10 +1,14 @@
 package base.service;
 
+import base.entity.Bank;
+import base.entity.Business;
 import base.entity.LedgerCheckpoint;
+import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.BadRequestException;
@@ -69,6 +73,79 @@ class WalletServiceTest {
         assertThrows(BadRequestException.class, () -> walletService.getOrCreateWallet(tenantId, "", ownerId, "VND", actorId));
         assertThrows(BadRequestException.class, () -> walletService.getOrCreateWallet(tenantId, "SELLER", null, "VND", actorId));
         assertThrows(NotFoundException.class, () -> walletService.getWallet(tenantId, UUID.randomUUID()));
+    }
+
+    @Test
+    void updateBankDetailsUsesActiveCatalogBank() {
+        String tenantId = tenant();
+        Wallet wallet = createWallet(tenantId, "VND");
+        Bank bank = Bank.find("code", "VIETCOMBANK").firstResult();
+
+        Wallet updated = walletService.updateBankDetails(
+                tenantId, wallet.getId(), bank.getId(), "0123456789", "NGUYEN VAN A", actorId);
+
+        assertEquals(bank.getId(), updated.getBank().getId());
+        assertEquals(bank.getName(), updated.getBankName());
+        assertEquals("0123456789", updated.getBankAccountNumber());
+        assertEquals("NGUYEN VAN A", updated.getBankAccountHolder());
+        assertNotNull(updated.getBankDetailsUpdatedAt());
+        assertThrows(BadRequestException.class, () -> walletService.updateBankDetails(
+                tenantId, wallet.getId(), UUID.randomUUID(), "0123456789", "NGUYEN VAN A", actorId));
+    }
+
+    @Test
+    void getOrCreateUserWalletLinksOneVndWalletToUser() {
+        String tenantId = tenant();
+        UUID userId = UUID.randomUUID();
+        QuarkusTransaction.requiringNew().run(() -> {
+            User user = new User();
+            user.setId(userId);
+            user.setTenantId(tenantId);
+            user.setEmail(userId + "@example.test");
+            user.setActive(true);
+            user.persist();
+        });
+
+        Wallet first = walletService.getOrCreateUserWallet(tenantId, userId, "vnd", actorId);
+        Wallet second = walletService.getOrCreateUserWallet(tenantId, userId, "VND", actorId);
+
+        assertEquals(first.getId(), second.getId());
+        assertEquals("USER", first.getOwnerType());
+        assertEquals(userId, first.getOwnerId());
+        assertEquals(userId, first.getUser().getId());
+        assertEquals("VND", first.getCurrency());
+    }
+
+    @Test
+    void getOrCreateUserWalletPrefersSellerWalletWhenUserOwnsBusiness() {
+        String tenantId = tenant();
+        UUID userId = UUID.randomUUID();
+        UUID businessId = UUID.randomUUID();
+        QuarkusTransaction.requiringNew().run(() -> {
+            User user = new User();
+            user.setId(userId);
+            user.setTenantId(tenantId);
+            user.setEmail(userId + "@example.test");
+            user.setActive(true);
+            user.persist();
+        });
+        Wallet personalWallet = walletService.getOrCreateUserWallet(tenantId, userId, "VND", actorId);
+        QuarkusTransaction.requiringNew().run(() -> {
+            Business business = new Business();
+            business.setId(businessId);
+            business.setTenantId(tenantId);
+            business.setName("Seller " + businessId);
+            business.setCreatedBy(userId);
+            business.setActive(true);
+            business.persist();
+        });
+
+        Wallet sellerWallet = walletService.getOrCreateUserWallet(tenantId, userId, "VND", actorId);
+
+        assertNotEquals(personalWallet.getId(), sellerWallet.getId());
+        assertEquals("SELLER", sellerWallet.getOwnerType());
+        assertEquals(businessId, sellerWallet.getOwnerId());
+        assertEquals(userId, sellerWallet.getUser().getId());
     }
 
     @Test

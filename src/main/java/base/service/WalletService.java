@@ -1,8 +1,11 @@
 package base.service;
 
+import base.entity.Bank;
+import base.entity.Business;
+import base.entity.PayoutRequest;
+import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
-import base.entity.PayoutRequest;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -70,6 +73,31 @@ public class WalletService {
         return wallet;
     }
 
+    @Transactional
+    public Wallet getOrCreateUserWallet(String tenantId, UUID userId, String currency, UUID actorId) {
+        User user = User.find("id = ?1 and tenantId = ?2", userId, tenantId).firstResult();
+        if (user == null) {
+            throw new NotFoundException("User not found");
+        }
+        String normalizedCurrency = moneyService.normalizeCurrency(currency);
+        Business business = Business.find(
+                "tenantId = ?1 and createdBy = ?2 order by createdAt asc", tenantId, userId).firstResult();
+        Wallet wallet;
+        if (business != null) {
+            wallet = getOrCreateWallet(tenantId, "SELLER", business.getId(), normalizedCurrency, actorId);
+        } else {
+            wallet = Wallet.find(
+                    "tenantId = ?1 and user.id = ?2 and ownerType = 'USER' and currency = ?3 order by createdAt asc",
+                    tenantId, userId, normalizedCurrency).firstResult();
+            if (wallet == null) {
+                wallet = getOrCreateWallet(tenantId, "USER", userId, normalizedCurrency, actorId);
+            }
+        }
+        wallet.setUser(user);
+        wallet.setUpdatedBy(actorId);
+        return wallet;
+    }
+
     public List<Wallet> listWallets(String tenantId, String ownerType, UUID ownerId, String currency) {
         if (ownerType != null && ownerId != null && currency != null) {
             return Wallet.list(
@@ -109,22 +137,26 @@ public class WalletService {
     }
 
     @Transactional
-    public Wallet updateBankDetails(String tenantId, UUID walletId, String bankName,
+    public Wallet updateBankDetails(String tenantId, UUID walletId, UUID bankId,
                                     String bankAccountNumber, String bankAccountHolder, UUID actorId) {
-        if (bankName == null || bankName.isBlank()
-                || bankAccountNumber == null || bankAccountNumber.isBlank()
+        if (bankId == null || bankAccountNumber == null || bankAccountNumber.isBlank()
                 || bankAccountHolder == null || bankAccountHolder.isBlank()) {
-            throw new BadRequestException("Bank name, account number, and account holder are required");
+            throw new BadRequestException("Bank, account number, and account holder are required");
+        }
+        Bank bank = Bank.find("id = ?1 and active = true", bankId).firstResult();
+        if (bank == null) {
+            throw new BadRequestException("Selected bank is not available");
         }
         Wallet wallet = walletForUpdate(tenantId, walletId);
-        boolean changed = !bankName.trim().equals(wallet.getBankName())
+        boolean changed = wallet.getBank() == null || !bank.getId().equals(wallet.getBank().getId())
                 || !bankAccountNumber.trim().equals(wallet.getBankAccountNumber())
                 || !bankAccountHolder.trim().equals(wallet.getBankAccountHolder());
         if (!changed) {
             return wallet;
         }
 
-        wallet.setBankName(bankName.trim());
+        wallet.setBank(bank);
+        wallet.setBankName(bank.getName());
         wallet.setBankAccountNumber(bankAccountNumber.trim());
         wallet.setBankAccountHolder(bankAccountHolder.trim());
         wallet.setBankDetailsUpdatedAt(Instant.now());

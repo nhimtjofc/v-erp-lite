@@ -29,7 +29,8 @@ function AuthenticatedShell() {
     const customerAllowed =
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
-      pathname.startsWith('/orders') ||
+      pathname.startsWith('/orders/payment') ||
+      (/^\/orders\/[^/]+$/.test(pathname) && pathname !== '/orders/new') ||
       pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 

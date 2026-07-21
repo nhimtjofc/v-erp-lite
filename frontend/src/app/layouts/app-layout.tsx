@@ -371,14 +371,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/settings') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
-      pathname.startsWith('/cart') ||
       pathname.startsWith('/admin/payouts') ||
       pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 
     const customerAllowed =
       pathname.startsWith('/shop') ||
-      pathname.startsWith('/cart') ||
       pathname.startsWith('/profile') ||
       pathname.startsWith('/orders')
 
@@ -545,7 +543,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <UserIcon className="h-4 w-4" />
                   {t('nav:profile')}
                 </DropdownMenuLinkItem>
-                {role !== 'admin' && role !== 'customer' && role !== 'user' && role !== 'operator' && (
+                {role !== 'admin' && role !== 'customer' && role !== 'user' && (
                   <DropdownMenuLinkItem
                     className="cursor-pointer"
                     onClick={() => router.navigate({ to: '/business' })}

@@ -1,5 +1,6 @@
 package base.service;
 
+import base.entity.Bank;
 import base.entity.PayoutRequest;
 import base.entity.VendorRiskEvent;
 import base.entity.Wallet;
@@ -36,7 +37,7 @@ class PayoutAutomationServiceTest {
     void firstPayoutIsFlaggedAndRepeatedRunsReuseTheActiveRequest() {
         String tenantId = tenant();
         Wallet wallet = fundedWallet(tenantId, 200_000);
-        setBankDetails(tenantId, wallet, "VCB", "111", "Seller One");
+        setBankDetails(tenantId, wallet, "VIETCOMBANK", "111", "Seller One");
 
         PayoutRequest first = automationService.processWallet(wallet.getId());
         PayoutRequest retry = automationService.processWallet(wallet.getId());
@@ -53,10 +54,10 @@ class PayoutAutomationServiceTest {
     void establishedOwnerIsAutoPaidOnce() {
         String tenantId = tenant();
         Wallet wallet = fundedWallet(tenantId, 100_000);
-        setBankDetails(tenantId, wallet, "VCB", "222", "Seller Two");
+        setBankDetails(tenantId, wallet, "VIETCOMBANK", "222", "Seller Two");
 
         PayoutRequest prior = payoutService.createPayout(
-                tenantId, wallet.getId(), 100_000, "VND", "VCB", "222", "Seller Two", actorId);
+                tenantId, wallet.getId(), 100_000, "VND", "Vietcombank", "222", "Seller Two", actorId);
         payoutService.approvePayout(tenantId, prior.getId(), actorId);
         walletService.creditAvailable(
                 tenantId, wallet.getId(), Money.of(150_000, "VND"),
@@ -79,9 +80,9 @@ class PayoutAutomationServiceTest {
     void bankChangesAndPreviousFailuresAreSurfacedAsFlagReasons() {
         String tenantId = tenant();
         Wallet wallet = fundedWallet(tenantId, 100_000);
-        setBankDetails(tenantId, wallet, "VCB", "333", "Seller Three");
+        setBankDetails(tenantId, wallet, "VIETCOMBANK", "333", "Seller Three");
         PayoutRequest prior = payoutService.createPayout(
-                tenantId, wallet.getId(), 100_000, "VND", "VCB", "333", "Seller Three", actorId);
+                tenantId, wallet.getId(), 100_000, "VND", "Vietcombank", "333", "Seller Three", actorId);
         payoutService.approvePayout(tenantId, prior.getId(), actorId);
 
         setBankDetails(tenantId, wallet, "ACB", "444", "Seller Three");
@@ -112,7 +113,8 @@ class PayoutAutomationServiceTest {
     }
 
     private void setBankDetails(String tenantId, Wallet wallet, String bank, String account, String holder) {
-        walletService.updateBankDetails(tenantId, wallet.getId(), bank, account, holder, actorId);
+        Bank selectedBank = Bank.find("code", bank).firstResult();
+        walletService.updateBankDetails(tenantId, wallet.getId(), selectedBank.getId(), account, holder, actorId);
     }
 
     private String tenant() {

@@ -17,10 +17,16 @@ class MigrationValidationTest {
     void flywayMigrationCreatesCoreWalletTablesAndColumns() {
         assertTrue(tableExists("wallets"));
         assertTrue(tableExists("wallet_transactions"));
+        assertTrue(tableExists("banks"));
         assertTrue(columnExists("wallet_transactions", "tenant_id"));
         assertTrue(columnExists("wallet_transactions", "sequence_no"));
         assertTrue(columnExists("wallets", "available_balance_minor"));
         assertTrue(columnExists("wallets", "pending_balance_minor"));
+        assertTrue(columnExists("wallets", "bank_id"));
+        assertTrue(columnExists("wallets", "user_id"));
+        assertTrue(columnExists("users", "business_id"));
+        assertTrue(columnExists("banks", "code"));
+        assertTrue(columnExists("banks", "bin"));
     }
 
     private boolean tableExists(String tableName) {
