@@ -145,6 +145,7 @@ public class ProductResource {
         product.setImageUrl(updated.getImageUrl());
         product.setBasePriceMinor(updated.getBasePriceMinor());
         product.setSalePriceMinor(updated.getSalePriceMinor());
+        product.setCostPriceMinor(updated.getCostPriceMinor());
         product.setSaleStartsAt(updated.getSaleStartsAt());
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
@@ -167,6 +168,7 @@ public class ProductResource {
                 ProductVariant var = existingVariants.get(updatedVar.getSku());
                 if (var != null) {
                     var.setPriceMinor(updatedVar.getPriceMinor());
+                    var.setCostPriceMinor(updatedVar.getCostPriceMinor());
                     var.setStockQuantity(updatedVar.getStockQuantity());
                     var.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     var.setOptionValues(updatedVar.getOptionValues());
@@ -178,6 +180,7 @@ public class ProductResource {
                     newVar.setProduct(product);
                     newVar.setSku(updatedVar.getSku());
                     newVar.setPriceMinor(updatedVar.getPriceMinor());
+                    newVar.setCostPriceMinor(updatedVar.getCostPriceMinor());
                     newVar.setStockQuantity(updatedVar.getStockQuantity());
                     newVar.setLowStockThreshold(updatedVar.getLowStockThreshold());
                     newVar.setOptionValues(updatedVar.getOptionValues());
@@ -231,6 +234,9 @@ public class ProductResource {
         if (product.getSalePriceMinor() != null && product.getSalePriceMinor() < 0) {
             throw new BadRequestException("Sale price must be zero or greater");
         }
+        if (product.getCostPriceMinor() < 0) {
+            throw new BadRequestException("Cost price must be zero or greater");
+        }
         if (product.getSaleStartsAt() != null && product.getSaleEndsAt() != null
                 && product.getSaleEndsAt().isBefore(product.getSaleStartsAt())) {
             throw new BadRequestException("Sale end time must be after sale start time");
@@ -243,6 +249,9 @@ public class ProductResource {
                 }
                 if (variant.getPriceMinor() < 0) {
                     throw new BadRequestException("Variant price must be zero or greater");
+                }
+                if (variant.getCostPriceMinor() != null && variant.getCostPriceMinor() < 0) {
+                    throw new BadRequestException("Variant cost price must be zero or greater");
                 }
                 if (variant.getStockQuantity() < 0) {
                     throw new BadRequestException("Variant stock quantity must be zero or greater");

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useGetDailyRevenueQuery, type DailyRevenue } from '@/shared/api'
+import { useGetDailyRevenueQuery, useGetMonthToDateRevenueQuery, type DailyRevenue } from '@/shared/api'
 import { formatMoneyMinor } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -10,8 +10,12 @@ import {
   CalendarDays,
   ChartNoAxesCombined,
   CircleDollarSign,
+  HandCoins,
+  PackageOpen,
   ReceiptText,
   RotateCcw,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react'
 
 const CURRENCY = 'VND'
@@ -74,29 +78,29 @@ function SummaryCard({ label, value, hint, icon: Icon, tone = 'default' }: Summa
 function DailyBars({ days, locale }: { days: DailyRevenue[]; locale: string }) {
   const { t } = useTranslation('revenue')
   const visibleDays = days.slice(-31)
-  const maxValue = Math.max(1, ...visibleDays.map((day) => Number(day.grossRevenueMinor ?? 0)))
+  const maxValue = Math.max(1, ...visibleDays.map((day) => Math.abs(Number(day.profitMinor ?? 0))))
 
   return (
     <div className="flex h-56 items-end gap-1 overflow-x-auto border-b border-border pb-7 pt-4">
       {visibleDays.map((day) => {
-        const gross = Number(day.grossRevenueMinor ?? 0)
-        const refund = Number(day.refundMinor ?? 0)
-        const height = gross === 0 ? 3 : Math.max(8, Math.round((gross / maxValue) * 168))
+        const profit = Number(day.profitMinor ?? 0)
+        const height = profit === 0 ? 3 : Math.max(8, Math.round((Math.abs(profit) / maxValue) * 168))
         return (
           <div key={day.date} className="group relative flex min-w-7 flex-1 flex-col items-center justify-end">
             <div className="pointer-events-none absolute bottom-full z-10 mb-2 hidden w-48 rounded-lg border bg-popover p-3 text-xs shadow-lg group-hover:block">
               <p className="font-semibold">{formatDate(day.date!, locale)}</p>
-              <p className="mt-1 text-muted-foreground">
-                {t('grossRevenue')}: {formatMoneyMinor(gross, CURRENCY)}
+              <p className={profit >= 0 ? 'mt-1 text-success' : 'mt-1 text-destructive'}>
+                {t('profit')}: {formatMoneyMinor(profit, CURRENCY)}
               </p>
-              <p className="text-destructive">
-                {t('returns')}: {formatMoneyMinor(refund, CURRENCY)}
-              </p>
+              <p className="text-muted-foreground">{t('netRevenue')}: {formatMoneyMinor(Number(day.netRevenueMinor ?? 0), CURRENCY)}</p>
+              <p className="text-muted-foreground">{t('warehouseCost')}: {formatMoneyMinor(Number(day.warehouseCostMinor ?? 0), CURRENCY)}</p>
             </div>
             <div
-              className="w-full max-w-8 rounded-t bg-primary/80 transition-colors group-hover:bg-primary"
+              className={`w-full max-w-8 rounded-t transition-colors ${
+                profit >= 0 ? 'bg-success/80 group-hover:bg-success' : 'bg-destructive/80 group-hover:bg-destructive'
+              }`}
               style={{ height }}
-              aria-label={`${day.date}: ${formatMoneyMinor(gross, CURRENCY)}`}
+              aria-label={`${day.date}: ${formatMoneyMinor(profit, CURRENCY)}`}
             />
             <span className="absolute top-full mt-2 text-[10px] text-muted-foreground">
               {new Date(`${day.date}T00:00:00`).getDate()}
@@ -114,11 +118,18 @@ export function RevenuePage() {
   const [from, setFrom] = useState(monthStart)
   const [to, setTo] = useState(today)
   const dateRangeInvalid = from > to
+  const currentMonth = today.slice(0, 7)
 
   const { data, isLoading, isError, refetch } = useGetDailyRevenueQuery({
     query: {
       from,
       to,
+      currency: CURRENCY,
+    },
+  })
+  const { data: monthToDate, isLoading: isMonthToDateLoading } = useGetMonthToDateRevenueQuery({
+    query: {
+      month: currentMonth,
       currency: CURRENCY,
     },
   })
@@ -192,6 +203,61 @@ export function RevenuePage() {
         </div>
       )}
 
+      <Card className="overflow-hidden border-primary/20">
+        <CardHeader className="bg-primary/5">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+            <div>
+              <CardTitle>{t('monthToDate')}</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">{t('monthToDateHint')}</p>
+            </div>
+            <span className="w-fit rounded-full border bg-background px-3 py-1 text-xs font-medium">
+              {monthToDate?.from} — {monthToDate?.to}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: t('netRevenue'),
+              value: Number(monthToDate?.totals?.netRevenueMinor ?? 0),
+              icon: CircleDollarSign,
+              className: 'text-primary',
+            },
+            {
+              label: t('commission'),
+              value: Number(monthToDate?.totals?.commissionMinor ?? 0),
+              icon: HandCoins,
+              className: 'text-amber-600 dark:text-amber-400',
+            },
+            {
+              label: t('warehouseCost'),
+              value: Number(monthToDate?.totals?.warehouseCostMinor ?? 0),
+              icon: PackageOpen,
+              className: 'text-violet-600 dark:text-violet-400',
+            },
+            {
+              label: Number(monthToDate?.totals?.profitMinor ?? 0) >= 0 ? t('profit') : t('loss'),
+              value: Number(monthToDate?.totals?.profitMinor ?? 0),
+              icon: Number(monthToDate?.totals?.profitMinor ?? 0) >= 0 ? TrendingUp : TrendingDown,
+              className: Number(monthToDate?.totals?.profitMinor ?? 0) >= 0 ? 'text-success' : 'text-destructive',
+            },
+          ].map((item) => {
+            const Icon = item.icon
+            return (
+              <div key={item.label} className="rounded-lg border bg-background p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+                  <Icon className={`h-4 w-4 ${item.className}`} />
+                </div>
+                <p className={`mt-2 text-xl font-bold ${item.className}`}>
+                  {isMonthToDateLoading ? '…' : formatMoneyMinor(item.value, CURRENCY)}
+                </p>
+              </div>
+            )
+          })}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label={t('grossRevenue')}
@@ -225,9 +291,9 @@ export function RevenuePage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-primary" /> {t('dailyChart')}
+              <CalendarDays className="h-5 w-5 text-primary" /> {t('dailyProfitChart')}
             </CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">{t('dailyChartHint')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('dailyProfitChartHint')}</p>
           </div>
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
             {data?.timezone ?? 'Asia/Ho_Chi_Minh'}
@@ -255,21 +321,29 @@ export function RevenuePage() {
                   <TableHead className="text-right">{t('orders')}</TableHead>
                   <TableHead className="text-right">{t('grossRevenue')}</TableHead>
                   <TableHead className="text-right">{t('returns')}</TableHead>
+                  <TableHead className="text-right">{t('commission')}</TableHead>
+                  <TableHead className="text-right">{t('warehouseCost')}</TableHead>
                   <TableHead className="text-right">{t('netRevenue')}</TableHead>
+                  <TableHead className="text-right">{t('profitLoss')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">{t('loading')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted-foreground">{t('loading')}</TableCell></TableRow>
                 ) : days.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">{t('noData')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted-foreground">{t('noData')}</TableCell></TableRow>
                 ) : days.map((day) => (
                   <TableRow key={day.date}>
                     <TableCell className="font-medium">{formatDate(day.date!, i18n.language)}</TableCell>
                     <TableCell className="text-right">{Number(day.orderCount ?? 0)}</TableCell>
                     <TableCell className="text-right">{formatMoneyMinor(Number(day.grossRevenueMinor ?? 0), CURRENCY)}</TableCell>
                     <TableCell className="text-right text-destructive">-{formatMoneyMinor(Number(day.refundMinor ?? 0), CURRENCY)}</TableCell>
+                    <TableCell className="text-right">{formatMoneyMinor(Number(day.commissionMinor ?? 0), CURRENCY)}</TableCell>
+                    <TableCell className="text-right">{formatMoneyMinor(Number(day.warehouseCostMinor ?? 0), CURRENCY)}</TableCell>
                     <TableCell className="text-right font-semibold text-success">{formatMoneyMinor(Number(day.netRevenueMinor ?? 0), CURRENCY)}</TableCell>
+                    <TableCell className={`text-right font-bold ${Number(day.profitMinor ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      {formatMoneyMinor(Number(day.profitMinor ?? 0), CURRENCY)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

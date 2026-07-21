@@ -27,6 +27,7 @@ import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
+import base.service.InventoryCostService;
 import base.service.OrderFulfillmentService;
 import base.service.VietQRService;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -78,6 +79,9 @@ public class OrderResource {
 
     @Inject
     BusinessAccess businessAccess;
+
+    @Inject
+    InventoryCostService inventoryCostService;
 
     public static class CartItem {
         public UUID productId;
@@ -494,6 +498,7 @@ public class OrderResource {
             orderItem.setProductVariant(variant);
             orderItem.setQuantity(item.quantity);
             orderItem.setUnitPriceMinor(unitPrice);
+            orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
             orderItems.add(orderItem);
         }

@@ -41,6 +41,9 @@ public class ProductVariant extends BaseEntity {
     @Column(name = "price_minor", nullable = false)
     private long priceMinor;
 
+    @Column(name = "cost_price_minor")
+    private Long costPriceMinor;
+
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
 

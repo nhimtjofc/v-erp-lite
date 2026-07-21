@@ -211,6 +211,9 @@ export type DailyRevenue = {
     grossRevenueMinor?: number;
     refundMinor?: number;
     netRevenueMinor?: number;
+    commissionMinor?: number;
+    warehouseCostMinor?: number;
+    profitMinor?: number;
     orderCount?: number;
     refundCount?: number;
 };
@@ -338,6 +341,7 @@ export type OrderItem = {
     productVariant?: ProductVariant;
     quantity?: number;
     unitPriceMinor?: number;
+    unitCostMinor?: number;
     subtotalAmountMinor?: number;
     currency?: string;
 };
@@ -457,6 +461,7 @@ export type Product = {
     imageUrl?: string;
     basePriceMinor?: number;
     salePriceMinor?: number;
+    costPriceMinor?: number;
     currency?: string;
     saleStartsAt?: Instant;
     saleEndsAt?: Instant;
@@ -486,6 +491,7 @@ export type ProductVariant = {
     product?: Product;
     sku?: string;
     priceMinor?: number;
+    costPriceMinor?: number;
     stockQuantity?: number;
     lowStockThreshold?: number;
     reservedQuantity?: number;
@@ -507,6 +513,9 @@ export type RevenueTotals = {
     grossRevenueMinor?: number;
     refundMinor?: number;
     netRevenueMinor?: number;
+    commissionMinor?: number;
+    warehouseCostMinor?: number;
+    profitMinor?: number;
     orderCount?: number;
     refundCount?: number;
 };
@@ -3271,6 +3280,41 @@ export type GetDailyRevenueResponses = {
 };
 
 export type GetDailyRevenueResponse = GetDailyRevenueResponses[keyof GetDailyRevenueResponses];
+
+export type GetMonthToDateRevenueData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+        currency?: string;
+        month?: string;
+    };
+    url: '/api/revenue/month-to-date';
+};
+
+export type GetMonthToDateRevenueErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetMonthToDateRevenueResponses = {
+    /**
+     * OK
+     */
+    200: DailyReport;
+};
+
+export type GetMonthToDateRevenueResponse = GetMonthToDateRevenueResponses[keyof GetMonthToDateRevenueResponses];
 
 export type SyncAllData = {
     body?: never;

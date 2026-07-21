@@ -51,6 +51,35 @@ public class RevenueResource {
         );
     }
 
+    @GET
+    @Path("/month-to-date")
+    public RevenueService.DailyReport getMonthToDateRevenue(@QueryParam("month") String month,
+                                                            @QueryParam("currency") String currency,
+                                                            @QueryParam("businessId") UUID requestedBusinessId) {
+        LocalDate today = LocalDate.now(RevenueService.REPORTING_ZONE);
+        YearMonth currentMonth = YearMonth.from(today);
+        YearMonth selectedMonth = currentMonth;
+        if (month != null && !month.isBlank()) {
+            try {
+                selectedMonth = YearMonth.parse(month.trim());
+            } catch (RuntimeException exception) {
+                throw new BadRequestException("Month must use YYYY-MM format");
+            }
+        }
+        if (selectedMonth.isAfter(currentMonth)) {
+            throw new BadRequestException("Month cannot be in the future");
+        }
+
+        LocalDate to = selectedMonth.equals(currentMonth) ? today : selectedMonth.atEndOfMonth();
+        return revenueService.dailyReport(
+                caller.tenantCode(),
+                resolveBusinessScope(requestedBusinessId),
+                selectedMonth.atDay(1),
+                to,
+                currency
+        );
+    }
+
     private UUID resolveBusinessScope(UUID requestedBusinessId) {
         if (businessAccess.isScopedStaff()) {
             return businessAccess.requireCurrentBusinessId();

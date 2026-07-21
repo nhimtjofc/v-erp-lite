@@ -385,6 +385,15 @@ components:
         netRevenueMinor:
           type: integer
           format: int64
+        commissionMinor:
+          type: integer
+          format: int64
+        warehouseCostMinor:
+          type: integer
+          format: int64
+        profitMinor:
+          type: integer
+          format: int64
         orderCount:
           type: integer
           format: int64
@@ -633,6 +642,9 @@ components:
         unitPriceMinor:
           type: integer
           format: int64
+        unitCostMinor:
+          type: integer
+          format: int64
         subtotalAmountMinor:
           type: integer
           format: int64
@@ -855,6 +867,9 @@ components:
         salePriceMinor:
           type: integer
           format: int64
+        costPriceMinor:
+          type: integer
+          format: int64
         currency:
           type: string
         saleStartsAt:
@@ -922,6 +937,9 @@ components:
         priceMinor:
           type: integer
           format: int64
+        costPriceMinor:
+          type: integer
+          format: int64
         stockQuantity:
           type: integer
           format: int32
@@ -961,6 +979,15 @@ components:
           type: integer
           format: int64
         netRevenueMinor:
+          type: integer
+          format: int64
+        commissionMinor:
+          type: integer
+          format: int64
+        warehouseCostMinor:
+          type: integer
+          format: int64
+        profitMinor:
           type: integer
           format: int64
         orderCount:
@@ -3972,6 +3999,43 @@ paths:
         "403":
           description: Not Allowed
       summary: Get Daily Revenue
+      tags:
+      - Revenue Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+        - operator
+  /api/revenue/month-to-date:
+    get:
+      operationId: getMonthToDateRevenue
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: currency
+        in: query
+        schema:
+          type: string
+      - name: month
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyReport"
+        "400":
+          description: Bad Request
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Month To Date Revenue
       tags:
       - Revenue Resource
       security:

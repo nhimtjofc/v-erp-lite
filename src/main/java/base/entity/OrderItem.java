@@ -43,6 +43,9 @@ public class OrderItem extends BaseEntity {
     @Column(name = "unit_price_minor", nullable = false)
     private long unitPriceMinor;
 
+    @Column(name = "unit_cost_minor", nullable = false)
+    private long unitCostMinor;
+
     @Column(name = "subtotal_amount_minor", nullable = false)
     private long subtotalAmountMinor;
 

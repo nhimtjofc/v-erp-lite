@@ -30,6 +30,7 @@ export interface ProductVariant {
   tenantId?: string
   sku: string
   priceMinor: number
+  costPriceMinor?: number | null
   stockQuantity: number
   reservedQuantity?: number
   lowStockThreshold?: number
@@ -46,6 +47,7 @@ export interface Product {
   imageUrl?: string
   basePriceMinor: number
   salePriceMinor?: number | null
+  costPriceMinor?: number
   saleStartsAt?: string | null
   saleEndsAt?: string | null
   active?: boolean
@@ -66,68 +68,71 @@ interface ProductFilters {
   tagId?: string
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers)
-  headers.set('Content-Type', 'application/json')
-  const token = localStorage.getItem('access_token')
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-
-  const response = await fetch(`${API_BASE}/api${path}`, {
-    ...init,
-    headers,
-  })
-
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed with ${response.status}`)
-  }
-
-  if (response.status === 204) {
-    return undefined as T
-  }
-
-  return response.json() as Promise<T>
-}
-
-function withQuery(path: string, params: Record<string, string | undefined>) {
-  const query = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => {
-    if (value) query.set(key, value)
-  })
-  const suffix = query.toString()
-  return suffix ? `${path}?${suffix}` : path
-}
-
 export const catalogApi = {
-  listCategories: (search?: string) => request<Category[]>(withQuery('/categories', { search })),
-  createCategory: (category: Partial<Category>) => request<Category>('/categories', {
-    method: 'POST',
-    body: JSON.stringify(category),
-  }),
-  listProducts: (filters: ProductFilters = {}) => request<Product[]>(
-    withQuery('/products', { search: filters.search, categoryId: filters.categoryId, tagId: filters.tagId })
-  ),
-  getProduct: (id: string) => request<Product>(`/products/${id}`),
-  createProduct: (product: Partial<Product>) => request<Product>('/products', {
-    method: 'POST',
-    body: JSON.stringify(product),
-  }),
-  updateProduct: (id: string, product: Partial<Product>) => request<Product>(`/products/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(product),
-  }),
-  deleteProduct: (id: string) => request<void>(`/products/${id}`, {
-    method: 'DELETE',
-  }),
-  listTags: (search?: string) => request<Tag[]>(withQuery('/tags', { search })),
-  createTag: (tag: Partial<Tag>) => request<Tag>('/tags', {
-    method: 'POST',
-    body: JSON.stringify(tag),
-  }),
-  deleteTag: (id: string) => request<void>(`/tags/${id}`, {
-    method: 'DELETE',
-  }),
+  listCategories: async (search?: string) => {
+    const response = await listCategoriesSdk({ query: { search }, throwOnError: true })
+    return (response.data ?? []) as Category[]
+  },
+  createCategory: async (category: Partial<Category>) => {
+    const response = await createCategorySdk({
+      body: category as GeneratedCategory,
+      throwOnError: true,
+    })
+    return response.data as Category
+  },
+  listProducts: async (filters: ProductFilters = {}) => {
+    const response = await listProductsSdk({ query: filters, throwOnError: true })
+    return (response.data ?? []) as Product[]
+  },
+  getProduct: async (id: string) => {
+    const response = await getProductSdk({ path: { id }, throwOnError: true })
+    return response.data as Product
+  },
+  createProduct: async (product: Partial<Product>) => {
+    const response = await createProductSdk({
+      body: product as GeneratedProduct,
+      throwOnError: true,
+    })
+    return response.data as Product
+  },
+  updateProduct: async (id: string, product: Partial<Product>) => {
+    const response = await updateProductSdk({
+      path: { id },
+      body: product as GeneratedProduct,
+      throwOnError: true,
+    })
+    return response.data as Product
+  },
+  deleteProduct: async (id: string) => {
+    await deleteProductSdk({ path: { id }, throwOnError: true })
+  },
+  listTags: async (search?: string) => {
+    const response = await listTagsSdk({ query: { search }, throwOnError: true })
+    return (response.data ?? []) as Tag[]
+  },
+  createTag: async (tag: Partial<Tag>) => {
+    const response = await createTagSdk({ body: tag as GeneratedTag, throwOnError: true })
+    return response.data as Tag
+  },
+  deleteTag: async (id: string) => {
+    await deleteTagSdk({ path: { id }, throwOnError: true })
+  },
 }
 
+import {
+  createCategory as createCategorySdk,
+  createProduct as createProductSdk,
+  createTag as createTagSdk,
+  deleteProduct as deleteProductSdk,
+  deleteTag as deleteTagSdk,
+  getProduct as getProductSdk,
+  listCategories as listCategoriesSdk,
+  listProducts as listProductsSdk,
+  listTags as listTagsSdk,
+  updateProduct as updateProductSdk,
+} from './gen/sdk.gen'
+import type {
+  Category as GeneratedCategory,
+  Product as GeneratedProduct,
+  Tag as GeneratedTag,
+} from './gen/types.gen'

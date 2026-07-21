@@ -21,6 +21,9 @@ import java.util.*;
 @ApplicationScoped
 public class WooCommerceOrderService {
 
+    @Inject
+    InventoryCostService inventoryCostService;
+
     private static final Logger log = LoggerFactory.getLogger(WooCommerceOrderService.class);
 
     private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
@@ -289,6 +292,7 @@ public class WooCommerceOrderService {
             orderItem.setProductVariant(variant);
             orderItem.setQuantity(quantity);
             orderItem.setUnitPriceMinor(unitPrice);
+            orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
             orderItems.add(orderItem);
         }

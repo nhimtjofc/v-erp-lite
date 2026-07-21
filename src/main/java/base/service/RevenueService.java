@@ -1,9 +1,11 @@
 package base.service;
 
+import base.entity.EscrowRecord;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.PaymentRefund;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 
 import java.time.Instant;
@@ -23,6 +25,9 @@ public class RevenueService {
 
     public static final ZoneId REPORTING_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final int MAX_REPORT_DAYS = 366;
+
+    @Inject
+    InventoryCostService inventoryCostService;
 
     public DailyReport dailyReport(String tenantId, UUID businessId, LocalDate from, LocalDate to, String currency) {
         validateDateRange(from, to);
@@ -59,6 +64,8 @@ public class RevenueService {
             MutableDay day = days.get(sale.occurredAt().atZone(REPORTING_ZONE).toLocalDate());
             if (day != null) {
                 day.grossRevenueMinor += sale.amountMinor();
+                day.commissionMinor += sale.commissionMinor();
+                day.warehouseCostMinor += sale.warehouseCostMinor();
                 day.orderCount++;
             }
         }
@@ -66,6 +73,8 @@ public class RevenueService {
             MutableDay day = days.get(refund.occurredAt().atZone(REPORTING_ZONE).toLocalDate());
             if (day != null) {
                 day.refundMinor += refund.amountMinor();
+                day.commissionMinor -= refund.commissionReversalMinor();
+                day.warehouseCostMinor -= refund.warehouseCostReversalMinor();
                 day.refundCount++;
             }
         }
@@ -73,6 +82,9 @@ public class RevenueService {
         List<DailyRevenue> daily = days.values().stream().map(MutableDay::toRevenue).toList();
         long grossRevenueMinor = daily.stream().mapToLong(DailyRevenue::grossRevenueMinor).sum();
         long refundMinor = daily.stream().mapToLong(DailyRevenue::refundMinor).sum();
+        long commissionMinor = daily.stream().mapToLong(DailyRevenue::commissionMinor).sum();
+        long warehouseCostMinor = daily.stream().mapToLong(DailyRevenue::warehouseCostMinor).sum();
+        long profitMinor = daily.stream().mapToLong(DailyRevenue::profitMinor).sum();
         long orderCount = daily.stream().mapToLong(DailyRevenue::orderCount).sum();
         long refundCount = daily.stream().mapToLong(DailyRevenue::refundCount).sum();
 
@@ -85,6 +97,9 @@ public class RevenueService {
                         grossRevenueMinor,
                         refundMinor,
                         grossRevenueMinor - refundMinor,
+                        commissionMinor,
+                        warehouseCostMinor,
+                        profitMinor,
                         orderCount,
                         refundCount
                 ),
@@ -111,11 +126,7 @@ public class RevenueService {
 
         List<OrderHistory> completionEvents = OrderHistory.list(historyQuery.toString(), historyParams);
         List<SaleEvent> sales = completionEvents.stream()
-                .map(event -> new SaleEvent(
-                        event.getOrder().getId(),
-                        event.getCreatedAt(),
-                        event.getOrder().getFinalAmountMinor()
-                ))
+                .map(event -> saleEvent(event.getOrder(), event.getCreatedAt()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
         // Older imported orders may already be completed without an order-history row.
@@ -139,7 +150,7 @@ public class RevenueService {
                         .collect(Collectors.toSet());
         for (Order order : legacyCandidates) {
             if (!ordersWithHistory.contains(order.getId())) {
-                sales.add(new SaleEvent(order.getId(), order.getOrderDate(), order.getFinalAmountMinor()));
+                sales.add(saleEvent(order, order.getOrderDate()));
             }
         }
 
@@ -171,9 +182,45 @@ public class RevenueService {
                     && (order.getBusiness() == null || !businessId.equals(order.getBusiness().getId())))) {
                 continue;
             }
-            refunds.add(new RefundEvent(refund.getOrderId(), refund.getCreatedAt(), refund.getAmountMinor()));
+            boolean recognizedRevenue = OrderHistory.count(
+                    "tenantId = ?1 and order.id = ?2 and newStatus = ?3",
+                    tenantId,
+                    order.getId(),
+                    "COMPLETED"
+            ) > 0;
+            refunds.add(new RefundEvent(
+                    refund.getOrderId(),
+                    refund.getCreatedAt(),
+                    refund.getAmountMinor(),
+                    recognizedRevenue ? commissionFor(order) : 0,
+                    recognizedRevenue ? inventoryCostService.orderCost(order) : 0
+            ));
         }
         return refunds;
+    }
+
+    private SaleEvent saleEvent(Order order, Instant occurredAt) {
+        return new SaleEvent(
+                order.getId(),
+                occurredAt,
+                order.getFinalAmountMinor(),
+                commissionFor(order),
+                inventoryCostService.orderCost(order)
+        );
+    }
+
+    private long commissionFor(Order order) {
+        List<EscrowRecord> escrows = EscrowRecord.list(
+                "tenantId = ?1 and orderId = ?2 and currency = ?3",
+                order.getTenantId(),
+                order.getId(),
+                order.getCurrency()
+        );
+        if (escrows.isEmpty()) {
+            return 0;
+        }
+        long sellerNetMinor = escrows.stream().mapToLong(EscrowRecord::getAmountMinor).sum();
+        return Math.max(0, order.getFinalAmountMinor() - sellerNetMinor);
     }
 
     private void validateDateRange(LocalDate from, LocalDate to) {
@@ -205,6 +252,9 @@ public class RevenueService {
             long grossRevenueMinor,
             long refundMinor,
             long netRevenueMinor,
+            long commissionMinor,
+            long warehouseCostMinor,
+            long profitMinor,
             long orderCount,
             long refundCount
     ) {}
@@ -214,18 +264,25 @@ public class RevenueService {
             long grossRevenueMinor,
             long refundMinor,
             long netRevenueMinor,
+            long commissionMinor,
+            long warehouseCostMinor,
+            long profitMinor,
             long orderCount,
             long refundCount
     ) {}
 
-    record SaleEvent(UUID orderId, Instant occurredAt, long amountMinor) {}
+    record SaleEvent(UUID orderId, Instant occurredAt, long amountMinor,
+                     long commissionMinor, long warehouseCostMinor) {}
 
-    record RefundEvent(UUID orderId, Instant occurredAt, long amountMinor) {}
+    record RefundEvent(UUID orderId, Instant occurredAt, long amountMinor,
+                       long commissionReversalMinor, long warehouseCostReversalMinor) {}
 
     private static class MutableDay {
         private final LocalDate date;
         private long grossRevenueMinor;
         private long refundMinor;
+        private long commissionMinor;
+        private long warehouseCostMinor;
         private long orderCount;
         private long refundCount;
 
@@ -239,6 +296,9 @@ public class RevenueService {
                     grossRevenueMinor,
                     refundMinor,
                     grossRevenueMinor - refundMinor,
+                    commissionMinor,
+                    warehouseCostMinor,
+                    grossRevenueMinor - refundMinor - commissionMinor - warehouseCostMinor,
                     orderCount,
                     refundCount
             );
