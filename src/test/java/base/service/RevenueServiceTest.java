@@ -41,6 +41,47 @@ class RevenueServiceTest {
         assertEquals(1, report.totals().refundCount());
     }
 
+    @Test
+    void monthlyReportIncludesManualIncomeAndExpenses() {
+        LocalDate date = LocalDate.of(2026, 7, 1);
+        RevenueService.DailyReport operations = RevenueService.aggregate(
+                date,
+                date,
+                "VND",
+                List.of(new RevenueService.SaleEvent(
+                        UUID.randomUUID(),
+                        instant("2026-07-01T02:00:00Z"),
+                        1_000_000,
+                        50_000,
+                        400_000
+                )),
+                List.of()
+        );
+        List<RevenueService.AdjustmentEntry> adjustments = List.of(
+                new RevenueService.AdjustmentEntry(
+                        UUID.randomUUID(), null, date, "OTHER_INCOME", "INCOME",
+                        100_000, "VND", "Affiliate rebate", instant("2026-07-01T03:00:00Z")
+                ),
+                new RevenueService.AdjustmentEntry(
+                        UUID.randomUUID(), null, date, "OPERATING_EXPENSE", "EXPENSE",
+                        30_000, "VND", "Packing materials", instant("2026-07-01T04:00:00Z")
+                )
+        );
+
+        RevenueService.MonthlyReport report = RevenueService.buildMonthlyReport(
+                "2026-07",
+                "VND",
+                operations,
+                adjustments
+        );
+
+        assertEquals(100_000, report.totals().adjustmentIncomeMinor());
+        assertEquals(30_000, report.totals().adjustmentExpenseMinor());
+        assertEquals(620_000, report.totals().profitMinor());
+        assertEquals(6, report.breakdown().size());
+        assertEquals(2, report.adjustments().size());
+    }
+
     private Instant instant(String value) {
         return Instant.parse(value);
     }

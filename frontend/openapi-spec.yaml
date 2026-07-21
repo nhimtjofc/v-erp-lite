@@ -17,6 +17,28 @@ components:
         quantity:
           type: integer
           format: int32
+    AdjustmentEntry:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        businessId:
+          $ref: "#/components/schemas/UUID"
+        entryDate:
+          $ref: "#/components/schemas/LocalDate"
+        category:
+          type: string
+        direction:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        description:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
     Bank:
       type: object
       properties:
@@ -39,6 +61,16 @@ components:
           type: string
         bankAccountHolder:
           type: string
+    BreakdownItem:
+      type: object
+      properties:
+        code:
+          type: string
+        direction:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
     Business:
       type: object
       properties:
@@ -487,6 +519,56 @@ components:
       properties:
         code:
           type: string
+    MonthlyReport:
+      type: object
+      properties:
+        month:
+          type: string
+        from:
+          $ref: "#/components/schemas/LocalDate"
+        to:
+          $ref: "#/components/schemas/LocalDate"
+        timezone:
+          type: string
+        currency:
+          type: string
+        totals:
+          $ref: "#/components/schemas/MonthlyTotals"
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/BreakdownItem"
+        adjustments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdjustmentEntry"
+    MonthlyTotals:
+      type: object
+      properties:
+        grossRevenueMinor:
+          type: integer
+          format: int64
+        refundMinor:
+          type: integer
+          format: int64
+        netRevenueMinor:
+          type: integer
+          format: int64
+        commissionMinor:
+          type: integer
+          format: int64
+        warehouseCostMinor:
+          type: integer
+          format: int64
+        adjustmentIncomeMinor:
+          type: integer
+          format: int64
+        adjustmentExpenseMinor:
+          type: integer
+          format: int64
+        profitMinor:
+          type: integer
+          format: int64
     Notification:
       type: object
       properties:
@@ -968,6 +1050,24 @@ components:
         lastName:
           type: string
         phone:
+          type: string
+    RevenueAdjustmentRequest:
+      type: object
+      properties:
+        businessId:
+          $ref: "#/components/schemas/UUID"
+        entryDate:
+          $ref: "#/components/schemas/LocalDate"
+        category:
+          type: string
+        direction:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        description:
           type: string
     RevenueTotals:
       type: object
@@ -3965,6 +4065,60 @@ paths:
         - admin
         - businessOwner
         - operator
+  /api/revenue/adjustments:
+    post:
+      operationId: createRevenueAdjustment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueAdjustmentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Create Revenue Adjustment
+      tags:
+      - Revenue Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+  /api/revenue/adjustments/{id}:
+    delete:
+      operationId: deleteRevenueAdjustment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Delete Revenue Adjustment
+      tags:
+      - Revenue Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
   /api/revenue/daily:
     get:
       operationId: getDailyRevenue
@@ -4036,6 +4190,41 @@ paths:
         "403":
           description: Not Allowed
       summary: Get Month To Date Revenue
+      tags:
+      - Revenue Resource
+      security:
+      - SecurityScheme:
+        - admin
+        - businessOwner
+        - operator
+  /api/revenue/monthly:
+    get:
+      operationId: getMonthlyRevenue
+      parameters:
+      - name: businessId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: currency
+        in: query
+        schema:
+          type: string
+      - name: month
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyReport"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      summary: Get Monthly Revenue
       tags:
       - Revenue Resource
       security:

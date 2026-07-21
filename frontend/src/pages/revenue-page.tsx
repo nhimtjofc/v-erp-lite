@@ -1,19 +1,41 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useGetDailyRevenueQuery, useGetMonthToDateRevenueQuery, type DailyRevenue } from '@/shared/api'
-import { formatMoneyMinor } from '@/shared/utils/currency'
+import {
+  useCreateRevenueAdjustmentMutation,
+  useDeleteRevenueAdjustmentMutation,
+  useGetDailyRevenueQuery,
+  useGetMonthlyRevenueQuery,
+  useGetMonthToDateRevenueQuery,
+  useMeQuery,
+  type DailyRevenue,
+} from '@/shared/api'
+import { formatMoneyMinor, parseMoneyToMinor } from '@/shared/utils/currency'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import {
   CalendarDays,
   ChartNoAxesCombined,
   CircleDollarSign,
   HandCoins,
+  ListChecks,
   PackageOpen,
+  Plus,
   ReceiptText,
   RotateCcw,
+  Trash2,
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
@@ -109,6 +131,303 @@ function DailyBars({ days, locale }: { days: DailyRevenue[]; locale: string }) {
         )
       })}
     </div>
+  )
+}
+
+const ADJUSTMENT_CATEGORIES = [
+  'OTHER_INCOME',
+  'OPERATING_EXPENSE',
+  'WAREHOUSE_ADJUSTMENT',
+  'COMMISSION_ADJUSTMENT',
+  'RETURN_ADJUSTMENT',
+] as const
+
+function AdjustmentDialog({
+  open,
+  onOpenChange,
+  today,
+  onSaved,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  today: string
+  onSaved: () => Promise<unknown>
+}) {
+  const { t } = useTranslation('revenue')
+  const createAdjustment = useCreateRevenueAdjustmentMutation()
+  const [entryDate, setEntryDate] = useState(today)
+  const [category, setCategory] = useState<(typeof ADJUSTMENT_CATEGORIES)[number]>('OPERATING_EXPENSE')
+  const [direction, setDirection] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [error, setError] = useState('')
+
+  const handleCategoryChange = (value: string | null) => {
+    if (!value) return
+    const nextCategory = value as (typeof ADJUSTMENT_CATEGORIES)[number]
+    setCategory(nextCategory)
+    if (nextCategory === 'OTHER_INCOME') setDirection('INCOME')
+    if (nextCategory === 'OPERATING_EXPENSE') setDirection('EXPENSE')
+  }
+
+  const save = async () => {
+    const amountMinor = parseMoneyToMinor(amount, CURRENCY)
+    if (!entryDate || amountMinor == null) {
+      setError(t('adjustmentValidation'))
+      return
+    }
+    try {
+      await createAdjustment.mutateAsync({
+        body: {
+          entryDate,
+          category,
+          direction,
+          amountMinor,
+          currency: CURRENCY,
+          description: description.trim() || undefined,
+        },
+      })
+      await onSaved()
+      setAmount('')
+      setDescription('')
+      setError('')
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t('adjustmentSaveError'))
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('addAdjustment')}</DialogTitle>
+          <DialogDescription>{t('addAdjustmentHint')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="adjustment-date">{t('date')}</Label>
+            <Input
+              id="adjustment-date"
+              type="date"
+              value={entryDate}
+              max={today}
+              onChange={(event) => setEntryDate(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="adjustment-category">{t('category')}</Label>
+            <Select value={category} onValueChange={handleCategoryChange}>
+              <SelectTrigger id="adjustment-category"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ADJUSTMENT_CATEGORIES.map((value) => (
+                  <SelectItem key={value} value={value}>{t(`breakdown.${value}`)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="adjustment-direction">{t('direction')}</Label>
+            <Select value={direction} onValueChange={(value) => value && setDirection(value as 'INCOME' | 'EXPENSE')}>
+              <SelectTrigger id="adjustment-direction"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="INCOME">{t('income')}</SelectItem>
+                <SelectItem value="EXPENSE">{t('expense')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="adjustment-amount">{t('amount')}</Label>
+            <Input
+              id="adjustment-amount"
+              type="number"
+              min="1"
+              step="1"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="adjustment-description">{t('description')}</Label>
+            <Input
+              id="adjustment-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder={t('descriptionPlaceholder')}
+            />
+          </div>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
+          <Button onClick={save} disabled={createAdjustment.isPending}>
+            {createAdjustment.isPending ? t('saving') : t('saveAdjustment')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function MonthlyReportSection({ currentMonth, today }: { currentMonth: string; today: string }) {
+  const { t, i18n } = useTranslation('revenue')
+  const [month, setMonth] = useState(currentMonth)
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const { data: me } = useMeQuery()
+  const canEdit = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
+  const monthlyQuery = useGetMonthlyRevenueQuery({
+    query: { month, currency: CURRENCY },
+  })
+  const deleteAdjustment = useDeleteRevenueAdjustmentMutation()
+  const report = monthlyQuery.data
+  const profit = Number(report?.totals?.profitMinor ?? 0)
+
+  const removeAdjustment = async (id?: string) => {
+    if (!id || !window.confirm(t('deleteAdjustmentConfirm'))) return
+    try {
+      setDeleteError('')
+      await deleteAdjustment.mutateAsync({ path: { id } })
+      await monthlyQuery.refetch()
+    } catch (cause) {
+      setDeleteError(cause instanceof Error ? cause.message : t('adjustmentDeleteError'))
+    }
+  }
+
+  return (
+    <>
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b bg-muted/30">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ListChecks className="h-5 w-5 text-primary" /> {t('monthlyReport')}
+              </CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">{t('monthlyReportHint')}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                aria-label={t('reportMonth')}
+                type="month"
+                value={month}
+                max={currentMonth}
+                onChange={(event) => setMonth(event.target.value)}
+                className="w-40"
+              />
+              {canEdit && (
+                <Button onClick={() => setAdjustmentOpen(true)}>
+                  <Plus className="h-4 w-4" /> {t('addAdjustment')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          {monthlyQuery.isError && (
+            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {t('monthlyLoadError')}
+            </p>
+          )}
+
+          <div className={`rounded-xl border p-5 ${profit >= 0 ? 'border-success/30 bg-success/10' : 'border-destructive/30 bg-destructive/10'}`}>
+            <p className="text-sm font-medium text-muted-foreground">{profit >= 0 ? t('monthProfit') : t('monthLoss')}</p>
+            <div className="mt-1 flex items-center gap-2">
+              {profit >= 0 ? <TrendingUp className="h-6 w-6 text-success" /> : <TrendingDown className="h-6 w-6 text-destructive" />}
+              <p className={`text-3xl font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {monthlyQuery.isLoading ? '…' : formatMoneyMinor(profit, CURRENCY)}
+              </p>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {report?.from} — {report?.to} · {report?.timezone ?? 'Asia/Ho_Chi_Minh'}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-semibold">{t('profitBreakdown')}</h3>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {(report?.breakdown ?? []).map((item) => {
+                const isIncome = item.direction === 'INCOME'
+                return (
+                  <div key={`${item.code}-${item.direction}`} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="text-sm font-medium">{t(`breakdown.${item.code}`)}</p>
+                      <p className="text-xs text-muted-foreground">{isIncome ? t('income') : t('expense')}</p>
+                    </div>
+                    <p className={`font-semibold ${isIncome ? 'text-success' : 'text-destructive'}`}>
+                      {isIncome ? '+' : '-'}{formatMoneyMinor(Number(item.amountMinor ?? 0), CURRENCY)}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">{t('adjustmentLedger')}</h3>
+              <Badge variant="outline">{t('entries', { count: report?.adjustments?.length ?? 0 })}</Badge>
+            </div>
+            {deleteError && <p className="mb-3 text-sm text-destructive">{deleteError}</p>}
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('date')}</TableHead>
+                    <TableHead>{t('category')}</TableHead>
+                    <TableHead>{t('description')}</TableHead>
+                    <TableHead>{t('direction')}</TableHead>
+                    <TableHead className="text-right">{t('amount')}</TableHead>
+                    {canEdit && <TableHead className="w-12" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthlyQuery.isLoading ? (
+                    <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="py-8 text-center text-muted-foreground">{t('loading')}</TableCell></TableRow>
+                  ) : (report?.adjustments?.length ?? 0) === 0 ? (
+                    <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="py-8 text-center text-muted-foreground">{t('noAdjustments')}</TableCell></TableRow>
+                  ) : report?.adjustments?.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>{entry.entryDate ? formatDate(entry.entryDate, i18n.language) : '—'}</TableCell>
+                      <TableCell className="font-medium">{t(`breakdown.${entry.category}`)}</TableCell>
+                      <TableCell className="max-w-72 truncate text-muted-foreground">{entry.description || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant={entry.direction === 'INCOME' ? 'default' : 'secondary'}>
+                          {entry.direction === 'INCOME' ? t('income') : t('expense')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-semibold ${entry.direction === 'INCOME' ? 'text-success' : 'text-destructive'}`}>
+                        {entry.direction === 'INCOME' ? '+' : '-'}{formatMoneyMinor(Number(entry.amountMinor ?? 0), entry.currency ?? CURRENCY)}
+                      </TableCell>
+                      {canEdit && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeAdjustment(entry.id)}
+                            disabled={deleteAdjustment.isPending}
+                            aria-label={t('deleteAdjustment')}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AdjustmentDialog
+        open={adjustmentOpen}
+        onOpenChange={setAdjustmentOpen}
+        today={today}
+        onSaved={() => monthlyQuery.refetch()}
+      />
+    </>
   )
 }
 
@@ -351,6 +670,8 @@ export function RevenuePage() {
           </div>
         </CardContent>
       </Card>
+
+      <MonthlyReportSection currentMonth={currentMonth} today={today} />
     </div>
   )
 }

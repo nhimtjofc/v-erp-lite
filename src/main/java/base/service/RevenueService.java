@@ -1,15 +1,20 @@
 package base.service;
 
 import base.entity.EscrowRecord;
+import base.entity.Business;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.PaymentRefund;
+import base.entity.RevenueAdjustment;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -25,6 +30,13 @@ public class RevenueService {
 
     public static final ZoneId REPORTING_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final int MAX_REPORT_DAYS = 366;
+    private static final Set<String> ADJUSTMENT_CATEGORIES = Set.of(
+            "OTHER_INCOME",
+            "OPERATING_EXPENSE",
+            "WAREHOUSE_ADJUSTMENT",
+            "COMMISSION_ADJUSTMENT",
+            "RETURN_ADJUSTMENT"
+    );
 
     @Inject
     InventoryCostService inventoryCostService;
@@ -51,6 +63,84 @@ public class RevenueService {
         );
 
         return aggregate(from, to, normalizedCurrency, sales, refunds);
+    }
+
+    public MonthlyReport monthlyReport(String tenantId, UUID businessId, YearMonth month, String currency) {
+        LocalDate today = LocalDate.now(REPORTING_ZONE);
+        YearMonth currentMonth = YearMonth.from(today);
+        if (month == null) {
+            month = currentMonth;
+        }
+        if (month.isAfter(currentMonth)) {
+            throw new BadRequestException("Month cannot be in the future");
+        }
+
+        LocalDate from = month.atDay(1);
+        LocalDate to = month.equals(currentMonth) ? today : month.atEndOfMonth();
+        String normalizedCurrency = normalizeCurrency(currency);
+        DailyReport operations = dailyReport(tenantId, businessId, from, to, normalizedCurrency);
+        List<AdjustmentEntry> adjustments = adjustmentEntries(
+                tenantId,
+                businessId,
+                from,
+                to,
+                normalizedCurrency
+        );
+        return buildMonthlyReport(month.toString(), normalizedCurrency, operations, adjustments);
+    }
+
+    @Transactional
+    public AdjustmentEntry createAdjustment(String tenantId, Business business, LocalDate entryDate,
+                                            String category, String direction, long amountMinor,
+                                            String currency, String description, UUID actorId) {
+        if (entryDate == null) {
+            throw new BadRequestException("Entry date is required");
+        }
+        if (entryDate.isAfter(LocalDate.now(REPORTING_ZONE))) {
+            throw new BadRequestException("Entry date cannot be in the future");
+        }
+        String normalizedCategory = category == null ? "" : category.trim().toUpperCase();
+        if (!ADJUSTMENT_CATEGORIES.contains(normalizedCategory)) {
+            throw new BadRequestException("Unsupported revenue adjustment category");
+        }
+        String normalizedDirection = direction == null ? "" : direction.trim().toUpperCase();
+        if (!Set.of("INCOME", "EXPENSE").contains(normalizedDirection)) {
+            throw new BadRequestException("Direction must be INCOME or EXPENSE");
+        }
+        if (amountMinor <= 0) {
+            throw new BadRequestException("Adjustment amount must be positive");
+        }
+
+        RevenueAdjustment adjustment = new RevenueAdjustment();
+        adjustment.setId(UUID.randomUUID());
+        adjustment.setTenantId(tenantId);
+        adjustment.setBusiness(business);
+        adjustment.setEntryDate(entryDate);
+        adjustment.setCategory(normalizedCategory);
+        adjustment.setDirection(normalizedDirection);
+        adjustment.setAmountMinor(amountMinor);
+        adjustment.setCurrency(normalizeCurrency(currency));
+        adjustment.setDescription(description == null || description.isBlank() ? null : description.trim());
+        adjustment.setCreatedBy(actorId);
+        adjustment.persist();
+        return AdjustmentEntry.from(adjustment);
+    }
+
+    @Transactional
+    public void deleteAdjustment(String tenantId, UUID businessId, UUID adjustmentId) {
+        String query = "id = :id and tenantId = :tenantId";
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("id", adjustmentId);
+        params.put("tenantId", tenantId);
+        if (businessId != null) {
+            query += " and business.id = :businessId";
+            params.put("businessId", businessId);
+        }
+        RevenueAdjustment adjustment = RevenueAdjustment.find(query, params).firstResult();
+        if (adjustment == null) {
+            throw new NotFoundException("Revenue adjustment not found");
+        }
+        adjustment.delete();
     }
 
     static DailyReport aggregate(LocalDate from, LocalDate to, String currency,
@@ -105,6 +195,92 @@ public class RevenueService {
                 ),
                 daily
         );
+    }
+
+    static MonthlyReport buildMonthlyReport(String month, String currency, DailyReport operations,
+                                            List<AdjustmentEntry> adjustments) {
+        long adjustmentIncomeMinor = adjustments.stream()
+                .filter(entry -> "INCOME".equals(entry.direction()))
+                .mapToLong(AdjustmentEntry::amountMinor)
+                .sum();
+        long adjustmentExpenseMinor = adjustments.stream()
+                .filter(entry -> "EXPENSE".equals(entry.direction()))
+                .mapToLong(AdjustmentEntry::amountMinor)
+                .sum();
+
+        RevenueTotals operationalTotals = operations.totals();
+        long profitMinor = operationalTotals.profitMinor()
+                + adjustmentIncomeMinor
+                - adjustmentExpenseMinor;
+        MonthlyTotals totals = new MonthlyTotals(
+                operationalTotals.grossRevenueMinor(),
+                operationalTotals.refundMinor(),
+                operationalTotals.netRevenueMinor(),
+                operationalTotals.commissionMinor(),
+                operationalTotals.warehouseCostMinor(),
+                adjustmentIncomeMinor,
+                adjustmentExpenseMinor,
+                profitMinor
+        );
+
+        List<BreakdownItem> breakdown = new ArrayList<>();
+        breakdown.add(normalizedBreakdown("GROSS_REVENUE", "INCOME", operationalTotals.grossRevenueMinor()));
+        breakdown.add(normalizedBreakdown("RETURNS", "EXPENSE", operationalTotals.refundMinor()));
+        breakdown.add(normalizedBreakdown("COMMISSION", "EXPENSE", operationalTotals.commissionMinor()));
+        breakdown.add(normalizedBreakdown("WAREHOUSE_COST", "EXPENSE", operationalTotals.warehouseCostMinor()));
+
+        Map<String, Long> adjustmentBreakdown = new LinkedHashMap<>();
+        for (AdjustmentEntry adjustment : adjustments) {
+            String key = adjustment.category() + ":" + adjustment.direction();
+            adjustmentBreakdown.merge(key, adjustment.amountMinor(), Long::sum);
+        }
+        for (Map.Entry<String, Long> entry : adjustmentBreakdown.entrySet()) {
+            String[] parts = entry.getKey().split(":", 2);
+            breakdown.add(new BreakdownItem(parts[0], parts[1], entry.getValue()));
+        }
+
+        return new MonthlyReport(
+                month,
+                operations.from(),
+                operations.to(),
+                operations.timezone(),
+                currency,
+                totals,
+                breakdown,
+                adjustments
+        );
+    }
+
+    private static BreakdownItem normalizedBreakdown(String code, String direction, long amountMinor) {
+        if (amountMinor >= 0) {
+            return new BreakdownItem(code, direction, amountMinor);
+        }
+        return new BreakdownItem(
+                code,
+                "INCOME".equals(direction) ? "EXPENSE" : "INCOME",
+                Math.abs(amountMinor)
+        );
+    }
+
+    private List<AdjustmentEntry> adjustmentEntries(String tenantId, UUID businessId, LocalDate from,
+                                                    LocalDate to, String currency) {
+        StringBuilder query = new StringBuilder(
+                "tenantId = :tenantId and entryDate >= :from and entryDate <= :to and currency = :currency"
+        );
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("tenantId", tenantId);
+        params.put("from", from);
+        params.put("to", to);
+        params.put("currency", currency);
+        if (businessId != null) {
+            query.append(" and business.id = :businessId");
+            params.put("businessId", businessId);
+        }
+        query.append(" order by entryDate desc, createdAt desc");
+        return RevenueAdjustment.<RevenueAdjustment>list(query.toString(), params)
+                .stream()
+                .map(AdjustmentEntry::from)
+                .toList();
     }
 
     private List<SaleEvent> completedSales(String tenantId, UUID businessId, String currency,
@@ -247,6 +423,60 @@ public class RevenueService {
             RevenueTotals totals,
             List<DailyRevenue> days
     ) {}
+
+    public record MonthlyReport(
+            String month,
+            LocalDate from,
+            LocalDate to,
+            String timezone,
+            String currency,
+            MonthlyTotals totals,
+            List<BreakdownItem> breakdown,
+            List<AdjustmentEntry> adjustments
+    ) {}
+
+    public record MonthlyTotals(
+            long grossRevenueMinor,
+            long refundMinor,
+            long netRevenueMinor,
+            long commissionMinor,
+            long warehouseCostMinor,
+            long adjustmentIncomeMinor,
+            long adjustmentExpenseMinor,
+            long profitMinor
+    ) {}
+
+    public record BreakdownItem(
+            String code,
+            String direction,
+            long amountMinor
+    ) {}
+
+    public record AdjustmentEntry(
+            UUID id,
+            UUID businessId,
+            LocalDate entryDate,
+            String category,
+            String direction,
+            long amountMinor,
+            String currency,
+            String description,
+            Instant createdAt
+    ) {
+        static AdjustmentEntry from(RevenueAdjustment adjustment) {
+            return new AdjustmentEntry(
+                    adjustment.getId(),
+                    adjustment.getBusiness() == null ? null : adjustment.getBusiness().getId(),
+                    adjustment.getEntryDate(),
+                    adjustment.getCategory(),
+                    adjustment.getDirection(),
+                    adjustment.getAmountMinor(),
+                    adjustment.getCurrency(),
+                    adjustment.getDescription(),
+                    adjustment.getCreatedAt()
+            );
+        }
+    }
 
     public record RevenueTotals(
             long grossRevenueMinor,
