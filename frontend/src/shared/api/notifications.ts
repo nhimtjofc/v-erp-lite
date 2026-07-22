@@ -18,6 +18,7 @@ export function useNotificationsQuery(unreadOnly?: boolean) {
       })
       return response.data ?? []
     },
+    refetchInterval: 30_000,
   })
 }
 
