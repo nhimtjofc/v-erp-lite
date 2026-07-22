@@ -259,7 +259,10 @@ export function CartPage() {
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
+  const [shippingWard, setShippingWard] = useState('')
+  const [shippingProvince, setShippingProvince] = useState('')
   const [shippingNote, setShippingNote] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
 
   // Pre-populate checkout from the customer profile, with the signed-in account
   // as a fallback for profiles created before account details were synchronized.
@@ -285,11 +288,17 @@ export function CartPage() {
       const result = data as { id?: string; data?: { id?: string } }
       const orderId = result.data?.id ?? result.id
       if (orderId) {
-        router.navigate({ to: '/orders/payment', search: { orderId } })
+        if (paymentMethod === 'BANK_TRANSFER') {
+          router.navigate({ to: '/orders/payment', search: { orderId } })
+        } else {
+          router.navigate({ to: '/shop' })
+        }
       }
     },
     onError: (err: any) => {
-      setError(err?.body?.message || err?.message || 'Checkout failed')
+      let message = err?.body?.message || err?.message || 'Checkout failed'
+      if (typeof err?.body === 'string') message = err.body
+      setError(message)
     },
   })
 
@@ -352,17 +361,20 @@ export function CartPage() {
       setError('Vui lòng chọn một cửa hàng để tạo đơn và thanh toán.')
       return
     }
-    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
-      setError('Vui lòng điền đầy đủ tên, số điện thoại và địa chỉ giao hàng')
+    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
+      setError('Vui lòng điền đầy đủ thông tin giao hàng bắt buộc')
       return
     }
     customerCheckoutMutation.mutate({
       body: {
         customerId,
+        paymentMethod,
         voucherCode: selectedVoucher?.code ?? undefined,
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
         shippingAddress: customerAddress.trim(),
+        shippingWard: shippingWard.trim(),
+        shippingProvince: shippingProvince.trim(),
         shippingNote: shippingNote.trim() || undefined,
         items: checkoutItems.map(item => ({
           productId: item.product.id,
@@ -712,6 +724,53 @@ export function CartPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="shippingProvince">Tỉnh/Thành phố *</Label>
+                  <Input
+                    id="shippingProvince"
+                    value={shippingProvince}
+                    onChange={(e) => setShippingProvince(e.target.value)}
+                    placeholder="Tỉnh/Thành phố"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="shippingWard">Phường/Xã/Quận *</Label>
+                  <Input
+                    id="shippingWard"
+                    value={shippingWard}
+                    onChange={(e) => setShippingWard(e.target.value)}
+                    placeholder="Phường/Xã/Quận"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Phương thức thanh toán *</Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="cartPaymentMethod"
+                      value="COD"
+                      checked={paymentMethod === 'COD'}
+                      onChange={() => setPaymentMethod('COD')}
+                    />
+                    Thanh toán khi nhận hàng (COD)
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="cartPaymentMethod"
+                      value="BANK_TRANSFER"
+                      checked={paymentMethod === 'BANK_TRANSFER'}
+                      onChange={() => setPaymentMethod('BANK_TRANSFER')}
+                    />
+                    Chuyển khoản (VietQR)
+                  </label>
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="shippingNote">Ghi chú giao hàng</Label>
                 <textarea
@@ -749,7 +808,9 @@ export function CartPage() {
               </div>
 
               <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                Sau khi tạo đơn, ứng dụng sẽ mở phiên thanh toán MockPay. Các sản phẩm của cửa hàng khác vẫn được giữ trong giỏ để thanh toán riêng.
+                {paymentMethod === 'BANK_TRANSFER'
+                  ? 'Sau khi tạo đơn, ứng dụng sẽ mở trang thanh toán VietQR. Các sản phẩm của cửa hàng khác vẫn được giữ trong giỏ.'
+                  : 'Đơn COD sẽ được tạo ở trạng thái chờ xác nhận. Các sản phẩm của cửa hàng khác vẫn được giữ trong giỏ.'}
               </p>
             </div>
 
@@ -759,7 +820,7 @@ export function CartPage() {
               </Button>
               <Button
                 onClick={handlePlaceOrder}
-                disabled={customerCheckoutMutation.isPending}
+                disabled={customerCheckoutMutation.isPending || !customerId}
                 className="cursor-pointer shadow-sm"
               >
                 {customerCheckoutMutation.isPending ? 'Đang gửi đơn hàng...' : 'Xác nhận đặt hàng'}
