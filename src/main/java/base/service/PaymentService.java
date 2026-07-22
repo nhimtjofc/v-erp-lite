@@ -36,6 +36,9 @@ public class PaymentService {
     @Inject
     EscrowService escrowService;
 
+    @Inject
+    NotificationService notificationService;
+
     @ConfigProperty(name = "orders.owner-decision-sla", defaultValue = "PT24H")
     Duration ownerDecisionSla;
 
@@ -215,6 +218,17 @@ public class PaymentService {
         history.setNote("Payment received and held in escrow; waiting for owner decision");
         history.setCreatedBy(actorId);
         history.persist();
+
+        notificationService.notifyBuyer(
+                order,
+                "ORDER_PAID",
+                "Payment was confirmed for order " + order.getOrderNumber() + ".",
+                actorId);
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_PAID",
+                "Payment was received for order " + order.getOrderNumber() + ".",
+                actorId);
     }
 
     private List<SellerAllocation> allocateBySeller(Order order, long totalAmountMinor) {

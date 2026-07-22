@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Bell, CheckCheck, ArrowLeft, Receipt } from 'lucide-react'
+import { useMeQuery } from '@/shared/api'
 
 function formatDate(value?: string): string {
   return value ? new Date(value).toLocaleString() : '—'
@@ -20,14 +21,22 @@ export function NotificationsPage() {
   const { t } = useTranslation('notifications')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { data: me } = useMeQuery()
   const { data: notifications, isLoading } = useNotificationsQuery()
   const markRead = useMarkNotificationReadMutation()
   const markAllRead = useMarkAllNotificationsReadMutation()
 
   const NOTIFICATION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
+    ORDER_PLACED: { label: t('orderPlaced'), variant: 'default' },
+    ORDER_PAID: { label: t('orderPaid'), variant: 'default' },
+    ORDER_STATUS_UPDATED: { label: t('orderStatusUpdated'), variant: 'secondary' },
+    ORDER_COMPLETED: { label: t('orderCompleted'), variant: 'default' },
     ORDER_OWNER_ACCEPTED: { label: t('orderAccepted'), variant: 'default' },
     ORDER_OWNER_DECLINED: { label: t('orderDeclined'), variant: 'destructive' },
   }
+
+  const isStorefrontUser = me?.role?.name === 'customer' || me?.role?.name === 'user'
+  const backPath = isStorefrontUser ? '/shop' : '/orders'
 
   const handleMarkAllRead = async () => {
     await markAllRead.mutateAsync()
@@ -53,7 +62,7 @@ export function NotificationsPage() {
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link to="/orders" className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm font-medium">
+          <Link to={backPath} className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm font-medium">
             <ArrowLeft className="h-4 w-4" /> {t('back')}
           </Link>
           <div className="flex items-center gap-2.5">

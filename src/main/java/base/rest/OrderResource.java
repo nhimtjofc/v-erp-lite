@@ -27,6 +27,8 @@ import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
+import base.service.InventoryCostService;
+import base.service.NotificationService;
 import base.service.OrderFulfillmentService;
 import base.service.PaymentService;
 import base.service.VietQRService;
@@ -82,10 +84,10 @@ public class OrderResource {
     BusinessAccess businessAccess;
 
     @Inject
-    WalletService walletService;
+    InventoryCostService inventoryCostService;
 
     @Inject
-    PaymentService paymentService;
+    NotificationService notificationService;
 
     public static class CartItem {
         public UUID productId;
@@ -519,6 +521,7 @@ public class OrderResource {
             orderItem.setProductVariant(variant);
             orderItem.setQuantity(item.quantity);
             orderItem.setUnitPriceMinor(unitPrice);
+            orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
             orderItems.add(orderItem);
         }
@@ -615,6 +618,12 @@ public class OrderResource {
             order.setPaymentQrCodeBase64(qrBase64);
         }
 
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_PLACED",
+                "New order " + orderNumber + " has been placed and is waiting for processing.",
+                userId);
+
         return Response.created(URI.create("/api/orders/" + order.getId())).entity(order).build();
     }
 
@@ -670,6 +679,11 @@ public class OrderResource {
         order.setStatus("COMPLETED");
         order.setUpdatedBy(userId);
         persistHistory(order, oldStatus, "COMPLETED", "Buyer confirmed receipt", userId, tenantCode);
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_COMPLETED",
+                "The buyer confirmed receipt of order " + order.getOrderNumber() + ".",
+                userId);
         return order;
     }
 
@@ -790,6 +804,11 @@ public class OrderResource {
 
         // Record history
         persistHistory(order, oldStatus, newStatus, request.note, userId, tenantCode);
+        notificationService.notifyBuyer(
+                order,
+                "ORDER_STATUS_UPDATED",
+                "Order " + order.getOrderNumber() + " status changed to " + newStatus + ".",
+                userId);
 
         return order;
     }

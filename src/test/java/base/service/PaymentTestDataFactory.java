@@ -56,6 +56,7 @@ public class PaymentTestDataFactory {
         order.setShippingFeeMinor(0L);
         order.setTaxAmountMinor(0L);
         order.setFinalAmountMinor(finalAmount.longValueExact());
+        order.setCurrency("VND");
         order.persist();
 
         OrderItem item = new OrderItem();

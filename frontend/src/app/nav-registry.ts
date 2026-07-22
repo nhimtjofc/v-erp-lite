@@ -18,6 +18,7 @@ import {
   MessageSquare,
   PlugZap,
   Bell,
+  ChartNoAxesCombined,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -81,6 +82,12 @@ export const navGroups: NavGroup[] = [
   {
     labelKey: 'nav:finance',
     items: [
+      {
+        labelKey: 'nav:revenue',
+        to: '/revenue',
+        icon: ChartNoAxesCombined,
+        roles: ['admin', 'operator', 'businessOwner'],
+      },
       // Seller wallet and payout details remain owner-only.
       { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner'] },
       // User wallet for customers

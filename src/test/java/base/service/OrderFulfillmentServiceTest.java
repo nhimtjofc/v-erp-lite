@@ -56,7 +56,12 @@ class OrderFulfillmentServiceTest {
         Wallet wallet = walletService.getWallet(tenantId, escrow.getSellerWallet().getId());
         assertEquals(0, wallet.getAvailableBalanceMinor());
         assertEquals(95_000, wallet.getPendingBalanceMinor());
-        assertEquals(1, Notification.count("tenantId = ?1 and orderId = ?2", tenantId, seed.order().getId()));
+        assertEquals(1, Notification.count(
+                "tenantId = ?1 and orderId = ?2 and type = 'ORDER_PAID'",
+                tenantId, seed.order().getId()));
+        assertEquals(1, Notification.count(
+                "tenantId = ?1 and orderId = ?2 and type = 'ORDER_OWNER_ACCEPTED'",
+                tenantId, seed.order().getId()));
 
         PaymentTestDataFactory.SeedOrder otherSeed = paidOrder(tenant(), UUID.randomUUID(), 50_000);
         assertThrows(ForbiddenException.class, () -> fulfillmentService.decide(
@@ -79,7 +84,12 @@ class OrderFulfillmentServiceTest {
         assertEquals(0, sellerWallet.getAvailableBalanceMinor());
         assertEquals(0, sellerWallet.getPendingBalanceMinor());
         assertEquals(1, PaymentRefund.count("tenantId = ?1 and orderId = ?2", tenantId, seed.order().getId()));
-        assertEquals(1, Notification.count("tenantId = ?1 and orderId = ?2", tenantId, seed.order().getId()));
+        assertEquals(1, Notification.count(
+                "tenantId = ?1 and orderId = ?2 and type = 'ORDER_PAID'",
+                tenantId, seed.order().getId()));
+        assertEquals(1, Notification.count(
+                "tenantId = ?1 and orderId = ?2 and type = 'ORDER_OWNER_DECLINED'",
+                tenantId, seed.order().getId()));
     }
 
     @Test

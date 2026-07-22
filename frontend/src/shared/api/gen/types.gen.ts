@@ -8,6 +8,24 @@ export type ActionRequest = {
     reason?: string;
 };
 
+export type AddItemRequest = {
+    productId?: Uuid;
+    variantId?: Uuid;
+    quantity?: number;
+};
+
+export type AdjustmentEntry = {
+    id?: Uuid;
+    businessId?: Uuid;
+    entryDate?: LocalDate;
+    category?: string;
+    direction?: string;
+    amountMinor?: number;
+    currency?: string;
+    description?: string;
+    createdAt?: Instant;
+};
+
 export type Bank = {
     id?: Uuid;
     code?: string;
@@ -20,6 +38,12 @@ export type BankDetailsRequest = {
     bankId?: Uuid;
     bankAccountNumber?: string;
     bankAccountHolder?: string;
+};
+
+export type BreakdownItem = {
+    code?: string;
+    direction?: string;
+    amountMinor?: number;
 };
 
 export type Business = {
@@ -154,6 +178,27 @@ export type Customer = {
     tier?: string;
 };
 
+export type DailyReport = {
+    from?: LocalDate;
+    to?: LocalDate;
+    timezone?: string;
+    currency?: string;
+    totals?: RevenueTotals;
+    days?: Array<DailyRevenue>;
+};
+
+export type DailyRevenue = {
+    date?: LocalDate;
+    grossRevenueMinor?: number;
+    refundMinor?: number;
+    netRevenueMinor?: number;
+    commissionMinor?: number;
+    warehouseCostMinor?: number;
+    profitMinor?: number;
+    orderCount?: number;
+    refundCount?: number;
+};
+
 export type EnsureWalletRequest = {
     ownerType?: string;
     ownerId?: Uuid;
@@ -200,6 +245,28 @@ export type LocalDate = string;
 
 export type MfaVerifyRequest = {
     code?: string;
+};
+
+export type MonthlyReport = {
+    month?: string;
+    from?: LocalDate;
+    to?: LocalDate;
+    timezone?: string;
+    currency?: string;
+    totals?: MonthlyTotals;
+    breakdown?: Array<BreakdownItem>;
+    adjustments?: Array<AdjustmentEntry>;
+};
+
+export type MonthlyTotals = {
+    grossRevenueMinor?: number;
+    refundMinor?: number;
+    netRevenueMinor?: number;
+    commissionMinor?: number;
+    warehouseCostMinor?: number;
+    adjustmentIncomeMinor?: number;
+    adjustmentExpenseMinor?: number;
+    profitMinor?: number;
 };
 
 export type Notification = {
@@ -277,6 +344,7 @@ export type OrderItem = {
     productVariant?: ProductVariant;
     quantity?: number;
     unitPriceMinor?: number;
+    unitCostMinor?: number;
     subtotalAmountMinor?: number;
     currency?: string;
 };
@@ -396,6 +464,7 @@ export type Product = {
     imageUrl?: string;
     basePriceMinor?: number;
     salePriceMinor?: number;
+    costPriceMinor?: number;
     currency?: string;
     saleStartsAt?: Instant;
     saleEndsAt?: Instant;
@@ -425,6 +494,7 @@ export type ProductVariant = {
     product?: Product;
     sku?: string;
     priceMinor?: number;
+    costPriceMinor?: number;
     stockQuantity?: number;
     lowStockThreshold?: number;
     reservedQuantity?: number;
@@ -440,6 +510,27 @@ export type RegisterRequest = {
     firstName?: string;
     lastName?: string;
     phone?: string;
+};
+
+export type RevenueAdjustmentRequest = {
+    businessId?: Uuid;
+    entryDate?: LocalDate;
+    category?: string;
+    direction?: string;
+    amountMinor?: number;
+    currency?: string;
+    description?: string;
+};
+
+export type RevenueTotals = {
+    grossRevenueMinor?: number;
+    refundMinor?: number;
+    netRevenueMinor?: number;
+    commissionMinor?: number;
+    warehouseCostMinor?: number;
+    profitMinor?: number;
+    orderCount?: number;
+    refundCount?: number;
 };
 
 export type Role = {
@@ -2903,6 +2994,164 @@ export type UpdateProductResponses = {
 };
 
 export type UpdateProductResponse = UpdateProductResponses[keyof UpdateProductResponses];
+
+export type CreateRevenueAdjustmentData = {
+    body: RevenueAdjustmentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/revenue/adjustments';
+};
+
+export type CreateRevenueAdjustmentErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type CreateRevenueAdjustmentResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type DeleteRevenueAdjustmentData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/revenue/adjustments/{id}';
+};
+
+export type DeleteRevenueAdjustmentErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type DeleteRevenueAdjustmentResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetDailyRevenueData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+        currency?: string;
+        from?: LocalDate;
+        to?: LocalDate;
+    };
+    url: '/api/revenue/daily';
+};
+
+export type GetDailyRevenueErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetDailyRevenueResponses = {
+    /**
+     * OK
+     */
+    200: DailyReport;
+};
+
+export type GetDailyRevenueResponse = GetDailyRevenueResponses[keyof GetDailyRevenueResponses];
+
+export type GetMonthToDateRevenueData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+        currency?: string;
+        month?: string;
+    };
+    url: '/api/revenue/month-to-date';
+};
+
+export type GetMonthToDateRevenueErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetMonthToDateRevenueResponses = {
+    /**
+     * OK
+     */
+    200: DailyReport;
+};
+
+export type GetMonthToDateRevenueResponse = GetMonthToDateRevenueResponses[keyof GetMonthToDateRevenueResponses];
+
+export type GetMonthlyRevenueData = {
+    body?: never;
+    path?: never;
+    query?: {
+        businessId?: Uuid;
+        currency?: string;
+        month?: string;
+    };
+    url: '/api/revenue/monthly';
+};
+
+export type GetMonthlyRevenueErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetMonthlyRevenueResponses = {
+    /**
+     * OK
+     */
+    200: MonthlyReport;
+};
+
+export type GetMonthlyRevenueResponse = GetMonthlyRevenueResponses[keyof GetMonthlyRevenueResponses];
 
 export type SyncAllData = {
     body?: never;
