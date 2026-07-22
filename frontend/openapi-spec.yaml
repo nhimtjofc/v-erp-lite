@@ -408,16 +408,10 @@ components:
       properties:
         date:
           $ref: "#/components/schemas/LocalDate"
-        grossRevenueMinor:
-          type: integer
-          format: int64
-        refundMinor:
-          type: integer
-          format: int64
         netRevenueMinor:
           type: integer
           format: int64
-        commissionMinor:
+        refundMinor:
           type: integer
           format: int64
         warehouseCostMinor:
@@ -545,16 +539,10 @@ components:
     MonthlyTotals:
       type: object
       properties:
-        grossRevenueMinor:
-          type: integer
-          format: int64
-        refundMinor:
-          type: integer
-          format: int64
         netRevenueMinor:
           type: integer
           format: int64
-        commissionMinor:
+        refundMinor:
           type: integer
           format: int64
         warehouseCostMinor:
@@ -1072,16 +1060,10 @@ components:
     RevenueTotals:
       type: object
       properties:
-        grossRevenueMinor:
-          type: integer
-          format: int64
-        refundMinor:
-          type: integer
-          format: int64
         netRevenueMinor:
           type: integer
           format: int64
-        commissionMinor:
+        refundMinor:
           type: integer
           format: int64
         warehouseCostMinor:
