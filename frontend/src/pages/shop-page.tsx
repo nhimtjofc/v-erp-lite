@@ -134,6 +134,7 @@ export function ShopPage() {
   })
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
+  const [showPromoDrawer, setShowPromoDrawer] = useState(false)
   const [error, setError] = useState('')
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
@@ -344,6 +345,22 @@ export function ShopPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600 dark:text-slate-300 md:text-base">
               A customer-first shopping space with vouchers, live stock, seller grouping, and checkout in one flow.
             </p>
+            {vouchers.length > 0 && (
+              <div className="mt-5">
+                <Button
+                  onClick={() => setShowPromoDrawer(true)}
+                  className="rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-5 font-black text-white shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-rose-600"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  Collect vouchers
+                  {vouchers.filter(voucher => !collectedIds.has(voucher.id)).length > 0 && (
+                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                      {vouchers.filter(voucher => !collectedIds.has(voucher.id)).length} new
+                    </span>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="relative min-h-48 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-600 p-5 text-white shadow-lg shadow-orange-500/25">
@@ -660,6 +677,100 @@ export function ShopPage() {
           </span>
         )}
       </button>
+
+      {/* Sliding Promotion Drawer */}
+      {showPromoDrawer && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+            onClick={() => setShowPromoDrawer(false)}
+          />
+          <div className="fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-border bg-background shadow-2xl sm:w-[400px]">
+            <div className="flex items-center justify-between border-b px-4 py-4">
+              <div>
+                <h2 className="flex items-center gap-2 text-lg font-bold">
+                  <Gift className="h-5 w-5 animate-pulse text-rose-500" /> Promotion Vouchers
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Collect vouchers to save on your orders</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPromoDrawer(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
+              {vouchers.map((voucher: any) => {
+                const isCollected = collectedIds.has(voucher.id)
+                return (
+                  <div
+                    key={voucher.id}
+                    className="group relative flex h-28 items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md"
+                  >
+                    <div className="relative flex w-24 shrink-0 select-none flex-col items-center justify-center bg-gradient-to-br from-pink-500 via-rose-500 to-orange-500 p-2 text-center text-white">
+                      <div className="absolute -right-1.5 bottom-0 top-0 z-10 flex w-3 flex-col justify-between py-1.5">
+                        {[...Array(5)].map((_, index) => (
+                          <div key={index} className="h-2.5 w-2.5 rounded-full bg-background" />
+                        ))}
+                      </div>
+                      <span className="text-xl font-black leading-none tracking-tight">
+                        {voucher.discountType === 'PERCENTAGE'
+                          ? `${Number(voucher.discountValue)}%`
+                          : formatUSD(Number(voucher.discountValue))}
+                      </span>
+                      <span className="mt-1 text-[9px] font-black uppercase tracking-wider opacity-90">OFF</span>
+                    </div>
+
+                    <div className="flex min-w-0 flex-1 flex-col justify-between bg-muted/10 p-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase tracking-wide text-primary">
+                            {voucher.code}
+                          </span>
+                          {voucher.maxDiscountAmountMinor && (
+                            <span className="text-[9px] font-medium text-muted-foreground">
+                              Max {formatUSD(Number(voucher.maxDiscountAmountMinor))}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="mt-1.5 truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                          {voucher.name}
+                        </h3>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          {Number(voucher.minOrderValueMinor) > 0
+                            ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}`
+                            : 'No Min. Spend'}
+                        </p>
+                      </div>
+
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="truncate text-[9px] text-muted-foreground">
+                          {voucher.endTime ? `Exp: ${new Date(voucher.endTime).toLocaleDateString()}` : 'No Expiry'}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant={isCollected ? 'ghost' : 'secondary'}
+                          className={`h-7 cursor-pointer rounded-md px-2.5 text-[10px] font-bold transition-all ${
+                            isCollected
+                              ? 'border border-success/15 bg-success/5 text-success hover:bg-success/10'
+                              : 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/95'
+                          }`}
+                          disabled={isCollected || collectMutation.isPending}
+                          onClick={() => collectMutation.mutate({ path: { id: voucher.id! }, query: { customerId } })}
+                        >
+                          {isCollected ? (
+                            <span className="flex items-center gap-0.5"><Check className="h-3 w-3 stroke-[3]" />Collected</span>
+                          ) : (
+                            <span className="flex items-center gap-0.5"><Gift className="h-3 w-3" />Collect</span>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Checkout Dialog */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
