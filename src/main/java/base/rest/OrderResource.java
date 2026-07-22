@@ -89,6 +89,12 @@ public class OrderResource {
     @Inject
     NotificationService notificationService;
 
+    @Inject
+    WalletService walletService;
+
+    @Inject
+    PaymentService paymentService;
+
     public static class CartItem {
         public UUID productId;
         public UUID productVariantId;
