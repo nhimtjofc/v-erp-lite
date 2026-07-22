@@ -86,6 +86,10 @@ public class OrderResource {
         public BigDecimal vatPercent;
     }
 
+    public static class CancelItemRequest {
+        public String reason;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // List / Search
     // ─────────────────────────────────────────────────────────────────────────
@@ -635,6 +639,123 @@ public class OrderResource {
         order.setUpdatedBy(caller.userId());
 
         return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public Order cancelOrderItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can cancel order items");
+        }
+
+        String tenantCode = caller.tenantCode();
+        UUID userId = caller.userId();
+
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", orderId, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+        UUID customerId = c != null ? c.getId() : null;
+        boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+        if (!isOwner) {
+            throw new ForbiddenException("You are not allowed to cancel items in this order");
+        }
+
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!List.of("PENDING_PAYMENT", "PENDING", "CONFIRMED", "SHIPPING").contains(orderStatus)) {
+            throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
+        }
+
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantCode).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelledAt() != null) {
+            throw new BadRequestException("This item has already been cancelled");
+        }
+
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+
+        item.setCancelledAt(Instant.now());
+        item.setCancelledBy(userId);
+        item.setCancellationReason(reason);
+        item.setUpdatedBy(userId);
+
+        if (item.getProductVariant() != null) {
+            ProductVariant variant = item.getProductVariant();
+            variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - item.getQuantity()));
+            variant.setUpdatedBy(userId);
+        } else {
+            Product product = item.getProduct();
+            product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - item.getQuantity()));
+            product.setUpdatedBy(userId);
+        }
+
+        long activeSubtotal = 0;
+        for (OrderItem oi : order.getItems()) {
+            if (oi.getCancelledAt() == null) {
+                activeSubtotal += oi.getSubtotalAmountMinor();
+            }
+        }
+        order.setSubtotalAmountMinor(activeSubtotal);
+
+        BigDecimal discountPct = order.getDiscountPercent() != null ? order.getDiscountPercent() : BigDecimal.ZERO;
+        long discountAmount = BigDecimal.valueOf(activeSubtotal)
+                .multiply(discountPct)
+                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
+                .longValue();
+        order.setDiscountAmountMinor(discountAmount);
+
+        long afterDiscount = Math.max(0, activeSubtotal - discountAmount);
+        long shippingFee = order.getShippingFeeMinor();
+        if (afterDiscount < FREE_SHIPPING_THRESHOLD_MINOR && shippingFee == 0) {
+            shippingFee = FLAT_SHIPPING_FEE_MINOR;
+        } else if (afterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
+            shippingFee = 0;
+        }
+        order.setShippingFeeMinor(shippingFee);
+
+        BigDecimal vatPct = order.getVatPercent() != null ? order.getVatPercent() : BigDecimal.ZERO;
+        long vatAmount = BigDecimal.valueOf(afterDiscount)
+                .multiply(vatPct)
+                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
+                .longValue();
+        long taxAmount = BigDecimal.valueOf(afterDiscount)
+                .multiply(BigDecimal.valueOf(TAX_RATE))
+                .setScale(0, RoundingMode.HALF_UP)
+                .longValue();
+        order.setVatAmountMinor(vatAmount);
+        order.setTaxAmountMinor(taxAmount);
+
+        long finalAmount = Math.max(0, afterDiscount + shippingFee + taxAmount);
+        order.setFinalAmountMinor(finalAmount);
+        order.setUpdatedBy(userId);
+
+        String noteText = "Item cancelled: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString());
+        if (reason != null && !reason.isEmpty()) {
+            noteText += " - " + reason;
+        }
+        persistHistory(order, orderStatus, orderStatus, noteText, userId, tenantCode);
+
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_ITEM_CANCELLED",
+                "Item " + (item.getProduct() != null ? item.getProduct().getName() : "") + " in order " + order.getOrderNumber() + " was cancelled by the customer."
+                        + (reason != null ? " Reason: " + reason : ""),
+                userId);
+
+        return order;
     }
 
     private void persistHistory(Order order, String oldStatus, String newStatus, String note, UUID userId, String tenantCode) {

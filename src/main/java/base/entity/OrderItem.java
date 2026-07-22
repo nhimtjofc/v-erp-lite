@@ -1,5 +1,6 @@
 package base.entity;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -48,6 +49,15 @@ public class OrderItem extends BaseEntity {
 
     @Column(nullable = false, length = 3)
     private String currency = "USD";
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
+    @Column(name = "cancelled_by")
+    private UUID cancelledBy;
+
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
 
     public UUID getId() {
         return id;
