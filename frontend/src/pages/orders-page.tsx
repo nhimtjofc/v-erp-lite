@@ -357,8 +357,10 @@ export function OrdersPage() {
     }, [search])
 
     useEffect(() => {
-        fetchOrderStats().then(setStats)
-    }, [])
+        if (roleName && !isCustomer) {
+            fetchOrderStats().then(setStats)
+        }
+    }, [roleName, isCustomer])
 
     const queryParams: any = {}
     if (debouncedSearch) queryParams.search = debouncedSearch
@@ -370,7 +372,8 @@ export function OrdersPage() {
     const orderList = orders ?? []
 
     const tenantScope = me?.tenantId
-    const { channelId: wooChannelId } = useWooChannel(tenantScope)
+    const isWooEnabled = Boolean(roleName && !isCustomer)
+    const { channelId: wooChannelId } = useWooChannel(tenantScope, { enabled: isWooEnabled })
     const wooOrdersQuery = useWooCommerceOrdersQuery(
         tenantScope,
         activeStatus === 'WOOCOMMERCE'
@@ -378,7 +381,8 @@ export function OrdersPage() {
                   salesChannelId: wooChannelId,
                   search: debouncedSearch || undefined,
               }
-            : undefined
+            : undefined,
+        { enabled: isWooEnabled }
     )
     const wooOrdersList = wooOrdersQuery.data ?? []
 

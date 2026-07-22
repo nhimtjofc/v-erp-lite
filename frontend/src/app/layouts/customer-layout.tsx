@@ -21,6 +21,7 @@ import {
   Moon,
   Sparkles,
   Bell,
+  Receipt,
 } from 'lucide-react'
 import { useTheme } from '@/shared/hooks/use-theme'
 import { getInitials } from '@/shared/utils/user'
@@ -53,6 +54,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   const navItems: CustomerNavItem[] = [
     { to: '/shop', icon: <ShoppingBag className="h-5 w-5" />, label: t('nav:shop') },
     { to: '/cart', icon: <ShoppingCart className="h-5 w-5" />, label: t('nav:cart') },
+    { to: '/orders', icon: <Receipt className="h-5 w-5" />, label: t('nav:orders', 'Orders') },
     { to: '/notifications', icon: <Bell className="h-5 w-5" />, label: t('nav:notifications', 'Notifications'), badge: Number(notificationCount?.unread ?? 0) },
     { to: '/profile', icon: <User className="h-5 w-5" />, label: t('nav:profile') },
   ]

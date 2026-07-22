@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
+import { Route as AuthenticatedUserWalletRouteImport } from './routes/_authenticated/user-wallet'
 import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -74,6 +75,11 @@ const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
 const AuthenticatedVouchersRoute = AuthenticatedVouchersRouteImport.update({
   id: '/vouchers',
   path: '/vouchers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedUserWalletRoute = AuthenticatedUserWalletRouteImport.update({
+  id: '/user-wallet',
+  path: '/user-wallet',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedShopRoute = AuthenticatedShopRouteImport.update({
@@ -305,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/shop': typeof AuthenticatedShopRoute
+  '/user-wallet': typeof AuthenticatedUserWalletRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
@@ -343,6 +350,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/shop': typeof AuthenticatedShopRoute
+  '/user-wallet': typeof AuthenticatedUserWalletRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
@@ -387,6 +395,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/shop': typeof AuthenticatedShopRoute
+  '/_authenticated/user-wallet': typeof AuthenticatedUserWalletRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -433,6 +442,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/shop'
+    | '/user-wallet'
     | '/vouchers'
     | '/wallet'
     | '/admin/payouts'
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/notifications'
     | '/shop'
+    | '/user-wallet'
     | '/vouchers'
     | '/wallet'
     | '/admin/payouts'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/settings'
     | '/_authenticated/shop'
+    | '/_authenticated/user-wallet'
     | '/_authenticated/vouchers'
     | '/_authenticated/wallet'
     | '/_authenticated/'
@@ -584,6 +596,13 @@ declare module '@tanstack/react-router' {
       path: '/vouchers'
       fullPath: '/vouchers'
       preLoaderRoute: typeof AuthenticatedVouchersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/user-wallet': {
+      id: '/_authenticated/user-wallet'
+      path: '/user-wallet'
+      fullPath: '/user-wallet'
+      preLoaderRoute: typeof AuthenticatedUserWalletRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/shop': {
@@ -991,6 +1010,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedShopRoute: typeof AuthenticatedShopRoute
+  AuthenticatedUserWalletRoute: typeof AuthenticatedUserWalletRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -1010,6 +1030,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedShopRoute: AuthenticatedShopRoute,
+  AuthenticatedUserWalletRoute: AuthenticatedUserWalletRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

@@ -29,10 +29,11 @@ function AuthenticatedShell() {
     const customerAllowed =
       pathname.startsWith('/shop') ||
       pathname.startsWith('/cart') ||
-      pathname.startsWith('/orders/payment') ||
+      pathname === '/orders' || pathname === '/orders/' || pathname.startsWith('/orders/payment') ||
       (/^\/orders\/[^/]+$/.test(pathname) && pathname !== '/orders/new') ||
       pathname.startsWith('/notifications') ||
-      pathname.startsWith('/profile')
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/user-wallet')
 
     if (!customerAllowed) {
       router.navigate({ to: '/shop', replace: true })

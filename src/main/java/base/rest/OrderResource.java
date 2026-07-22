@@ -28,7 +28,9 @@ import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
 import base.service.OrderFulfillmentService;
+import base.service.PaymentService;
 import base.service.VietQRService;
+import base.service.WalletService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -79,6 +81,12 @@ public class OrderResource {
     @Inject
     BusinessAccess businessAccess;
 
+    @Inject
+    WalletService walletService;
+
+    @Inject
+    PaymentService paymentService;
+
     public static class CartItem {
         public UUID productId;
         public UUID productVariantId;
@@ -120,11 +128,11 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
@@ -132,10 +140,9 @@ public class OrderResource {
         UUID customerId = null;
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
-            if (c == null) {
-                return List.of();
+            if (c != null) {
+                customerId = c.getId();
             }
-            customerId = c.getId();
         }
 
         boolean isBusinessStaff = businessAccess.isScopedStaff();
@@ -159,8 +166,14 @@ public class OrderResource {
         params.put("tenantId", tenantCode);
 
         if (isCustomer) {
-            query.append(" AND customer.id = :customerId");
-            params.put("customerId", customerId);
+            if (customerId != null) {
+                query.append(" AND (customer.id = :customerId OR createdBy = :userId)");
+                params.put("customerId", customerId);
+                params.put("userId", caller.userId());
+            } else {
+                query.append(" AND createdBy = :userId");
+                params.put("userId", caller.userId());
+            }
         }
 
         if (isBusinessStaff) {
@@ -271,20 +284,23 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public Order getOrder(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
         requireBusinessStaffAccess(order);
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
-            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to view this order");
             }
         }
@@ -297,7 +313,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
@@ -305,13 +321,16 @@ public class OrderResource {
             throw new NotFoundException("Order not found");
         }
         requireBusinessStaffAccess(order);
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
-            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
         }
@@ -324,20 +343,23 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/escrow")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public List<EscrowRecord> getEscrowRecords(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
         requireBusinessStaffAccess(order);
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
-            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to view escrow records for this order");
             }
         }
@@ -350,20 +372,23 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/refunds")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public List<PaymentRefund> getRefunds(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
         requireBusinessStaffAccess(order);
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
-            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to view refunds for this order");
             }
         }
@@ -376,7 +401,7 @@ public class OrderResource {
 
     @POST
     @Path("/checkout")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     @Transactional
     public Response checkoutOrder(CheckoutRequest request) {
         if (request == null) {
@@ -561,7 +586,12 @@ public class OrderResource {
 
         persistHistory(order, null, initialStatus, "Order created", userId, tenantCode);
 
-        if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
+        if ("WALLET".equalsIgnoreCase(request.paymentMethod)) {
+            User callerDbUser = caller.resolveUser();
+            Wallet userWallet = walletService.getOrCreateUserWallet(
+                    tenantCode, callerDbUser.getId(), "VND", caller.userId());
+            paymentService.processWalletPayment(order, userWallet, caller.userId());
+        } else if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
             Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2 and currency = 'VND'", tenantCode, orderBusiness.getId()).firstResult();
             
             // Fallback to the first wallet if VND wallet doesn't exist (for legacy compatibility)

@@ -291,13 +291,15 @@ export function OrderDetailPage() {
   })
 
   const tenantScope = me?.tenantId
+  const isWooEnabled = Boolean(me?.role?.name && !isCustomer)
   const {
     data: wooOrders,
     refetch: refetchWooOrders,
     isFetching: isWooOrdersFetching,
   } = useWooCommerceOrdersQuery(
     tenantScope,
-    order?.orderNumber ? { search: order.orderNumber } : undefined
+    order?.orderNumber ? { search: order.orderNumber } : undefined,
+    { enabled: isWooEnabled }
   )
   const wooOrderInfo = wooOrders?.find((o) => o.erpOrderId === order?.id)
 
@@ -323,14 +325,15 @@ export function OrderDetailPage() {
     || paymentActivityQuery.isFetching
 
   const refreshOrderPage = async () => {
-    await Promise.all([
+    const promises: Promise<any>[] = [
       refetchOrder(),
       historyQuery.refetch(),
-      refetchWooOrders(),
       escrowQuery.refetch(),
       refundQuery.refetch(),
       paymentActivityQuery.refetch(),
-    ])
+    ]
+    if (isWooEnabled) promises.push(refetchWooOrders())
+    await Promise.all(promises)
   }
 
   const updateStatusMutation = useUpdateStatusMutation({

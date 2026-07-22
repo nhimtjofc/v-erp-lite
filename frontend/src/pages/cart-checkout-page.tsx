@@ -912,7 +912,10 @@ export function CartCheckoutPage() {
             }
         },
         onError: (err: any) => {
-            setError(err?.body?.message || err?.message || 'Failed to place order')
+            let msg = err?.error?.message || err?.body?.message || err?.message || 'Failed to place order'
+            if (typeof err?.error === 'string') msg = err.error
+            else if (typeof err?.body === 'string') msg = err.body
+            setError(msg)
             setCartOpen(true)
         },
     })

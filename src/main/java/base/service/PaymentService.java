@@ -123,6 +123,80 @@ public class PaymentService {
         return records;
     }
 
+    @Transactional
+    public List<EscrowRecord> processWalletPayment(Order order, Wallet userWallet, UUID actorId) {
+        if (!List.of("PENDING", "PENDING_PAYMENT", "PAID_ESCROW").contains(order.getStatus())) {
+            throw new BadRequestException("Only an order awaiting payment can be settled");
+        }
+
+        List<EscrowRecord> existing = escrowService.listByOrder(order.getTenantId(), order.getId());
+        if (!existing.isEmpty()) {
+            markPaidEscrow(order, actorId);
+            return existing;
+        }
+
+        long expectedAmount = order.getFinalAmountMinor();
+        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(userWallet.getCurrency())) {
+            expectedAmount = expectedAmount * 254; // Convert USD to VND
+        }
+
+        // Deduct from user wallet
+        walletService.debitAvailable(
+                userWallet.getTenantId(),
+                userWallet.getId(),
+                Money.of(expectedAmount, userWallet.getCurrency()),
+                "PAYMENT",
+                "ORDER",
+                order.getId(),
+                actorId,
+                "Thanh toán đơn hàng " + order.getOrderNumber()
+        );
+
+        List<SellerAllocation> allocations = allocateBySeller(order, expectedAmount);
+        long platformCommissionTotal = 0;
+        List<EscrowRecord> records = new ArrayList<>();
+        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+
+        for (SellerAllocation allocation : allocations) {
+            long commission = commissionFor(allocation.amountMinor());
+            long sellerNet = allocation.amountMinor() - commission;
+            platformCommissionTotal += commission;
+            if (sellerNet > 0) {
+                records.add(escrowService.holdSellerEscrow(
+                        order.getTenantId(),
+                        order.getId(),
+                        allocation.sellerOwnerId(),
+                        Money.of(sellerNet, userWallet.getCurrency()),
+                        ownerDeadline,
+                        actorId
+                ));
+            }
+        }
+
+        if (platformCommissionTotal > 0) {
+            Wallet platformWallet = walletService.getOrCreateWallet(
+                    order.getTenantId(),
+                    "PLATFORM",
+                    PLATFORM_OWNER_ID,
+                    userWallet.getCurrency(),
+                    actorId
+            );
+            walletService.creditAvailable(
+                    order.getTenantId(),
+                    platformWallet.getId(),
+                    Money.of(platformCommissionTotal, userWallet.getCurrency()),
+                    "COMMISSION",
+                    "ORDER",
+                    order.getId(),
+                    actorId,
+                    "Platform commission from order"
+            );
+        }
+
+        markPaidEscrow(order, actorId);
+        return records;
+    }
+
     private void markPaidEscrow(Order order, UUID actorId) {
         if ("PAID_ESCROW".equals(order.getStatus())) {
             return;

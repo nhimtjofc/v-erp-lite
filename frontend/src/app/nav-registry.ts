@@ -83,6 +83,8 @@ export const navGroups: NavGroup[] = [
     items: [
       // Seller wallet and payout details remain owner-only.
       { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner'] },
+      // User wallet for customers
+      { labelKey: 'Ví cá nhân', to: '/user-wallet', icon: Wallet, roles: ['customer'] },
       // Admin payout approval dashboard: admin only.
       { labelKey: 'nav:payouts', to: '/admin/payouts', icon: Banknote, adminOnly: true },
     ],

@@ -1,0 +1,29 @@
+[2026-07-21T03:37:08.897Z] Error: Error parsing c:/Users/5530/Documents/GitHub/v-erp-lite/frontend/openapi-spec.yaml: end of the stream or a document separator is expected (7:11)
+
+ 4 |     <title>Error restarting Quarkus - io.v ...
+ 5 |     <meta charset="utf-8">
+ 6 |     <style>html, body {
+ 7 |     margin: 0;
+---------------^
+ 8 |     padding: 0;
+ 9 |     font-family: -apple-system, BlinkMacSy ...
+Stack:
+ParserError: Error parsing c:/Users/5530/Documents/GitHub/v-erp-lite/frontend/openapi-spec.yaml: end of the stream or a document separator is expected (7:11)
+
+ 4 |     <title>Error restarting Quarkus - io.v ...
+ 5 |     <meta charset="utf-8">
+ 6 |     <style>html, body {
+ 7 |     margin: 0;
+---------------^
+ 8 |     padding: 0;
+ 9 |     font-family: -apple-system, BlinkMacSy ...
+    at Object.handler (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1144:10)
+    at runNextPlugin (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1206:33)
+    at file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1220:3
+    at new Promise (<anonymous>)
+    at run (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1201:9)
+    at parseFile (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1256:16)
+    at $RefParser.parse (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1730:31)
+    at async $RefParser.bundle (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/index.mjs:1672:3)
+    at async createClient$1 (file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/openapi-ts/dist/src-CY0O0cwg.mjs:98:9)
+    at async file:///C:/Users/5530/Documents/GitHub/v-erp-lite/frontend/node_modules/@hey-api/openapi-ts/dist/src-CY0O0cwg.mjs:212:12

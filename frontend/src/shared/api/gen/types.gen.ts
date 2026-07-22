@@ -8,12 +8,6 @@ export type ActionRequest = {
     reason?: string;
 };
 
-export type AddItemRequest = {
-    productId?: Uuid;
-    variantId?: Uuid;
-    quantity?: number;
-};
-
 export type Bank = {
     id?: Uuid;
     code?: string;
@@ -45,36 +39,7 @@ export type Business = {
     active?: boolean;
 };
 
-export type Cart = {
-    tenantId?: string;
-    createdAt?: Instant;
-    createdBy?: Uuid;
-    updatedAt?: Instant;
-    updatedBy?: Uuid;
-    version?: number;
-    id?: Uuid;
-    customer?: Customer;
-    subtotalAmountMinor?: number;
-    currency?: string;
-    status?: string;
-    notes?: string;
-    items?: Array<CartItem>;
-};
-
 export type CartItem = {
-    id?: Uuid;
-    cart?: Cart;
-    product?: Product;
-    variant?: ProductVariant;
-    quantity?: number;
-    unitPriceMinor?: number;
-    subtotalAmountMinor?: number;
-    currency?: string;
-    tenantId?: string;
-    createdAt?: Instant;
-};
-
-export type CartItem1 = {
     productId?: Uuid;
     productVariantId?: Uuid;
     quantity?: number;
@@ -144,14 +109,6 @@ export type Category = {
 };
 
 export type CheckoutRequest = {
-    discountPercent?: number;
-    vatPercent?: number;
-    shippingFeeMinor?: number;
-    notes?: string;
-    paymentMethod?: string;
-};
-
-export type CheckoutRequest1 = {
     customerId?: Uuid;
     voucherCode?: string;
     shippingName?: string;
@@ -161,7 +118,7 @@ export type CheckoutRequest1 = {
     shippingProvince?: string;
     shippingNote?: string;
     paymentMethod?: string;
-    items?: Array<CartItem1>;
+    items?: Array<CartItem>;
 };
 
 export type ConfigRequest = {
@@ -522,10 +479,6 @@ export type Tenant = {
 
 export type Uuid = string;
 
-export type UpdateItemRequest = {
-    quantity?: number;
-};
-
 export type User = {
     tenantId?: string;
     createdAt?: Instant;
@@ -642,6 +595,21 @@ export type WalletResponse = {
     bankDetailsUpdatedAt?: Instant;
     createdAt?: Instant;
     updatedAt?: Instant;
+};
+
+export type WalletTopUpRequest = {
+    amountMinor?: number;
+    currency?: string;
+};
+
+export type WalletTopUpResponse = {
+    id?: Uuid;
+    walletId?: Uuid;
+    amountMinor?: number;
+    currency?: string;
+    status?: string;
+    paymentQrCodeBase64?: string;
+    createdAt?: Instant;
 };
 
 export type WalletTransactionResponse = {
@@ -1184,280 +1152,6 @@ export type UpdateBusinessResponses = {
 };
 
 export type UpdateBusinessResponse = UpdateBusinessResponses[keyof UpdateBusinessResponses];
-
-export type ListCartsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        customerId?: Uuid;
-        status?: string;
-    };
-    url: '/api/carts';
-};
-
-export type ListCartsErrors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type ListCartsResponses = {
-    /**
-     * OK
-     */
-    200: Array<Cart>;
-};
-
-export type ListCartsResponse = ListCartsResponses[keyof ListCartsResponses];
-
-export type CreateCartData = {
-    body: Cart;
-    path?: never;
-    query?: never;
-    url: '/api/carts';
-};
-
-export type CreateCartErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type CreateCartResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type GetOrCreateActiveData = {
-    body?: never;
-    path: {
-        customerId: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/active/{customerId}';
-};
-
-export type GetOrCreateActiveErrors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type GetOrCreateActiveResponses = {
-    /**
-     * OK
-     */
-    200: Cart;
-};
-
-export type GetOrCreateActiveResponse = GetOrCreateActiveResponses[keyof GetOrCreateActiveResponses];
-
-export type RemoveItemData = {
-    body?: never;
-    path: {
-        cartId: Uuid;
-        itemId: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/{cartId}/items/{itemId}';
-};
-
-export type RemoveItemErrors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type RemoveItemResponses = {
-    /**
-     * OK
-     */
-    200: Cart;
-};
-
-export type RemoveItemResponse = RemoveItemResponses[keyof RemoveItemResponses];
-
-export type UpdateItemData = {
-    body: UpdateItemRequest;
-    path: {
-        cartId: Uuid;
-        itemId: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/{cartId}/items/{itemId}';
-};
-
-export type UpdateItemErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type UpdateItemResponses = {
-    /**
-     * OK
-     */
-    200: Cart;
-};
-
-export type UpdateItemResponse = UpdateItemResponses[keyof UpdateItemResponses];
-
-export type DeleteCartData = {
-    body?: never;
-    path: {
-        id: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/{id}';
-};
-
-export type DeleteCartErrors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type DeleteCartResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type GetCartData = {
-    body?: never;
-    path: {
-        id: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/{id}';
-};
-
-export type GetCartErrors = {
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type GetCartResponses = {
-    /**
-     * OK
-     */
-    200: Cart;
-};
-
-export type GetCartResponse = GetCartResponses[keyof GetCartResponses];
-
-export type CheckoutCartData = {
-    body: CheckoutRequest;
-    path: {
-        id: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/{id}/checkout';
-};
-
-export type CheckoutCartErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type CheckoutCartResponses = {
-    /**
-     * OK
-     */
-    200: Order;
-};
-
-export type CheckoutCartResponse = CheckoutCartResponses[keyof CheckoutCartResponses];
-
-export type AddItemData = {
-    body: AddItemRequest;
-    path: {
-        id: Uuid;
-    };
-    query?: never;
-    url: '/api/carts/{id}/items';
-};
-
-export type AddItemErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-    /**
-     * Not Authorized
-     */
-    401: unknown;
-    /**
-     * Not Allowed
-     */
-    403: unknown;
-};
-
-export type AddItemResponses = {
-    /**
-     * OK
-     */
-    200: Cart;
-};
-
-export type AddItemResponse = AddItemResponses[keyof AddItemResponses];
 
 export type ListCategoriesData = {
     body?: never;
@@ -2255,7 +1949,7 @@ export type ListOrdersResponses = {
 export type ListOrdersResponse = ListOrdersResponses[keyof ListOrdersResponses];
 
 export type CheckoutOrderData = {
-    body: CheckoutRequest1;
+    body: CheckoutRequest;
     path?: never;
     query?: never;
     url: '/api/orders/checkout';
@@ -3746,6 +3440,20 @@ export type UpdateMeResponses = {
 
 export type UpdateMeResponse = UpdateMeResponses[keyof UpdateMeResponses];
 
+export type TestErrorData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/users/test-error';
+};
+
+export type TestErrorResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type DeleteUserData = {
     body?: never;
     path: {
@@ -4212,6 +3920,94 @@ export type UpdateMyBankDetailsResponses = {
 };
 
 export type UpdateMyBankDetailsResponse = UpdateMyBankDetailsResponses[keyof UpdateMyBankDetailsResponses];
+
+export type GetMyTopUpsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+        offset?: number;
+    };
+    url: '/api/wallets/me/top-up';
+};
+
+export type GetMyTopUpsErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type GetMyTopUpsResponses = {
+    /**
+     * OK
+     */
+    200: Array<WalletTopUpResponse>;
+};
+
+export type GetMyTopUpsResponse = GetMyTopUpsResponses[keyof GetMyTopUpsResponses];
+
+export type TopUpMyWalletData = {
+    body: WalletTopUpRequest;
+    path?: never;
+    query?: never;
+    url: '/api/wallets/me/top-up';
+};
+
+export type TopUpMyWalletErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type TopUpMyWalletResponses = {
+    /**
+     * OK
+     */
+    200: WalletTopUpResponse;
+};
+
+export type TopUpMyWalletResponse = TopUpMyWalletResponses[keyof TopUpMyWalletResponses];
+
+export type CompleteTopUpData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/wallets/top-up/{id}/complete';
+};
+
+export type CompleteTopUpErrors = {
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type CompleteTopUpResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type GetWalletData = {
     body?: never;

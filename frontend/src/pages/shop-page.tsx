@@ -17,6 +17,7 @@ import {
   myVouchersOptions,
   getMyCustomerProfileOptions
 } from '@/shared/api'
+import { useSellerWalletQuery } from '@/shared/api/wallet'
 import { formatUSD } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
@@ -69,6 +70,8 @@ export function ShopPage() {
   // Resolve current user info
   const { data: me } = useMeQuery()
   const isCustomerRole = me?.role?.name === 'customer' || me?.role?.name === 'user'
+  
+  const { data: userWallet } = useSellerWalletQuery()
 
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({
@@ -136,7 +139,7 @@ export function ShopPage() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [error, setError] = useState('')
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>('')
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER' | 'WALLET'>('COD')
 
   useEffect(() => {
     localStorage.setItem('buyer_cart', JSON.stringify(cart))
@@ -260,16 +263,15 @@ export function ShopPage() {
       if (orderId) {
         if (isCustomerRole && paymentMethod === 'BANK_TRANSFER') {
           navigate({ to: '/orders/payment', search: { orderId } })
-        } else if (isCustomerRole) {
-          navigate({ to: '/shop' })
         } else {
           navigate({ to: '/orders/$id', params: { id: orderId } })
         }
       }
     },
     onError: (err: any) => {
-      let msg = err?.body?.message || err?.message || 'Checkout failed'
-      if (typeof err?.body === 'string') msg = err.body
+      let msg = err?.error?.message || err?.body?.message || err?.message || 'Checkout failed'
+      if (typeof err?.error === 'string') msg = err.error
+      else if (typeof err?.body === 'string') msg = err.body
       setError(msg)
     },
   })
@@ -784,6 +786,10 @@ export function ShopPage() {
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="radio" name="paymentMethod" value="BANK_TRANSFER" checked={paymentMethod === 'BANK_TRANSFER'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
                   Chuyển khoản (VietQR)
+                </label>
+                <label className={`flex items-center gap-2 text-sm ${!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor * (userWallet.currency === 'VND' ? 254 : 1) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="radio" name="paymentMethod" value="WALLET" disabled={!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor * (userWallet.currency === 'VND' ? 254 : 1)} checked={paymentMethod === 'WALLET'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Ví cá nhân ({userWallet ? formatUSD((userWallet.availableBalanceMinor ?? 0) / (userWallet.currency === 'VND' ? 254 : 1)) : 'Đang tải...'})
                 </label>
               </div>
             </div>

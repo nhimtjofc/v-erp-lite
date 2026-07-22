@@ -3,10 +3,12 @@ package base.rest;
 import base.entity.Business;
 import base.entity.User;
 import base.entity.Wallet;
+import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import base.security.CallerContext;
 import base.service.WalletService;
+import base.service.VietQRService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -41,6 +43,9 @@ public class WalletResource {
     @Inject
     WalletService walletService;
 
+    @Inject
+    VietQRService vietQRService;
+
     public static class EnsureWalletRequest {
         public String ownerType;
         public UUID ownerId;
@@ -60,6 +65,33 @@ public class WalletResource {
         public UUID bankId;
         public String bankAccountNumber;
         public String bankAccountHolder;
+    }
+
+    public static class WalletTopUpRequest {
+        public long amountMinor;
+        public String currency;
+    }
+
+    public static class WalletTopUpResponse {
+        public UUID id;
+        public UUID walletId;
+        public long amountMinor;
+        public String currency;
+        public String status;
+        public String paymentQrCodeBase64;
+        public Instant createdAt;
+
+        static WalletTopUpResponse from(WalletTopUp topUp) {
+            WalletTopUpResponse response = new WalletTopUpResponse();
+            response.id = topUp.getId();
+            response.walletId = topUp.getWallet().getId();
+            response.amountMinor = topUp.getAmountMinor();
+            response.currency = topUp.getCurrency();
+            response.status = topUp.getStatus();
+            response.paymentQrCodeBase64 = topUp.getPaymentQrCodeBase64();
+            response.createdAt = topUp.getCreatedAt();
+            return response;
+        }
     }
 
     public static class WalletResponse {
@@ -217,6 +249,65 @@ public class WalletResource {
     }
 
     @POST
+    @Path("/me/top-up")
+    @Transactional
+    public WalletTopUpResponse topUpMyWallet(WalletTopUpRequest request) {
+        User user = caller.resolveUser();
+        String currency = request.currency != null ? request.currency : "VND";
+        Wallet wallet = walletService.getOrCreateUserWallet(
+                caller.tenantCode(), user.getId(), currency, caller.userId());
+        
+        WalletTopUp topUp = new WalletTopUp();
+        topUp.setId(UUID.randomUUID());
+        topUp.setTenantId(caller.tenantCode());
+        topUp.setCreatedBy(caller.userId());
+        topUp.setUpdatedBy(caller.userId());
+        topUp.setWallet(wallet);
+        topUp.setAmountMinor(request.amountMinor);
+        topUp.setCurrency(currency);
+        topUp.setStatus("PENDING");
+        
+        // Mock bank account for platform receiving top-ups
+        String qrContent = vietQRService.generateQrBase64("MB", "0123456789", request.amountMinor, "Nap tien " + topUp.getId().toString().substring(0, 8).toUpperCase());
+        topUp.setPaymentQrCodeBase64(qrContent);
+        
+        topUp.persist();
+        return WalletTopUpResponse.from(topUp);
+    }
+    
+    @POST
+    @Path("/top-up/{id}/complete")
+    @Transactional
+    public Response completeTopUp(@PathParam("id") UUID id) {
+        WalletTopUp topUp = WalletTopUp.findById(id);
+        if (topUp == null) {
+            throw new jakarta.ws.rs.NotFoundException("Top-up request not found");
+        }
+        if ("COMPLETED".equals(topUp.getStatus())) {
+            return Response.ok(Map.of("status", "ALREADY_PROCESSED")).build();
+        }
+        
+        walletService.completeTopUp(id, caller.userId());
+        return Response.ok(Map.of("status", "SUCCESS")).build();
+    }
+
+    @GET
+    @Path("/me/top-up")
+    public List<WalletTopUpResponse> getMyTopUps(@QueryParam("limit") @DefaultValue("20") int limit,
+                                                 @QueryParam("offset") @DefaultValue("0") int offset) {
+        User user = caller.resolveUser();
+        Wallet wallet = walletService.getOrCreateUserWallet(
+                caller.tenantCode(), user.getId(), "VND", caller.userId());
+        
+        return WalletTopUp.find("wallet = ?1 order by createdAt desc", wallet)
+                .page(offset / limit, limit)
+                .list()
+                .stream()
+                .map(t -> WalletTopUpResponse.from((WalletTopUp) t))
+                .toList();
+    }
+
+    @POST
     @Path("/{id}/credit")
     @RolesAllowed({"admin"})
     public WalletResponse credit(@PathParam("id") UUID id, WalletAdjustmentRequest request) {
@@ -283,3 +374,5 @@ public class WalletResource {
         return wallet;
     }
 }
+ 
+

@@ -289,7 +289,10 @@ export function CartPage() {
       }
     },
     onError: (err: any) => {
-      setError(err?.body?.message || err?.message || 'Checkout failed')
+      let msg = err?.error?.message || err?.body?.message || err?.message || 'Checkout failed'
+      if (typeof err?.error === 'string') msg = err.error
+      else if (typeof err?.body === 'string') msg = err.body
+      setError(msg)
     },
   })
 

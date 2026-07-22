@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_authenticated/orders')({
     const role = me?.role?.name
     const isStaff = role === 'admin' || role === 'businessOwner' || role === 'operator'
     const isStorefrontUser = role === 'customer' || role === 'user'
-    const isStorefrontOrderFlow = pathname.startsWith('/orders/payment')
+    const isStorefrontOrderFlow = pathname === '/orders' || pathname === '/orders/' || pathname.startsWith('/orders/payment')
       || (/^\/orders\/[^/]+$/.test(pathname) && pathname !== '/orders/new')
     const hasAccess = isStaff || (isStorefrontUser && isStorefrontOrderFlow)
 

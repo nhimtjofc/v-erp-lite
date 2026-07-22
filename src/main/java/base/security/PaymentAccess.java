@@ -22,7 +22,7 @@ public class PaymentAccess {
         }
 
         Customer authenticatedCustomer = resolveCustomer();
-        if (!customer.getId().equals(authenticatedCustomer.getId())) {
+        if (!customer.getId().equals(authenticatedCustomer.getId()) && !customer.getEmail().equalsIgnoreCase(caller.userEmail())) {
             throw new ForbiddenException("You are not allowed to checkout for this customer");
         }
     }
@@ -34,7 +34,9 @@ public class PaymentAccess {
 
         if (isCustomerOnly()) {
             Customer customer = resolveCustomer();
-            if (order.getCustomer() == null || !order.getCustomer().getId().equals(customer.getId())) {
+            boolean isOwner = (order.getCustomer() != null && order.getCustomer().getId().equals(customer.getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to pay for this order");
             }
         }
@@ -79,13 +81,27 @@ public class PaymentAccess {
                 caller.tenantCode()
         ).firstResult();
         if (customer == null) {
-            throw new ForbiddenException("Customer profile not found for authenticated caller");
+            customer = new Customer();
+            customer.setId(java.util.UUID.randomUUID());
+            customer.setTenantId(caller.tenantCode());
+            customer.setEmail(caller.userEmail());
+            String preferredUsername = caller.preferredUsername();
+            if (preferredUsername != null && !preferredUsername.isBlank()) {
+                customer.setFirstName(preferredUsername);
+                customer.setLastName("");
+            } else {
+                customer.setFirstName("Customer");
+                customer.setLastName("");
+            }
+            customer.setActive(true);
+            customer.setCreatedBy(caller.userId());
+            customer.persist();
         }
         return customer;
     }
 
     private boolean isCustomerOnly() {
-        return caller.hasRole("customer")
+        return (caller.hasRole("customer") || caller.hasRole("user"))
                 && !caller.hasRole("admin")
                 && !caller.hasRole("businessOwner")
                 && !caller.hasRole("operator");

@@ -5,6 +5,7 @@ import base.entity.Business;
 import base.entity.PayoutRequest;
 import base.entity.User;
 import base.entity.Wallet;
+import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -130,10 +131,34 @@ public class WalletService {
 
     public List<WalletTransaction> listTransactions(String tenantId, UUID walletId, int limit, int offset) {
         getWallet(tenantId, walletId);
-        return WalletTransaction.find(
-                "tenantId = ?1 and wallet.id = ?2 order by createdAt desc",
-                tenantId, walletId
-        ).page(offset / Math.max(limit, 1), Math.max(limit, 1)).list();
+        return WalletTransaction.find("wallet.tenantId = ?1 and wallet.id = ?2 order by createdAt desc", tenantId, walletId)
+                .page(offset / limit, limit)
+                .list();
+    }
+
+    @Transactional
+    public void completeTopUp(UUID topUpId, UUID actorId) {
+        WalletTopUp topUp = WalletTopUp.findById(topUpId);
+        if (topUp == null) {
+            throw new NotFoundException("Top-up request not found");
+        }
+        if (!"PENDING".equals(topUp.getStatus())) {
+            throw new BadRequestException("Top-up request is not pending");
+        }
+
+        topUp.setStatus("COMPLETED");
+        topUp.setUpdatedBy(actorId);
+
+        creditAvailable(
+                topUp.getWallet().getTenantId(),
+                topUp.getWallet().getId(),
+                Money.of(topUp.getAmountMinor(), topUp.getCurrency()),
+                "TOP_UP",
+                "WALLET_TOP_UP",
+                topUp.getId(),
+                actorId,
+                "Nạp tiền vào ví"
+        );
     }
 
     @Transactional
