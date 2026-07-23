@@ -7,16 +7,6 @@ components:
       properties:
         reason:
           type: string
-    AddItemRequest:
-      type: object
-      properties:
-        productId:
-          $ref: "#/components/schemas/UUID"
-        variantId:
-          $ref: "#/components/schemas/UUID"
-        quantity:
-          type: integer
-          format: int32
     AdjustmentEntry:
       type: object
       properties:
@@ -103,6 +93,11 @@ components:
           type: string
         active:
           type: boolean
+    CancelItemRequest:
+      type: object
+      properties:
+        reason:
+          type: string
     CartItem:
       type: object
       properties:
@@ -231,6 +226,16 @@ components:
           $ref: "#/components/schemas/Category"
         active:
           type: boolean
+    ChargeRequest:
+      type: object
+      properties:
+        paymentIntentId:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
     CheckoutRequest:
       type: object
       properties:
@@ -353,6 +358,28 @@ components:
         refundCount:
           type: integer
           format: int64
+    EcommerceOrderDto:
+      type: object
+      properties:
+        wooOrderId:
+          type: string
+        erpOrderId:
+          $ref: "#/components/schemas/UUID"
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        orderDate:
+          $ref: "#/components/schemas/Instant"
+        finalAmountMinor:
+          type: integer
+          format: int64
+        syncStatus:
+          type: string
+        lastErrorMessage:
+          type: string
+        lastAttemptedAt:
+          $ref: "#/components/schemas/Instant"
     EnsureWalletRequest:
       type: object
       properties:
@@ -420,11 +447,6 @@ components:
           $ref: "#/components/schemas/Instant"
         message:
           type: string
-    InitiateMockRequest:
-      type: object
-      properties:
-        paymentIntentId:
-          $ref: "#/components/schemas/UUID"
     Instant:
       type: string
       format: date-time
@@ -647,6 +669,12 @@ components:
           format: int64
         currency:
           type: string
+        cancelledAt:
+          $ref: "#/components/schemas/Instant"
+        cancelledBy:
+          $ref: "#/components/schemas/UUID"
+        cancellationReason:
+          type: string
     OrderStatusDto:
       type: object
       properties:
@@ -784,6 +812,20 @@ components:
           type: string
         status:
           type: string
+    PayoutRequest:
+      type: object
+      properties:
+        amountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        bankName:
+          type: string
+        bankAccountNumber:
+          type: string
+        bankAccountHolder:
+          type: string
     PayoutResponse:
       type: object
       properties:
@@ -875,6 +917,8 @@ components:
           $ref: "#/components/schemas/Instant"
         active:
           type: boolean
+        approvalStatus:
+          type: string
         stockQuantity:
           type: integer
           format: int32
@@ -953,6 +997,18 @@ components:
         availableQuantity:
           type: integer
           format: int32
+    RefundRequest:
+      type: object
+      properties:
+        gatewayTransactionId:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        idempotencyKey:
+          type: string
     RegisterRequest:
       type: object
       properties:
@@ -1019,6 +1075,20 @@ components:
       properties:
         walletId:
           $ref: "#/components/schemas/UUID"
+    SimulateTransferredRequest:
+      type: object
+      properties:
+        paymentIntentId:
+          type: string
+        gatewayTransactionId:
+          type: string
+        status:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
     StatusUpdateRequest:
       type: object
       properties:
@@ -1345,44 +1415,6 @@ components:
         description:
           type: string
         createdAt:
-          $ref: "#/components/schemas/Instant"
-    WebhookPayload:
-      type: object
-      properties:
-        paymentIntentId:
-          type: string
-        gatewayTransactionId:
-          type: string
-        status:
-          type: string
-        amountMinor:
-          type: integer
-          format: int64
-        currency:
-          type: string
-        signature:
-          type: string
-    EcommerceOrderDto:
-      type: object
-      properties:
-        wooOrderId:
-          type: string
-        erpOrderId:
-          $ref: "#/components/schemas/UUID"
-        orderNumber:
-          type: string
-        customerName:
-          type: string
-        orderDate:
-          $ref: "#/components/schemas/Instant"
-        finalAmountMinor:
-          type: integer
-          format: int64
-        syncStatus:
-          type: string
-        lastErrorMessage:
-          type: string
-        lastAttemptedAt:
           $ref: "#/components/schemas/Instant"
   securitySchemes:
     SecurityScheme:
@@ -2024,6 +2056,10 @@ paths:
         in: header
         schema:
           type: string
+      - name: X-Tenant-Code
+        in: header
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -2039,6 +2075,10 @@ paths:
       operationId: getStats
       parameters:
       - name: X-Chatbot-Key
+        in: header
+        schema:
+          type: string
+      - name: X-Tenant-Code
         in: header
         schema:
           type: string
@@ -2360,8 +2400,8 @@ paths:
   /api/integrations/ecommerce/v1/catalog/mappings:
     post:
       summary: Upsert Catalog Mappings
-      description: Upserts Ecommerce mapping IDs and sync statuses for products
-        and variants.
+      description: Upserts Ecommerce mapping IDs and sync statuses for products and
+        variants.
       operationId: upsertCatalogMappings
       tags:
       - Ecommerce Catalog
@@ -2438,7 +2478,7 @@ paths:
           description: Not Allowed
       summary: Get Ecommerce Health
       tags:
-      - Ecommerce Integration
+      - Ecommerce Integration Resource
       security:
       - SecurityScheme:
         - admin
@@ -2744,6 +2784,7 @@ paths:
         - businessOwner
         - operator
         - customer
+        - user
   /api/orders/checkout:
     post:
       operationId: checkoutOrder
@@ -2774,6 +2815,7 @@ paths:
         - businessOwner
         - operator
         - customer
+        - user
   /api/orders/stats:
     get:
       operationId: getStats
@@ -2861,6 +2903,7 @@ paths:
         - businessOwner
         - operator
         - customer
+        - user
     delete:
       operationId: deleteOrder
       parameters:
@@ -2942,6 +2985,7 @@ paths:
         - businessOwner
         - operator
         - customer
+        - user
   /api/orders/{id}/history:
     get:
       operationId: getHistory
@@ -2973,6 +3017,7 @@ paths:
         - businessOwner
         - operator
         - customer
+        - user
   /api/orders/{id}/owner-decision:
     post:
       operationId: ownerDecision
@@ -3038,6 +3083,7 @@ paths:
         - businessOwner
         - operator
         - customer
+        - user
   /api/orders/{id}/status:
     put:
       operationId: updateStatus
@@ -3074,6 +3120,46 @@ paths:
         - admin
         - businessOwner
         - operator
+  /api/orders/{orderId}/items/{itemId}/cancel:
+    post:
+      operationId: cancelOrderItem
+      parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Cancel Order Item
+      tags:
+      - Order Resource
+      security:
+      - SecurityScheme:
+        - customer
+        - user
   /api/payment-intents:
     post:
       operationId: createIntent
@@ -3195,14 +3281,14 @@ paths:
         - businessOwner
         - operator
         - customer
-  /api/payments/mock/initiate:
+  /api/payments/mockbank/initiate-charge:
     post:
-      operationId: initiateMockPayment
+      operationId: initiateCharge
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InitiateMockRequest"
+              $ref: "#/components/schemas/ChargeRequest"
         required: true
       responses:
         "200":
@@ -3216,24 +3302,24 @@ paths:
           description: Not Allowed
         "400":
           description: Bad Request
-      summary: Initiate Mock Payment
+      summary: Initiate Charge
       tags:
-      - Mock Payment Resource
+      - Mock Bank Resource
       security:
       - SecurityScheme:
         - admin
         - businessOwner
         - operator
         - customer
-  /api/payments/mock/{intentId}/complete:
+  /api/payments/mockbank/initiate-payout:
     post:
-      operationId: completeMockPayment
-      parameters:
-      - name: intentId
-        in: path
+      operationId: initiatePayout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayoutRequest"
         required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
       responses:
         "200":
           description: OK
@@ -3244,24 +3330,23 @@ paths:
           description: Not Authorized
         "403":
           description: Not Allowed
-      summary: Complete Mock Payment
+        "400":
+          description: Bad Request
+      summary: Initiate Payout
       tags:
-      - Mock Payment Resource
+      - Mock Bank Resource
       security:
       - SecurityScheme:
         - admin
-        - businessOwner
-        - operator
-        - customer
-  /api/payments/mock/{intentId}/fail:
+  /api/payments/mockbank/initiate-refund:
     post:
-      operationId: failMockPayment
-      parameters:
-      - name: intentId
-        in: path
+      operationId: initiateRefund
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundRequest"
         required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
       responses:
         "200":
           description: OK
@@ -3272,15 +3357,45 @@ paths:
           description: Not Authorized
         "403":
           description: Not Allowed
-      summary: Fail Mock Payment
+        "400":
+          description: Bad Request
+      summary: Initiate Refund
       tags:
-      - Mock Payment Resource
+      - Mock Bank Resource
       security:
       - SecurityScheme:
         - admin
         - businessOwner
         - operator
-        - customer
+  /api/payments/mockbank/simulate-transferred:
+    post:
+      operationId: simulateTransferred
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulateTransferredRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+        "400":
+          description: Bad Request
+      summary: Simulate Transferred
+      tags:
+      - Mock Bank Resource
+      security:
+      - SecurityScheme:
+        - qa
+        - demo
+        - admin
   /api/payments/webhook/{gateway}:
     post:
       operationId: handleWebhook
@@ -3294,7 +3409,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WebhookPayload"
+              type: string
         required: true
       responses:
         "200":
@@ -3302,8 +3417,6 @@ paths:
           content:
             application/json:
               schema: {}
-        "400":
-          description: Bad Request
       summary: Handle Webhook
       tags:
       - Payment Webhook Resource
@@ -3564,6 +3677,10 @@ paths:
     get:
       operationId: listProducts
       parameters:
+      - name: approvalStatus
+        in: query
+        schema:
+          type: string
       - name: categoryId
         in: query
         schema:
@@ -3625,7 +3742,6 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
-        - operator
   /api/products/{id}:
     put:
       operationId: updateProduct
@@ -3661,7 +3777,6 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
-        - operator
     get:
       operationId: getProduct
       parameters:
@@ -3705,7 +3820,6 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
-        - operator
   /api/revenue/adjustments:
     post:
       operationId: createRevenueAdjustment
@@ -3721,12 +3835,12 @@ paths:
           content:
             application/json:
               schema: {}
-        "400":
-          description: Bad Request
         "401":
           description: Not Authorized
         "403":
           description: Not Allowed
+        "400":
+          description: Bad Request
       summary: Create Revenue Adjustment
       tags:
       - Revenue Resource
@@ -3787,8 +3901,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DailyReport"
-        "400":
-          description: Bad Request
         "401":
           description: Not Authorized
         "403":
@@ -3824,8 +3936,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DailyReport"
-        "400":
-          description: Bad Request
         "401":
           description: Not Authorized
         "403":
@@ -4944,9 +5054,6 @@ paths:
       security:
       - SecurityScheme:
         - admin
-        - operator
-        - businessOwner
-        - customer
   /api/wallets/{id}:
     get:
       operationId: getWallet
@@ -5122,12 +5229,12 @@ paths:
         - businessOwner
         - customer
 tags:
-- name: VietQR
-  description: Offline VietQR generation
 - name: Ecommerce Catalog
   description: Endpoints for Ecommerce plugin catalog synchronization
 - name: Ecommerce Orders
   description: Endpoints for Ecommerce order synchronization
+- name: VietQR
+  description: Offline VietQR generation
 info:
   title: v-erp-lite API
   version: 1.0-SNAPSHOT

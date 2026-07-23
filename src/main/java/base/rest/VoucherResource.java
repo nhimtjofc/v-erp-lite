@@ -99,17 +99,18 @@ public class VoucherResource {
     @GET
     @Path("/my")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    @Transactional
     public List<Map<String, Object>> myVouchers(@QueryParam("customerId") UUID customerId) {
         String tenantCode = caller.tenantCode();
-        if (caller.hasRole("customer")) {
-            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
-            if (c == null) {
-                throw new jakarta.ws.rs.ForbiddenException("Customer profile not found");
-            }
-            customerId = c.getId();
+        Customer customer = resolveOrCreateCustomer();
+        if (customer != null) {
+            customerId = customer.getId();
         }
-        Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
-        if (customer == null) {
+        if (customerId == null) {
+            throw new BadRequestException("customerId is required");
+        }
+        Customer c = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
+        if (c == null) {
             throw new NotFoundException("Customer not found");
         }
         List<CustomerVoucher> cvs = CustomerVoucher.find("customerId = ?1 and isUsed = false and tenantId = ?2", customerId, tenantCode).list();
@@ -131,19 +132,19 @@ public class VoucherResource {
     @Transactional
     public Response collect(@PathParam("id") UUID voucherId, @QueryParam("customerId") UUID customerId) {
         String tenantCode = caller.tenantCode();
-        if (caller.hasRole("customer")) {
-            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
-            if (c == null) {
-                throw new jakarta.ws.rs.ForbiddenException("Customer profile not found");
-            }
-            customerId = c.getId();
+        Customer customer = resolveOrCreateCustomer();
+        if (customer != null) {
+            customerId = customer.getId();
+        }
+        if (customerId == null) {
+            throw new BadRequestException("customerId is required");
         }
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", voucherId, tenantCode).firstResult();
         if (voucher == null) {
             throw new NotFoundException("Voucher not found");
         }
-        Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
-        if (customer == null) {
+        Customer c = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
+        if (c == null) {
             throw new NotFoundException("Customer not found");
         }
         CustomerVoucher existing = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3", customerId, voucherId, tenantCode).firstResult();
@@ -242,5 +243,35 @@ public class VoucherResource {
         if (voucher.getStartTime() != null && voucher.getEndTime() != null && voucher.getEndTime().isBefore(voucher.getStartTime())) {
             throw new BadRequestException("Voucher end time must be after start time");
         }
+    }
+
+    private Customer resolveOrCreateCustomer() {
+        String tenantCode = caller.tenantCode();
+        if (caller.hasRole("customer")
+                && !caller.hasRole("admin")
+                && !caller.hasRole("operator")
+                && !caller.hasRole("businessOwner")) {
+            String email = caller.userEmail();
+            Customer customer = Customer.find("email = ?1 and tenantId = ?2", email, tenantCode).firstResult();
+            if (customer == null) {
+                customer = new Customer();
+                customer.setId(UUID.randomUUID());
+                customer.setTenantId(tenantCode);
+                customer.setEmail(email);
+                String preferredUsername = caller.preferredUsername();
+                if (preferredUsername != null && !preferredUsername.isBlank()) {
+                    customer.setFirstName(preferredUsername);
+                    customer.setLastName("");
+                } else {
+                    customer.setFirstName("Customer");
+                    customer.setLastName("");
+                }
+                customer.setActive(true);
+                customer.setCreatedBy(caller.userId());
+                customer.persist();
+            }
+            return customer;
+        }
+        return null;
     }
 }

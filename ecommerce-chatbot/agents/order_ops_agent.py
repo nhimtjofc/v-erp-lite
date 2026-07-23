@@ -17,27 +17,31 @@ def get_order_status(order_id: str) -> str:
     Args:
         order_id: Mã đơn hàng cần tra cứu (ví dụ: 'ORD-123', '123')
     """
-    # Lọc bỏ các ký tự thừa
+    search_ids = [order_id.strip()]
     clean_id = order_id.replace("ORD-", "").strip()
-    print(f"\n[Function Call] AI tu dong kich hoat he thong: GET /api/chatbot/orders/{clean_id}...")
-    
-    try:
-        url = f"http://localhost:8081/api/chatbot/orders/{clean_id}"
-        headers = {"X-Chatbot-Key": "chatbot-secret-v1"}
-        response = requests.get(url, headers=headers, timeout=5)
+    if clean_id not in search_ids:
+        search_ids.append(clean_id)
+    if not order_id.startswith("ORD-"):
+        search_ids.append(f"ORD-{order_id.strip()}")
         
-        if response.status_code == 404:
-            return f"Không tìm thấy đơn hàng nào có mã {order_id} trong hệ thống ERP."
+    for s_id in search_ids:
+        print(f"\n[Function Call] AI tu dong kich hoat he thong: GET /api/chatbot/orders/{s_id}...")
+        try:
+            url = f"http://localhost:8081/api/chatbot/orders/{s_id}"
+            headers = {
+                "X-Chatbot-Key": "chatbot-secret-v1",
+                "X-Tenant-Code": "v-erp-app"
+            }
+            response = requests.get(url, headers=headers, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                return (f"Trạng thái: {data.get('status')}, "
+                        f"Tổng tiền: {data.get('finalAmountMinor')} {data.get('currency')}, "
+                        f"Ngày đặt: {data.get('orderDate')}")
+        except Exception:
+            pass
             
-        response.raise_for_status()
-        data = response.json()
-        
-        # Format the public/safe information to return
-        return (f"Trạng thái: {data.get('status')}, "
-                f"Tổng tiền: {data.get('finalAmountMinor')} {data.get('currency')}, "
-                f"Ngày đặt: {data.get('orderDate')}")
-    except Exception as e:
-        return f"Đã có lỗi xảy ra khi truy xuất đơn hàng: {e}"
+    return f"Không tìm thấy đơn hàng nào có mã {order_id} trong hệ thống ERP."
 
 class OrderOpsAgent:
     """Xử lý tra cứu đơn hàng bằng Gemini Function Calling."""

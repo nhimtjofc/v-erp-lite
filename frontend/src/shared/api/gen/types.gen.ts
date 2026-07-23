@@ -8,12 +8,6 @@ export type ActionRequest = {
     reason?: string;
 };
 
-export type AddItemRequest = {
-    productId?: Uuid;
-    variantId?: Uuid;
-    quantity?: number;
-};
-
 export type AdjustmentEntry = {
     id?: Uuid;
     businessId?: Uuid;
@@ -61,6 +55,10 @@ export type Business = {
     taxId?: string;
     logoUrl?: string;
     active?: boolean;
+};
+
+export type CancelItemRequest = {
+    reason?: string;
 };
 
 export type CartItem = {
@@ -132,6 +130,12 @@ export type Category = {
     active?: boolean;
 };
 
+export type ChargeRequest = {
+    paymentIntentId?: string;
+    amountMinor?: number;
+    currency?: string;
+};
+
 export type CheckoutRequest = {
     customerId?: Uuid;
     voucherCode?: string;
@@ -197,6 +201,18 @@ export type DailyRevenue = {
     refundCount?: number;
 };
 
+export type EcommerceOrderDto = {
+    wooOrderId?: string;
+    erpOrderId?: Uuid;
+    orderNumber?: string;
+    customerName?: string;
+    orderDate?: Instant;
+    finalAmountMinor?: number;
+    syncStatus?: string;
+    lastErrorMessage?: string;
+    lastAttemptedAt?: Instant;
+};
+
 export type EnsureWalletRequest = {
     ownerType?: string;
     ownerId?: Uuid;
@@ -231,10 +247,6 @@ export type HealthSnapshot = {
     lastCheckedAt?: Instant;
     lastConnectedAt?: Instant;
     message?: string;
-};
-
-export type InitiateMockRequest = {
-    paymentIntentId?: Uuid;
 };
 
 export type Instant = string;
@@ -343,6 +355,9 @@ export type OrderItem = {
     unitCostMinor?: number;
     subtotalAmountMinor?: number;
     currency?: string;
+    cancelledAt?: Instant;
+    cancelledBy?: Uuid;
+    cancellationReason?: string;
 };
 
 export type OrderStatusDto = {
@@ -420,6 +435,14 @@ export type PaymentTransaction = {
     status?: string;
 };
 
+export type PayoutRequest = {
+    amountMinor?: number;
+    currency?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountHolder?: string;
+};
+
 export type PayoutResponse = {
     id?: Uuid;
     walletId?: Uuid;
@@ -465,6 +488,7 @@ export type Product = {
     saleStartsAt?: Instant;
     saleEndsAt?: Instant;
     active?: boolean;
+    approvalStatus?: string;
     stockQuantity?: number;
     lowStockThreshold?: number;
     reservedQuantity?: number;
@@ -498,6 +522,13 @@ export type ProductVariant = {
         [key: string]: string;
     };
     availableQuantity?: number;
+};
+
+export type RefundRequest = {
+    gatewayTransactionId?: string;
+    amountMinor?: number;
+    currency?: string;
+    idempotencyKey?: string;
 };
 
 export type RegisterRequest = {
@@ -535,6 +566,14 @@ export type Role = {
 
 export type ScreenPayoutRequest = {
     walletId?: Uuid;
+};
+
+export type SimulateTransferredRequest = {
+    paymentIntentId?: string;
+    gatewayTransactionId?: string;
+    status?: string;
+    amountMinor?: number;
+    currency?: string;
 };
 
 export type StatusUpdateRequest = {
@@ -708,27 +747,6 @@ export type WalletTransactionResponse = {
     sequenceNo?: number;
     description?: string;
     createdAt?: Instant;
-};
-
-export type WebhookPayload = {
-    paymentIntentId?: string;
-    gatewayTransactionId?: string;
-    status?: string;
-    amountMinor?: number;
-    currency?: string;
-    signature?: string;
-};
-
-export type EcommerceOrderDto = {
-    wooOrderId?: string;
-    erpOrderId?: Uuid;
-    orderNumber?: string;
-    customerName?: string;
-    orderDate?: Instant;
-    finalAmountMinor?: number;
-    syncStatus?: string;
-    lastErrorMessage?: string;
-    lastAttemptedAt?: Instant;
 };
 
 export type ListRiskEventsData = {
@@ -1367,6 +1385,7 @@ export type GetOrderStatusData = {
     body?: never;
     headers?: {
         'X-Chatbot-Key'?: string;
+        'X-Tenant-Code'?: string;
     };
     path: {
         orderNumber: string;
@@ -1388,6 +1407,7 @@ export type GetStatsData = {
     body?: never;
     headers?: {
         'X-Chatbot-Key'?: string;
+        'X-Tenant-Code'?: string;
     };
     path?: never;
     query?: never;
@@ -2362,6 +2382,40 @@ export type UpdateStatusResponses = {
 
 export type UpdateStatusResponse = UpdateStatusResponses[keyof UpdateStatusResponses];
 
+export type CancelOrderItemData = {
+    body: CancelItemRequest;
+    path: {
+        itemId: Uuid;
+        orderId: Uuid;
+    };
+    query?: never;
+    url: '/api/orders/{orderId}/items/{itemId}/cancel';
+};
+
+export type CancelOrderItemErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type CancelOrderItemResponses = {
+    /**
+     * OK
+     */
+    200: Order;
+};
+
+export type CancelOrderItemResponse = CancelOrderItemResponses[keyof CancelOrderItemResponses];
+
 export type CreateIntentData = {
     body: CreateIntentRequest;
     path?: never;
@@ -2478,14 +2532,14 @@ export type ListTransactionsResponses = {
 
 export type ListTransactionsResponse = ListTransactionsResponses[keyof ListTransactionsResponses];
 
-export type InitiateMockPaymentData = {
-    body: InitiateMockRequest;
+export type InitiateChargeData = {
+    body: ChargeRequest;
     path?: never;
     query?: never;
-    url: '/api/payments/mock/initiate';
+    url: '/api/payments/mockbank/initiate-charge';
 };
 
-export type InitiateMockPaymentErrors = {
+export type InitiateChargeErrors = {
     /**
      * Bad Request
      */
@@ -2500,23 +2554,25 @@ export type InitiateMockPaymentErrors = {
     403: unknown;
 };
 
-export type InitiateMockPaymentResponses = {
+export type InitiateChargeResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type CompleteMockPaymentData = {
-    body?: never;
-    path: {
-        intentId: Uuid;
-    };
+export type InitiatePayoutData = {
+    body: PayoutRequest;
+    path?: never;
     query?: never;
-    url: '/api/payments/mock/{intentId}/complete';
+    url: '/api/payments/mockbank/initiate-payout';
 };
 
-export type CompleteMockPaymentErrors = {
+export type InitiatePayoutErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
     /**
      * Not Authorized
      */
@@ -2527,23 +2583,25 @@ export type CompleteMockPaymentErrors = {
     403: unknown;
 };
 
-export type CompleteMockPaymentResponses = {
+export type InitiatePayoutResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type FailMockPaymentData = {
-    body?: never;
-    path: {
-        intentId: Uuid;
-    };
+export type InitiateRefundData = {
+    body: RefundRequest;
+    path?: never;
     query?: never;
-    url: '/api/payments/mock/{intentId}/fail';
+    url: '/api/payments/mockbank/initiate-refund';
 };
 
-export type FailMockPaymentErrors = {
+export type InitiateRefundErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
     /**
      * Not Authorized
      */
@@ -2554,7 +2612,36 @@ export type FailMockPaymentErrors = {
     403: unknown;
 };
 
-export type FailMockPaymentResponses = {
+export type InitiateRefundResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type SimulateTransferredData = {
+    body: SimulateTransferredRequest;
+    path?: never;
+    query?: never;
+    url: '/api/payments/mockbank/simulate-transferred';
+};
+
+export type SimulateTransferredErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * Not Authorized
+     */
+    401: unknown;
+    /**
+     * Not Allowed
+     */
+    403: unknown;
+};
+
+export type SimulateTransferredResponses = {
     /**
      * OK
      */
@@ -2562,19 +2649,12 @@ export type FailMockPaymentResponses = {
 };
 
 export type HandleWebhookData = {
-    body: WebhookPayload;
+    body: string;
     path: {
         gateway: string;
     };
     query?: never;
     url: '/api/payments/webhook/{gateway}';
-};
-
-export type HandleWebhookErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
 };
 
 export type HandleWebhookResponses = {
@@ -2855,6 +2935,7 @@ export type ListProductsData = {
     body?: never;
     path?: never;
     query?: {
+        approvalStatus?: string;
         categoryId?: Uuid;
         search?: string;
         tagId?: Uuid;
@@ -3059,10 +3140,6 @@ export type GetDailyRevenueData = {
 
 export type GetDailyRevenueErrors = {
     /**
-     * Bad Request
-     */
-    400: unknown;
-    /**
      * Not Authorized
      */
     401: unknown;
@@ -3093,10 +3170,6 @@ export type GetMonthToDateRevenueData = {
 };
 
 export type GetMonthToDateRevenueErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
     /**
      * Not Authorized
      */
