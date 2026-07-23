@@ -275,6 +275,9 @@ export function OrderDetailPage() {
   const [decisionError, setDecisionError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [cancellingItem, setCancellingItem] = useState<any | null>(null)
+  const [cancelItemReason, setCancelItemReason] = useState('')
+  const [cancelItemError, setCancelItemError] = useState<string | null>(null)
   const [notes, setNotes] = useState<string | null>(null)
   const [shippingFeeMinor, setShippingFee] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<string | null>(null)
@@ -409,6 +412,37 @@ export function OrderDetailPage() {
     onError: (err) => setError(err instanceof Error ? err.message : 'Unable to update order.'),
   })
 
+  const cancelItemMutation = useMutation({
+    mutationFn: async (body: { itemId: string; reason?: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: body.reason || undefined }),
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to cancel item')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setCancellingItem(null)
+      setCancelItemReason('')
+      setCancelItemError(null)
+    },
+    onError: (err) => {
+      setCancelItemError(err instanceof Error ? err.message : 'Unable to cancel item.')
+    },
+  })
+
   const openStatusDialog = (newStatus: string) => {
     setPendingStatus(newStatus)
     setStatusNote('')
@@ -463,6 +497,8 @@ export function OrderDetailPage() {
   const isPendingPayment = status === 'PENDING' || status === 'PENDING_PAYMENT'
   const isFinal = ['COMPLETED', 'CANCELLED', 'OWNER_DECLINED', 'REFUNDED'].includes(status)
   const canDelete = isAdmin && isFinal
+  const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
+  const canCancelItem = isCustomer && cancellableStatuses.includes(status)
 
   const statusCfg = getStatusConfig(status)
   const currentNotes = notes ?? order.notes ?? ''
@@ -621,6 +657,7 @@ export function OrderDetailPage() {
             <CardContent className="p-0">
               <div className="divide-y divide-border px-6">
                 {order.items?.map((item, index) => {
+                  const isItemCancelled = !!(item as any).cancelledAt
                   const variantValues = item.productVariant
                     ? Object.entries(item.productVariant.optionValues ?? {})
                         .map(([_, v]) => v)
@@ -628,24 +665,48 @@ export function OrderDetailPage() {
                     : null
 
                   return (
-                    <div key={index} className="py-4 flex items-center justify-between">
-                      <div className="space-y-0.5">
+                    <div key={index} className={`py-4 flex items-center justify-between gap-4 ${isItemCancelled ? 'opacity-50' : ''}`}>
+                      <div className="space-y-0.5 min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                          <h4 className="font-semibold text-sm">{item.product?.name}</h4>
+                          <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <h4 className={`font-semibold text-sm ${isItemCancelled ? 'line-through text-muted-foreground' : ''}`}>
+                            {item.product?.name}
+                          </h4>
+                          {isItemCancelled && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Cancelled</Badge>
+                          )}
                         </div>
                         {variantValues && (
                           <p className="text-xs text-muted-foreground font-medium">{variantValues}</p>
                         )}
                         <p className="text-xs text-muted-foreground">SKU: {item.productVariant?.sku ?? item.product?.sku}</p>
+                        {isItemCancelled && (item as any).cancellationReason && (
+                          <p className="text-xs text-destructive italic mt-0.5">Reason: {(item as any).cancellationReason}</p>
+                        )}
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-sm font-semibold">
-                          {formatUSD(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatUSD(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
+                      <div className="flex items-center gap-3 shrink-0">
+                        {!isItemCancelled && canCancelItem && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              setCancellingItem(item)
+                              setCancelItemReason('')
+                              setCancelItemError(null)
+                            }}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
+                        )}
+                        <div className="text-right">
+                          <div className="text-sm font-semibold">
+                            {formatUSD(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatUSD(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1089,6 +1150,75 @@ export function OrderDetailPage() {
             <Button variant="outline" onClick={() => setShowDeclineDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => submitOwnerDecision('DECLINE')} disabled={ownerDecisionMutation.isPending || !declineReason.trim()}>
               {ownerDecisionMutation.isPending ? 'Declining…' : 'Decline and refund'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancellingItem} onOpenChange={(open) => { if (!open) setCancellingItem(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel this item?</DialogTitle>
+            <DialogDescription>
+              This item will be removed from the order and the total will be recalculated.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">{cancellingItem?.product?.name}</span>
+              </div>
+              {cancellingItem?.productVariant?.sku && (
+                <p className="text-xs text-muted-foreground ml-6">SKU: {cancellingItem.productVariant.sku}</p>
+              )}
+              <div className="flex justify-between text-sm ml-6">
+                <span className="text-muted-foreground">{formatUSD(Number(cancellingItem?.unitPriceMinor))} × {cancellingItem?.quantity ?? 0}</span>
+                <span className="font-semibold">{formatUSD(Number(cancellingItem?.unitPriceMinor) * (cancellingItem?.quantity ?? 0))}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cancel-item-reason">Reason (optional)</Label>
+              <select
+                id="cancel-item-reason"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={cancelItemReason}
+                onChange={(e) => setCancelItemReason(e.target.value)}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Wrong size/color">Wrong size/color</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Found cheaper elsewhere">Found cheaper elsewhere</option>
+                <option value="Ordered by mistake">Ordered by mistake</option>
+                <option value="Other">Other...</option>
+              </select>
+              {cancelItemReason === 'Other' && (
+                <textarea
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Please describe..."
+                  onChange={(e) => setCancelItemReason(e.target.value)}
+                />
+              )}
+            </div>
+            {cancelItemError && (
+              <p className="text-sm text-destructive">{cancelItemError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancellingItem(null)} disabled={cancelItemMutation.isPending}>
+              Keep
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                cancelItemMutation.mutate({
+                  itemId: cancellingItem?.id,
+                  reason: cancelItemReason,
+                })
+              }}
+              disabled={cancelItemMutation.isPending || !cancellingItem?.id}
+            >
+              {cancelItemMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
             </Button>
           </DialogFooter>
         </DialogContent>
