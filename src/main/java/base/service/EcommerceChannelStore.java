@@ -11,15 +11,15 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class WooCommerceChannelStore {
+public class EcommerceChannelStore {
 
     @Transactional
     public ChannelSnapshot resolve(String tenantId, UUID businessId) {
         SalesChannel channel;
         if (businessId != null) {
-            channel = SalesChannel.findWooCommerce(tenantId, businessId);
+            channel = SalesChannel.findEcommerce(tenantId, businessId);
         } else {
-            List<SalesChannel> channels = SalesChannel.listWooCommerce(tenantId);
+            List<SalesChannel> channels = SalesChannel.listEcommerce(tenantId);
             channel = channels.isEmpty() ? null : channels.getFirst();
         }
 
@@ -66,7 +66,7 @@ public class WooCommerceChannelStore {
                 "id = ?1 and tenantId = ?2 and channelType = ?3",
                 channelId,
                 tenantId,
-                SalesChannel.WOOCOMMERCE
+                SalesChannel.ECOMMERCE
         ).firstResult();
         if (channel == null) {
             return;

@@ -34,7 +34,7 @@ import java.util.UUID;
 @Setter
 public class SalesChannel extends BaseEntity {
 
-    public static final String WOOCOMMERCE = "WOOCOMMERCE";
+    public static final String ECOMMERCE = "WOOCOMMERCE";
 
     @Id
     @Column(nullable = false)
@@ -44,7 +44,7 @@ public class SalesChannel extends BaseEntity {
     private UUID businessId;
 
     @Column(name = "channel_type", nullable = false, length = 32)
-    private String channelType = WOOCOMMERCE;
+    private String channelType = ECOMMERCE;
 
     @Column(name = "store_url", nullable = false, length = 512)
     private String storeUrl;
@@ -71,20 +71,20 @@ public class SalesChannel extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
-    public static List<SalesChannel> listWooCommerce(String tenantId) {
+    public static List<SalesChannel> listEcommerce(String tenantId) {
         return list(
                 "tenantId = ?1 and channelType = ?2 order by active desc, createdAt, id",
                 tenantId,
-                WOOCOMMERCE
+                ECOMMERCE
         );
     }
 
-    public static SalesChannel findWooCommerce(String tenantId, UUID businessId) {
+    public static SalesChannel findEcommerce(String tenantId, UUID businessId) {
         return find(
                 "tenantId = ?1 and businessId = ?2 and channelType = ?3",
                 tenantId,
                 businessId,
-                WOOCOMMERCE
+                ECOMMERCE
         ).firstResult();
     }
 }

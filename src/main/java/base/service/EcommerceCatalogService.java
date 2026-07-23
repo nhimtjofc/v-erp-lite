@@ -21,14 +21,11 @@ import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 @ApplicationScoped
-public class WooCommerceCatalogService {
+public class EcommerceCatalogService {
 
     @Inject
     CallerContext caller;
 
-    /**
-     * Get changed products for the current tenant and business.
-     */
     public CatalogChangesResult getChanges(UUID businessId, Instant since, int limit, int offset) {
         String tenantCode = caller.tenantCode();
         SalesChannel channel = getChannel(tenantCode, businessId);
@@ -85,9 +82,6 @@ public class WooCommerceCatalogService {
         return new CatalogChangesResult(items, totalCount, hasMore);
     }
 
-    /**
-     * Get summary of WooCommerce catalog sync.
-     */
     public CatalogSyncSummary getSummary(UUID businessId) {
         String tenantCode = caller.tenantCode();
         SalesChannel channel = getChannel(tenantCode, businessId);
@@ -95,7 +89,6 @@ public class WooCommerceCatalogService {
         long totalProducts = Product.count("tenantId = ?1 and active = true", tenantCode);
         long syncedProducts = ExternalEntityMapping.count("tenantId = ?1 and salesChannelId = ?2 and entityType = 'PRODUCT' and syncStatus = 'SUCCESS'", tenantCode, channel.getId());
         
-        // Find latest sync time
         ExternalEntityMapping latest = ExternalEntityMapping.find("tenantId = ?1 and salesChannelId = ?2", Sort.descending("lastSyncedAt"), tenantCode, channel.getId()).firstResult();
         Instant lastSyncTime = latest != null ? latest.getLastSyncedAt() : null;
 
@@ -133,13 +126,13 @@ public class WooCommerceCatalogService {
     private SalesChannel getChannel(String tenantCode, UUID businessId) {
         SalesChannel channel;
         if (businessId != null) {
-            channel = SalesChannel.findWooCommerce(tenantCode, businessId);
+            channel = SalesChannel.findEcommerce(tenantCode, businessId);
         } else {
-            List<SalesChannel> channels = SalesChannel.listWooCommerce(tenantCode);
+            List<SalesChannel> channels = SalesChannel.listEcommerce(tenantCode);
             channel = channels.isEmpty() ? null : channels.getFirst();
         }
         if (channel == null) {
-            throw new jakarta.ws.rs.NotFoundException("WooCommerce sales channel not found");
+            throw new jakarta.ws.rs.NotFoundException("Ecommerce sales channel not found");
         }
         return channel;
     }
@@ -196,7 +189,7 @@ public class WooCommerceCatalogService {
 
     public static class CatalogMappingItem {
         public UUID erpId;
-        public String entityType; // PRODUCT or PRODUCT_VARIANT
+        public String entityType;
         public String externalId;
         public String externalParentId;
         public String syncStatus;

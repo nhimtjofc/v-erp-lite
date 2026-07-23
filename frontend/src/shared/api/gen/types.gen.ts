@@ -189,10 +189,8 @@ export type DailyReport = {
 
 export type DailyRevenue = {
     date?: LocalDate;
-    grossRevenueMinor?: number;
-    refundMinor?: number;
     netRevenueMinor?: number;
-    commissionMinor?: number;
+    refundMinor?: number;
     warehouseCostMinor?: number;
     profitMinor?: number;
     orderCount?: number;
@@ -259,10 +257,8 @@ export type MonthlyReport = {
 };
 
 export type MonthlyTotals = {
-    grossRevenueMinor?: number;
-    refundMinor?: number;
     netRevenueMinor?: number;
-    commissionMinor?: number;
+    refundMinor?: number;
     warehouseCostMinor?: number;
     adjustmentIncomeMinor?: number;
     adjustmentExpenseMinor?: number;
@@ -523,10 +519,8 @@ export type RevenueAdjustmentRequest = {
 };
 
 export type RevenueTotals = {
-    grossRevenueMinor?: number;
-    refundMinor?: number;
     netRevenueMinor?: number;
-    commissionMinor?: number;
+    refundMinor?: number;
     warehouseCostMinor?: number;
     profitMinor?: number;
     orderCount?: number;
@@ -725,7 +719,7 @@ export type WebhookPayload = {
     signature?: string;
 };
 
-export type WooCommerceOrderDto = {
+export type EcommerceOrderDto = {
     wooOrderId?: string;
     erpOrderId?: Uuid;
     orderNumber?: string;
@@ -1675,7 +1669,7 @@ export type GetCatalogChangesData = {
         offset?: number;
         since?: Instant;
     };
-    url: '/api/integrations/woocommerce/v1/catalog/changes';
+    url: '/api/integrations/ecommerce/v1/catalog/changes';
 };
 
 export type GetCatalogChangesErrors = {
@@ -1704,7 +1698,7 @@ export type UpsertCatalogMappingsData = {
     query?: {
         businessId?: Uuid;
     };
-    url: '/api/integrations/woocommerce/v1/catalog/mappings';
+    url: '/api/integrations/ecommerce/v1/catalog/mappings';
 };
 
 export type UpsertCatalogMappingsErrors = {
@@ -1735,7 +1729,7 @@ export type GetCatalogSyncSummaryData = {
     query?: {
         businessId?: Uuid;
     };
-    url: '/api/integrations/woocommerce/v1/catalog/summary';
+    url: '/api/integrations/ecommerce/v1/catalog/summary';
 };
 
 export type GetCatalogSyncSummaryErrors = {
@@ -1758,16 +1752,16 @@ export type GetCatalogSyncSummaryResponses = {
 
 export type GetCatalogSyncSummaryResponse = GetCatalogSyncSummaryResponses[keyof GetCatalogSyncSummaryResponses];
 
-export type GetWooCommerceHealthData = {
+export type GetEcommerceHealthData = {
     body?: never;
     path?: never;
     query?: {
         businessId?: Uuid;
     };
-    url: '/api/integrations/woocommerce/v1/health';
+    url: '/api/integrations/ecommerce/v1/health';
 };
 
-export type GetWooCommerceHealthErrors = {
+export type GetEcommerceHealthErrors = {
     /**
      * Not Authorized
      */
@@ -1778,16 +1772,16 @@ export type GetWooCommerceHealthErrors = {
     403: unknown;
 };
 
-export type GetWooCommerceHealthResponses = {
+export type GetEcommerceHealthResponses = {
     /**
      * OK
      */
     200: HealthSnapshot;
 };
 
-export type GetWooCommerceHealthResponse = GetWooCommerceHealthResponses[keyof GetWooCommerceHealthResponses];
+export type GetEcommerceHealthResponse = GetEcommerceHealthResponses[keyof GetEcommerceHealthResponses];
 
-export type ListWooCommerceOrdersData = {
+export type ListEcommerceOrdersData = {
     body?: never;
     path?: never;
     query?: {
@@ -1797,10 +1791,10 @@ export type ListWooCommerceOrdersData = {
         search?: string;
         syncStatus?: string;
     };
-    url: '/api/integrations/woocommerce/v1/orders';
+    url: '/api/integrations/ecommerce/v1/orders';
 };
 
-export type ListWooCommerceOrdersErrors = {
+export type ListEcommerceOrdersErrors = {
     /**
      * Not Authorized
      */
@@ -1811,14 +1805,14 @@ export type ListWooCommerceOrdersErrors = {
     403: unknown;
 };
 
-export type ListWooCommerceOrdersResponses = {
+export type ListEcommerceOrdersResponses = {
     /**
      * OK
      */
-    200: Array<WooCommerceOrderDto>;
+    200: Array<EcommerceOrderDto>;
 };
 
-export type ListWooCommerceOrdersResponse = ListWooCommerceOrdersResponses[keyof ListWooCommerceOrdersResponses];
+export type ListEcommerceOrdersResponse = ListEcommerceOrdersResponses[keyof ListEcommerceOrdersResponses];
 
 export type CreateOrderData = {
     body: string;
@@ -1832,7 +1826,7 @@ export type CreateOrderData = {
         salesChannelId?: Uuid;
         tenantId?: string;
     };
-    url: '/api/integrations/woocommerce/v1/orders';
+    url: '/api/integrations/ecommerce/v1/orders';
 };
 
 export type CreateOrderResponses = {
@@ -1850,7 +1844,7 @@ export type ReconcileOrderData = {
     query?: {
         salesChannelId?: Uuid;
     };
-    url: '/api/integrations/woocommerce/v1/orders/{externalId}/reconcile';
+    url: '/api/integrations/ecommerce/v1/orders/{externalId}/reconcile';
 };
 
 export type ReconcileOrderErrors = {
@@ -1883,7 +1877,7 @@ export type GetOrderStatus2Data = {
         salesChannelId?: Uuid;
         tenantId?: string;
     };
-    url: '/api/integrations/woocommerce/v1/orders/{externalId}/status';
+    url: '/api/integrations/ecommerce/v1/orders/{externalId}/status';
 };
 
 export type GetOrderStatus2Responses = {

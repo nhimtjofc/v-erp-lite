@@ -179,8 +179,8 @@ public class PaymentGatewayService {
         );
     }
 
-    private String signPayload(String intentId, String transactionId, long amountMinor) {
-        String payload = String.format("%s:%s:%d", intentId, transactionId, amountMinor);
+    public String signPayload(String intentId, String transactionId, long amountMinor) {
+        String payload = String.format("%s:%s:%d:%s", intentId, transactionId, amountMinor, MOCK_SECRET);
         return hmacSha256(payload, MOCK_SECRET);
     }
 

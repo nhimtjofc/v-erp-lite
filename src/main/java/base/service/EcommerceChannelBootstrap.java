@@ -14,23 +14,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
-public class WooCommerceChannelBootstrap {
+public class EcommerceChannelBootstrap {
 
-    private static final Logger log = LoggerFactory.getLogger(WooCommerceChannelBootstrap.class);
+    private static final Logger log = LoggerFactory.getLogger(EcommerceChannelBootstrap.class);
 
-    @ConfigProperty(name = "woocommerce.bootstrap.enabled", defaultValue = "false")
+    @ConfigProperty(name = "ecommerce.bootstrap.enabled", defaultValue = "false")
     boolean enabled;
 
-    @ConfigProperty(name = "woocommerce.bootstrap.tenant-id")
+    @ConfigProperty(name = "ecommerce.bootstrap.tenant-id")
     Optional<String> configuredTenantId;
 
-    @ConfigProperty(name = "woocommerce.bootstrap.business-id")
+    @ConfigProperty(name = "ecommerce.bootstrap.business-id")
     Optional<String> configuredBusinessId;
 
-    @ConfigProperty(name = "woocommerce.bootstrap.store-url")
+    @ConfigProperty(name = "ecommerce.bootstrap.store-url")
     Optional<String> configuredStoreUrl;
 
-    @ConfigProperty(name = "woocommerce.bootstrap.secret-reference", defaultValue = "local")
+    @ConfigProperty(name = "ecommerce.bootstrap.secret-reference", defaultValue = "local")
     String secretReference;
 
     @Transactional
@@ -41,7 +41,7 @@ public class WooCommerceChannelBootstrap {
         if (configuredTenantId.isEmpty()
                 || configuredBusinessId.isEmpty()
                 || configuredStoreUrl.isEmpty()) {
-            log.warn("WooCommerce dev bootstrap skipped because channel configuration is incomplete");
+            log.warn("Ecommerce dev bootstrap skipped because channel configuration is incomplete");
             return;
         }
 
@@ -49,7 +49,7 @@ public class WooCommerceChannelBootstrap {
         String businessId = configuredBusinessId.get().trim();
         String storeUrl = configuredStoreUrl.get().trim();
         if (tenantId.isBlank() || businessId.isBlank() || storeUrl.isBlank()) {
-            log.warn("WooCommerce dev bootstrap skipped because channel configuration is incomplete");
+            log.warn("Ecommerce dev bootstrap skipped because channel configuration is incomplete");
             return;
         }
 
@@ -57,7 +57,7 @@ public class WooCommerceChannelBootstrap {
         try {
             parsedBusinessId = UUID.fromString(businessId);
         } catch (IllegalArgumentException e) {
-            log.warn("WooCommerce dev bootstrap skipped because business ID is invalid");
+            log.warn("Ecommerce dev bootstrap skipped because business ID is invalid");
             return;
         }
 
@@ -67,17 +67,17 @@ public class WooCommerceChannelBootstrap {
                 tenantId
         ).firstResult();
         if (business == null) {
-            log.warn("WooCommerce dev bootstrap skipped because the tenant business was not found");
+            log.warn("Ecommerce dev bootstrap skipped because the tenant business was not found");
             return;
         }
 
-        SalesChannel existing = SalesChannel.findWooCommerce(tenantId, parsedBusinessId);
+        SalesChannel existing = SalesChannel.findEcommerce(tenantId, parsedBusinessId);
         if (existing != null) {
             String normalizedSecretReference = secretReference.isBlank() ? null : secretReference.trim();
             existing.setStoreUrl(storeUrl);
             existing.setSecretReference(normalizedSecretReference);
             existing.setActive(true);
-            log.info("Updated the local WooCommerce sales channel configuration for tenant {}", tenantId);
+            log.info("Updated the local Ecommerce sales channel configuration for tenant {}", tenantId);
             return;
         }
 
@@ -85,13 +85,13 @@ public class WooCommerceChannelBootstrap {
         channel.setId(UUID.randomUUID());
         channel.setTenantId(tenantId);
         channel.setBusinessId(parsedBusinessId);
-        channel.setChannelType(SalesChannel.WOOCOMMERCE);
+        channel.setChannelType(SalesChannel.ECOMMERCE);
         channel.setStoreUrl(storeUrl.trim());
         channel.setStatus("DISCONNECTED");
         channel.setHealthStatus("UNKNOWN");
         channel.setSecretReference(secretReference.isBlank() ? null : secretReference.trim());
         channel.setActive(true);
         channel.persist();
-        log.info("Created the local WooCommerce sales channel for tenant {}", tenantId);
+        log.info("Created the local Ecommerce sales channel for tenant {}", tenantId);
     }
 }

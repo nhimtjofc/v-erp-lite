@@ -1,8 +1,8 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { client } from './gen/client.gen'
-import type { WooCommerceOrderDto } from './gen'
+import type { EcommerceOrderDto } from './gen'
 
-export interface WooCommerceHealthResponse {
+export interface EcommerceHealthResponse {
   channelId: string | null
   businessId: string | null
   storeUrl: string | null
@@ -16,47 +16,47 @@ export interface WooCommerceHealthResponse {
   message: string | null
 }
 
-async function getWooCommerceHealth(businessId?: string): Promise<WooCommerceHealthResponse> {
-  const response = await client.get<{ 200: WooCommerceHealthResponse }, unknown, true>({
+async function getEcommerceHealth(businessId?: string): Promise<EcommerceHealthResponse> {
+  const response = await client.get<{ 200: EcommerceHealthResponse }, unknown, true>({
     security: [{ scheme: 'bearer', type: 'http' }],
     throwOnError: true,
-    url: '/api/integrations/woocommerce/v1/health',
+    url: '/api/integrations/ecommerce/v1/health',
     query: businessId ? { businessId } : undefined,
   })
   return response.data
 }
 
-export function useWooCommerceHealthQuery(
+export function useEcommerceHealthQuery(
   tenantScope: string | undefined,
   businessId?: string,
   options?: { enabled?: boolean }
 ) {
   return useQuery({
-    queryKey: ['woocommerce', 'health', tenantScope ?? 'unresolved', businessId ?? 'default'],
-    queryFn: () => getWooCommerceHealth(businessId),
+    queryKey: ['ecommerce', 'health', tenantScope ?? 'unresolved', businessId ?? 'default'],
+    queryFn: () => getEcommerceHealth(businessId),
     enabled: (options?.enabled ?? true) && Boolean(tenantScope),
     retry: 1,
     staleTime: 0,
   })
 }
 
-async function getWooCommerceOrders(query?: {
+async function getEcommerceOrders(query?: {
   salesChannelId?: string
   syncStatus?: string
   search?: string
   limit?: number
   offset?: number
-}): Promise<WooCommerceOrderDto[]> {
-  const response = await client.get<{ 200: WooCommerceOrderDto[] }, unknown, true>({
+}): Promise<EcommerceOrderDto[]> {
+  const response = await client.get<{ 200: EcommerceOrderDto[] }, unknown, true>({
     security: [{ scheme: 'bearer', type: 'http' }],
     throwOnError: true,
-    url: '/api/integrations/woocommerce/v1/orders',
+    url: '/api/integrations/ecommerce/v1/orders',
     query,
   })
   return response.data
 }
 
-export function useWooCommerceOrdersQuery(
+export function useEcommerceOrdersQuery(
   tenantScope: string | undefined,
   query?: {
     salesChannelId?: string
@@ -68,15 +68,15 @@ export function useWooCommerceOrdersQuery(
   options?: { enabled?: boolean }
 ) {
   return useQuery({
-    queryKey: ['woocommerce', 'orders', tenantScope ?? 'unresolved', query],
-    queryFn: () => getWooCommerceOrders(query),
+    queryKey: ['ecommerce', 'orders', tenantScope ?? 'unresolved', query],
+    queryFn: () => getEcommerceOrders(query),
     enabled: (options?.enabled ?? true) && Boolean(tenantScope),
     retry: 1,
     staleTime: 0,
   })
 }
 
-async function reconcileWooCommerceOrder(params: {
+async function reconcileEcommerceOrder(params: {
   externalId: string
   salesChannelId?: string
   body?: string
@@ -84,7 +84,7 @@ async function reconcileWooCommerceOrder(params: {
   const response = await client.post<any, unknown, true>({
     security: [{ scheme: 'bearer', type: 'http' }],
     throwOnError: true,
-    url: '/api/integrations/woocommerce/v1/orders/{externalId}/reconcile',
+    url: '/api/integrations/ecommerce/v1/orders/{externalId}/reconcile',
     path: { externalId: params.externalId },
     query: params.salesChannelId ? { salesChannelId: params.salesChannelId } : undefined,
     body: params.body ?? '',
@@ -92,8 +92,8 @@ async function reconcileWooCommerceOrder(params: {
   return response.data
 }
 
-export function useReconcileWooCommerceOrderMutation() {
+export function useReconcileEcommerceOrderMutation() {
   return useMutation({
-    mutationFn: reconcileWooCommerceOrder,
+    mutationFn: reconcileEcommerceOrder,
   })
 }

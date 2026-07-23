@@ -74,15 +74,18 @@ public class PaymentWebhookResource {
         event.setTenantId(tenantId);
         event.setPaymentIntentId(intentId);
 
+        String txnId = payload.gatewayTransactionId.trim();
+        long amountMinor = payload.amountMinor != null ? payload.amountMinor : 0;
+
         String rawPayload = String.format(
                 "{\"payment_intent_id\":\"%s\",\"gateway_transaction_id\":\"%s\",\"status\":\"%s\",\"amount_minor\":%d,\"currency\":\"%s\"}",
-                intentId, payload.gatewayTransactionId.trim(), payload.status,
-                payload.amountMinor != null ? payload.amountMinor : 0,
+                intentId, txnId, payload.status,
+                amountMinor,
                 payload.currency != null ? payload.currency : "USD"
         );
         event.setRawPayload(rawPayload);
 
-        if (!paymentGatewayService.verifySignature(payload.paymentIntentId, payload.gatewayTransactionId.trim(), payload.amountMinor != null ? payload.amountMinor : 0, payload.signature)) {
+        if (!paymentGatewayService.verifySignature(intentId.toString(), txnId, amountMinor, payload.signature)) {
             return failEvent(event, "Invalid webhook signature");
         }
 
@@ -96,7 +99,6 @@ public class PaymentWebhookResource {
             return failEvent(event, "PaymentIntent was already marked failed");
         }
 
-        String txnId = payload.gatewayTransactionId.trim();
         String idempotencyKey = gatewayName + ":" + txnId;
 
         var existing = idempotencyService.getResult(tenantId, idempotencyKey);

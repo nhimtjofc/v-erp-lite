@@ -19,12 +19,12 @@ import java.time.Instant;
 import java.util.*;
 
 @ApplicationScoped
-public class WooCommerceOrderService {
+public class EcommerceOrderService {
 
     @Inject
     InventoryCostService inventoryCostService;
 
-    private static final Logger log = LoggerFactory.getLogger(WooCommerceOrderService.class);
+    private static final Logger log = LoggerFactory.getLogger(EcommerceOrderService.class);
 
     private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
     private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
@@ -37,7 +37,7 @@ public class WooCommerceOrderService {
     ObjectMapper objectMapper;
 
     @Inject
-    WooCommerceSecretResolver secretResolver;
+    EcommerceSecretResolver secretResolver;
 
     public void verifyWebhookSignature(String rawBody, String signatureHeader, String tenantId, UUID salesChannelId) {
         if (signatureHeader == null || signatureHeader.isBlank()) {
@@ -130,7 +130,7 @@ public class WooCommerceOrderService {
             WebhookEvent event = WebhookEvent.findById(eventId);
             if (event != null) {
                 event.setStatus("PROCESSED");
-                event.setErrorMessage(null); // Clear errors on success
+                event.setErrorMessage(null);
                 event.setProcessedAt(Instant.now());
                 Map<String, Object> metadata = event.getChannelMetadata();
                 if (metadata == null) {
@@ -146,7 +146,7 @@ public class WooCommerceOrderService {
     public Order processOrderWebhook(String tenantId, UUID salesChannelId, String externalEventId, JsonNode orderNode, WebhookEvent event) {
         String wooOrderId = orderNode.path("id").asText();
         if (wooOrderId.isBlank()) {
-            throw new BadRequestException("WooCommerce Order ID is missing");
+            throw new BadRequestException("Ecommerce Order ID is missing");
         }
 
         ExternalEntityMapping orderMapping = ExternalEntityMapping.findByExternalId(
@@ -155,12 +155,11 @@ public class WooCommerceOrderService {
         if (orderMapping != null) {
             Order existingOrder = Order.find("id = ?1 and tenantId = ?2", orderMapping.getErpEntityId(), tenantId).firstResult();
             if (existingOrder != null) {
-                log.info("WooCommerce order {} already synced to ERP order {}", wooOrderId, existingOrder.getId());
+                log.info("Ecommerce order {} already synced to ERP order {}", wooOrderId, existingOrder.getId());
                 return existingOrder;
             }
         }
 
-        // 1. Resolve Customer by Billing Email, or create a new one
         JsonNode billingNode = orderNode.path("billing");
         String email = billingNode.path("email").asText().trim();
         if (email.isBlank()) {
@@ -177,7 +176,6 @@ public class WooCommerceOrderService {
             customer.setEmail(email);
             customer.setPhone(billingNode.path("phone").asText());
 
-            // Build address
             String address_1 = billingNode.path("address_1").asText().trim();
             String address_2 = billingNode.path("address_2").asText().trim();
             String city = billingNode.path("city").asText().trim();
@@ -189,7 +187,6 @@ public class WooCommerceOrderService {
             customer.persist();
         }
 
-        // 2. Resolve SalesChannel and Business
         SalesChannel channel = SalesChannel.find("id = ?1 and tenantId = ?2", salesChannelId, tenantId).firstResult();
         if (channel == null) {
             throw new BadRequestException("Sales channel not found");
@@ -199,7 +196,6 @@ public class WooCommerceOrderService {
             throw new BadRequestException("Business not found for sales channel");
         }
 
-        // 3. Process line items and compute subtotal
         long subtotal = 0;
         List<OrderItem> orderItems = new ArrayList<>();
         Order order = new Order();
@@ -221,15 +217,13 @@ public class WooCommerceOrderService {
                 throw new BadRequestException("Quantity must be greater than zero");
             }
 
-            // Find ERP product mapping
             ExternalEntityMapping productMapping = ExternalEntityMapping.findByExternalId(
                     tenantId, salesChannelId, "PRODUCT", externalProductId
             );
             if (productMapping == null) {
-                throw new BadRequestException("ERP Product mapping not found for WooCommerce product " + externalProductId);
+                throw new BadRequestException("ERP Product mapping not found for Ecommerce product " + externalProductId);
             }
 
-            // Acquire Pessimistic write lock on ERP product
             Product product = Product.find("id = ?1 and tenantId = ?2", productMapping.getErpEntityId(), tenantId)
                     .withLock(LockModeType.PESSIMISTIC_WRITE)
                     .firstResult();
@@ -241,15 +235,13 @@ public class WooCommerceOrderService {
             long unitPrice;
 
             if (externalVariationId != null && !"0".equals(externalVariationId) && !externalVariationId.isBlank()) {
-                // Find ERP product variant mapping
                 ExternalEntityMapping variantMapping = ExternalEntityMapping.findByExternalId(
                         tenantId, salesChannelId, "PRODUCT_VARIANT", externalVariationId
                 );
                 if (variantMapping == null) {
-                    throw new BadRequestException("ERP Product variant mapping not found for WooCommerce variation " + externalVariationId);
+                    throw new BadRequestException("ERP Product variant mapping not found for Ecommerce variation " + externalVariationId);
                 }
 
-                // Acquire Pessimistic write lock on ERP variant
                 variant = ProductVariant.find("id = ?1 and tenantId = ?2", variantMapping.getErpEntityId(), tenantId)
                         .withLock(LockModeType.PESSIMISTIC_WRITE)
                         .firstResult();
@@ -264,12 +256,10 @@ public class WooCommerceOrderService {
                 unitPrice = variant.getPriceMinor();
                 variant.setReservedQuantity(variant.getReservedQuantity() + quantity);
             } else {
-                // simple product
                 if (product.getAvailableQuantity() < quantity) {
                     throw new BadRequestException("Product " + product.getName() + " is out of stock (Available: " + product.getAvailableQuantity() + ")");
                 }
 
-                // Check sale price validity
                 Instant now = Instant.now();
                 if (product.getSalePriceMinor() != null && product.getSaleStartsAt() != null && product.getSaleEndsAt() != null
                         && now.isAfter(product.getSaleStartsAt()) && now.isBefore(product.getSaleEndsAt())) {
@@ -297,7 +287,6 @@ public class WooCommerceOrderService {
             orderItems.add(orderItem);
         }
 
-        // 4. Handle Voucher / Coupon Code
         long discount = 0;
         Voucher voucher = null;
         JsonNode couponLinesNode = orderNode.path("coupon_lines");
@@ -314,7 +303,6 @@ public class WooCommerceOrderService {
                 discount = voucher.calculateDiscount(subtotal);
                 voucher.setUsedCount(voucher.getUsedCount() + 1);
 
-                // Mark customer voucher as used if collected
                 CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3 and isUsed = false",
                         customer.getId(), voucher.getId(), tenantId).firstResult();
                 if (cv != null) {
@@ -323,23 +311,18 @@ public class WooCommerceOrderService {
             }
         }
 
-        // 5. Compute Shipping Fee
         long orderAfterDiscount = subtotal - discount;
         long shippingFee = FLAT_SHIPPING_FEE_MINOR;
         if (orderAfterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
             shippingFee = 0;
         }
 
-        // 6. Compute VAT Tax (10%)
         long tax = Math.round((double) orderAfterDiscount * TAX_RATE);
 
-        // 7. Compute Final Amount
         long finalAmount = orderAfterDiscount + shippingFee + tax;
 
-        // 8. Generate ERP Order Number
         String orderNumber = "WOO-" + wooOrderId + "-" + (int)(Math.random() * 900 + 100);
 
-        // 9. Populate Order Details
         JsonNode shippingNode = orderNode.path("shipping");
         String shipFirstName = shippingNode.path("first_name").asText();
         String shipLastName = shippingNode.path("last_name").asText();
@@ -360,13 +343,12 @@ public class WooCommerceOrderService {
             fullShipAddress = customer.getAddress();
         }
 
-        // Upgrade: Price discrepancy check and warning log
         double wooTotalVal = orderNode.path("total").asDouble();
         long wooTotalMinor = Math.round(wooTotalVal * 100.0);
         String finalNotes = null;
         if (wooTotalMinor != finalAmount) {
             finalNotes = String.format(
-                    "[System Warning] WooCommerce total ($%.2f) differs from ERP calculated total ($%.2f). Discrepancy might be due to tax/shipping configuration difference.",
+                    "[System Warning] Ecommerce total ($%.2f) differs from ERP calculated total ($%.2f). Discrepancy might be due to tax/shipping configuration difference.",
                     wooTotalVal, (double) finalAmount / 100.0
             );
         }
@@ -390,17 +372,15 @@ public class WooCommerceOrderService {
         order.setItems(orderItems);
         order.persist();
 
-        // 10. Write initial history
         OrderHistory history = new OrderHistory();
         history.setId(UUID.randomUUID());
         history.setTenantId(tenantId);
         history.setOrder(order);
         history.setOldStatus(null);
         history.setNewStatus("PENDING");
-        history.setNote("WooCommerce order created via integration webhook");
+        history.setNote("Ecommerce order created via integration webhook");
         history.persist();
 
-        // 11. Record ExternalEntityMapping for the order
         ExternalEntityMapping mapping = new ExternalEntityMapping();
         mapping.setId(UUID.randomUUID());
         mapping.setTenantId(tenantId);
@@ -465,14 +445,14 @@ public class WooCommerceOrderService {
     public Order updateOrderWebhook(String tenantId, UUID salesChannelId, String externalEventId, JsonNode orderNode, WebhookEvent event) {
         String wooOrderId = orderNode.path("id").asText();
         if (wooOrderId.isBlank()) {
-            throw new BadRequestException("WooCommerce Order ID is missing");
+            throw new BadRequestException("Ecommerce Order ID is missing");
         }
 
         ExternalEntityMapping orderMapping = ExternalEntityMapping.findByExternalId(
                 tenantId, salesChannelId, "ORDER", wooOrderId
         );
         if (orderMapping == null) {
-            throw new BadRequestException("Order mapping not found in ERP for WooCommerce ID: " + wooOrderId);
+            throw new BadRequestException("Order mapping not found in ERP for Ecommerce ID: " + wooOrderId);
         }
 
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", orderMapping.getErpEntityId(), tenantId).firstResult();
@@ -501,11 +481,10 @@ public class WooCommerceOrderService {
         }
 
         if (!isAllowedStatusTransition(oldStatus, newStatus)) {
-            log.warn("Invalid WooCommerce status transition from {} to {} for order {}", oldStatus, newStatus, order.getId());
+            log.warn("Invalid Ecommerce status transition from {} to {} for order {}", oldStatus, newStatus, order.getId());
             return order;
         }
 
-        // Stock and Reservation updates
         if (List.of("PENDING", "CONFIRMED", "SHIPPING").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
@@ -554,7 +533,7 @@ public class WooCommerceOrderService {
         history.setOrder(order);
         history.setOldStatus(oldStatus);
         history.setNewStatus(newStatus);
-        history.setNote("WooCommerce order status updated to " + wooStatus + " via webhook");
+        history.setNote("Ecommerce order status updated to " + wooStatus + " via webhook");
         history.persist();
 
         return order;

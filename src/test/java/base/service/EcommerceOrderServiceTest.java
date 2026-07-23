@@ -22,11 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-@TestProfile(WooCommerceOrderServiceTest.WooCommerceTestProfile.class)
-class WooCommerceOrderServiceTest {
+@TestProfile(EcommerceOrderServiceTest.EcommerceTestProfile.class)
+class EcommerceOrderServiceTest {
 
     @Inject
-    WooCommerceOrderService orderService;
+    EcommerceOrderService orderService;
 
     @Inject
     ObjectMapper objectMapper;
@@ -56,7 +56,7 @@ class WooCommerceOrderServiceTest {
     }
 
     private ChannelFixture createTestChannel(String suffix, int stockQty, long basePrice) {
-        String tenantId = "woo-order-tst-" + suffix + "-" + UUID.randomUUID().toString().substring(0, 8);
+        String tenantId = "ecommerce-order-tst-" + suffix + "-" + UUID.randomUUID().toString().substring(0, 8);
         UUID businessId = UUID.randomUUID();
         UUID channelId = UUID.randomUUID();
         UUID productErpId = UUID.randomUUID();
@@ -66,14 +66,14 @@ class WooCommerceOrderServiceTest {
             Tenant tenant = new Tenant();
             tenant.setId(UUID.randomUUID());
             tenant.setCode(tenantId);
-            tenant.setName("Woo Order test tenant " + suffix);
+            tenant.setName("Ecommerce Order test tenant " + suffix);
             tenant.setActive(true);
             tenant.persist();
 
             Business business = new Business();
             business.setId(businessId);
             business.setTenantId(tenantId);
-            business.setName("Woo Order test business " + suffix);
+            business.setName("Ecommerce Order test business " + suffix);
             business.setActive(true);
             business.persist();
 
@@ -110,7 +110,6 @@ class WooCommerceOrderServiceTest {
             variant.setReservedQuantity(0);
             variant.persist();
 
-            // Setup mappings
             ExternalEntityMapping pm = new ExternalEntityMapping();
             pm.setId(UUID.randomUUID());
             pm.setTenantId(tenantId);
@@ -155,7 +154,6 @@ class WooCommerceOrderServiceTest {
         );
         JsonNode orderNode = objectMapper.readTree(jsonPayload);
 
-        // Process first time
         Order firstOrder = QuarkusTransaction.requiringNew().call(() -> {
             WebhookEvent event = orderService.getOrCreateWebhookEvent(
                     fixture.tenantId(), fixture.channelId(), "woo-order-" + orderId, jsonPayload, "deliv-1"
@@ -166,10 +164,9 @@ class WooCommerceOrderServiceTest {
         });
 
         assertNotNull(firstOrder);
-        assertEquals(4000L, firstOrder.getSubtotalAmountMinor()); // 2000 * 2
+        assertEquals(4000L, firstOrder.getSubtotalAmountMinor());
         assertEquals("PENDING", firstOrder.getStatus());
 
-        // Process second time (simulate duplicate webhook delivery)
         Order secondOrder = QuarkusTransaction.requiringNew().call(() -> {
             WebhookEvent event = orderService.getOrCreateWebhookEvent(
                     fixture.tenantId(), fixture.channelId(), "woo-order-" + orderId, jsonPayload, "deliv-1"
@@ -177,10 +174,8 @@ class WooCommerceOrderServiceTest {
             return orderService.processOrderWebhook(fixture.tenantId(), fixture.channelId(), "woo-order-" + orderId, orderNode, event);
         });
 
-        // Must return the exact same order instance and not create a new DB record
         assertEquals(firstOrder.getId(), secondOrder.getId());
 
-        // Verify reserved stock is only 2, not 4
         ProductVariant variant = ProductVariant.find("id = ?1 and tenantId = ?2", fixture.variantErpId(), fixture.tenantId()).firstResult();
         assertNotNull(variant);
         assertEquals(2, variant.getReservedQuantity());
@@ -191,16 +186,14 @@ class WooCommerceOrderServiceTest {
         ChannelFixture tenantA = createTestChannel("tenantA", 10, 1000L);
         ChannelFixture tenantB = createTestChannel("tenantB", 10, 1000L);
 
-        // Try to place an order in Tenant B but referencing Tenant A's external product mapping
         String orderId = "woo-789";
         String jsonPayload = String.format(
                 "{\"id\":\"%s\",\"billing\":{\"email\":\"leak@example.com\",\"first_name\":\"A\",\"last_name\":\"B\"}," +
                 "\"line_items\":[{\"product_id\":\"%s\",\"variation_id\":\"%s\",\"quantity\":1}]}",
-                orderId, tenantA.externalProductId(), tenantA.externalVariantId() // Mappings from A
+                orderId, tenantA.externalProductId(), tenantA.externalVariantId()
         );
         JsonNode orderNode = objectMapper.readTree(jsonPayload);
 
-        // Process in Tenant B's context
         assertThrows(BadRequestException.class, () -> {
             QuarkusTransaction.requiringNew().run(() -> {
                 WebhookEvent event = orderService.getOrCreateWebhookEvent(
@@ -213,9 +206,8 @@ class WooCommerceOrderServiceTest {
 
     @Test
     void testCouponValidation() throws Exception {
-        ChannelFixture fixture = createTestChannel("coupon", 10, 5000L); // Price $50 per unit
+        ChannelFixture fixture = createTestChannel("coupon", 10, 5000L);
 
-        // Seed a voucher inside a committed transaction
         String couponCode = "ERP50";
         QuarkusTransaction.requiringNew().run(() -> {
             Voucher voucher = new Voucher();
@@ -235,11 +227,6 @@ class WooCommerceOrderServiceTest {
             voucher.persist();
         });
 
-        // 3 items * $50 = $150 subtotal (15000 minor)
-        // 50% discount on $150 = $75, capped at $100 max discount -> discount = $75 (7500 minor)
-        // Order after discount = $75. Capped free shipping threshold is $100. Since $75 < $100, shipping is $10 (1000 minor)
-        // VAT Tax = 10% of $75 = $7.50 -> rounded to 750 minor
-        // Final Amount = $75 (7500) + $10 (1000) + $7.50 (750) = $92.50 (9250 minor)
         String orderId = "woo-coupon-1";
         String jsonPayload = String.format(
                 "{\"id\":\"%s\",\"billing\":{\"email\":\"coupon@example.com\",\"first_name\":\"Jane\",\"last_name\":\"Doe\"}," +
@@ -264,12 +251,11 @@ class WooCommerceOrderServiceTest {
         assertEquals(1000L, order.getShippingFeeMinor());
         assertEquals(750L, order.getTaxAmountMinor());
         assertEquals(9250L, order.getFinalAmountMinor());
-        assertNull(order.getNotes()); // No price discrepancy because $92.50 matches Woo total!
+        assertNull(order.getNotes());
     }
 
     @Test
     void concurrentCheckoutCompetingForLastSKU() throws Exception {
-        // Create channel with ONLY 1 unit of stock
         ChannelFixture fixture = createTestChannel("concurrent", 1, 1500L);
 
         int threadCount = 8;
@@ -315,23 +301,21 @@ class WooCommerceOrderServiceTest {
         executor.shutdown();
         assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
 
-        // Exactly one concurrent checkout should succeed
         assertEquals(1, successCount.get(), "Only one checkout thread should succeed");
         assertEquals(threadCount - 1, failureCount.get(), "Other checkouts should fail due to out-of-stock");
 
-        // Verify final reserved stock in DB is exactly 1
         ProductVariant variant = ProductVariant.find("id = ?1 and tenantId = ?2", fixture.variantErpId(), fixture.tenantId()).firstResult();
         assertNotNull(variant);
         assertEquals(1, variant.getReservedQuantity());
     }
 
-    public static class WooCommerceTestProfile implements io.quarkus.test.junit.QuarkusTestProfile {
+    public static class EcommerceTestProfile implements io.quarkus.test.junit.QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.keycloak.admin-client.server-url", "http://127.0.0.1:1",
-                    "woocommerce.webhook.secrets.test-channel", "test-secret-that-must-never-be-serialized",
-                    "woocommerce.bootstrap.enabled", "false"
+                    "ecommerce.webhook.secrets.test-channel", "test-secret-that-must-never-be-serialized",
+                    "ecommerce.bootstrap.enabled", "false"
             );
         }
     }

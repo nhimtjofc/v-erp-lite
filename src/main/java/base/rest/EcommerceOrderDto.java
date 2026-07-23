@@ -3,20 +3,20 @@ package base.rest;
 import java.time.Instant;
 import java.util.UUID;
 
-public class WooCommerceOrderDto {
+public class EcommerceOrderDto {
     public String wooOrderId;
     public UUID erpOrderId;
     public String orderNumber;
     public String customerName;
     public Instant orderDate;
     public long finalAmountMinor;
-    public String syncStatus; // SYNCED, FAILED, PROCESSING
+    public String syncStatus;
     public String lastErrorMessage;
     public Instant lastAttemptedAt;
 
-    public WooCommerceOrderDto() {}
+    public EcommerceOrderDto() {}
 
-    public WooCommerceOrderDto(
+    public EcommerceOrderDto(
             String wooOrderId,
             UUID erpOrderId,
             String orderNumber,

@@ -29,7 +29,6 @@ import {
   CalendarDays,
   ChartNoAxesCombined,
   CircleDollarSign,
-  HandCoins,
   ListChecks,
   PackageOpen,
   Plus,
@@ -40,7 +39,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 
-const CURRENCY = 'VND'
+const CURRENCY = 'USD'
 
 function toDateInput(date: Date): string {
   const year = date.getFullYear()
@@ -138,7 +137,6 @@ const ADJUSTMENT_CATEGORIES = [
   'OTHER_INCOME',
   'OPERATING_EXPENSE',
   'WAREHOUSE_ADJUSTMENT',
-  'COMMISSION_ADJUSTMENT',
   'RETURN_ADJUSTMENT',
 ] as const
 
@@ -534,19 +532,13 @@ export function RevenuePage() {
             </span>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 xl:grid-cols-4">
+        <CardContent className="grid gap-4 pt-6 sm:grid-cols-3">
           {[
             {
               label: t('netRevenue'),
               value: Number(monthToDate?.totals?.netRevenueMinor ?? 0),
               icon: CircleDollarSign,
               className: 'text-primary',
-            },
-            {
-              label: t('commission'),
-              value: Number(monthToDate?.totals?.commissionMinor ?? 0),
-              icon: HandCoins,
-              className: 'text-amber-600 dark:text-amber-400',
             },
             {
               label: t('warehouseCost'),
@@ -577,12 +569,13 @@ export function RevenuePage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <SummaryCard
-          label={t('grossRevenue')}
-          value={isLoading ? '…' : formatMoneyMinor(Number(totals?.grossRevenueMinor ?? 0), CURRENCY)}
-          hint={t('grossRevenueHint')}
-          icon={CircleDollarSign}
+          label={t('netRevenue')}
+          value={isLoading ? '…' : formatMoneyMinor(Number(totals?.netRevenueMinor ?? 0), CURRENCY)}
+          hint={t('netRevenueHint')}
+          icon={ChartNoAxesCombined}
+          tone="success"
         />
         <SummaryCard
           label={t('returns')}
@@ -590,13 +583,6 @@ export function RevenuePage() {
           hint={t('returnsHint', { count: Number(totals?.refundCount ?? 0) })}
           icon={RotateCcw}
           tone="danger"
-        />
-        <SummaryCard
-          label={t('netRevenue')}
-          value={isLoading ? '…' : formatMoneyMinor(Number(totals?.netRevenueMinor ?? 0), CURRENCY)}
-          hint={t('netRevenueHint')}
-          icon={ChartNoAxesCombined}
-          tone="success"
         />
         <SummaryCard
           label={t('completedOrders')}
@@ -638,28 +624,24 @@ export function RevenuePage() {
                 <TableRow>
                   <TableHead>{t('date')}</TableHead>
                   <TableHead className="text-right">{t('orders')}</TableHead>
-                  <TableHead className="text-right">{t('grossRevenue')}</TableHead>
-                  <TableHead className="text-right">{t('returns')}</TableHead>
-                  <TableHead className="text-right">{t('commission')}</TableHead>
-                  <TableHead className="text-right">{t('warehouseCost')}</TableHead>
                   <TableHead className="text-right">{t('netRevenue')}</TableHead>
+                  <TableHead className="text-right">{t('returns')}</TableHead>
+                  <TableHead className="text-right">{t('warehouseCost')}</TableHead>
                   <TableHead className="text-right">{t('profitLoss')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted-foreground">{t('loading')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">{t('loading')}</TableCell></TableRow>
                 ) : days.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted-foreground">{t('noData')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">{t('noData')}</TableCell></TableRow>
                 ) : days.map((day) => (
                   <TableRow key={day.date}>
                     <TableCell className="font-medium">{formatDate(day.date!, i18n.language)}</TableCell>
                     <TableCell className="text-right">{Number(day.orderCount ?? 0)}</TableCell>
-                    <TableCell className="text-right">{formatMoneyMinor(Number(day.grossRevenueMinor ?? 0), CURRENCY)}</TableCell>
-                    <TableCell className="text-right text-destructive">-{formatMoneyMinor(Number(day.refundMinor ?? 0), CURRENCY)}</TableCell>
-                    <TableCell className="text-right">{formatMoneyMinor(Number(day.commissionMinor ?? 0), CURRENCY)}</TableCell>
-                    <TableCell className="text-right">{formatMoneyMinor(Number(day.warehouseCostMinor ?? 0), CURRENCY)}</TableCell>
                     <TableCell className="text-right font-semibold text-success">{formatMoneyMinor(Number(day.netRevenueMinor ?? 0), CURRENCY)}</TableCell>
+                    <TableCell className="text-right text-destructive">-{formatMoneyMinor(Number(day.refundMinor ?? 0), CURRENCY)}</TableCell>
+                    <TableCell className="text-right">{formatMoneyMinor(Number(day.warehouseCostMinor ?? 0), CURRENCY)}</TableCell>
                     <TableCell className={`text-right font-bold ${Number(day.profitMinor ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
                       {formatMoneyMinor(Number(day.profitMinor ?? 0), CURRENCY)}
                     </TableCell>

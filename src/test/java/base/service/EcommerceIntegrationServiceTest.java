@@ -29,13 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
-@TestProfile(WooCommerceIntegrationServiceTest.WooCommerceTestProfile.class)
-class WooCommerceIntegrationServiceTest {
+@TestProfile(EcommerceIntegrationServiceTest.EcommerceTestProfile.class)
+class EcommerceIntegrationServiceTest {
 
     private static final String TEST_SECRET = "test-secret-that-must-never-be-serialized";
 
     @Inject
-    WooCommerceIntegrationService service;
+    EcommerceIntegrationService service;
 
     @Inject
     ObjectMapper objectMapper;
@@ -46,7 +46,7 @@ class WooCommerceIntegrationServiceTest {
         ChannelFixture tenantA = createDisabledChannel("a");
         ChannelFixture tenantB = createDisabledChannel("b");
 
-        WooCommerceIntegrationService.HealthSnapshot result = service.checkHealth(
+        EcommerceIntegrationService.HealthSnapshot result = service.checkHealth(
                 tenantA.tenantId(),
                 tenantA.businessId()
         );
@@ -60,7 +60,7 @@ class WooCommerceIntegrationServiceTest {
         assertEquals(1, result.webhookEventCount());
         assertFalse(objectMapper.writeValueAsString(result).contains(TEST_SECRET));
 
-        WooCommerceIntegrationService.HealthSnapshot crossTenantResult = service.checkHealth(
+        EcommerceIntegrationService.HealthSnapshot crossTenantResult = service.checkHealth(
                 tenantA.tenantId(),
                 tenantB.businessId()
         );
@@ -144,7 +144,7 @@ class WooCommerceIntegrationServiceTest {
             channel.setStatus("DISCONNECTED");
             channel.setActive(true);
 
-            WooCommerceIntegrationService.HealthSnapshot result = service.checkHealth(
+            EcommerceIntegrationService.HealthSnapshot result = service.checkHealth(
                     fixture.tenantId(),
                     fixture.businessId()
             );
@@ -159,21 +159,21 @@ class WooCommerceIntegrationServiceTest {
     }
 
     private ChannelFixture createDisabledChannel(String suffix) {
-        String tenantId = "woo-test-" + suffix + "-" + UUID.randomUUID().toString().substring(0, 8);
+        String tenantId = "ecommerce-test-" + suffix + "-" + UUID.randomUUID().toString().substring(0, 8);
         UUID businessId = UUID.randomUUID();
         UUID channelId = UUID.randomUUID();
 
         Tenant tenant = new Tenant();
         tenant.setId(UUID.randomUUID());
         tenant.setCode(tenantId);
-        tenant.setName("Woo test tenant " + suffix);
+        tenant.setName("Ecommerce test tenant " + suffix);
         tenant.setActive(true);
         tenant.persist();
 
         Business business = new Business();
         business.setId(businessId);
         business.setTenantId(tenantId);
-        business.setName("Woo test business " + suffix);
+        business.setName("Ecommerce test business " + suffix);
         business.setActive(true);
         business.persist();
 
@@ -189,8 +189,8 @@ class WooCommerceIntegrationServiceTest {
         channel.persist();
 
         UUID erpEntityId = UUID.randomUUID();
-        String mappingExternalId = "woo-product-" + suffix;
-        String webhookExternalEventId = "woo-event-" + suffix;
+        String mappingExternalId = "ecommerce-product-" + suffix;
+        String webhookExternalEventId = "ecommerce-event-" + suffix;
 
         ChannelFixture fixture = new ChannelFixture(
                 tenantId,
@@ -239,15 +239,15 @@ class WooCommerceIntegrationServiceTest {
         return webhookEvent;
     }
 
-    public static class WooCommerceTestProfile implements QuarkusTestProfile {
+    public static class EcommerceTestProfile implements QuarkusTestProfile {
 
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.keycloak.admin-client.server-url", "http://127.0.0.1:1",
-                    "woocommerce.webhook.secrets.test-channel", TEST_SECRET,
-                    "woocommerce.health.allow-private-hosts", "true",
-                    "woocommerce.bootstrap.enabled", "false"
+                    "ecommerce.webhook.secrets.test-channel", TEST_SECRET,
+                    "ecommerce.health.allow-private-hosts", "true",
+                    "ecommerce.bootstrap.enabled", "false"
             );
         }
     }
