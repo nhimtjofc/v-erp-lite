@@ -8,8 +8,8 @@ import {
   useOwnerDecisionMutation,
   listOrdersQueryKey,
   useMeQuery,
-  useWooCommerceOrdersQuery,
-  useReconcileWooCommerceOrderMutation,
+    useEcommerceOrdersQuery,
+    useReconcileEcommerceOrderMutation,
 } from '@/shared/api'
 import {
   useOrderEscrowQuery,
@@ -296,14 +296,14 @@ export function OrderDetailPage() {
     data: wooOrders,
     refetch: refetchWooOrders,
     isFetching: isWooOrdersFetching,
-  } = useWooCommerceOrdersQuery(
+  } = useEcommerceOrdersQuery(
     tenantScope,
     order?.orderNumber ? { search: order.orderNumber } : undefined,
     { enabled: isWooEnabled }
   )
   const wooOrderInfo = wooOrders?.find((o) => o.erpOrderId === order?.id)
 
-  const reconcileMutation = useReconcileWooCommerceOrderMutation()
+  const reconcileMutation = useReconcileEcommerceOrderMutation()
 
   const historyQuery = useQuery({
     queryKey: ['order-history', id],
@@ -829,13 +829,13 @@ export function OrderDetailPage() {
               <CardHeader className="flex flex-row items-center gap-3 pb-3">
                 <PlugZap className="h-5 w-5 text-primary" />
                 <div>
-                  <CardTitle className="text-lg">WooCommerce Sync</CardTitle>
+                  <CardTitle className="text-lg">Ecommerce Sync</CardTitle>
                   <CardDescription>Order integration details</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="text-sm space-y-3">
                 <div>
-                  <span className="text-muted-foreground block text-xs">WooCommerce Order ID</span>
+                  <span className="text-muted-foreground block text-xs">Ecommerce Order ID</span>
                   <span className="font-semibold text-foreground">#{wooOrderInfo.wooOrderId}</span>
                 </div>
                 <div>

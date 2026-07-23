@@ -161,7 +161,7 @@ export function ProductsPage() {
         <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
           <CardHeader className="py-4">
             <CardTitle className="text-sm flex justify-between items-center text-blue-900 dark:text-blue-100">
-              <span>WooCommerce Sync Status</span>
+              <span>Ecommerce Sync Status</span>
               <Badge variant="outline" className="bg-white dark:bg-black">
                 {wooSummary.syncedProducts} / {wooSummary.totalProducts} Synced
               </Badge>

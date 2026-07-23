@@ -1380,7 +1380,7 @@ components:
           type: string
         signature:
           type: string
-    WooCommerceOrderDto:
+    EcommerceOrderDto:
       type: object
       properties:
         wooOrderId:
@@ -2331,14 +2331,14 @@ paths:
       summary: Get Image
       tags:
       - Image Resource
-  /api/integrations/woocommerce/v1/catalog/changes:
+  /api/integrations/ecommerce/v1/catalog/changes:
     get:
       summary: Get Catalog Changes
       description: "Returns active products modified after the 'since' timestamp,\
-        \ with their external WooCommerce IDs."
+        \ with their external Ecommerce IDs."
       operationId: getCatalogChanges
       tags:
-      - WooCommerce Catalog
+      - Ecommerce Catalog
       parameters:
       - name: businessId
         in: query
@@ -2375,14 +2375,14 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
-  /api/integrations/woocommerce/v1/catalog/mappings:
+  /api/integrations/ecommerce/v1/catalog/mappings:
     post:
       summary: Upsert Catalog Mappings
-      description: Upserts WooCommerce mapping IDs and sync statuses for products
+      description: Upserts Ecommerce mapping IDs and sync statuses for products
         and variants.
       operationId: upsertCatalogMappings
       tags:
-      - WooCommerce Catalog
+      - Ecommerce Catalog
       parameters:
       - name: businessId
         in: query
@@ -2407,13 +2407,13 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
-  /api/integrations/woocommerce/v1/catalog/summary:
+  /api/integrations/ecommerce/v1/catalog/summary:
     get:
       summary: Get Catalog Sync Summary
-      description: Returns summary statistics of the WooCommerce catalog synchronization.
+      description: Returns summary statistics of the Ecommerce catalog synchronization.
       operationId: getCatalogSyncSummary
       tags:
-      - WooCommerce Catalog
+      - Ecommerce Catalog
       parameters:
       - name: businessId
         in: query
@@ -2435,9 +2435,9 @@ paths:
         - admin
         - operator
         - businessOwner
-  /api/integrations/woocommerce/v1/health:
+  /api/integrations/ecommerce/v1/health:
     get:
-      operationId: getWooCommerceHealth
+      operationId: getEcommerceHealth
       parameters:
       - name: businessId
         in: query
@@ -2454,21 +2454,21 @@ paths:
           description: Not Authorized
         "403":
           description: Not Allowed
-      summary: Get Woo Commerce Health
+      summary: Get Ecommerce Health
       tags:
-      - Woo Commerce Integration Resource
+      - Ecommerce Integration
       security:
       - SecurityScheme:
         - admin
         - operator
         - businessOwner
-  /api/integrations/woocommerce/v1/orders:
+  /api/integrations/ecommerce/v1/orders:
     get:
-      summary: List WooCommerce Orders Sync Status
-      description: Returns synced and failed WooCommerce orders with their sync details.
-      operationId: listWooCommerceOrders
+      summary: List Ecommerce Orders Sync Status
+      description: Returns synced and failed Ecommerce orders with their sync details.
+      operationId: listEcommerceOrders
       tags:
-      - WooCommerce Orders
+      - Ecommerce Orders
       parameters:
       - name: limit
         in: query
@@ -2502,7 +2502,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/WooCommerceOrderDto"
+                  $ref: "#/components/schemas/EcommerceOrderDto"
         "401":
           description: Not Authorized
         "403":
@@ -2513,11 +2513,11 @@ paths:
         - operator
         - businessOwner
     post:
-      summary: Receive WooCommerce Order Webhook
-      description: Endpoint called by WooCommerce to sync new/updated orders to V-ERP.
+      summary: Receive Ecommerce Order Webhook
+      description: Endpoint called by Ecommerce to sync new/updated orders to V-ERP.
       operationId: createOrder
       tags:
-      - WooCommerce Orders
+      - Ecommerce Orders
       parameters:
       - name: salesChannelId
         in: query
@@ -2551,13 +2551,13 @@ paths:
           content:
             application/json:
               schema: {}
-  /api/integrations/woocommerce/v1/orders/{externalId}/reconcile:
+  /api/integrations/ecommerce/v1/orders/{externalId}/reconcile:
     post:
       summary: Reconcile / Retry Order Sync
-      description: Triggers a retry of a failed or stuck WooCommerce order webhook.
+      description: Triggers a retry of a failed or stuck Ecommerce order webhook.
       operationId: reconcileOrder
       tags:
-      - WooCommerce Orders
+      - Ecommerce Orders
       parameters:
       - name: externalId
         in: path
@@ -2589,14 +2589,14 @@ paths:
         - admin
         - operator
         - businessOwner
-  /api/integrations/woocommerce/v1/orders/{externalId}/status:
+  /api/integrations/ecommerce/v1/orders/{externalId}/status:
     get:
-      summary: Get WooCommerce Order Status
-      description: "Returns the current ERP fulfillment status for a WooCommerce order,\
-        \ keyed by the WooCommerce order ID."
+      summary: Get Ecommerce Order Status
+      description: "Returns the current ERP fulfillment status for a Ecommerce order,\
+        \ keyed by the Ecommerce order ID."
       operationId: getOrderStatus
       tags:
-      - WooCommerce Orders
+      - Ecommerce Orders
       parameters:
       - name: externalId
         in: path
@@ -5142,10 +5142,10 @@ paths:
 tags:
 - name: VietQR
   description: Offline VietQR generation
-- name: WooCommerce Catalog
-  description: Endpoints for WooCommerce plugin catalog synchronization
-- name: WooCommerce Orders
-  description: Endpoints for WooCommerce order synchronization
+- name: Ecommerce Catalog
+  description: Endpoints for Ecommerce plugin catalog synchronization
+- name: Ecommerce Orders
+  description: Endpoints for Ecommerce order synchronization
 info:
   title: v-erp-lite API
   version: 1.0-SNAPSHOT

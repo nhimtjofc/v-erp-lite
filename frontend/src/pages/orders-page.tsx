@@ -6,8 +6,8 @@ import {
     useListOrdersQuery,
     type Order,
     useMeQuery,
-    useWooCommerceOrdersQuery,
-    useReconcileWooCommerceOrderMutation,
+    useEcommerceOrdersQuery,
+    useReconcileEcommerceOrderMutation,
 } from '@/shared/api'
 import { useWooChannel } from '@/shared/woo-channel'
 import { WooChannelSelector } from '@/shared/ui/woo-channel-selector'
@@ -131,7 +131,7 @@ const STATUS_CONFIG: Record<string, {
         icon: XCircle, badgeVariant: 'destructive',
     },
     WOOCOMMERCE: {
-        label: 'WooCommerce', color: 'text-indigo-600 dark:text-indigo-400',
+        label: 'Ecommerce', color: 'text-indigo-600 dark:text-indigo-400',
         bg: 'bg-indigo-50 dark:bg-indigo-900/20', dot: 'bg-indigo-500',
         icon: PlugZap, badgeVariant: 'indigo',
     },
@@ -152,7 +152,7 @@ const STATUS_TABS = [
     { key: 'CONFIRMED', label: 'Legacy confirmed' },
     { key: 'SHIPPING', label: 'Legacy shipping' },
     { key: 'SHIPPED', label: 'Legacy shipped' },
-    { key: 'WOOCOMMERCE', label: 'WooCommerce Sync' },
+    { key: 'WOOCOMMERCE', label: 'Ecommerce Sync' },
 ] as const
 
 function getStatusCfg(status: string) {
@@ -374,7 +374,7 @@ export function OrdersPage() {
     const tenantScope = me?.tenantId
     const isWooEnabled = Boolean(roleName && !isCustomer)
     const { channelId: wooChannelId } = useWooChannel(tenantScope, { enabled: isWooEnabled })
-    const wooOrdersQuery = useWooCommerceOrdersQuery(
+    const wooOrdersQuery = useEcommerceOrdersQuery(
         tenantScope,
         activeStatus === 'WOOCOMMERCE'
             ? {
@@ -386,7 +386,7 @@ export function OrdersPage() {
     )
     const wooOrdersList = wooOrdersQuery.data ?? []
 
-    const reconcileMutation = useReconcileWooCommerceOrderMutation()
+    const reconcileMutation = useReconcileEcommerceOrderMutation()
 
     const handleReconcileWooOrder = (wooOrderId: string) => {
         reconcileMutation.mutate(
@@ -623,7 +623,7 @@ export function OrdersPage() {
                                 <p className="font-semibold text-foreground">Không tìm thấy đơn hàng</p>
                                 <p className="text-sm text-muted-foreground mt-1">
                                     {activeStatus === 'WOOCOMMERCE'
-                                        ? 'Không tìm thấy dữ liệu đồng bộ WooCommerce nào'
+                                        ? 'Không tìm thấy dữ liệu đồng bộ Ecommerce nào'
                                         : activeStatus
                                         ? `Không có đơn hàng nào ở trạng thái "${getStatusCfg(activeStatus).label}"`
                                         : 'Chưa có đơn hàng nào. Hãy tạo đơn đầu tiên!'
@@ -647,7 +647,7 @@ export function OrdersPage() {
                                 >
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-foreground">WooCommerce Order #{wooOrder.wooOrderId}</span>
+                                            <span className="font-bold text-foreground">Ecommerce Order #{wooOrder.wooOrderId}</span>
                                             {wooOrder.syncStatus === 'SYNCED' && (
                                                 <Badge className="border-transparent bg-success text-success-foreground text-[10px] px-1.5 py-0.5">
                                                     Synced

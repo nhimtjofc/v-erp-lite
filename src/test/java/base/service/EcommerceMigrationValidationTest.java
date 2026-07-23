@@ -12,8 +12,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
-@TestProfile(WooCommerceMigrationValidationTest.NoKeycloakProfile.class)
-class WooCommerceMigrationValidationTest {
+@TestProfile(EcommerceMigrationValidationTest.NoKeycloakProfile.class)
+class EcommerceMigrationValidationTest {
 
     @Inject
     EntityManager entityManager;

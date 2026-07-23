@@ -25,23 +25,23 @@ import java.util.Locale;
 import java.util.UUID;
 
 @ApplicationScoped
-public class WooCommerceIntegrationService {
+public class EcommerceIntegrationService {
 
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(3);
 
     @Inject
-    WooCommerceSecretResolver secretResolver;
+    EcommerceSecretResolver secretResolver;
 
     @Inject
-    WooCommerceChannelStore channelStore;
+    EcommerceChannelStore channelStore;
 
     @Inject
     ObjectMapper objectMapper;
 
-    @ConfigProperty(name = "woocommerce.health.timeout", defaultValue = "PT3S")
+    @ConfigProperty(name = "ecommerce.health.timeout", defaultValue = "PT3S")
     Duration configuredTimeout;
 
-    @ConfigProperty(name = "woocommerce.health.allow-private-hosts", defaultValue = "false")
+    @ConfigProperty(name = "ecommerce.health.allow-private-hosts", defaultValue = "false")
     boolean allowPrivateHosts;
 
     private Duration timeout;
@@ -63,7 +63,7 @@ public class WooCommerceIntegrationService {
             throw new BadRequestException("Tenant is required");
         }
 
-        WooCommerceChannelStore.ChannelSnapshot channel = channelStore.resolve(tenantId, businessId);
+        EcommerceChannelStore.ChannelSnapshot channel = channelStore.resolve(tenantId, businessId);
         if (channel == null) {
             return new HealthSnapshot(
                     null,
@@ -76,7 +76,7 @@ public class WooCommerceIntegrationService {
                     0,
                     Instant.now(),
                     null,
-                    "No WooCommerce sales channel is configured for this tenant."
+                    "No Ecommerce sales channel is configured for this tenant."
             );
         }
 
@@ -94,7 +94,7 @@ public class WooCommerceIntegrationService {
                     channel.webhookEventCount(),
                     channel.lastHealthCheckedAt(),
                     channel.lastConnectedAt(),
-                    "This WooCommerce sales channel is disabled."
+                    "This Ecommerce sales channel is disabled."
             );
         }
 
@@ -108,12 +108,12 @@ public class WooCommerceIntegrationService {
                     && channel.lastConnectedAt() != null;
             connectionStatus = connectorPreviouslyConfirmed ? "CONNECTED" : "CONFIGURED";
             message = connectorPreviouslyConfirmed
-                    ? "The WooCommerce connection is healthy."
-                    : "WooCommerce is reachable and the server-side secret is configured; "
+                    ? "The Ecommerce connection is healthy."
+                    : "Ecommerce is reachable and the server-side secret is configured; "
                             + "connector handshake is pending.";
         } else if ("UP".equals(probe.healthStatus())) {
             connectionStatus = "DISCONNECTED";
-            message = "WooCommerce is reachable, but the server-side webhook secret is not configured.";
+            message = "Ecommerce is reachable, but the server-side webhook secret is not configured.";
         } else {
             connectionStatus = "ERROR";
         }
@@ -163,13 +163,13 @@ public class WooCommerceIntegrationService {
                     null
             );
         } catch (IllegalArgumentException | URISyntaxException e) {
-            return new ProbeResult("DOWN", "The configured WooCommerce store URL is invalid.");
+            return new ProbeResult("DOWN", "The configured Ecommerce store URL is invalid.");
         }
 
         HttpRequest request = HttpRequest.newBuilder(healthUri)
                 .timeout(timeout)
                 .header("Accept", "application/json")
-                .header("User-Agent", "V-ERP-Lite-WooCommerce-Health/1.0")
+                .header("User-Agent", "V-ERP-Lite-Ecommerce-Health/1.0")
                 .GET()
                 .build();
 
@@ -181,27 +181,27 @@ public class WooCommerceIntegrationService {
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 return new ProbeResult(
                         "DOWN",
-                        "The WooCommerce store returned HTTP " + response.statusCode() + "."
+                        "The Ecommerce store returned HTTP " + response.statusCode() + "."
                 );
             }
-            if (!hasWooCommerceApi(response.body())) {
+            if (!hasEcommerceApi(response.body())) {
                 return new ProbeResult(
                         "DEGRADED",
-                        "WordPress is reachable, but the WooCommerce REST API is unavailable."
+                        "WordPress is reachable, but the Ecommerce REST API is unavailable."
                 );
             }
-            return new ProbeResult("UP", "WooCommerce is reachable.");
+            return new ProbeResult("UP", "Ecommerce is reachable.");
         } catch (HttpTimeoutException e) {
-            return new ProbeResult("DOWN", "The WooCommerce health check timed out.");
+            return new ProbeResult("DOWN", "The Ecommerce health check timed out.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return new ProbeResult("DOWN", "The WooCommerce health check was interrupted.");
+            return new ProbeResult("DOWN", "The Ecommerce health check was interrupted.");
         } catch (IOException e) {
-            return new ProbeResult("DOWN", "The WooCommerce store is unreachable.");
+            return new ProbeResult("DOWN", "The Ecommerce store is unreachable.");
         }
     }
 
-    private boolean hasWooCommerceApi(String responseBody) {
+    private boolean hasEcommerceApi(String responseBody) {
         try {
             JsonNode namespaces = objectMapper.readTree(responseBody).path("namespaces");
             if (!namespaces.isArray()) {

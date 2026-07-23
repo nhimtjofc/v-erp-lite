@@ -13,7 +13,7 @@ ALTER TABLE webhook_events
         REFERENCES sales_channels(tenant_id, id),
     ADD CONSTRAINT uq_webhook_events_channel_event
         UNIQUE (tenant_id, sales_channel_id, external_event_id),
-    ADD CONSTRAINT chk_webhook_events_woocommerce_identity
+    ADD CONSTRAINT chk_webhook_events_ecommerce_identity
         CHECK (
             UPPER(gateway) <> 'WOOCOMMERCE'
             OR (

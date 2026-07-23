@@ -12,7 +12,7 @@ const STATUS_TONE: Record<string, string> = {
 }
 
 /**
- * Business/channel picker shared across the WooCommerce staff surfaces.
+ * Business/channel picker shared across the Ecommerce staff surfaces.
  * Selecting a business updates the app-wide selection consumed by the
  * Integrations, Orders (Woo Sync) and catalog views.
  */
@@ -33,10 +33,10 @@ export function WooChannelSelector({ className }: { className?: string }) {
         value={businessId ?? ''}
         onChange={(e) => setBusinessId(e.target.value || undefined)}
         disabled={isLoading}
-        aria-label={t('settings:woocommerce.businessSelector')}
+        aria-label={t('settings:ecommerce.businessSelector')}
         className="h-9 min-w-[12rem] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <option value="">{t('settings:woocommerce.defaultChannel')}</option>
+        <option value="">{t('settings:ecommerce.defaultChannel')}</option>
         {list.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name ?? b.id}
@@ -46,7 +46,7 @@ export function WooChannelSelector({ className }: { className?: string }) {
 
       {health.isFetching ? (
         <span className="text-xs text-muted-foreground animate-pulse">
-          {t('settings:woocommerce.checkingChannel')}
+          {t('settings:ecommerce.checkingChannel')}
         </span>
       ) : status ? (
         <span className={`flex items-center gap-1 text-xs font-medium ${tone}`}>

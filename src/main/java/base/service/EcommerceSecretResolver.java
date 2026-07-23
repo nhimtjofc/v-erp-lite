@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 @ApplicationScoped
-public class WooCommerceSecretResolver {
+public class EcommerceSecretResolver {
 
     private static final Pattern SAFE_REFERENCE = Pattern.compile("[A-Za-z0-9_-]{1,128}");
     @Inject
@@ -25,7 +25,7 @@ public class WooCommerceSecretResolver {
 
         return nonBlank(
                 config.getOptionalValue(
-                        "woocommerce.webhook.secrets." + secretReference,
+                        "ecommerce.webhook.secrets." + secretReference,
                         String.class
                 )
         );

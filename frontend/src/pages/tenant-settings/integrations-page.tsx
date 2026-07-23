@@ -17,7 +17,7 @@ import {
   RefreshCw,
   ShoppingBag,
 } from 'lucide-react'
-import { WooCommerceIntegrationPanel } from './woocommerce-integration-panel'
+import { EcommerceIntegrationPanel } from './ecommerce-integration-panel'
 
 export function IntegrationsPage() {
   const { t, i18n } = useTranslation()
@@ -44,7 +44,7 @@ export function IntegrationsPage() {
           <div>
             <h2 className="text-lg font-semibold">{t('nav:integrations')}</h2>
             <p className="text-sm text-muted-foreground">
-              {t('settings:woocommerce.description')}
+              {t('settings:ecommerce.description')}
             </p>
           </div>
         </div>
@@ -58,18 +58,18 @@ export function IntegrationsPage() {
         </div>
       )}
 
-      {/* WooCommerce connection / health */}
-      <WooCommerceIntegrationPanel tenantScope={me?.tenantId} businessId={businessId} />
+      {/* Ecommerce connection / health */}
+      <EcommerceIntegrationPanel tenantScope={me?.tenantId} businessId={businessId} />
 
       <Card>
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
               <Package className="h-4 w-4" />
-              {t('settings:woocommerce.catalogSync')}
+              {t('settings:ecommerce.catalogSync')}
             </CardTitle>
             <CardDescription>
-              {t('settings:woocommerce.catalogSyncDescription')}
+              {t('settings:ecommerce.catalogSyncDescription')}
             </CardDescription>
           </div>
           <Button
@@ -80,26 +80,26 @@ export function IntegrationsPage() {
           >
             <RefreshCw className={catalogSummaryQuery.isFetching ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
             {catalogSummaryQuery.isFetching
-              ? t('settings:woocommerce.refreshing')
-              : t('settings:woocommerce.refresh')}
+              ? t('settings:ecommerce.refreshing')
+              : t('settings:ecommerce.refresh')}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {catalogSummaryQuery.isLoading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <LoaderCircle className="h-4 w-4 animate-spin" />
-              {t('settings:woocommerce.loading')}
+              {t('settings:ecommerce.loading')}
             </div>
           ) : catalogSummaryQuery.isError || !summary ? (
             <p className="py-6 text-sm text-muted-foreground">
-              {t('settings:woocommerce.noSyncData')}
+              {t('settings:ecommerce.noSyncData')}
             </p>
           ) : (
             <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {t('settings:woocommerce.syncProgress')}
+                    {t('settings:ecommerce.syncProgress')}
                   </span>
                   <span className="font-semibold tabular-nums">{syncPercent}%</span>
                 </div>
@@ -112,14 +112,14 @@ export function IntegrationsPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <CatalogMetric label={t('settings:woocommerce.totalProducts')} value={totalProducts} />
+                <CatalogMetric label={t('settings:ecommerce.totalProducts')} value={totalProducts} />
                 <CatalogMetric
-                  label={t('settings:woocommerce.syncedProducts')}
+                  label={t('settings:ecommerce.syncedProducts')}
                   value={syncedProducts}
                   tone="text-success"
                 />
                 <CatalogMetric
-                  label={t('settings:woocommerce.pendingProducts')}
+                  label={t('settings:ecommerce.pendingProducts')}
                   value={pendingProducts}
                   tone="text-amber-600 dark:text-amber-400"
                 />
@@ -130,7 +130,7 @@ export function IntegrationsPage() {
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
                   <Clock className="h-4 w-4 shrink-0" />
                   <span>
-                    {t('settings:woocommerce.lastSync', {
+                    {t('settings:ecommerce.lastSync', {
                       value: new Intl.DateTimeFormat(i18n.language, {
                         dateStyle: 'medium',
                         timeStyle: 'medium',
@@ -156,7 +156,7 @@ export function IntegrationsPage() {
           <div className="min-w-0 flex-1">
             <div className="font-medium text-foreground">{t('nav:orders')}</div>
             <p className="text-xs text-muted-foreground">
-              {t('settings:woocommerce.ordersHelp')}
+              {t('settings:ecommerce.ordersHelp')}
             </p>
           </div>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
@@ -172,7 +172,7 @@ export function IntegrationsPage() {
           <div className="min-w-0 flex-1">
             <div className="font-medium text-foreground">{t('nav:products')}</div>
             <p className="text-xs text-muted-foreground">
-              {t('settings:woocommerce.productsHelp')}
+              {t('settings:ecommerce.productsHelp')}
             </p>
           </div>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
