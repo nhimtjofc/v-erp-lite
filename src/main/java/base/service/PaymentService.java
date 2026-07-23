@@ -55,7 +55,7 @@ public class PaymentService {
                 "id = ?1 and tenantId = ?2 and deletedAt IS NULL",
                 intent.getOrderId(),
                 intent.getTenantId()
-        ).firstResult();
+        ).withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }

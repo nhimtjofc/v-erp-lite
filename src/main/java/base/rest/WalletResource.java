@@ -275,22 +275,6 @@ public class WalletResource {
         return WalletTopUpResponse.from(topUp);
     }
     
-    @POST
-    @Path("/top-up/{id}/complete")
-    @RolesAllowed({"admin"})
-    @Transactional
-    public Response completeTopUp(@PathParam("id") UUID id) {
-        WalletTopUp topUp = WalletTopUp.findById(id);
-        if (topUp == null) {
-            throw new jakarta.ws.rs.NotFoundException("Top-up request not found");
-        }
-        if ("COMPLETED".equals(topUp.getStatus())) {
-            return Response.ok(Map.of("status", "ALREADY_PROCESSED")).build();
-        }
-        
-        walletService.completeTopUp(id, caller.userId());
-        return Response.ok(Map.of("status", "SUCCESS")).build();
-    }
 
     @GET
     @Path("/me/top-up")

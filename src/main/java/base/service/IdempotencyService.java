@@ -14,7 +14,7 @@ import java.util.UUID;
 public class IdempotencyService {
 
     @Transactional
-    public PaymentIdempotency checkAndCreate(String tenantId, String idempotencyKey) {
+    public PaymentIdempotency checkAndCreate(String tenantId, String idempotencyKey, String requestFingerprint) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new BadRequestException("Vui lòng nhập khóa idempotency");
         }
@@ -23,9 +23,29 @@ public class IdempotencyService {
                 "tenantId = ?1 and idempotencyKey = ?2",
                 tenantId, key
         ).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
+        
+        java.time.Instant now = java.time.Instant.now();
+        
         if (existing != null) {
             if ("PROCESSING".equals(existing.getStatus())) {
+                if (existing.getLeaseExpiresAt() != null && existing.getLeaseExpiresAt().isBefore(now)) {
+                    // Lease expired, we can take over
+                    existing.setRequestFingerprint(requestFingerprint);
+                    existing.setLeaseExpiresAt(now.plus(3, java.time.temporal.ChronoUnit.MINUTES));
+                    return null; // Return null so the caller knows they can process it
+                }
                 throw new BadRequestException("Giao dịch đang được xử lý, vui lòng thử lại sau");
+            }
+            if ("FAILED".equals(existing.getStatus())) {
+                // Allow retry for failed records
+                existing.setStatus("PROCESSING");
+                existing.setRequestFingerprint(requestFingerprint);
+                existing.setLeaseExpiresAt(now.plus(3, java.time.temporal.ChronoUnit.MINUTES));
+                return null;
+            }
+            // If SUCCESS, verify fingerprint
+            if (requestFingerprint != null && !requestFingerprint.equals(existing.getRequestFingerprint())) {
+                throw new jakarta.ws.rs.ClientErrorException("Idempotency key mismatch", 409);
             }
             return existing;
         }
@@ -35,6 +55,8 @@ public class IdempotencyService {
         record.setTenantId(tenantId);
         record.setIdempotencyKey(key);
         record.setStatus("PROCESSING");
+        record.setRequestFingerprint(requestFingerprint);
+        record.setLeaseExpiresAt(now.plus(3, java.time.temporal.ChronoUnit.MINUTES));
         record.persist();
         return null;
     }
@@ -49,6 +71,7 @@ public class IdempotencyService {
                 "tenantId = ?1 and idempotencyKey = ?2",
                 tenantId, key
         ).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
+        
         if (record == null) {
             throw new NotFoundException("Không tìm thấy bản ghi idempotency");
         }
@@ -60,6 +83,7 @@ public class IdempotencyService {
         }
         record.setStatus(status);
         record.setResponseBody(responseBody);
+        record.setLeaseExpiresAt(null);
         return record;
     }
 
