@@ -25,4 +25,10 @@ public class PaymentIdempotency extends BaseEntity {
 
     @Column(name = "response_body", columnDefinition = "TEXT")
     private String responseBody;
+
+    @Column(name = "request_fingerprint")
+    private String requestFingerprint;
+
+    @Column(name = "lease_expires_at")
+    private java.time.Instant leaseExpiresAt;
 }

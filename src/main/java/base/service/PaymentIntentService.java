@@ -222,7 +222,22 @@ public class PaymentIntentService {
         }
     }
 
+    @Transactional
     public void processWebhookEvent(String intentId, String gateway, String eventId, String status, String rawSignature) throws IllegalStateException {
-        // TODO: Dev A will implement the internal state transitions here
+        UUID parsedIntentId = UUID.fromString(intentId);
+        // Tenant resolving is normally done via CallerContext or similar, but for webhook it might not be authenticated.
+        // Assuming the intent itself contains the tenantId.
+        // We'll find the intent first across all tenants (or require tenantId as parameter).
+        // Since we don't have tenantId in the signature, we find it by ID.
+        PaymentIntent intent = PaymentIntent.find("id = ?1", parsedIntentId).firstResult();
+        if (intent == null) {
+            throw new NotFoundException("Payment intent not found");
+        }
+        
+        if ("SUCCESS".equalsIgnoreCase(status)) {
+            markSucceeded(intent.getTenantId(), parsedIntentId, gateway, eventId, null);
+        } else {
+            markFailed(intent.getTenantId(), parsedIntentId, gateway, eventId, null);
+        }
     }
 }

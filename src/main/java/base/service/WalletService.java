@@ -137,8 +137,13 @@ public class WalletService {
     }
 
     @Transactional
-    public void completeTopUp(UUID topUpId, UUID actorId) {
-        WalletTopUp topUp = WalletTopUp.findById(topUpId);
+    public void completeTopUp(String tenantId, UUID topUpId, UUID actorId) {
+        if (topUpId == null) {
+            throw new BadRequestException("Top-up ID is required");
+        }
+        WalletTopUp topUp = WalletTopUp.find("id = ?1 and tenantId = ?2", topUpId, tenantId)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
         if (topUp == null) {
             throw new NotFoundException("Top-up request not found");
         }

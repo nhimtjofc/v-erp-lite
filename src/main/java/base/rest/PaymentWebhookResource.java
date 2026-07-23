@@ -107,7 +107,7 @@ public class PaymentWebhookResource {
         }
 
         try {
-            idempotencyService.checkAndCreate(tenantId, idempotencyKey);
+            idempotencyService.checkAndCreate(tenantId, idempotencyKey, null);
         } catch (Exception e) {
             return Response.status(409)
                     .entity(Map.of("error", "Webhook is being processed", "message", e.getMessage()))
