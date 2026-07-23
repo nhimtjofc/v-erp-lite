@@ -189,10 +189,8 @@ export type DailyReport = {
 
 export type DailyRevenue = {
     date?: LocalDate;
-    grossRevenueMinor?: number;
-    refundMinor?: number;
     netRevenueMinor?: number;
-    commissionMinor?: number;
+    refundMinor?: number;
     warehouseCostMinor?: number;
     profitMinor?: number;
     orderCount?: number;
@@ -259,10 +257,8 @@ export type MonthlyReport = {
 };
 
 export type MonthlyTotals = {
-    grossRevenueMinor?: number;
-    refundMinor?: number;
     netRevenueMinor?: number;
-    commissionMinor?: number;
+    refundMinor?: number;
     warehouseCostMinor?: number;
     adjustmentIncomeMinor?: number;
     adjustmentExpenseMinor?: number;
@@ -523,10 +519,8 @@ export type RevenueAdjustmentRequest = {
 };
 
 export type RevenueTotals = {
-    grossRevenueMinor?: number;
-    refundMinor?: number;
     netRevenueMinor?: number;
-    commissionMinor?: number;
+    refundMinor?: number;
     warehouseCostMinor?: number;
     profitMinor?: number;
     orderCount?: number;
