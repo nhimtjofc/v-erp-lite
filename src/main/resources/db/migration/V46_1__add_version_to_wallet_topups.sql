@@ -1,0 +1,1 @@
+ALTER TABLE wallet_topups ADD COLUMN version BIGINT DEFAULT 0;

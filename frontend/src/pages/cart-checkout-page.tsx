@@ -8,6 +8,7 @@ import {
     myVouchersOptions,
     listOrdersQueryKey,
     type Customer,
+    type Order,
     type Product,
     type ProductVariant,
 } from '@/shared/api'
@@ -224,10 +225,14 @@ interface CartDrawerProps {
     shippingName: string
     shippingPhone: string
     shippingAddress: string
+    shippingWard: string
+    shippingProvince: string
     shippingNote: string
     onShippingNameChange: (v: string) => void
     onShippingPhoneChange: (v: string) => void
     onShippingAddressChange: (v: string) => void
+    onShippingWardChange: (v: string) => void
+    onShippingProvinceChange: (v: string) => void
     onShippingNoteChange: (v: string) => void
     collectedVouchers: any[]
     selectedVoucherId: string
@@ -242,16 +247,18 @@ interface CartDrawerProps {
     onCheckout: () => void
     isCheckingOut: boolean
     error: string
+    paymentMethod: 'COD' | 'BANK_TRANSFER'
+    onPaymentMethodChange: (pm: 'COD' | 'BANK_TRANSFER') => void
 }
 
 function CartDrawer({
     open, onClose, cart, onUpdateQty, onRemoveItem, onClearCart,
     customers, selectedCustomerId, onCustomerChange,
-    shippingName, shippingPhone, shippingAddress, shippingNote,
-    onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingNoteChange,
+    shippingName, shippingPhone, shippingAddress, shippingWard, shippingProvince, shippingNote,
+    onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingWardChange, onShippingProvinceChange, onShippingNoteChange,
     collectedVouchers, selectedVoucherId, onSelectVoucherId,
     discountAmount, subtotal, shippingFeeMinor, taxAmountMinor, finalAmountMinor, freeShipGap, freeShipProgress,
-    onCheckout, isCheckingOut, error,
+    onCheckout, isCheckingOut, error, paymentMethod, onPaymentMethodChange
 }: CartDrawerProps) {
     const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
     const selectedVoucher = collectedVouchers.find((cv: any) => cv.voucherId === selectedVoucherId)?.voucher
@@ -578,11 +585,23 @@ function CartDrawer({
                                 placeholder="Số điện thoại *"
                                 className="h-9 text-sm"
                             />
+                            <Input
+                                value={shippingProvince}
+                                onChange={(e) => onShippingProvinceChange(e.target.value)}
+                                placeholder="Tỉnh/Thành phố *"
+                                className="h-9 text-sm"
+                            />
+                            <Input
+                                value={shippingWard}
+                                onChange={(e) => onShippingWardChange(e.target.value)}
+                                placeholder="Xã/Phường *"
+                                className="h-9 text-sm"
+                            />
                             <textarea
                                 className="flex min-h-[70px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                                 value={shippingAddress}
                                 onChange={(e) => onShippingAddressChange(e.target.value)}
-                                placeholder="Địa chỉ giao hàng *"
+                                placeholder="Số nhà, Tên đường *"
                             />
                             <textarea
                                 className="flex min-h-[50px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
@@ -590,6 +609,30 @@ function CartDrawer({
                                 onChange={(e) => onShippingNoteChange(e.target.value)}
                                 placeholder="Ghi chú cho shipper (không bắt buộc)"
                             />
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className="space-y-2 mt-4">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                <Zap className="h-3.5 w-3.5" />
+                                Phương thức thanh toán
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    variant={paymentMethod === 'COD' ? 'default' : 'outline'}
+                                    className="h-10 text-xs justify-start"
+                                    onClick={() => onPaymentMethodChange('COD')}
+                                >
+                                    Tiền mặt (COD)
+                                </Button>
+                                <Button
+                                    variant={paymentMethod === 'BANK_TRANSFER' ? 'default' : 'outline'}
+                                    className="h-10 text-xs justify-start px-2"
+                                    onClick={() => onPaymentMethodChange('BANK_TRANSFER')}
+                                >
+                                    Chuyển khoản QR
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Order summary */}
@@ -820,6 +863,8 @@ export function CartCheckoutPage() {
     const [shippingName, setShippingName] = useState('')
     const [shippingPhone, setShippingPhone] = useState('')
     const [shippingAddress, setShippingAddress] = useState('')
+    const [shippingWard, setShippingWard] = useState('')
+    const [shippingProvince, setShippingProvince] = useState('')
     const [shippingNote, setShippingNote] = useState('')
 
     // Voucher selection and queries
@@ -842,19 +887,35 @@ export function CartCheckoutPage() {
     // Checkout
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [error, setError] = useState('')
+    const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
+    const [qrCodeData, setQrCodeData] = useState<{qrBase64: string, amount: number, orderNumber: string} | null>(null)
 
     const checkoutMutation = useCheckoutOrderMutation({
-        onSuccess: (data: any) => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
-            const createdOrder = data?.data
-            if (createdOrder?.id) {
-                navigate({ to: '/orders/$id', params: { id: createdOrder.id } })
+            const createdOrder = data as Order
+            
+            setCart([])
+            setCartOpen(false)
+            setShowConfirmDialog(false)
+            
+            if (createdOrder?.paymentQrCodeBase64) {
+                setQrCodeData({
+                    qrBase64: createdOrder.paymentQrCodeBase64,
+                    amount: createdOrder.finalAmountMinor || 0,
+                    orderNumber: createdOrder.orderNumber || ''
+                })
+            } else if (createdOrder?.id) {
+                navigate({ to: '/orders/payment', search: { orderId: createdOrder.id } })
             } else {
                 navigate({ to: '/orders' })
             }
         },
         onError: (err: any) => {
-            setError(err?.body?.message || err?.message || 'Failed to place order')
+            let msg = err?.error?.message || err?.body?.message || err?.message || 'Failed to place order'
+            if (typeof err?.error === 'string') msg = err.error
+            else if (typeof err?.body === 'string') msg = err.body
+            setError(msg)
             setCartOpen(true)
         },
     })
@@ -1014,8 +1075,8 @@ export function CartCheckoutPage() {
     function handleCheckoutClick() {
         if (!selectedCustomerId) { setError('Vui lòng chọn khách hàng'); return }
         if (cart.length === 0) { setError('Giỏ hàng đang trống'); return }
-        if (!shippingName.trim() || !shippingPhone.trim() || !shippingAddress.trim()) {
-            setError('Vui lòng điền đầy đủ: tên, số điện thoại và địa chỉ giao hàng')
+        if (!shippingName.trim() || !shippingPhone.trim() || !shippingAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
+            setError('Vui lòng điền đầy đủ thông tin giao hàng')
             return
         }
         setError('')
@@ -1032,7 +1093,10 @@ export function CartCheckoutPage() {
                 shippingName: shippingName.trim(),
                 shippingPhone: shippingPhone.trim(),
                 shippingAddress: shippingAddress.trim(),
+                shippingWard: shippingWard.trim(),
+                shippingProvince: shippingProvince.trim(),
                 shippingNote: shippingNote.trim() || undefined,
+                paymentMethod: paymentMethod,
                 items: cart.map(line => ({
                     productId: line.product.id!,
                     productVariantId: line.variant?.id ?? null,
@@ -1236,10 +1300,14 @@ export function CartCheckoutPage() {
                 shippingName={shippingName}
                 shippingPhone={shippingPhone}
                 shippingAddress={shippingAddress}
+                shippingWard={shippingWard}
+                shippingProvince={shippingProvince}
                 shippingNote={shippingNote}
                 onShippingNameChange={setShippingName}
                 onShippingPhoneChange={setShippingPhone}
                 onShippingAddressChange={setShippingAddress}
+                onShippingWardChange={setShippingWard}
+                onShippingProvinceChange={setShippingProvince}
                 onShippingNoteChange={setShippingNote}
                 collectedVouchers={collectedVoucherList}
                 selectedVoucherId={selectedVoucherId}
@@ -1254,6 +1322,8 @@ export function CartCheckoutPage() {
                 onCheckout={handleCheckoutClick}
                 isCheckingOut={checkoutMutation.isPending}
                 error={error}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={setPaymentMethod}
             />
 
             {/* Variant Picker */}
@@ -1346,6 +1416,44 @@ export function CartCheckoutPage() {
                         </Button>
                         <Button onClick={handleConfirmCheckout} className="cursor-pointer" disabled={checkoutMutation.isPending}>
                             {checkoutMutation.isPending ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* QR Code Dialog */}
+            <Dialog open={!!qrCodeData} onOpenChange={(open) => !open && setQrCodeData(null)}>
+                <DialogContent className="max-w-sm text-center">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Thanh toán Đơn hàng</DialogTitle>
+                        <DialogDescription>
+                            Vui lòng mở App Ngân hàng và quét mã QR dưới đây để thanh toán.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {qrCodeData && (
+                        <div className="flex flex-col items-center justify-center p-4 space-y-4">
+                            <div className="bg-white p-2 rounded-xl shadow-sm border">
+                                <img
+                                    src={`data:image/png;base64,${qrCodeData.qrBase64}`}
+                                    alt="VietQR"
+                                    className="w-64 h-64 object-contain"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-lg font-bold text-primary">{fmt(qrCodeData.amount)}</p>
+                                <p className="text-sm font-medium">Mã đơn: <span className="text-muted-foreground">{qrCodeData.orderNumber}</span></p>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="sm:justify-center mt-2">
+                        <Button 
+                            className="w-full" 
+                            onClick={() => {
+                                setQrCodeData(null)
+                                navigate({ to: '/orders' })
+                            }}
+                        >
+                            Hoàn tất
                         </Button>
                     </DialogFooter>
                 </DialogContent>

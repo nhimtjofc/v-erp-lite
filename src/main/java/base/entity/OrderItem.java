@@ -43,11 +43,14 @@ public class OrderItem extends BaseEntity {
     @Column(name = "unit_price_minor", nullable = false)
     private long unitPriceMinor;
 
+    @Column(name = "unit_cost_minor", nullable = false)
+    private long unitCostMinor;
+
     @Column(name = "subtotal_amount_minor", nullable = false)
     private long subtotalAmountMinor;
 
     @Column(nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "VND";
 
     public UUID getId() {
         return id;

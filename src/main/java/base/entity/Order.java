@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -50,7 +52,11 @@ public class Order extends BaseEntity {
     private Instant orderDate = Instant.now();
 
     @Column(nullable = false, length = 50)
-    private String status; // PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
+    // Current marketplace flow plus legacy order statuses retained for existing data.
+    private String status; // PENDING_PAYMENT, PAID_ESCROW, OWNER_ACCEPTED, FULFILLING, DELIVERED, COMPLETED, OWNER_DECLINED, REFUNDED, PENDING, CONFIRMED, SHIPPING, SHIPPED, CANCELLED
+
+    @Column(name = "owner_decision_deadline")
+    private Instant ownerDecisionDeadline;
 
     @Column(name = "shipping_name", nullable = false)
     private String shippingName;
@@ -61,8 +67,18 @@ public class Order extends BaseEntity {
     @Column(name = "shipping_address", nullable = false, columnDefinition = "TEXT")
     private String shippingAddress;
 
+    @Column(name = "shipping_ward", length = 255)
+    private String shippingWard;
+
+    @Column(name = "shipping_province", length = 255)
+    private String shippingProvince;
+
     @Column(name = "shipping_note", columnDefinition = "TEXT")
     private String shippingNote;
+
+    @Transient
+    @JsonProperty("paymentQrCodeBase64")
+    private String paymentQrCodeBase64;
 
     @Column(name = "subtotal_amount_minor", nullable = false)
     private long subtotalAmountMinor;

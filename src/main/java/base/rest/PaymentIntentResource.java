@@ -44,7 +44,7 @@ public class PaymentIntentResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "businessOwner", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     @Transactional
     public Response createIntent(CreateIntentRequest request) {
         if (request == null || request.orderId == null) {
@@ -65,16 +65,24 @@ public class PaymentIntentResource {
             throw new BadRequestException("Order does not have a customer associated");
         }
 
-        if (!"PENDING".equals(order.getStatus())) {
-            throw new BadRequestException("Only PENDING orders can be paid for");
+        if (!List.of("PENDING", "PENDING_PAYMENT").contains(order.getStatus())) {
+            throw new BadRequestException("Only orders awaiting payment can be paid for");
+        }
+
+        long intentAmount = order.getFinalAmountMinor();
+        String intentCurrency = order.getCurrency();
+
+        if ("USD".equalsIgnoreCase(intentCurrency)) {
+            intentAmount = intentAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
+            intentCurrency = "VND";
         }
 
         PaymentIntent intent = paymentIntentService.createIntent(
                 tenantCode,
                 order.getId(),
                 order.getCustomer().getId(),
-                order.getFinalAmountMinor(),
-                order.getCurrency(),
+                intentAmount,
+                intentCurrency,
                 request.idempotencyKey,
                 caller.userId()
         );
@@ -84,7 +92,7 @@ public class PaymentIntentResource {
 
     @GET
     @Path("/order/{orderId}")
-    @RolesAllowed({"admin", "businessOwner", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public List<PaymentIntent> listOrderPaymentIntents(@PathParam("orderId") UUID orderId) {
         Order order = Order.find(
                 "id = ?1 and tenantId = ?2 and deletedAt IS NULL",
@@ -100,7 +108,7 @@ public class PaymentIntentResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public PaymentIntent getPaymentIntent(@PathParam("id") UUID id) {
         PaymentIntent intent = paymentIntentService.getIntent(caller.tenantCode(), id);
         paymentAccess.requireIntentAccess(intent);
@@ -109,7 +117,7 @@ public class PaymentIntentResource {
 
     @GET
     @Path("/{id}/transactions")
-    @RolesAllowed({"admin", "businessOwner", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     public List<PaymentTransaction> listTransactions(@PathParam("id") UUID id) {
         PaymentIntent intent = paymentIntentService.getIntent(caller.tenantCode(), id);
         paymentAccess.requireIntentAccess(intent);

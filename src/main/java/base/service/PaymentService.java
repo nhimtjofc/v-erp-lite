@@ -4,6 +4,7 @@ import base.entity.Business;
 import base.entity.EscrowRecord;
 import base.entity.Order;
 import base.entity.OrderItem;
+import base.entity.OrderHistory;
 import base.entity.PaymentIntent;
 import base.entity.Wallet;
 import base.model.Money;
@@ -12,11 +13,12 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,13 +30,17 @@ public class PaymentService {
 
     private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     private static final int PLATFORM_COMMISSION_PERCENT = 5;
-    private static final int DEFAULT_ESCROW_RELEASE_DAYS = 7;
-
     @Inject
     WalletService walletService;
 
     @Inject
     EscrowService escrowService;
+
+    @Inject
+    NotificationService notificationService;
+
+    @ConfigProperty(name = "orders.owner-decision-sla", defaultValue = "PT24H")
+    Duration ownerDecisionSla;
 
     @Transactional
     public List<EscrowRecord> settleSucceededIntent(PaymentIntent intent, UUID actorId) {
@@ -43,11 +49,6 @@ public class PaymentService {
         }
         if (!"SUCCEEDED".equals(intent.getStatus())) {
             throw new BadRequestException("Only succeeded payment intents can be settled");
-        }
-
-        List<EscrowRecord> existing = escrowService.listByOrder(intent.getTenantId(), intent.getOrderId());
-        if (!existing.isEmpty()) {
-            return existing;
         }
 
         Order order = Order.find(
@@ -61,16 +62,29 @@ public class PaymentService {
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(intent.getCustomerId())) {
             throw new BadRequestException("Payment customer does not match order customer");
         }
+        if (!List.of("PENDING", "PENDING_PAYMENT", "PAID_ESCROW").contains(order.getStatus())) {
+            throw new BadRequestException("Only an order awaiting payment can be settled");
+        }
 
-        Money finalAmount = Money.of(order.getFinalAmountMinor(), order.getCurrency());
-        if (finalAmount.getAmountMinor() != intent.getAmountMinor()) {
+        List<EscrowRecord> existing = escrowService.listByOrder(intent.getTenantId(), intent.getOrderId());
+        if (!existing.isEmpty()) {
+            markPaidEscrow(order, actorId);
+            return existing;
+        }
+
+        long expectedAmount = order.getFinalAmountMinor();
+        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(intent.getCurrency())) {
+            expectedAmount = expectedAmount * 254;
+        }
+
+        if (expectedAmount != intent.getAmountMinor()) {
             throw new BadRequestException("Payment amount does not match order total");
         }
 
         List<SellerAllocation> allocations = allocateBySeller(order, intent.getAmountMinor());
         long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
-        Instant releaseDueAt = Instant.now().plus(DEFAULT_ESCROW_RELEASE_DAYS, ChronoUnit.DAYS);
+        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
 
         for (SellerAllocation allocation : allocations) {
             long commission = commissionFor(allocation.amountMinor());
@@ -82,7 +96,7 @@ public class PaymentService {
                         intent.getOrderId(),
                         allocation.sellerOwnerId(),
                         Money.of(sellerNet, intent.getCurrency()),
-                        releaseDueAt,
+                        ownerDeadline,
                         actorId
                 ));
             }
@@ -108,7 +122,113 @@ public class PaymentService {
             );
         }
 
+        markPaidEscrow(order, actorId);
         return records;
+    }
+
+    @Transactional
+    public List<EscrowRecord> processWalletPayment(Order order, Wallet userWallet, UUID actorId) {
+        if (!List.of("PENDING", "PENDING_PAYMENT", "PAID_ESCROW").contains(order.getStatus())) {
+            throw new BadRequestException("Only an order awaiting payment can be settled");
+        }
+
+        List<EscrowRecord> existing = escrowService.listByOrder(order.getTenantId(), order.getId());
+        if (!existing.isEmpty()) {
+            markPaidEscrow(order, actorId);
+            return existing;
+        }
+
+        long expectedAmount = order.getFinalAmountMinor();
+        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(userWallet.getCurrency())) {
+            expectedAmount = expectedAmount * 254; // Convert USD to VND
+        }
+
+        // Deduct from user wallet
+        walletService.debitAvailable(
+                userWallet.getTenantId(),
+                userWallet.getId(),
+                Money.of(expectedAmount, userWallet.getCurrency()),
+                "PAYMENT",
+                "ORDER",
+                order.getId(),
+                actorId,
+                "Thanh toán đơn hàng " + order.getOrderNumber()
+        );
+
+        List<SellerAllocation> allocations = allocateBySeller(order, expectedAmount);
+        long platformCommissionTotal = 0;
+        List<EscrowRecord> records = new ArrayList<>();
+        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+
+        for (SellerAllocation allocation : allocations) {
+            long commission = commissionFor(allocation.amountMinor());
+            long sellerNet = allocation.amountMinor() - commission;
+            platformCommissionTotal += commission;
+            if (sellerNet > 0) {
+                records.add(escrowService.holdSellerEscrow(
+                        order.getTenantId(),
+                        order.getId(),
+                        allocation.sellerOwnerId(),
+                        Money.of(sellerNet, userWallet.getCurrency()),
+                        ownerDeadline,
+                        actorId
+                ));
+            }
+        }
+
+        if (platformCommissionTotal > 0) {
+            Wallet platformWallet = walletService.getOrCreateWallet(
+                    order.getTenantId(),
+                    "PLATFORM",
+                    PLATFORM_OWNER_ID,
+                    userWallet.getCurrency(),
+                    actorId
+            );
+            walletService.creditAvailable(
+                    order.getTenantId(),
+                    platformWallet.getId(),
+                    Money.of(platformCommissionTotal, userWallet.getCurrency()),
+                    "COMMISSION",
+                    "ORDER",
+                    order.getId(),
+                    actorId,
+                    "Platform commission from order"
+            );
+        }
+
+        markPaidEscrow(order, actorId);
+        return records;
+    }
+
+    private void markPaidEscrow(Order order, UUID actorId) {
+        if ("PAID_ESCROW".equals(order.getStatus())) {
+            return;
+        }
+        String oldStatus = order.getStatus();
+        order.setStatus("PAID_ESCROW");
+        order.setOwnerDecisionDeadline(Instant.now().plus(ownerDecisionSla));
+        order.setUpdatedBy(actorId);
+
+        OrderHistory history = new OrderHistory();
+        history.setId(UUID.randomUUID());
+        history.setOrder(order);
+        history.setTenantId(order.getTenantId());
+        history.setOldStatus(oldStatus);
+        history.setNewStatus("PAID_ESCROW");
+        history.setNote("Payment received and held in escrow; waiting for owner decision");
+        history.setCreatedBy(actorId);
+        history.persist();
+
+        notificationService.notifyBuyer(
+                order,
+                "ORDER_PAID",
+                "Payment was confirmed for order " + order.getOrderNumber() + ".",
+                actorId);
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_PAID",
+                "Payment was received for order " + order.getOrderNumber() + ".",
+                actorId);
     }
 
     private List<SellerAllocation> allocateBySeller(Order order, long totalAmountMinor) {

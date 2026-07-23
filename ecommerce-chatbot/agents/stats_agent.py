@@ -10,33 +10,28 @@ import os
 import platform
 platform.win32_ver = lambda *args, **kwargs: ('10', '10.0.22631', '', 'Multiprocessor Free')
 import google.generativeai as genai
-import mysql.connector
+import requests
 
 def get_total_products_count() -> str:
-    """Đếm tổng số lượng sản phẩm hiện có trong cửa hàng bằng cách truy vấn Database.
+    """Đếm tổng số lượng sản phẩm hiện có trong cửa hàng bằng cách gọi API Backend.
     
     Returns:
         Một chuỗi chứa số lượng sản phẩm hoặc thông báo lỗi nếu truy vấn thất bại.
     """
-    print("\n[Function Call] AI tu dong kich hoat truy van dem san pham trong MariaDB...")
+    print("\n[Function Call] AI tu dong kich hoat API dem san pham tu Backend...")
     
     try:
-        db_connection = mysql.connector.connect(
-            host="localhost",
-            port=3307,
-            user="v-erp",
-            password="v-erp-secret",
-            database="v-erp-lite"
-        )
-        cursor = db_connection.cursor()
-        cursor.execute("SELECT COUNT(*) FROM products")
-        count = cursor.fetchone()[0]
-        cursor.close()
-        db_connection.close()
+        url = "http://localhost:8081/api/chatbot/stats"
+        headers = {"X-Chatbot-Key": "chatbot-secret-v1"}
+        response = requests.get(url, headers=headers, timeout=5)
+        response.raise_for_status()
+        
+        data = response.json()
+        count = data.get("totalProducts", 0)
         
         return f"Hiện tại cửa hàng có chính xác {count} sản phẩm trong hệ thống."
     except Exception as e:
-        return f"Đã có lỗi xảy ra khi kết nối CSDL: {e}"
+        return f"Đã có lỗi xảy ra khi kết nối API: {e}"
 
 class StatsAgent:
     """Xử lý các câu hỏi thống kê cửa hàng bằng Gemini Function Calling."""

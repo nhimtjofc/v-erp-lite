@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
+import { LockKeyhole, RefreshCw } from 'lucide-react'
 import { useListQuery, useCreateBusinessMutation, useUpdateBusinessMutation, useMeQuery, listQueryKey } from '@/shared/api'
 import type { Business } from '@/shared/api'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
@@ -13,6 +15,8 @@ export function BusinessPage() {
   const { data: me, isLoading: isMeLoading } = useMeQuery()
   const roleName = me?.role?.name
   const isCustomer = roleName === 'customer'
+  const isOperator = roleName === 'operator'
+  const canManageBusiness = roleName === 'admin' || roleName === 'businessOwner'
 
   const { data: businesses, isLoading } = useListQuery()
   const createMutation = useCreateBusinessMutation()
@@ -85,9 +89,16 @@ export function BusinessPage() {
           <h1 className="text-3xl font-bold tracking-tight">{t('common:businessInformation', 'Business Information')}</h1>
           <p className="text-muted-foreground mt-1">{t('common:businessNotFound', 'No business record found.')}</p>
         </div>
-        <Button onClick={handleCreate} disabled={saving}>
-          {saving ? t('common:saving', 'Creating...') : t('common:createBusiness', 'Create Business Profile')}
-        </Button>
+        {canManageBusiness ? (
+          <Button onClick={handleCreate} disabled={saving}>
+            {saving ? t('common:saving', 'Creating...') : t('common:createBusiness', 'Create Business Profile')}
+          </Button>
+        ) : (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+            <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>The owner has not assigned a business workspace to this operator yet.</p>
+          </div>
+        )}
       </div>
     )
   }
@@ -97,9 +108,16 @@ export function BusinessPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('common:businessInformation', 'Business Information')}</h1>
-          <p className="text-muted-foreground mt-1">{t('common:manageBusinessProfile', 'Manage your business profile')}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-muted-foreground">
+              {isOperator
+                ? 'Shared workspace synchronized with the business owner'
+                : t('common:manageBusinessProfile', 'Manage your business profile')}
+            </p>
+            {isOperator && <Badge variant="secondary">Operator · Read only</Badge>}
+          </div>
         </div>
-        {editing ? (
+        {canManageBusiness && editing ? (
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => { setEditing(false); setForm(business) }}>
               {t('common:cancel', 'Cancel')}
@@ -108,10 +126,19 @@ export function BusinessPage() {
               {saving ? t('common:saving', 'Saving...') : t('common:save', 'Save')}
             </Button>
           </div>
-        ) : (
+        ) : canManageBusiness ? (
           <Button variant="outline" onClick={() => setEditing(true)}>{t('common:edit', 'Edit')}</Button>
-        )}
+        ) : null}
       </div>
+
+      {isOperator && (
+        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100">
+          <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            You are working in <span className="font-semibold">{business.name}</span>. Products, orders and payment activity are synchronized with the owner; profile settings, wallet and payouts remain owner-only.
+          </p>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

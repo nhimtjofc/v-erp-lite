@@ -1,0 +1,15 @@
+{
+  "back": "Quay lại",
+  "title": "Thông báo",
+  "unread": "{{count}} chưa đọc",
+  "markAllRead": "Đánh dấu đã đọc tất cả",
+  "loading": "Đang tải thông báo…",
+  "emptyTitle": "Không có thông báo",
+  "emptyDescription": "Bạn sẽ thấy cập nhật về đơn hàng tại đây.",
+  "orderPlaced": "Đơn hàng mới",
+  "orderPaid": "Đã nhận thanh toán",
+  "orderStatusUpdated": "Đơn hàng đã cập nhật",
+  "orderCompleted": "Đơn hàng hoàn tất",
+  "orderAccepted": "Đơn hàng đã chấp nhận",
+  "orderDeclined": "Đơn hàng đã từ chối"
+}

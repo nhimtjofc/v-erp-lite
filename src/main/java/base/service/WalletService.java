@@ -1,6 +1,11 @@
 package base.service;
 
+import base.entity.Bank;
+import base.entity.Business;
+import base.entity.PayoutRequest;
+import base.entity.User;
 import base.entity.Wallet;
+import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,6 +17,7 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -68,6 +74,31 @@ public class WalletService {
         return wallet;
     }
 
+    @Transactional
+    public Wallet getOrCreateUserWallet(String tenantId, UUID userId, String currency, UUID actorId) {
+        User user = User.find("id = ?1 and tenantId = ?2", userId, tenantId).firstResult();
+        if (user == null) {
+            throw new NotFoundException("User not found");
+        }
+        String normalizedCurrency = moneyService.normalizeCurrency(currency);
+        Business business = Business.find(
+                "tenantId = ?1 and createdBy = ?2 order by createdAt asc", tenantId, userId).firstResult();
+        Wallet wallet;
+        if (business != null) {
+            wallet = getOrCreateWallet(tenantId, "SELLER", business.getId(), normalizedCurrency, actorId);
+        } else {
+            wallet = Wallet.find(
+                    "tenantId = ?1 and user.id = ?2 and ownerType = 'USER' and currency = ?3 order by createdAt asc",
+                    tenantId, userId, normalizedCurrency).firstResult();
+            if (wallet == null) {
+                wallet = getOrCreateWallet(tenantId, "USER", userId, normalizedCurrency, actorId);
+            }
+        }
+        wallet.setUser(user);
+        wallet.setUpdatedBy(actorId);
+        return wallet;
+    }
+
     public List<Wallet> listWallets(String tenantId, String ownerType, UUID ownerId, String currency) {
         if (ownerType != null && ownerId != null && currency != null) {
             return Wallet.list(
@@ -100,10 +131,70 @@ public class WalletService {
 
     public List<WalletTransaction> listTransactions(String tenantId, UUID walletId, int limit, int offset) {
         getWallet(tenantId, walletId);
-        return WalletTransaction.find(
-                "tenantId = ?1 and wallet.id = ?2 order by createdAt desc",
-                tenantId, walletId
-        ).page(offset / Math.max(limit, 1), Math.max(limit, 1)).list();
+        return WalletTransaction.find("wallet.tenantId = ?1 and wallet.id = ?2 order by createdAt desc", tenantId, walletId)
+                .page(offset / limit, limit)
+                .list();
+    }
+
+    @Transactional
+    public void completeTopUp(UUID topUpId, UUID actorId) {
+        WalletTopUp topUp = WalletTopUp.findById(topUpId);
+        if (topUp == null) {
+            throw new NotFoundException("Top-up request not found");
+        }
+        if (!"PENDING".equals(topUp.getStatus())) {
+            throw new BadRequestException("Top-up request is not pending");
+        }
+
+        topUp.setStatus("COMPLETED");
+        topUp.setUpdatedBy(actorId);
+
+        creditAvailable(
+                topUp.getWallet().getTenantId(),
+                topUp.getWallet().getId(),
+                Money.of(topUp.getAmountMinor(), topUp.getCurrency()),
+                "TOP_UP",
+                "WALLET_TOP_UP",
+                topUp.getId(),
+                actorId,
+                "Nạp tiền vào ví"
+        );
+    }
+
+    @Transactional
+    public Wallet updateBankDetails(String tenantId, UUID walletId, UUID bankId,
+                                    String bankAccountNumber, String bankAccountHolder, UUID actorId) {
+        if (bankId == null || bankAccountNumber == null || bankAccountNumber.isBlank()
+                || bankAccountHolder == null || bankAccountHolder.isBlank()) {
+            throw new BadRequestException("Bank, account number, and account holder are required");
+        }
+        Bank bank = Bank.find("id = ?1 and active = true", bankId).firstResult();
+        if (bank == null) {
+            throw new BadRequestException("Selected bank is not available");
+        }
+        Wallet wallet = walletForUpdate(tenantId, walletId);
+        boolean changed = wallet.getBank() == null || !bank.getId().equals(wallet.getBank().getId())
+                || !bankAccountNumber.trim().equals(wallet.getBankAccountNumber())
+                || !bankAccountHolder.trim().equals(wallet.getBankAccountHolder());
+        if (!changed) {
+            return wallet;
+        }
+
+        wallet.setBank(bank);
+        wallet.setBankName(bank.getName());
+        wallet.setBankAccountNumber(bankAccountNumber.trim());
+        wallet.setBankAccountHolder(bankAccountHolder.trim());
+        wallet.setBankDetailsUpdatedAt(Instant.now());
+        wallet.setUpdatedBy(actorId);
+
+        List<PayoutRequest> staleFlagged = PayoutRequest.list(
+                "tenantId = ?1 and wallet.id = ?2 and status = 'FLAGGED'", tenantId, walletId);
+        for (PayoutRequest payout : staleFlagged) {
+            payout.setStatus("REJECTED");
+            payout.setFlagReason(payout.getFlagReason() + " | Bank details changed after screening");
+            payout.setUpdatedBy(actorId);
+        }
+        return wallet;
     }
 
     @Transactional
@@ -298,6 +389,7 @@ public class WalletService {
         if (wallet == null) {
             throw new NotFoundException("Không tìm thấy ví");
         }
+        entityManager.refresh(wallet, LockModeType.PESSIMISTIC_WRITE);
         return wallet;
     }
 

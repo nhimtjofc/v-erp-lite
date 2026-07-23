@@ -1,324 +1,362 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMeQuery } from '@/shared/api'
+import { batchApprove, batchReject, export_, listRiskEvents } from '@/shared/api/gen/sdk.gen'
+import type { VendorRiskEvent } from '@/shared/api/gen/types.gen'
 import {
   useAdminPayoutsQuery,
   useApprovePayoutMutation,
   useRejectPayoutMutation,
-  PAYOUT_STATUS_META,
   type PayoutRequest,
 } from '@/shared/api/payout'
 import { formatMoneyMinor } from '@/shared/utils/currency'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Label } from '@/shared/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/shared/ui/dialog'
-import { Banknote, Check, X } from 'lucide-react'
-
-/** Status filters offered to the admin. `undefined` = all statuses. */
-const STATUS_FILTERS: { value: string | undefined; label: string }[] = [
-  { value: 'PENDING', label: 'Chờ duyệt' },
-  { value: 'APPROVED', label: 'Đã duyệt' },
-  { value: 'REJECTED', label: 'Từ chối' },
-  { value: undefined, label: 'Tất cả' },
-]
-
-function formatDate(value?: string): string {
-  if (!value) return '—'
-  return new Date(value).toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+import { Label } from '@/shared/ui/label'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { AlertTriangle, Banknote, Check, Download, ShieldAlert, X } from 'lucide-react'
 
 type PayoutAction = 'approve' | 'reject'
 
-/**
- * Approve/reject confirmation dialog. A reason is required to reject (the admin
- * must justify a denial) and optional as a note when approving.
- */
-function PayoutActionDialog({
-  action,
+function ReviewDialog({
   payout,
+  action,
   onClose,
 }: {
-  action: PayoutAction
   payout: PayoutRequest
+  action: PayoutAction
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
   const approve = useApprovePayoutMutation()
   const reject = useRejectPayoutMutation()
-  const mutation = action === 'approve' ? approve : reject
-
   const [reason, setReason] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
+  const [error, setError] = useState('')
   const isReject = action === 'reject'
-  const canSubmit = (!isReject || reason.trim() !== '') && !mutation.isPending
+  const mutation = isReject ? reject : approve
 
-  const handleSubmit = async () => {
-    setError(null)
-    if (isReject && reason.trim() === '') {
-      setError('Vui lòng nhập lý do từ chối.')
+  const submit = async () => {
+    if (isReject && !reason.trim()) {
+      setError('A rejection reason is required.')
       return
     }
     try {
-      await mutation.mutateAsync({ id: payout.id, reason: reason.trim() || undefined })
-      // Refresh the admin queue and the seller-facing views so both reflect the
-      // new status (and any balance change from an approval).
-      queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
-      queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
-      queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
-      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] })
+      await mutation.mutateAsync({ id: payout.id!, reason: reason.trim() || undefined })
+      await queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
+      await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
+      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
       onClose()
-    } catch (err) {
-      setError((err as Error)?.message || 'Xử lý yêu cầu thất bại. Vui lòng thử lại.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to review payout.')
     }
   }
 
   return (
-    <Dialog open onOpenChange={(next) => !next && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isReject ? 'Từ chối yêu cầu rút tiền' : 'Duyệt yêu cầu rút tiền'}</DialogTitle>
+          <DialogTitle>{isReject ? 'Reject flagged payout' : 'Approve flagged payout'}</DialogTitle>
           <DialogDescription>
-            {payout.bankAccountHolder} · {payout.bankName} · {payout.bankAccountNumber} —{' '}
-            <span className="font-semibold text-foreground">
-              {formatMoneyMinor(payout.amountMinor, payout.currency)}
-            </span>
-            {isReject
-              ? '. Số tiền sẽ được hoàn lại vào số dư khả dụng của người bán.'
-              : '. Số tiền sẽ được trừ khỏi số dư khả dụng của người bán.'}
+            {formatMoneyMinor(Number(payout.amountMinor ?? 0), payout.currency ?? 'VND')} to {payout.bankAccountHolder}.
+            Approval calls the bank transfer adapter immediately.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          <strong>Flag reason:</strong> {payout.flagReason || 'No reason recorded'}
+        </div>
+        {isReject && (
           <div className="space-y-2">
-            <Label htmlFor="payout-reason">
-              {isReject ? 'Lý do từ chối' : 'Ghi chú (tùy chọn)'}
-            </Label>
+            <Label htmlFor="review-reason">Rejection reason</Label>
             <textarea
-              id="payout-reason"
+              id="review-reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(event) => setReason(event.target.value)}
               rows={3}
-              placeholder={isReject ? 'Nhập lý do từ chối yêu cầu' : 'Ghi chú cho lần duyệt này'}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
             />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={onClose}>
-              Hủy
-            </Button>
-            <Button
-              variant={isReject ? 'destructive' : 'default'}
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-            >
-              {mutation.isPending
-                ? 'Đang xử lý...'
-                : isReject
-                  ? 'Xác nhận từ chối'
-                  : 'Xác nhận duyệt'}
-            </Button>
-          </div>
-        </div>
+        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant={isReject ? 'destructive' : 'default'} onClick={submit} disabled={mutation.isPending}>
+            {mutation.isPending ? 'Processing…' : isReject ? 'Reject payout' : 'Approve and pay'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-/**
- * Admin payout approval dashboard.
- *
- * Day 5 (Dev 5): list seller payout requests (defaulting to PENDING) and let the
- * admin approve or reject each pending request with a reason.
- */
 export function AdminPayoutsPage() {
   const { t } = useTranslation()
   const { data: me, isLoading: isMeLoading } = useMeQuery()
-  const roleName = me?.role?.name
-  const isAdmin = roleName === 'admin'
+  const { data: payouts, isLoading, isError, error } = useAdminPayoutsQuery()
+  const [activeReview, setActiveReview] = useState<{ payout: PayoutRequest; action: PayoutAction } | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const queryClient = useQueryClient()
+  const { data: riskEvents, isLoading: isRiskLoading, isError: isRiskError } = useQuery({
+    queryKey: ['payout-risk-events', 'unresolved'],
+    queryFn: async () => {
+      const response = await listRiskEvents({ query: { resolved: false }, throwOnError: true })
+      return response.data ?? []
+    },
+    enabled: me?.role?.name === 'admin',
+  })
 
-  const [statusFilter, setStatusFilter] = useState<string | undefined>('PENDING')
-  const [activeAction, setActiveAction] = useState<
-    { action: PayoutAction; payout: PayoutRequest } | null
-  >(null)
+  const batchApproveMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const response = await batchApprove({ body: { ids }, throwOnError: true })
+      return response.data
+    },
+    onSuccess: async () => {
+      setSelectedIds(new Set())
+      await queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
+      await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
+      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+    },
+  })
 
-  const {
-    data: payouts,
-    isLoading,
-    isError,
-    error,
-  } = useAdminPayoutsQuery(statusFilter)
+  const batchRejectMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const response = await batchReject({ body: { ids }, throwOnError: true })
+      return response.data
+    },
+    onSuccess: async () => {
+      setSelectedIds(new Set())
+      await queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
+      await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
+      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+    },
+  })
 
-  if (isMeLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading access control...</div>
-  }
+  const exportMutation = useMutation({
+    mutationFn: async () => {
+      const response = await export_({ throwOnError: true })
+      return response.data
+    },
+    onSuccess: (csvContent) => {
+      if (!csvContent) return
+      const blob = new Blob([csvContent as unknown as string], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `payouts-export-${new Date().toISOString().slice(0, 10)}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+    },
+  })
 
-  if (!isAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-lg p-8 text-center space-y-4">
-        <h2 className="text-xl font-bold text-destructive">Access Denied</h2>
-        <p className="text-muted-foreground max-w-md">
-          Only administrators can review payout requests.
-        </p>
-      </div>
-    )
-  }
+  if (isMeLoading) return <div className="py-8 text-center text-muted-foreground">Loading access control…</div>
+  if (me?.role?.name !== 'admin') return <div className="py-8 text-center text-destructive">Only administrators can review payout exceptions.</div>
 
   const list = payouts ?? []
+  const totalAmount = list.reduce((sum, p) => sum + Number(p.amountMinor ?? 0), 0)
+  const selectedArray = Array.from(selectedIds)
+  const allSelected = list.length > 0 && selectedIds.size === list.length
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(list.map((p) => p.id!)))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Banknote className="h-7 w-7 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('nav:payouts', 'Payouts')}</h1>
-            <p className="text-muted-foreground mt-1">
-              Duyệt yêu cầu rút tiền của người bán. Review, approve or reject seller payouts.
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Banknote className="h-7 w-7 text-primary" />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('nav:payouts', 'Payouts')}</h1>
+          <p className="mt-1 text-muted-foreground">Exception queue — normal payouts are auto-approved and paid without admin involvement.</p>
         </div>
       </div>
 
-      {/* Status filter */}
-      <div className="flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((filter) => (
-          <Button
-            key={filter.label}
-            size="sm"
-            variant={statusFilter === filter.value ? 'default' : 'outline'}
-            onClick={() => setStatusFilter(filter.value)}
-          >
-            {filter.label}
-          </Button>
-        ))}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground font-medium">Flagged payouts</p>
+            <p className="text-2xl font-bold">{list.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground font-medium">Open risk events</p>
+            <p className="text-2xl font-bold">{riskEvents?.length ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground font-medium">Total flagged amount</p>
+            <p className="text-2xl font-bold">{formatMoneyMinor(totalAmount, list[0]?.currency ?? 'VND')}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground font-medium">Selected</p>
+            <p className="text-2xl font-bold">{selectedIds.size} of {list.length}</p>
+          </CardContent>
+        </Card>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium">{selectedIds.size} payout{selectedIds.size !== 1 ? 's' : ''} selected</span>
+          <div className="ml-auto flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => batchApproveMutation.mutate(selectedArray)}
+              disabled={batchApproveMutation.isPending}
+            >
+              <Check className="mr-1 h-4 w-4" />
+              {batchApproveMutation.isPending ? 'Approving…' : `Approve ${selectedIds.size}`}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => batchRejectMutation.mutate(selectedArray)}
+              disabled={batchRejectMutation.isPending}
+            >
+              <X className="mr-1 h-4 w-4" />
+              {batchRejectMutation.isPending ? 'Rejecting…' : `Reject ${selectedIds.size}`}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Card>
-        <CardHeader>
-          <CardTitle>
-            {statusFilter === 'PENDING' ? 'Yêu cầu chờ duyệt' : 'Yêu cầu rút tiền'}
-            {!isLoading && !isError && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({list.length})
-              </span>
-            )}
-          </CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Flagged payouts ({list.length})</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportMutation.mutate()}
+            disabled={exportMutation.isPending || list.length === 0}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            {exportMutation.isPending ? 'Exporting…' : 'Export CSV'}
+          </Button>
         </CardHeader>
         <CardContent>
-          {isError ? (
-            <div className="py-8 text-center">
-              <p className="font-semibold text-destructive">Không tải được danh sách rút tiền.</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {(error as Error)?.message || 'Vui lòng thử lại sau.'}
-              </p>
-            </div>
-          ) : isLoading ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              {t('common:loading', 'Loading...')}
-            </p>
-          ) : list.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Không có yêu cầu rút tiền nào.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Thời gian</TableHead>
-                    <TableHead>Chủ tài khoản</TableHead>
-                    <TableHead>Ngân hàng</TableHead>
-                    <TableHead>Số tài khoản</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Số tiền</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.map((payout: PayoutRequest) => {
-                    const status = PAYOUT_STATUS_META[payout.status] ?? {
-                      label: payout.status,
-                      variant: 'secondary' as const,
-                    }
-                    return (
-                      <TableRow key={payout.id}>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                          {formatDate(payout.createdAt)}
-                        </TableCell>
-                        <TableCell className="font-medium">{payout.bankAccountHolder}</TableCell>
-                        <TableCell>{payout.bankName}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {payout.bankAccountNumber}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={status.variant}>{status.label}</Badge>
-                          {payout.reason && (
-                            <p className="mt-1 max-w-[200px] text-xs text-muted-foreground">
-                              Lý do: {payout.reason}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-semibold">
-                          {formatMoneyMinor(payout.amountMinor, payout.currency)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {payout.status === 'PENDING' ? (
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setActiveAction({ action: 'approve', payout })}
-                              >
-                                <Check className="mr-1 h-4 w-4" />
-                                Duyệt
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => setActiveAction({ action: 'reject', payout })}
-                              >
-                                <X className="mr-1 h-4 w-4" />
-                                Từ chối
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
+          {isError ? <p className="text-destructive">{error instanceof Error ? error.message : 'Unable to load payouts.'}</p>
+            : isLoading ? <p className="text-muted-foreground">Loading…</p>
+              : list.length === 0 ? <p className="py-8 text-center text-muted-foreground">No payouts require manual review.</p>
+                : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={toggleSelectAll}
+                            className="h-4 w-4 rounded border-border accent-primary"
+                          />
+                        </TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Bank destination</TableHead>
+                        <TableHead>Why it was flagged</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                    </TableHeader>
+                    <TableBody>
+                      {list.map((payout) => (
+                        <TableRow key={payout.id}>
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(payout.id!)}
+                              onChange={() => toggleSelect(payout.id!)}
+                              className="h-4 w-4 rounded border-border accent-primary"
+                            />
+                          </TableCell>
+                          <TableCell>{payout.createdAt ? new Date(payout.createdAt).toLocaleString() : '—'}</TableCell>
+                          <TableCell>
+                            <p className="font-medium">{payout.bankAccountHolder || 'Bank details missing'}</p>
+                            <p className="text-xs text-muted-foreground">{payout.bankName} · {payout.bankAccountNumber}</p>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="destructive" className="mb-1">FLAGGED</Badge>
+                            <p className="max-w-md font-medium text-destructive">{payout.flagReason}</p>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">{formatMoneyMinor(Number(payout.amountMinor ?? 0), payout.currency ?? 'VND')}</TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setActiveReview({ payout, action: 'approve' })}><Check className="mr-1 h-4 w-4" /> Approve</Button>
+                              <Button size="sm" variant="destructive" onClick={() => setActiveReview({ payout, action: 'reject' })}><X className="mr-1 h-4 w-4" /> Reject</Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
         </CardContent>
       </Card>
 
-      {activeAction && (
-        <PayoutActionDialog
-          action={activeAction.action}
-          payout={activeAction.payout}
-          onClose={() => setActiveAction(null)}
-        />
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            Vendor payout risk events ({riskEvents?.length ?? 0})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isRiskError ? (
+            <p className="text-sm text-destructive">Unable to load payout risk events.</p>
+          ) : isRiskLoading ? (
+            <p className="text-sm text-muted-foreground">Loading risk events…</p>
+          ) : !riskEvents?.length ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No unresolved disputes, chargebacks, or payout failures.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Occurred</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {riskEvents.map((event: VendorRiskEvent) => (
+                  <TableRow key={event.id}>
+                    <TableCell className="whitespace-nowrap">
+                      {event.occurredAt ? new Date(event.occurredAt).toLocaleString() : '—'}
+                    </TableCell>
+                    <TableCell><Badge variant="destructive">{event.eventType ?? 'RISK'}</Badge></TableCell>
+                    <TableCell><code className="text-xs">{event.ownerId?.slice(0, 8) ?? '—'}</code></TableCell>
+                    <TableCell>{event.details ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      {activeReview && <ReviewDialog {...activeReview} onClose={() => setActiveReview(null)} />}
     </div>
   )
 }

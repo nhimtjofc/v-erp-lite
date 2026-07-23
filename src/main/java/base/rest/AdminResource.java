@@ -3,7 +3,11 @@ package base.rest;
 import base.entity.Role;
 import base.entity.Tenant;
 import base.entity.User;
+import base.entity.VendorRiskEvent;
+import base.security.BusinessAccess;
+import base.security.CallerContext;
 import base.service.KeycloakSyncService;
+import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -36,6 +40,15 @@ public class AdminResource {
 
     @Inject
     KeycloakSyncService keycloakSync;
+
+    @Inject
+    CallerContext caller;
+
+    @Inject
+    WalletService walletService;
+
+    @Inject
+    BusinessAccess businessAccess;
 
     // ──────────────────────────────────────────────
     // Tenant management
@@ -71,7 +84,9 @@ public class AdminResource {
         user.setId(UUID.randomUUID());
         user.setTenantId(tenantId);
         user.setRole(resolveRole(user.getRole()));
+        businessAccess.synchronizeAssignment(user, tenantId);
         user.persist();
+        walletService.getOrCreateUserWallet(tenantId, user.getId(), "VND", caller.userId());
 
         // Sync to Keycloak (create KC user, ensure org, add member)
         try {
@@ -104,7 +119,7 @@ public class AdminResource {
         if (tenant == null) {
             throw new NotFoundException("Tenant not found: " + tenantId);
         }
-        User user = User.findById(id);
+        User user = User.find("id = ?1 and tenantId = ?2", id, tenantId).firstResult();
         if (user == null) {
             throw new NotFoundException("User not found");
         }
@@ -116,6 +131,7 @@ public class AdminResource {
         user.setLastName(updated.getLastName());
         user.setActive(updated.isActive());
         user.setRole(resolveRole(updated.getRole()));
+        businessAccess.synchronizeAssignment(user, tenantId);
         if (updated.getEmail() != null) {
             user.setEmail(updated.getEmail());
         }
@@ -155,7 +171,7 @@ public class AdminResource {
         if (tenant == null) {
             throw new NotFoundException("Tenant not found: " + tenantId);
         }
-        User user = User.findById(id);
+        User user = User.find("id = ?1 and tenantId = ?2", id, tenantId).firstResult();
         if (user == null) {
             throw new NotFoundException("User not found");
         }
@@ -172,6 +188,36 @@ public class AdminResource {
 
         user.delete();
         return Response.noContent().build();
+    }
+
+    // ──────────────────────────────────────────────
+    // Vendor Risk Events
+    // ──────────────────────────────────────────────
+
+    @GET
+    @Path("/risk-events")
+    public List<VendorRiskEvent> listRiskEvents(
+            @QueryParam("ownerId") UUID ownerId,
+            @QueryParam("resolved") Boolean resolved
+    ) {
+        StringBuilder query = new StringBuilder("FROM VendorRiskEvent WHERE tenantId = ?1");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        params.add(caller.tenantCode());
+
+        if (ownerId != null) {
+            query.append(" AND ownerId = ?").append(params.size() + 1);
+            params.add(ownerId);
+        }
+        if (resolved != null) {
+            if (resolved) {
+                query.append(" AND resolvedAt IS NOT NULL");
+            } else {
+                query.append(" AND resolvedAt IS NULL");
+            }
+        }
+        query.append(" ORDER BY occurredAt DESC");
+
+        return VendorRiskEvent.find(query.toString(), params.toArray()).list();
     }
 
     /**

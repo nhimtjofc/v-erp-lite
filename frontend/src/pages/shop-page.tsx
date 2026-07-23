@@ -17,6 +17,7 @@ import {
   myVouchersOptions,
   getMyCustomerProfileOptions
 } from '@/shared/api'
+import { useSellerWalletQuery } from '@/shared/api/wallet'
 import { formatUSD } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
@@ -69,6 +70,8 @@ export function ShopPage() {
   // Resolve current user info
   const { data: me } = useMeQuery()
   const isCustomerRole = me?.role?.name === 'customer' || me?.role?.name === 'user'
+  
+  const { data: userWallet } = useSellerWalletQuery()
 
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({
@@ -134,8 +137,10 @@ export function ShopPage() {
   })
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
+  const [showPromoDrawer, setShowPromoDrawer] = useState(false)
   const [error, setError] = useState('')
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>('')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER' | 'WALLET'>('COD')
 
   useEffect(() => {
     localStorage.setItem('buyer_cart', JSON.stringify(cart))
@@ -257,7 +262,7 @@ export function ShopPage() {
       const result = data as { id?: string; data?: { id?: string } }
       const orderId = result.data?.id ?? result.id
       if (orderId) {
-        if (isCustomerRole) {
+        if (isCustomerRole && paymentMethod === 'BANK_TRANSFER') {
           navigate({ to: '/orders/payment', search: { orderId } })
         } else {
           navigate({ to: '/orders/$id', params: { id: orderId } })
@@ -265,7 +270,10 @@ export function ShopPage() {
       }
     },
     onError: (err: any) => {
-      setError(err?.body?.message || err?.message || 'Checkout failed')
+      let msg = err?.error?.message || err?.body?.message || err?.message || 'Checkout failed'
+      if (typeof err?.error === 'string') msg = err.error
+      else if (typeof err?.body === 'string') msg = err.body
+      setError(msg)
     },
   })
 
@@ -273,15 +281,20 @@ export function ShopPage() {
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
+  const [shippingWard, setShippingWard] = useState('')
+  const [shippingProvince, setShippingProvince] = useState('')
   const [shippingNote, setShippingNote] = useState('')
 
-  // Pre-populate shipping fields when customer profile or selected customer changes
+  // Pre-populate checkout from the customer profile, with the signed-in account
+  // as a fallback for profiles created before account details were synchronized.
   useEffect(() => {
-    if (isCustomerRole && myCustomerProfile) {
-      setCustomerName(`${myCustomerProfile.firstName ?? ''} ${myCustomerProfile.lastName ?? ''}`.trim())
-      setCustomerEmail(myCustomerProfile.email ?? '')
-      setCustomerPhone(myCustomerProfile.phone ?? '')
-      setCustomerAddress(myCustomerProfile.address ?? '')
+    if (isCustomerRole) {
+      const firstName = myCustomerProfile?.firstName?.trim() || me?.firstName?.trim() || ''
+      const lastName = myCustomerProfile?.lastName?.trim() || me?.lastName?.trim() || ''
+      setCustomerName(`${firstName} ${lastName}`.trim())
+      setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
+      setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
+      setCustomerAddress(myCustomerProfile?.address ?? '')
     } else if (!isCustomerRole && selectedCustomerId && customers) {
       const found = customers.find(c => c.id === selectedCustomerId)
       if (found) {
@@ -291,21 +304,24 @@ export function ShopPage() {
         setCustomerAddress(found.address ?? '')
       }
     }
-  }, [isCustomerRole, myCustomerProfile, selectedCustomerId, customers])
+  }, [isCustomerRole, me, myCustomerProfile, selectedCustomerId, customers])
 
   async function handleCheckout() {
-    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
-      setError('Please fill in name, phone, and address')
+    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
+      setError('Please fill in all required shipping fields')
       return
     }
 
     checkoutMutation.mutate({
       body: {
         customerId,
+        paymentMethod,
         voucherCode: selectedVoucher?.code ?? undefined,
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
         shippingAddress: customerAddress.trim(),
+        shippingWard: shippingWard.trim(),
+        shippingProvince: shippingProvince.trim(),
         shippingNote: shippingNote.trim() || undefined,
         items: cart.map(i => ({
           productId: i.product.id!,
@@ -331,6 +347,22 @@ export function ShopPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600 dark:text-slate-300 md:text-base">
               A customer-first shopping space with vouchers, live stock, seller grouping, and checkout in one flow.
             </p>
+            {vouchers.length > 0 && (
+              <div className="mt-5">
+                <Button
+                  onClick={() => setShowPromoDrawer(true)}
+                  className="rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-5 font-black text-white shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-rose-600"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  Collect vouchers
+                  {vouchers.filter(voucher => !collectedIds.has(voucher.id)).length > 0 && (
+                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                      {vouchers.filter(voucher => !collectedIds.has(voucher.id)).length} new
+                    </span>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="relative min-h-48 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-600 p-5 text-white shadow-lg shadow-orange-500/25">
@@ -412,89 +444,6 @@ export function ShopPage() {
                     </Button>
                   </CardContent>
                 </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Voucher Banner Grid Shelf */}
-      {vouchers.length > 0 && (
-        <div className="bg-gradient-to-r from-muted/50 to-muted/20 border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
-              <h2 className="font-black text-xl">Exclusive Store Vouchers</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">Collect & save at checkout</span>
-          </div>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {vouchers.slice(0, 6).map((voucher: any) => {
-              const isCollected = collectedIds.has(voucher.id)
-              return (
-                <div
-                  key={voucher.id}
-                  className="relative flex items-stretch h-28 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-border bg-card group"
-                >
-                  {/* Perforated coupon visual */}
-                  <div className="flex flex-col items-center justify-center w-24 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-2 text-center shrink-0 select-none relative">
-                    {/* Circle punch holes on perforations */}
-                    <div className="absolute top-0 bottom-0 -right-1.5 flex flex-col justify-between py-1.5 z-10 w-3">
-                      {[...Array(5)].map((_, idx) => (
-                        <div key={idx} className="w-2.5 h-2.5 rounded-full bg-background" />
-                      ))}
-                    </div>
-                    <span className="text-2xl font-black tracking-tight leading-none">
-                      {voucher.discountType === 'PERCENTAGE' ? `${Number(voucher.discountValue)}%` : `$${Number(voucher.discountValue)}`}
-                    </span>
-                    <span className="text-[9px] font-black uppercase tracking-wider mt-1 opacity-90">OFF</span>
-                  </div>
-
-                  {/* Coupon Details */}
-                  <div className="flex-1 p-3 flex flex-col justify-between min-w-0 bg-muted/10">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-black text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide">
-                          {voucher.code}
-                        </span>
-                        {voucher.maxDiscountAmountMinor && (
-                          <span className="text-[9px] text-muted-foreground font-medium">
-                            Max ${Number(voucher.maxDiscountAmountMinor)}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-bold text-xs text-foreground mt-1.5 truncate group-hover:text-primary transition-colors">
-                        {voucher.name}
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {Number(voucher.minOrderValueMinor) > 0 ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}` : 'No Min. Spend'}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-1 gap-2">
-                      <span className="text-[9px] text-muted-foreground truncate">
-                        {voucher.endTime ? `Exp: ${new Date(voucher.endTime).toLocaleDateString()}` : 'No Expiry'}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant={isCollected ? 'ghost' : 'secondary'}
-                        className={`h-7 px-2.5 text-[10px] font-bold rounded-md cursor-pointer transition-all ${
-                          isCollected
-                            ? 'text-success hover:bg-success/10 bg-success/5 border border-success/15'
-                            : 'bg-primary text-primary-foreground hover:bg-primary/95 shadow-sm'
-                        }`}
-                        disabled={isCollected || collectMutation.isPending}
-                        onClick={() => collectMutation.mutate({ path: { id: voucher.id! }, query: { customerId } })}
-                      >
-                        {isCollected ? (
-                          <span className="flex items-center gap-0.5"><Check className="h-3 w-3 stroke-[3]" />Collected</span>
-                        ) : (
-                          <span className="flex items-center gap-0.5"><Gift className="h-3 w-3" />Collect</span>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
               )
             })}
           </div>
@@ -731,6 +680,100 @@ export function ShopPage() {
         )}
       </button>
 
+      {/* Sliding Promotion Drawer */}
+      {showPromoDrawer && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+            onClick={() => setShowPromoDrawer(false)}
+          />
+          <div className="fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-border bg-background shadow-2xl sm:w-[400px]">
+            <div className="flex items-center justify-between border-b px-4 py-4">
+              <div>
+                <h2 className="flex items-center gap-2 text-lg font-bold">
+                  <Gift className="h-5 w-5 animate-pulse text-rose-500" /> Promotion Vouchers
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Collect vouchers to save on your orders</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPromoDrawer(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
+              {vouchers.map((voucher: any) => {
+                const isCollected = collectedIds.has(voucher.id)
+                return (
+                  <div
+                    key={voucher.id}
+                    className="group relative flex h-28 items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md"
+                  >
+                    <div className="relative flex w-24 shrink-0 select-none flex-col items-center justify-center bg-gradient-to-br from-pink-500 via-rose-500 to-orange-500 p-2 text-center text-white">
+                      <div className="absolute -right-1.5 bottom-0 top-0 z-10 flex w-3 flex-col justify-between py-1.5">
+                        {[...Array(5)].map((_, index) => (
+                          <div key={index} className="h-2.5 w-2.5 rounded-full bg-background" />
+                        ))}
+                      </div>
+                      <span className="text-xl font-black leading-none tracking-tight">
+                        {voucher.discountType === 'PERCENTAGE'
+                          ? `${Number(voucher.discountValue)}%`
+                          : formatUSD(Number(voucher.discountValue))}
+                      </span>
+                      <span className="mt-1 text-[9px] font-black uppercase tracking-wider opacity-90">OFF</span>
+                    </div>
+
+                    <div className="flex min-w-0 flex-1 flex-col justify-between bg-muted/10 p-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase tracking-wide text-primary">
+                            {voucher.code}
+                          </span>
+                          {voucher.maxDiscountAmountMinor && (
+                            <span className="text-[9px] font-medium text-muted-foreground">
+                              Max {formatUSD(Number(voucher.maxDiscountAmountMinor))}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="mt-1.5 truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                          {voucher.name}
+                        </h3>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          {Number(voucher.minOrderValueMinor) > 0
+                            ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}`
+                            : 'No Min. Spend'}
+                        </p>
+                      </div>
+
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="truncate text-[9px] text-muted-foreground">
+                          {voucher.endTime ? `Exp: ${new Date(voucher.endTime).toLocaleDateString()}` : 'No Expiry'}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant={isCollected ? 'ghost' : 'secondary'}
+                          className={`h-7 cursor-pointer rounded-md px-2.5 text-[10px] font-bold transition-all ${
+                            isCollected
+                              ? 'border border-success/15 bg-success/5 text-success hover:bg-success/10'
+                              : 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/95'
+                          }`}
+                          disabled={isCollected || collectMutation.isPending}
+                          onClick={() => collectMutation.mutate({ path: { id: voucher.id! }, query: { customerId } })}
+                        >
+                          {isCollected ? (
+                            <span className="flex items-center gap-0.5"><Check className="h-3 w-3 stroke-[3]" />Collected</span>
+                          ) : (
+                            <span className="flex items-center gap-0.5"><Gift className="h-3 w-3" />Collect</span>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Checkout Dialog */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
         <DialogContent className="max-w-md max-h-[90vh] flex flex-col gap-0">
@@ -833,6 +876,33 @@ export function ShopPage() {
                 onChange={e => setCustomerAddress(e.target.value)}
                 placeholder="123 Main St, City"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Province/City *</Label>
+                <Input value={shippingProvince} onChange={e => setShippingProvince(e.target.value)} placeholder="Tỉnh/Thành phố" />
+              </div>
+              <div>
+                <Label>Ward/District *</Label>
+                <Input value={shippingWard} onChange={e => setShippingWard(e.target.value)} placeholder="Xã/Phường/Quận" />
+              </div>
+            </div>
+            <div>
+              <Label>Payment Method *</Label>
+              <div className="flex gap-4 mt-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="COD" checked={paymentMethod === 'COD'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Thanh toán khi nhận hàng (COD)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="BANK_TRANSFER" checked={paymentMethod === 'BANK_TRANSFER'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Chuyển khoản (VietQR)
+                </label>
+                <label className={`flex items-center gap-2 text-sm ${!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor * (userWallet.currency === 'VND' ? 254 : 1) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="radio" name="paymentMethod" value="WALLET" disabled={!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor * (userWallet.currency === 'VND' ? 254 : 1)} checked={paymentMethod === 'WALLET'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Ví cá nhân ({userWallet ? formatUSD((userWallet.availableBalanceMinor ?? 0) / (userWallet.currency === 'VND' ? 254 : 1)) : 'Đang tải...'})
+                </label>
+              </div>
             </div>
             <div>
               <Label>Note</Label>
@@ -953,6 +1023,17 @@ export function ShopPage() {
                 <span className="text-primary">{formatUSD(finalAmountMinor)}</span>
               </div>
             </div>
+            {isCustomerRole && (
+              <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Your order is saved as Pending. You can pay now, or return to the shop and complete payment later from Orders.
+              </p>
+            )}
+            {error && (
+              <div className="rounded-lg bg-destructive/15 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
           </div>
           <DialogFooter className="pt-4">
             <Button variant="outline" className="cursor-pointer" onClick={() => setShowCheckout(false)}>Cancel</Button>

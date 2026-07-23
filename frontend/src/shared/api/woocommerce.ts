@@ -29,11 +29,12 @@ async function getWooCommerceHealth(businessId?: string): Promise<WooCommerceHea
 export function useWooCommerceHealthQuery(
   tenantScope: string | undefined,
   businessId?: string,
+  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: ['woocommerce', 'health', tenantScope ?? 'unresolved', businessId ?? 'default'],
     queryFn: () => getWooCommerceHealth(businessId),
-    enabled: Boolean(tenantScope),
+    enabled: (options?.enabled ?? true) && Boolean(tenantScope),
     retry: 1,
     staleTime: 0,
   })
@@ -63,12 +64,13 @@ export function useWooCommerceOrdersQuery(
     search?: string
     limit?: number
     offset?: number
-  }
+  },
+  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: ['woocommerce', 'orders', tenantScope ?? 'unresolved', query],
     queryFn: () => getWooCommerceOrders(query),
-    enabled: Boolean(tenantScope),
+    enabled: (options?.enabled ?? true) && Boolean(tenantScope),
     retry: 1,
     staleTime: 0,
   })

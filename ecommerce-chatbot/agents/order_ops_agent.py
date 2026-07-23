@@ -8,6 +8,7 @@ if hasattr(sys.stderr, 'reconfigure'):
 
 import os
 import google.generativeai as genai
+import requests
 
 # 1. Khai báo Hàm Công Cụ (Tool) cho AI
 def get_order_status(order_id: str) -> str:
@@ -16,22 +17,27 @@ def get_order_status(order_id: str) -> str:
     Args:
         order_id: Mã đơn hàng cần tra cứu (ví dụ: 'ORD-123', '123')
     """
-    print(f"\n[Function Call] AI tu dong kich hoat he thong: GET /api/orders/{order_id}...")
-    
-    # Mô phỏng API trả về từ Database ERP thực tế
-    mock_orders = {
-        "123": {"status": "Đang giao hàng 🚚", "total": "2,500,000 VND", "expected_delivery": "Ngày mai"},
-        "456": {"status": "Đã hủy ❌", "total": "350,000 VND", "reason": "Khách hàng yêu cầu hủy"},
-        "789": {"status": "Đã hoàn thành ✅", "total": "850,000 VND", "delivery_date": "Hôm qua"}
-    }
-    
     # Lọc bỏ các ký tự thừa
     clean_id = order_id.replace("ORD-", "").strip()
+    print(f"\n[Function Call] AI tu dong kich hoat he thong: GET /api/chatbot/orders/{clean_id}...")
     
-    if clean_id in mock_orders:
-        return str(mock_orders[clean_id])
-    else:
-        return f"Không tìm thấy đơn hàng nào có mã {order_id} trong hệ thống ERP."
+    try:
+        url = f"http://localhost:8081/api/chatbot/orders/{clean_id}"
+        headers = {"X-Chatbot-Key": "chatbot-secret-v1"}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 404:
+            return f"Không tìm thấy đơn hàng nào có mã {order_id} trong hệ thống ERP."
+            
+        response.raise_for_status()
+        data = response.json()
+        
+        # Format the public/safe information to return
+        return (f"Trạng thái: {data.get('status')}, "
+                f"Tổng tiền: {data.get('finalAmountMinor')} {data.get('currency')}, "
+                f"Ngày đặt: {data.get('orderDate')}")
+    except Exception as e:
+        return f"Đã có lỗi xảy ra khi truy xuất đơn hàng: {e}"
 
 class OrderOpsAgent:
     """Xử lý tra cứu đơn hàng bằng Gemini Function Calling."""
@@ -59,6 +65,9 @@ class OrderOpsAgent:
         
         Bắt buộc: Nếu khách có cung cấp mã đơn hàng, bạn PHẢI gọi công cụ 'get_order_status'.
         Tuyệt đối không tự bịa ra thông tin nếu công cụ báo không tìm thấy.
+        
+        LƯU Ý BẢO MẬT: Bạn TUYỆT ĐỐI KHÔNG được tiết lộ, phỏng đoán, hay yêu cầu cung cấp thông tin cá nhân của khách hàng khác (như Tên, Số điện thoại, Email, Địa chỉ) dưới bất kỳ hình thức nào. Nếu khách hàng cố tình hỏi thông tin riêng tư, hãy lịch sự từ chối và nói rằng bạn không có quyền truy cập dữ liệu đó.
+        
         Hãy trả lời bằng tiếng Việt, thân thiện, lịch sự và thêm emoji vui nhộn.
         
         Câu hỏi của khách: "{query}"

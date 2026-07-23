@@ -1,0 +1,15 @@
+{
+  "back": "Back",
+  "title": "Notifications",
+  "unread": "{{count}} unread",
+  "markAllRead": "Mark all read",
+  "loading": "Loading notifications…",
+  "emptyTitle": "No notifications",
+  "emptyDescription": "You'll see updates about your orders here.",
+  "orderPlaced": "New order",
+  "orderPaid": "Payment received",
+  "orderStatusUpdated": "Order updated",
+  "orderCompleted": "Order completed",
+  "orderAccepted": "Order accepted",
+  "orderDeclined": "Order declined"
+}

@@ -4,6 +4,7 @@ import { useRouter } from '@tanstack/react-router'
 import { ArrowLeft, Save, Trash2, Plus, Upload, X, ImageIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@/shared/api/catalog'
+import { uploadImage } from '@/shared/api'
 import type { Product, Category, ProductOption, ProductVariant } from '@/shared/api/catalog'
 import { Button } from '@/shared/ui/button'
 import { useMeQuery } from '@/shared/api'
@@ -25,6 +26,7 @@ interface ProductFormState {
   categoryId: string
   basePriceMinor: string
   salePriceMinor: string
+  costPriceMinor: string
   saleStartsAt: string
   saleEndsAt: string
   active: boolean
@@ -33,7 +35,7 @@ interface ProductFormState {
   lowStockThreshold: string
   hasVariants: boolean
   options: { name: string; values: string }[]
-  variants: { sku: string; priceMinor: string; stockQuantity: string; lowStockThreshold: string; optionValues: Record<string, string> }[]
+  variants: { sku: string; priceMinor: string; costPriceMinor: string; stockQuantity: string; lowStockThreshold: string; optionValues: Record<string, string> }[]
   tagsInput: string
 }
 
@@ -45,6 +47,7 @@ const emptyForm: ProductFormState = {
   categoryId: '',
   basePriceMinor: '',
   salePriceMinor: '',
+  costPriceMinor: '0',
   saleStartsAt: '',
   saleEndsAt: '',
   active: true,
@@ -79,6 +82,7 @@ function productToForm(product: Product): ProductFormState {
   const variants = (product.variants || []).map(v => ({
     sku: v.sku,
     priceMinor: v.priceMinor.toString(),
+    costPriceMinor: v.costPriceMinor?.toString() ?? '',
     stockQuantity: v.stockQuantity.toString(),
     lowStockThreshold: (v.lowStockThreshold ?? 0).toString(),
     optionValues: v.optionValues,
@@ -94,6 +98,7 @@ function productToForm(product: Product): ProductFormState {
     categoryId: product.category?.id || '',
     basePriceMinor: product.basePriceMinor?.toString() || '',
     salePriceMinor: product.salePriceMinor?.toString() || '',
+    costPriceMinor: product.costPriceMinor?.toString() ?? '0',
     saleStartsAt: toLocalInputValue(product.saleStartsAt),
     saleEndsAt: toLocalInputValue(product.saleEndsAt),
     active: product.active ?? true,
@@ -127,6 +132,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
     ? form.variants.map(v => ({
         sku: v.sku.trim(),
         priceMinor: Number(v.priceMinor || 0),
+        costPriceMinor: v.costPriceMinor ? Number(v.costPriceMinor) : null,
         stockQuantity: Number(v.stockQuantity || 0),
         lowStockThreshold: Number(v.lowStockThreshold || 0),
         optionValues: v.optionValues,
@@ -141,6 +147,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
     category: form.categoryId ? { id: form.categoryId, name: '' } : null,
     basePriceMinor: Number(form.basePriceMinor || 0),
     salePriceMinor: form.salePriceMinor ? Number(form.salePriceMinor) : null,
+    costPriceMinor: Number(form.costPriceMinor || 0),
     saleStartsAt: fromLocalInputValue(form.saleStartsAt),
     saleEndsAt: fromLocalInputValue(form.saleEndsAt),
     active: form.active,
@@ -221,6 +228,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
       return {
         sku: defaultSku,
         priceMinor: form.basePriceMinor || '0',
+        costPriceMinor: form.costPriceMinor || '0',
         stockQuantity: '0',
         lowStockThreshold: '0',
         optionValues: comb,
@@ -286,6 +294,9 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
     if (form.salePriceMinor && Number(form.salePriceMinor) < 0) {
       errors.salePriceMinor = t('nonNegativeField')
     }
+    if (form.costPriceMinor && Number(form.costPriceMinor) < 0) {
+      errors.costPriceMinor = t('nonNegativeField')
+    }
     if (form.saleStartsAt && form.saleEndsAt && new Date(form.saleEndsAt) < new Date(form.saleStartsAt)) {
       errors.saleEndsAt = t('saleWindowInvalid')
     }
@@ -304,7 +315,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         if (!v.sku.trim()) {
           setError(`Biến thể hàng thứ ${idx + 1} thiếu SKU.`)
         }
-        if (Number(v.priceMinor) < 0 || Number(v.stockQuantity) < 0) {
+        if (Number(v.priceMinor) < 0 || Number(v.costPriceMinor || 0) < 0 || Number(v.stockQuantity) < 0) {
           setError(`Giá hoặc Tồn kho của biến thể hàng thứ ${idx + 1} không hợp lệ.`)
         }
       })
@@ -355,7 +366,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="sku">{t('sku')}</Label>
                 <Input
@@ -447,18 +458,13 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                       onChange={async (e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        const formData = new FormData()
-                        formData.append('file', file)
                         try {
-                          const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
-                          const token = localStorage.getItem('access_token')
-                          const res = await fetch(`${baseUrl}/api/images/upload`, {
-                            method: 'POST',
-                            headers: token ? { Authorization: `Bearer ${token}` } : {},
-                            body: formData,
+                          const response = await uploadImage({
+                            body: { file },
+                            throwOnError: true,
                           })
-                          if (res.ok) {
-                            const data = await res.json()
+                          const data = response.data as { url?: string } | undefined
+                          if (data?.url) {
                             updateField('imageUrl', data.url)
                           }
                         } catch (err) {
@@ -509,6 +515,20 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                   aria-invalid={Boolean(fieldErrors.salePriceMinor)}
                 />
                 {fieldErrors.salePriceMinor && <p className="text-sm text-destructive">{fieldErrors.salePriceMinor}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="costPriceMinor">{t('costPriceMinor')}</Label>
+                <Input
+                  id="costPriceMinor"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.costPriceMinor}
+                  onChange={(event) => updateField('costPriceMinor', event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.costPriceMinor)}
+                />
+                <p className="text-xs text-muted-foreground">{t('costPriceHint')}</p>
+                {fieldErrors.costPriceMinor && <p className="text-sm text-destructive">{fieldErrors.costPriceMinor}</p>}
               </div>
             </div>
 
@@ -677,6 +697,7 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                             <TableHead className="min-w-[120px]">Biến thể</TableHead>
                             <TableHead className="min-w-[150px]">{t('sku')}</TableHead>
                             <TableHead className="min-w-[100px]">{t('variantPrice')}</TableHead>
+                            <TableHead className="min-w-[110px]">{t('variantCostPrice')}</TableHead>
                             <TableHead className="min-w-[100px]">{t('variantStock')}</TableHead>
                             <TableHead className="min-w-[120px]">{t('variantLowStock')}</TableHead>
                           </TableRow>
@@ -708,6 +729,20 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                                     onChange={(e) => {
                                       const next = [...form.variants]
                                       next[i].priceMinor = e.target.value
+                                      updateField('variants', next)
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={v.costPriceMinor}
+                                    placeholder={form.costPriceMinor || '0'}
+                                    onChange={(e) => {
+                                      const next = [...form.variants]
+                                      next[i].costPriceMinor = e.target.value
                                       updateField('variants', next)
                                     }}
                                   />

@@ -2,7 +2,9 @@ package base.rest;
 
 import base.entity.Role;
 import base.entity.User;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
+import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -21,6 +23,20 @@ public class UserResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    WalletService walletService;
+
+    @Inject
+    BusinessAccess businessAccess;
+
+    @GET
+    @Path("/test-error")
+    @jakarta.annotation.security.PermitAll
+    public jakarta.ws.rs.core.Response testError() {
+        base.entity.User.find("email = ?1 and tenantId = ?2", "a", "b").firstResult();
+        return jakarta.ws.rs.core.Response.ok("ok").build();
+    }
 
     @GET
     @Path("/me")
@@ -76,7 +92,10 @@ public class UserResource {
         if (user.getRole() != null && user.getRole().getId() != null) {
             user.setRole(Role.findById(user.getRole().getId()));
         }
+        businessAccess.synchronizeAssignment(user, caller.tenantCode());
         user.persist();
+        walletService.getOrCreateUserWallet(
+                caller.tenantCode(), user.getId(), "VND", caller.userId());
         return Response.created(URI.create("/api/users/" + user.getId())).entity(user).build();
     }
 
@@ -100,6 +119,7 @@ public class UserResource {
         if (updated.getRole() != null && updated.getRole().getId() != null) {
             user.setRole(Role.findById(updated.getRole().getId()));
         }
+        businessAccess.synchronizeAssignment(user, caller.tenantCode());
         user.setUpdatedBy(caller.userId());
         return user;
     }

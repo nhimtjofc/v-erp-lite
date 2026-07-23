@@ -39,7 +39,7 @@ public class Voucher extends BaseEntity {
     private Long maxDiscountAmountMinor;
 
     @Column(nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "VND";
 
     @Column(name = "start_time")
     private Instant startTime;

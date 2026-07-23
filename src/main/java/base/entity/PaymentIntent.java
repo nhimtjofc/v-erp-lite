@@ -28,7 +28,7 @@ public class PaymentIntent extends BaseEntity {
     private long amountMinor;
 
     @Column(nullable = false, length = 3)
-    private String currency;
+    private String currency = "VND";
 
     @Column(nullable = false)
     private String status; // REQUIRES_PAYMENT_METHOD, PROCESSING, SUCCEEDED, FAILED, CANCELLED

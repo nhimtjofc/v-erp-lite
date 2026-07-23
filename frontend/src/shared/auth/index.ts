@@ -71,7 +71,34 @@ export async function handleCallback(): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
-  await userManager.signoutRedirect()
+  const authority = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`
+  const oidcUserKey = `oidc.user:${authority}:${KEYCLOAK_CLIENT_ID}`
+  const storedUser = localStorage.getItem(oidcUserKey)
+  let idTokenHint: string | undefined
+
+  if (storedUser) {
+    try {
+      idTokenHint = (JSON.parse(storedUser) as { id_token?: string }).id_token
+    } catch {
+      // A corrupt stored session must not prevent the user from signing out.
+    }
+  }
+
+  // Clear all local authentication state synchronously so no stale user can
+  // redirect /login back into the authenticated application.
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem(oidcUserKey)
+  useAuthStore.getState().setUser(null)
+
+  const logoutUrl = new URL(`${authority}/protocol/openid-connect/logout`)
+  logoutUrl.searchParams.set('client_id', KEYCLOAK_CLIENT_ID)
+  logoutUrl.searchParams.set('post_logout_redirect_uri', `${origin}/login`)
+  if (idTokenHint) {
+    logoutUrl.searchParams.set('id_token_hint', idTokenHint)
+  }
+
+  window.location.replace(logoutUrl.toString())
 }
 
 export async function getAccessToken(): Promise<string | null> {

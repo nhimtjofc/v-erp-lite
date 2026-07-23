@@ -24,6 +24,7 @@
   "vouchers": "Vouchers",
   "businessAdmin": "Business Settings",
   "finance": "Finance",
+  "revenue": "Revenue",
   "wallet": "Wallet",
   "payouts": "Payouts",
   "systemAdmin": "System Admin",
@@ -31,5 +32,6 @@
   "administration": "Administration",
   "tenants": "Tenants",
   "shop": "Shop",
-  "cart": "Cart"
+  "cart": "Cart",
+  "notifications": "Notifications"
 }

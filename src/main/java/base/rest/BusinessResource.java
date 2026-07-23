@@ -1,6 +1,8 @@
 package base.rest;
 
 import base.entity.Business;
+import base.entity.User;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -22,8 +24,15 @@ public class BusinessResource {
     @Inject
     CallerContext caller;
 
+    @Inject
+    BusinessAccess businessAccess;
+
     @GET
     public List<Business> listBusinesses() {
+        if (businessAccess.isScopedStaff()) {
+            Business business = businessAccess.findCurrentBusiness();
+            return business == null ? List.of() : List.of(business);
+        }
         return Business.list("tenantId", caller.tenantCode());
     }
 
@@ -34,27 +43,35 @@ public class BusinessResource {
         if (business == null) {
             throw new NotFoundException("Business not found");
         }
+        businessAccess.requireAccess(business.getId());
         return business;
     }
 
     @POST
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response createBusiness(Business business) {
         business.setId(UUID.randomUUID());
         business.setTenantId(caller.tenantCode());
         business.setCreatedBy(caller.userId());
         business.persist();
+        if (caller.hasRole("businessOwner") && !caller.hasRole("admin")) {
+            User owner = caller.resolveUser();
+            owner.setBusiness(business);
+        }
         return Response.created(URI.create("/api/businesses/" + business.getId())).entity(business).build();
     }
 
     @PUT
     @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Business updateBusiness(@PathParam("id") UUID id, Business updated) {
         Business business = Business.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (business == null) {
             throw new NotFoundException("Business not found");
         }
+        businessAccess.requireAccess(business.getId());
         business.setName(updated.getName());
         business.setAddress(updated.getAddress());
         business.setPhone(updated.getPhone());
@@ -68,8 +85,14 @@ public class BusinessResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response deleteBusiness(@PathParam("id") UUID id) {
+        Business business = Business.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
+        if (business == null) {
+            throw new NotFoundException("Business not found");
+        }
+        businessAccess.requireAccess(business.getId());
         long deleted = Business.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Business not found");

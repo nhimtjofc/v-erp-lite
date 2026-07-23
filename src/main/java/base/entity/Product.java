@@ -63,8 +63,11 @@ public class Product extends BaseEntity {
     @Column(name = "sale_price_minor")
     private Long salePriceMinor;
 
+    @Column(name = "cost_price_minor", nullable = false)
+    private long costPriceMinor = 0;
+
     @Column(nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "VND";
 
     @Column(name = "sale_starts_at")
     private Instant saleStartsAt;

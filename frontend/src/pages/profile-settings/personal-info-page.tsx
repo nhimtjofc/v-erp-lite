@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getUser } from '@/shared/auth'
 import { useMeQuery, useUpdateMeMutation, useGetMyCustomerProfileQuery } from '@/shared/api'
+import { useSellerWalletQuery } from '@/shared/api/wallet'
 import { Badge } from '@/shared/ui/badge'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -27,7 +28,10 @@ import {
   Sparkles,
   QrCode,
   CreditCard,
+  Wallet,
 } from 'lucide-react'
+import { Link as RouterLink } from '@tanstack/react-router'
+import { formatUSD, formatMoneyMinor } from '@/shared/utils/currency'
 
 const TIMEZONES = [
   'UTC',
@@ -74,6 +78,7 @@ export function PersonalInfoPage() {
   const [flipped, setFlipped] = useState(false)
   const [cardQrUrl, setCardQrUrl] = useState('')
   const { data: customerProfile } = useGetMyCustomerProfileQuery()
+  const { data: userWallet } = useSellerWalletQuery()
 
   useEffect(() => {
     if (!customerProfile?.cardNumber) return
@@ -395,6 +400,28 @@ export function PersonalInfoPage() {
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSpendMinor)}
                   </p>
                 </div>
+              </div>
+
+              {/* Wallet Integration Section */}
+              <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Wallet className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-primary uppercase">Số dư ví cá nhân</p>
+                    <p className="text-2xl font-black text-foreground">
+                      {userWallet 
+                        ? formatMoneyMinor(userWallet.availableBalanceMinor ?? 0, userWallet.currency || 'VND')
+                        : '---'}
+                    </p>
+                  </div>
+                </div>
+                <RouterLink to="/user-wallet">
+                  <Button variant="default" className="w-full sm:w-auto shadow-md">
+                    Quản lý & Nạp tiền
+                  </Button>
+                </RouterLink>
               </div>
 
               {/* Tier Progress bar */}

@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, useMutation, type UseMutationOptions, useQuery } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addItem, adjust, approve, batchApprove, batchReject, changePassword, checkoutCart, checkoutOrder, collect, completeMockPayment, create, createBusiness, createCart, createCategory, createCustomer, createIntent, createOrder, createProduct, createTag, createTenant, createTenantUser, createUser, createVoucher, credit, debit, debugCaller, deleteBusiness, deleteCart, deleteCategory, deleteCustomer, deleteOrder, deleteProduct, deleteTag, deleteTenant, deleteTenantUser, deleteUser, deleteVoucher, disableMfa, ensure, export_, failMockPayment, getBusiness, getCart, getCatalogChanges, getCatalogSyncSummary, getCategory, getCustomer, getEffectiveSettings, getHistory, getImage, getMyCustomerProfile, getOrCreateActive, getOrder, getOrderStatus, getPaymentIntent, getPayout, getProduct, getStats, getTag, getTenant, getTenantSettings, getTranslations, getUser, getUserSettings, getVoucher, getWallet, getWooCommerceHealth, handleWebhook, health, initiateMockPayment, list, listBusinesses, listCarts, listCategories, listCustomers, listOrderPaymentIntents, listOrders, listProducts, listTags, listTenants, listTenantUsers, listTransactions, listUsers, listVouchers, listWallets, listWooCommerceOrders, me, mfaStatus, myVouchers, myWallet, type Options, putTenantSettings, putUserSettings, reconcileOrder, register, reject, removeItem, setupMfa, syncAll, syncTenant, transactions, updateBusiness, updateCategory, updateCustomer, updateItem, updateMe, updateOrder, updateProduct, updateStatus, updateTenant, updateTenantUser, updateUser, updateVoucher, uploadImage, upsertCatalogMappings, validateVoucher, verifyMfa } from '../sdk.gen';
-import type { AddItemData, AddItemResponse, AdjustData, ApproveData, ApproveResponse, BatchApproveData, BatchRejectData, ChangePasswordData, CheckoutCartData, CheckoutCartResponse, CheckoutOrderData, CollectData, CompleteMockPaymentData, CreateBusinessData, CreateCartData, CreateCategoryData, CreateCustomerData, CreateData, CreateIntentData, CreateOrderData, CreateProductData, CreateTagData, CreateTenantData, CreateTenantUserData, CreateUserData, CreateVoucherData, CreditData, CreditResponse, DebitData, DebitResponse, DebugCallerData, DeleteBusinessData, DeleteCartData, DeleteCategoryData, DeleteCustomerData, DeleteOrderData, DeleteProductData, DeleteTagData, DeleteTenantData, DeleteTenantUserData, DeleteUserData, DeleteVoucherData, DisableMfaData, EnsureData, ExportData, FailMockPaymentData, GetBusinessData, GetBusinessResponse, GetCartData, GetCartResponse, GetCatalogChangesData, GetCatalogChangesResponse, GetCatalogSyncSummaryData, GetCatalogSyncSummaryResponse, GetCategoryData, GetCategoryResponse, GetCustomerData, GetCustomerResponse, GetEffectiveSettingsData, GetHistoryData, GetHistoryResponse, GetImageData, GetMyCustomerProfileData, GetMyCustomerProfileResponse, GetOrCreateActiveData, GetOrCreateActiveResponse, GetOrderData, GetOrderResponse, GetOrderStatusData, GetPaymentIntentData, GetPaymentIntentResponse, GetPayoutData, GetPayoutResponse, GetProductData, GetProductResponse, GetStatsData, GetStatsResponse, GetTagData, GetTagResponse, GetTenantData, GetTenantResponse, GetTenantSettingsData, GetTranslationsData, GetUserData, GetUserResponse, GetUserSettingsData, GetVoucherData, GetVoucherResponse, GetWalletData, GetWalletResponse, GetWooCommerceHealthData, GetWooCommerceHealthResponse, HandleWebhookData, HealthData, HealthResponse, InitiateMockPaymentData, ListBusinessesData, ListBusinessesResponse, ListCartsData, ListCartsResponse, ListCategoriesData, ListCategoriesResponse, ListCustomersData, ListCustomersResponse, ListData, ListOrderPaymentIntentsData, ListOrderPaymentIntentsResponse, ListOrdersData, ListOrdersResponse, ListProductsData, ListProductsResponse, ListResponse, ListTagsData, ListTagsResponse, ListTenantsData, ListTenantsResponse, ListTenantUsersData, ListTenantUsersResponse, ListTransactionsData, ListTransactionsResponse, ListUsersData, ListUsersResponse, ListVouchersData, ListVouchersResponse, ListWalletsData, ListWalletsResponse, ListWooCommerceOrdersData, ListWooCommerceOrdersResponse, MeData, MeResponse, MfaStatusData, MyVouchersData, MyVouchersResponse, MyWalletData, MyWalletResponse, PutTenantSettingsData, PutUserSettingsData, ReconcileOrderData, RegisterData, RejectData, RejectResponse, RemoveItemData, RemoveItemResponse, SetupMfaData, SyncAllData, SyncTenantData, TransactionsData, TransactionsResponse, UpdateBusinessData, UpdateBusinessResponse, UpdateCategoryData, UpdateCategoryResponse, UpdateCustomerData, UpdateCustomerResponse, UpdateItemData, UpdateItemResponse, UpdateMeData, UpdateMeResponse, UpdateOrderData, UpdateOrderResponse, UpdateProductData, UpdateProductResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantData, UpdateTenantResponse, UpdateTenantUserData, UpdateTenantUserResponse, UpdateUserData, UpdateUserResponse, UpdateVoucherData, UpdateVoucherResponse, UploadImageData, UpsertCatalogMappingsData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
+import { adjust, approve, batchApprove, batchReject, changePassword, checkoutOrder, collect, completeMockPayment, completeTopUp, confirmReceipt, createBusiness, createCategory, createCustomer, createIntent, createOrder, createProduct, createRevenueAdjustment, createTag, createTenant, createTenantUser, createUser, createVoucher, credit, debit, debugCaller, deleteBusiness, deleteCategory, deleteCustomer, deleteOrder, deleteProduct, deleteRevenueAdjustment, deleteTag, deleteTenant, deleteTenantUser, deleteUser, deleteVoucher, disableMfa, ensure, export_, failMockPayment, generate, getBank, getBusiness, getCatalogChanges, getCatalogSyncSummary, getCategory, getCustomer, getDailyRevenue, getEffectiveSettings, getEscrowRecords, getHistory, getImage, getMonthlyRevenue, getMonthToDateRevenue, getMyCustomerProfile, getMyTopUps, getNotificationCount, getOrder, getOrderStatus, getOrderStatus2, getPaymentIntent, getPayout, getProduct, getRefunds, getStats, getStats2, getTag, getTenant, getTenantSettings, getTranslations, getUser, getUserSettings, getVoucher, getWallet, getWooCommerceHealth, handleWebhook, health, initiateMockPayment, list, listBanks, listBusinesses, listCategories, listCustomers, listNotifications, listOrderPaymentIntents, listOrders, listProducts, listRiskEvents, listTags, listTenants, listTenantUsers, listTransactions, listUsers, listVouchers, listWallets, listWooCommerceOrders, markAllNotificationsRead, markNotificationRead, me, mfaStatus, myVouchers, myWallet, type Options, ownerDecision, putTenantSettings, putUserSettings, reconcileOrder, register, reject, screenMyPayout, setupMfa, status, syncAll, syncTenant, testError, topUpMyWallet, transactions, updateBusiness, updateCategory, updateCustomer, updateMe, updateMyBankDetails, updateOrder, updateProduct, updateStatus, updateTenant, updateTenantUser, updateUser, updateVoucher, uploadImage, upsertCatalogMappings, validateVoucher, verifyMfa } from '../sdk.gen';
+import type { AdjustData, ApproveData, ApproveResponse, BatchApproveData, BatchRejectData, ChangePasswordData, CheckoutOrderData, CollectData, CompleteMockPaymentData, CompleteTopUpData, ConfirmReceiptData, ConfirmReceiptResponse, CreateBusinessData, CreateCategoryData, CreateCustomerData, CreateIntentData, CreateOrderData, CreateProductData, CreateRevenueAdjustmentData, CreateTagData, CreateTenantData, CreateTenantUserData, CreateUserData, CreateVoucherData, CreditData, CreditResponse, DebitData, DebitResponse, DebugCallerData, DeleteBusinessData, DeleteCategoryData, DeleteCustomerData, DeleteOrderData, DeleteProductData, DeleteRevenueAdjustmentData, DeleteTagData, DeleteTenantData, DeleteTenantUserData, DeleteUserData, DeleteVoucherData, DisableMfaData, EnsureData, ExportData, FailMockPaymentData, GenerateData, GetBankData, GetBankResponse, GetBusinessData, GetBusinessResponse, GetCatalogChangesData, GetCatalogChangesResponse, GetCatalogSyncSummaryData, GetCatalogSyncSummaryResponse, GetCategoryData, GetCategoryResponse, GetCustomerData, GetCustomerResponse, GetDailyRevenueData, GetDailyRevenueResponse, GetEffectiveSettingsData, GetEscrowRecordsData, GetEscrowRecordsResponse, GetHistoryData, GetHistoryResponse, GetImageData, GetMonthlyRevenueData, GetMonthlyRevenueResponse, GetMonthToDateRevenueData, GetMonthToDateRevenueResponse, GetMyCustomerProfileData, GetMyCustomerProfileResponse, GetMyTopUpsData, GetMyTopUpsResponse, GetNotificationCountData, GetNotificationCountResponse, GetOrderData, GetOrderResponse, GetOrderStatus2Data, GetOrderStatusData, GetOrderStatusResponse, GetPaymentIntentData, GetPaymentIntentResponse, GetPayoutData, GetPayoutResponse, GetProductData, GetProductResponse, GetRefundsData, GetRefundsResponse, GetStats2Data, GetStats2Response, GetStatsData, GetStatsResponse, GetTagData, GetTagResponse, GetTenantData, GetTenantResponse, GetTenantSettingsData, GetTranslationsData, GetUserData, GetUserResponse, GetUserSettingsData, GetVoucherData, GetVoucherResponse, GetWalletData, GetWalletResponse, GetWooCommerceHealthData, GetWooCommerceHealthResponse, HandleWebhookData, HealthData, HealthResponse, InitiateMockPaymentData, ListBanksData, ListBanksResponse, ListBusinessesData, ListBusinessesResponse, ListCategoriesData, ListCategoriesResponse, ListCustomersData, ListCustomersResponse, ListData, ListNotificationsData, ListNotificationsResponse, ListOrderPaymentIntentsData, ListOrderPaymentIntentsResponse, ListOrdersData, ListOrdersResponse, ListProductsData, ListProductsResponse, ListResponse, ListRiskEventsData, ListRiskEventsResponse, ListTagsData, ListTagsResponse, ListTenantsData, ListTenantsResponse, ListTenantUsersData, ListTenantUsersResponse, ListTransactionsData, ListTransactionsResponse, ListUsersData, ListUsersResponse, ListVouchersData, ListVouchersResponse, ListWalletsData, ListWalletsResponse, ListWooCommerceOrdersData, ListWooCommerceOrdersResponse, MarkAllNotificationsReadData, MarkAllNotificationsReadResponse, MarkNotificationReadData, MarkNotificationReadResponse, MeData, MeResponse, MfaStatusData, MyVouchersData, MyVouchersResponse, MyWalletData, MyWalletResponse, OwnerDecisionData, OwnerDecisionResponse, PutTenantSettingsData, PutUserSettingsData, ReconcileOrderData, RegisterData, RejectData, RejectResponse, ScreenMyPayoutData, ScreenMyPayoutResponse, SetupMfaData, StatusData, StatusResponse, SyncAllData, SyncTenantData, TestErrorData, TopUpMyWalletData, TopUpMyWalletResponse, TransactionsData, TransactionsResponse, UpdateBusinessData, UpdateBusinessResponse, UpdateCategoryData, UpdateCategoryResponse, UpdateCustomerData, UpdateCustomerResponse, UpdateMeData, UpdateMeResponse, UpdateMyBankDetailsData, UpdateMyBankDetailsResponse, UpdateOrderData, UpdateOrderResponse, UpdateProductData, UpdateProductResponse, UpdateStatusData, UpdateStatusResponse, UpdateTenantData, UpdateTenantResponse, UpdateTenantUserData, UpdateTenantUserResponse, UpdateUserData, UpdateUserResponse, UpdateVoucherData, UpdateVoucherResponse, UploadImageData, UpsertCatalogMappingsData, ValidateVoucherData, VerifyMfaData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -38,6 +38,29 @@ const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions
     }
     return [params];
 };
+
+export const listRiskEventsQueryKey = (options?: Options<ListRiskEventsData>) => createQueryKey('listRiskEvents', options, false, ['Admin Resource']);
+
+/**
+ * List Risk Events
+ */
+export const listRiskEventsOptions = (options?: Options<ListRiskEventsData>) => queryOptions<ListRiskEventsResponse, DefaultError, ListRiskEventsResponse, ReturnType<typeof listRiskEventsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRiskEvents({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRiskEventsQueryKey(options)
+});
+
+/**
+ * List Risk Events
+ */
+export const useListRiskEventsQuery = (options?: Options<ListRiskEventsData>) => useQuery(listRiskEventsOptions(options));
 
 export const listTenantUsersQueryKey = (options: Options<ListTenantUsersData>) => createQueryKey('listTenantUsers', options, false, ['Admin Resource']);
 
@@ -262,6 +285,52 @@ export const registerMutation = (options?: Partial<Options<RegisterData>>): UseM
  */
 export const useRegisterMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<RegisterData>>, 'mutationFn'>>) => useMutation({ ...registerMutation(), ...mutationOptions });
 
+export const listBanksQueryKey = (options?: Options<ListBanksData>) => createQueryKey('listBanks', options, false, ['Bank Resource']);
+
+/**
+ * List Banks
+ */
+export const listBanksOptions = (options?: Options<ListBanksData>) => queryOptions<ListBanksResponse, DefaultError, ListBanksResponse, ReturnType<typeof listBanksQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listBanks({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listBanksQueryKey(options)
+});
+
+/**
+ * List Banks
+ */
+export const useListBanksQuery = (options?: Options<ListBanksData>) => useQuery(listBanksOptions(options));
+
+export const getBankQueryKey = (options: Options<GetBankData>) => createQueryKey('getBank', options, false, ['Bank Resource']);
+
+/**
+ * Get Bank
+ */
+export const getBankOptions = (options: Options<GetBankData>) => queryOptions<GetBankResponse, DefaultError, GetBankResponse, ReturnType<typeof getBankQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getBank({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getBankQueryKey(options)
+});
+
+/**
+ * Get Bank
+ */
+export const useGetBankQuery = (options: Options<GetBankData>) => useQuery(getBankOptions(options));
+
 export const listBusinessesQueryKey = (options?: Options<ListBusinessesData>) => createQueryKey('listBusinesses', options, false, ['Business Resource']);
 
 /**
@@ -374,207 +443,6 @@ export const updateBusinessMutation = (options?: Partial<Options<UpdateBusinessD
  */
 export const useUpdateBusinessMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateBusinessResponse, DefaultError, Options<UpdateBusinessData>>, 'mutationFn'>>) => useMutation({ ...updateBusinessMutation(), ...mutationOptions });
 
-export const listCartsQueryKey = (options?: Options<ListCartsData>) => createQueryKey('listCarts', options, false, ['Cart Resource']);
-
-/**
- * List Carts
- */
-export const listCartsOptions = (options?: Options<ListCartsData>) => queryOptions<ListCartsResponse, DefaultError, ListCartsResponse, ReturnType<typeof listCartsQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await listCarts({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listCartsQueryKey(options)
-});
-
-/**
- * List Carts
- */
-export const useListCartsQuery = (options?: Options<ListCartsData>) => useQuery(listCartsOptions(options));
-
-/**
- * Create Cart
- */
-export const createCartMutation = (options?: Partial<Options<CreateCartData>>): UseMutationOptions<unknown, DefaultError, Options<CreateCartData>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<CreateCartData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await createCart({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Create Cart
- */
-export const useCreateCartMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<CreateCartData>>, 'mutationFn'>>) => useMutation({ ...createCartMutation(), ...mutationOptions });
-
-export const getOrCreateActiveQueryKey = (options: Options<GetOrCreateActiveData>) => createQueryKey('getOrCreateActive', options, false, ['Cart Resource']);
-
-/**
- * Get Or Create Active
- */
-export const getOrCreateActiveOptions = (options: Options<GetOrCreateActiveData>) => queryOptions<GetOrCreateActiveResponse, DefaultError, GetOrCreateActiveResponse, ReturnType<typeof getOrCreateActiveQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getOrCreateActive({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getOrCreateActiveQueryKey(options)
-});
-
-/**
- * Get Or Create Active
- */
-export const useGetOrCreateActiveQuery = (options: Options<GetOrCreateActiveData>) => useQuery(getOrCreateActiveOptions(options));
-
-/**
- * Remove Item
- */
-export const removeItemMutation = (options?: Partial<Options<RemoveItemData>>): UseMutationOptions<RemoveItemResponse, DefaultError, Options<RemoveItemData>> => {
-    const mutationOptions: UseMutationOptions<RemoveItemResponse, DefaultError, Options<RemoveItemData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await removeItem({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Remove Item
- */
-export const useRemoveItemMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<RemoveItemResponse, DefaultError, Options<RemoveItemData>>, 'mutationFn'>>) => useMutation({ ...removeItemMutation(), ...mutationOptions });
-
-/**
- * Update Item
- */
-export const updateItemMutation = (options?: Partial<Options<UpdateItemData>>): UseMutationOptions<UpdateItemResponse, DefaultError, Options<UpdateItemData>> => {
-    const mutationOptions: UseMutationOptions<UpdateItemResponse, DefaultError, Options<UpdateItemData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await updateItem({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Update Item
- */
-export const useUpdateItemMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateItemResponse, DefaultError, Options<UpdateItemData>>, 'mutationFn'>>) => useMutation({ ...updateItemMutation(), ...mutationOptions });
-
-/**
- * Delete Cart
- */
-export const deleteCartMutation = (options?: Partial<Options<DeleteCartData>>): UseMutationOptions<unknown, DefaultError, Options<DeleteCartData>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<DeleteCartData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await deleteCart({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Delete Cart
- */
-export const useDeleteCartMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<DeleteCartData>>, 'mutationFn'>>) => useMutation({ ...deleteCartMutation(), ...mutationOptions });
-
-export const getCartQueryKey = (options: Options<GetCartData>) => createQueryKey('getCart', options, false, ['Cart Resource']);
-
-/**
- * Get Cart
- */
-export const getCartOptions = (options: Options<GetCartData>) => queryOptions<GetCartResponse, DefaultError, GetCartResponse, ReturnType<typeof getCartQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getCart({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getCartQueryKey(options)
-});
-
-/**
- * Get Cart
- */
-export const useGetCartQuery = (options: Options<GetCartData>) => useQuery(getCartOptions(options));
-
-/**
- * Checkout Cart
- */
-export const checkoutCartMutation = (options?: Partial<Options<CheckoutCartData>>): UseMutationOptions<CheckoutCartResponse, DefaultError, Options<CheckoutCartData>> => {
-    const mutationOptions: UseMutationOptions<CheckoutCartResponse, DefaultError, Options<CheckoutCartData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await checkoutCart({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Checkout Cart
- */
-export const useCheckoutCartMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<CheckoutCartResponse, DefaultError, Options<CheckoutCartData>>, 'mutationFn'>>) => useMutation({ ...checkoutCartMutation(), ...mutationOptions });
-
-/**
- * Add Item
- */
-export const addItemMutation = (options?: Partial<Options<AddItemData>>): UseMutationOptions<AddItemResponse, DefaultError, Options<AddItemData>> => {
-    const mutationOptions: UseMutationOptions<AddItemResponse, DefaultError, Options<AddItemData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await addItem({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Add Item
- */
-export const useAddItemMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<AddItemResponse, DefaultError, Options<AddItemData>>, 'mutationFn'>>) => useMutation({ ...addItemMutation(), ...mutationOptions });
-
 export const listCategoriesQueryKey = (options?: Options<ListCategoriesData>) => createQueryKey('listCategories', options, false, ['Category Resource']);
 
 /**
@@ -686,6 +554,52 @@ export const updateCategoryMutation = (options?: Partial<Options<UpdateCategoryD
  * Update Category
  */
 export const useUpdateCategoryMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateCategoryResponse, DefaultError, Options<UpdateCategoryData>>, 'mutationFn'>>) => useMutation({ ...updateCategoryMutation(), ...mutationOptions });
+
+export const getOrderStatusQueryKey = (options: Options<GetOrderStatusData>) => createQueryKey('getOrderStatus', options, false, ['Chatbot Resource']);
+
+/**
+ * Get Order Status
+ */
+export const getOrderStatusOptions = (options: Options<GetOrderStatusData>) => queryOptions<GetOrderStatusResponse, DefaultError, GetOrderStatusResponse, ReturnType<typeof getOrderStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getOrderStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getOrderStatusQueryKey(options)
+});
+
+/**
+ * Get Order Status
+ */
+export const useGetOrderStatusQuery = (options: Options<GetOrderStatusData>) => useQuery(getOrderStatusOptions(options));
+
+export const getStatsQueryKey = (options?: Options<GetStatsData>) => createQueryKey('getStats', options, false, ['Chatbot Resource']);
+
+/**
+ * Get Stats
+ */
+export const getStatsOptions = (options?: Options<GetStatsData>) => queryOptions<GetStatsResponse, DefaultError, GetStatsResponse, ReturnType<typeof getStatsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStats({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStatsQueryKey(options)
+});
+
+/**
+ * Get Stats
+ */
+export const useGetStatsQuery = (options?: Options<GetStatsData>) => useQuery(getStatsOptions(options));
 
 export const listCustomersQueryKey = (options?: Options<ListCustomersData>) => createQueryKey('listCustomers', options, false, ['Customer Resource']);
 
@@ -1205,16 +1119,16 @@ export const reconcileOrderMutation = (options?: Partial<Options<ReconcileOrderD
  */
 export const useReconcileOrderMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<ReconcileOrderData>>, 'mutationFn'>>) => useMutation({ ...reconcileOrderMutation(), ...mutationOptions });
 
-export const getOrderStatusQueryKey = (options: Options<GetOrderStatusData>) => createQueryKey('getOrderStatus', options, false, ['WooCommerce Orders']);
+export const getOrderStatus2QueryKey = (options: Options<GetOrderStatus2Data>) => createQueryKey('getOrderStatus2', options, false, ['WooCommerce Orders']);
 
 /**
  * Get WooCommerce Order Status
  *
  * Returns the current ERP fulfillment status for a WooCommerce order, keyed by the WooCommerce order ID.
  */
-export const getOrderStatusOptions = (options: Options<GetOrderStatusData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getOrderStatusQueryKey>>({
+export const getOrderStatus2Options = (options: Options<GetOrderStatus2Data>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getOrderStatus2QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getOrderStatus({
+        const { data } = await getOrderStatus2({
             ...options,
             ...queryKey[0],
             signal,
@@ -1222,7 +1136,7 @@ export const getOrderStatusOptions = (options: Options<GetOrderStatusData>) => q
         });
         return data;
     },
-    queryKey: getOrderStatusQueryKey(options)
+    queryKey: getOrderStatus2QueryKey(options)
 });
 
 /**
@@ -1230,7 +1144,97 @@ export const getOrderStatusOptions = (options: Options<GetOrderStatusData>) => q
  *
  * Returns the current ERP fulfillment status for a WooCommerce order, keyed by the WooCommerce order ID.
  */
-export const useGetOrderStatusQuery = (options: Options<GetOrderStatusData>) => useQuery(getOrderStatusOptions(options));
+export const useGetOrderStatus2Query = (options: Options<GetOrderStatus2Data>) => useQuery(getOrderStatus2Options(options));
+
+export const listNotificationsQueryKey = (options?: Options<ListNotificationsData>) => createQueryKey('listNotifications', options, false, ['Notification Resource']);
+
+/**
+ * List Notifications
+ */
+export const listNotificationsOptions = (options?: Options<ListNotificationsData>) => queryOptions<ListNotificationsResponse, DefaultError, ListNotificationsResponse, ReturnType<typeof listNotificationsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listNotifications({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listNotificationsQueryKey(options)
+});
+
+/**
+ * List Notifications
+ */
+export const useListNotificationsQuery = (options?: Options<ListNotificationsData>) => useQuery(listNotificationsOptions(options));
+
+export const getNotificationCountQueryKey = (options?: Options<GetNotificationCountData>) => createQueryKey('getNotificationCount', options, false, ['Notification Resource']);
+
+/**
+ * Get Notification Count
+ */
+export const getNotificationCountOptions = (options?: Options<GetNotificationCountData>) => queryOptions<GetNotificationCountResponse, DefaultError, GetNotificationCountResponse, ReturnType<typeof getNotificationCountQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getNotificationCount({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getNotificationCountQueryKey(options)
+});
+
+/**
+ * Get Notification Count
+ */
+export const useGetNotificationCountQuery = (options?: Options<GetNotificationCountData>) => useQuery(getNotificationCountOptions(options));
+
+/**
+ * Mark All Notifications Read
+ */
+export const markAllNotificationsReadMutation = (options?: Partial<Options<MarkAllNotificationsReadData>>): UseMutationOptions<MarkAllNotificationsReadResponse, DefaultError, Options<MarkAllNotificationsReadData>> => {
+    const mutationOptions: UseMutationOptions<MarkAllNotificationsReadResponse, DefaultError, Options<MarkAllNotificationsReadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markAllNotificationsRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Mark All Notifications Read
+ */
+export const useMarkAllNotificationsReadMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<MarkAllNotificationsReadResponse, DefaultError, Options<MarkAllNotificationsReadData>>, 'mutationFn'>>) => useMutation({ ...markAllNotificationsReadMutation(), ...mutationOptions });
+
+/**
+ * Mark Notification Read
+ */
+export const markNotificationReadMutation = (options?: Partial<Options<MarkNotificationReadData>>): UseMutationOptions<MarkNotificationReadResponse, DefaultError, Options<MarkNotificationReadData>> => {
+    const mutationOptions: UseMutationOptions<MarkNotificationReadResponse, DefaultError, Options<MarkNotificationReadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markNotificationRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Mark Notification Read
+ */
+export const useMarkNotificationReadMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<MarkNotificationReadResponse, DefaultError, Options<MarkNotificationReadData>>, 'mutationFn'>>) => useMutation({ ...markNotificationReadMutation(), ...mutationOptions });
 
 export const listOrdersQueryKey = (options?: Options<ListOrdersData>) => createQueryKey('listOrders', options, false, ['Order Resource']);
 
@@ -1277,14 +1281,14 @@ export const checkoutOrderMutation = (options?: Partial<Options<CheckoutOrderDat
  */
 export const useCheckoutOrderMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<CheckoutOrderData>>, 'mutationFn'>>) => useMutation({ ...checkoutOrderMutation(), ...mutationOptions });
 
-export const getStatsQueryKey = (options?: Options<GetStatsData>) => createQueryKey('getStats', options, false, ['Order Resource']);
+export const getStats2QueryKey = (options?: Options<GetStats2Data>) => createQueryKey('getStats2', options, false, ['Order Resource']);
 
 /**
  * Get Stats
  */
-export const getStatsOptions = (options?: Options<GetStatsData>) => queryOptions<GetStatsResponse, DefaultError, GetStatsResponse, ReturnType<typeof getStatsQueryKey>>({
+export const getStats2Options = (options?: Options<GetStats2Data>) => queryOptions<GetStats2Response, DefaultError, GetStats2Response, ReturnType<typeof getStats2QueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getStats({
+        const { data } = await getStats2({
             ...options,
             ...queryKey[0],
             signal,
@@ -1292,13 +1296,13 @@ export const getStatsOptions = (options?: Options<GetStatsData>) => queryOptions
         });
         return data;
     },
-    queryKey: getStatsQueryKey(options)
+    queryKey: getStats2QueryKey(options)
 });
 
 /**
  * Get Stats
  */
-export const useGetStatsQuery = (options?: Options<GetStatsData>) => useQuery(getStatsOptions(options));
+export const useGetStats2Query = (options?: Options<GetStats2Data>) => useQuery(getStats2Options(options));
 
 /**
  * Delete Order
@@ -1367,6 +1371,51 @@ export const updateOrderMutation = (options?: Partial<Options<UpdateOrderData>>)
  */
 export const useUpdateOrderMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateOrderResponse, DefaultError, Options<UpdateOrderData>>, 'mutationFn'>>) => useMutation({ ...updateOrderMutation(), ...mutationOptions });
 
+/**
+ * Confirm Receipt
+ */
+export const confirmReceiptMutation = (options?: Partial<Options<ConfirmReceiptData>>): UseMutationOptions<ConfirmReceiptResponse, DefaultError, Options<ConfirmReceiptData>> => {
+    const mutationOptions: UseMutationOptions<ConfirmReceiptResponse, DefaultError, Options<ConfirmReceiptData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await confirmReceipt({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Confirm Receipt
+ */
+export const useConfirmReceiptMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<ConfirmReceiptResponse, DefaultError, Options<ConfirmReceiptData>>, 'mutationFn'>>) => useMutation({ ...confirmReceiptMutation(), ...mutationOptions });
+
+export const getEscrowRecordsQueryKey = (options: Options<GetEscrowRecordsData>) => createQueryKey('getEscrowRecords', options, false, ['Order Resource']);
+
+/**
+ * Get Escrow Records
+ */
+export const getEscrowRecordsOptions = (options: Options<GetEscrowRecordsData>) => queryOptions<GetEscrowRecordsResponse, DefaultError, GetEscrowRecordsResponse, ReturnType<typeof getEscrowRecordsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEscrowRecords({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEscrowRecordsQueryKey(options)
+});
+
+/**
+ * Get Escrow Records
+ */
+export const useGetEscrowRecordsQuery = (options: Options<GetEscrowRecordsData>) => useQuery(getEscrowRecordsOptions(options));
+
 export const getHistoryQueryKey = (options: Options<GetHistoryData>) => createQueryKey('getHistory', options, false, ['Order Resource']);
 
 /**
@@ -1389,6 +1438,51 @@ export const getHistoryOptions = (options: Options<GetHistoryData>) => queryOpti
  * Get History
  */
 export const useGetHistoryQuery = (options: Options<GetHistoryData>) => useQuery(getHistoryOptions(options));
+
+/**
+ * Owner Decision
+ */
+export const ownerDecisionMutation = (options?: Partial<Options<OwnerDecisionData>>): UseMutationOptions<OwnerDecisionResponse, DefaultError, Options<OwnerDecisionData>> => {
+    const mutationOptions: UseMutationOptions<OwnerDecisionResponse, DefaultError, Options<OwnerDecisionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await ownerDecision({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Owner Decision
+ */
+export const useOwnerDecisionMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<OwnerDecisionResponse, DefaultError, Options<OwnerDecisionData>>, 'mutationFn'>>) => useMutation({ ...ownerDecisionMutation(), ...mutationOptions });
+
+export const getRefundsQueryKey = (options: Options<GetRefundsData>) => createQueryKey('getRefunds', options, false, ['Order Resource']);
+
+/**
+ * Get Refunds
+ */
+export const getRefundsOptions = (options: Options<GetRefundsData>) => queryOptions<GetRefundsResponse, DefaultError, GetRefundsResponse, ReturnType<typeof getRefundsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRefunds({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRefundsQueryKey(options)
+});
+
+/**
+ * Get Refunds
+ */
+export const useGetRefundsQuery = (options: Options<GetRefundsData>) => useQuery(getRefundsOptions(options));
 
 /**
  * Update Status
@@ -1615,28 +1709,6 @@ export const listOptions = (options?: Options<ListData>) => queryOptions<ListRes
 export const useListQuery = (options?: Options<ListData>) => useQuery(listOptions(options));
 
 /**
- * Create
- */
-export const createMutation = (options?: Partial<Options<CreateData>>): UseMutationOptions<unknown, DefaultError, Options<CreateData>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<CreateData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await create({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Create
- */
-export const useCreateMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<CreateData>>, 'mutationFn'>>) => useMutation({ ...createMutation(), ...mutationOptions });
-
-/**
  * Batch Approve
  */
 export const batchApproveMutation = (options?: Partial<Options<BatchApproveData>>): UseMutationOptions<unknown, DefaultError, Options<BatchApproveData>> => {
@@ -1702,6 +1774,51 @@ export const exportOptions = (options?: Options<ExportData>) => queryOptions<unk
  * Export
  */
 export const useExportQuery = (options?: Options<ExportData>) => useQuery(exportOptions(options));
+
+/**
+ * Screen My Payout
+ */
+export const screenMyPayoutMutation = (options?: Partial<Options<ScreenMyPayoutData>>): UseMutationOptions<ScreenMyPayoutResponse, DefaultError, Options<ScreenMyPayoutData>> => {
+    const mutationOptions: UseMutationOptions<ScreenMyPayoutResponse, DefaultError, Options<ScreenMyPayoutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await screenMyPayout({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Screen My Payout
+ */
+export const useScreenMyPayoutMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<ScreenMyPayoutResponse, DefaultError, Options<ScreenMyPayoutData>>, 'mutationFn'>>) => useMutation({ ...screenMyPayoutMutation(), ...mutationOptions });
+
+export const statusQueryKey = (options?: Options<StatusData>) => createQueryKey('status', options, false, ['Payout Resource']);
+
+/**
+ * Status
+ */
+export const statusOptions = (options?: Options<StatusData>) => queryOptions<StatusResponse, DefaultError, StatusResponse, ReturnType<typeof statusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await status({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: statusQueryKey(options)
+});
+
+/**
+ * Status
+ */
+export const useStatusQuery = (options?: Options<StatusData>) => useQuery(statusOptions(options));
 
 export const getPayoutQueryKey = (options: Options<GetPayoutData>) => createQueryKey('getPayout', options, false, ['Payout Resource']);
 
@@ -1881,6 +1998,119 @@ export const updateProductMutation = (options?: Partial<Options<UpdateProductDat
  * Update Product
  */
 export const useUpdateProductMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateProductResponse, DefaultError, Options<UpdateProductData>>, 'mutationFn'>>) => useMutation({ ...updateProductMutation(), ...mutationOptions });
+
+/**
+ * Create Revenue Adjustment
+ */
+export const createRevenueAdjustmentMutation = (options?: Partial<Options<CreateRevenueAdjustmentData>>): UseMutationOptions<unknown, DefaultError, Options<CreateRevenueAdjustmentData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<CreateRevenueAdjustmentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createRevenueAdjustment({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Create Revenue Adjustment
+ */
+export const useCreateRevenueAdjustmentMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<CreateRevenueAdjustmentData>>, 'mutationFn'>>) => useMutation({ ...createRevenueAdjustmentMutation(), ...mutationOptions });
+
+/**
+ * Delete Revenue Adjustment
+ */
+export const deleteRevenueAdjustmentMutation = (options?: Partial<Options<DeleteRevenueAdjustmentData>>): UseMutationOptions<unknown, DefaultError, Options<DeleteRevenueAdjustmentData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<DeleteRevenueAdjustmentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteRevenueAdjustment({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete Revenue Adjustment
+ */
+export const useDeleteRevenueAdjustmentMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<DeleteRevenueAdjustmentData>>, 'mutationFn'>>) => useMutation({ ...deleteRevenueAdjustmentMutation(), ...mutationOptions });
+
+export const getDailyRevenueQueryKey = (options?: Options<GetDailyRevenueData>) => createQueryKey('getDailyRevenue', options, false, ['Revenue Resource']);
+
+/**
+ * Get Daily Revenue
+ */
+export const getDailyRevenueOptions = (options?: Options<GetDailyRevenueData>) => queryOptions<GetDailyRevenueResponse, DefaultError, GetDailyRevenueResponse, ReturnType<typeof getDailyRevenueQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getDailyRevenue({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getDailyRevenueQueryKey(options)
+});
+
+/**
+ * Get Daily Revenue
+ */
+export const useGetDailyRevenueQuery = (options?: Options<GetDailyRevenueData>) => useQuery(getDailyRevenueOptions(options));
+
+export const getMonthToDateRevenueQueryKey = (options?: Options<GetMonthToDateRevenueData>) => createQueryKey('getMonthToDateRevenue', options, false, ['Revenue Resource']);
+
+/**
+ * Get Month To Date Revenue
+ */
+export const getMonthToDateRevenueOptions = (options?: Options<GetMonthToDateRevenueData>) => queryOptions<GetMonthToDateRevenueResponse, DefaultError, GetMonthToDateRevenueResponse, ReturnType<typeof getMonthToDateRevenueQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMonthToDateRevenue({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMonthToDateRevenueQueryKey(options)
+});
+
+/**
+ * Get Month To Date Revenue
+ */
+export const useGetMonthToDateRevenueQuery = (options?: Options<GetMonthToDateRevenueData>) => useQuery(getMonthToDateRevenueOptions(options));
+
+export const getMonthlyRevenueQueryKey = (options?: Options<GetMonthlyRevenueData>) => createQueryKey('getMonthlyRevenue', options, false, ['Revenue Resource']);
+
+/**
+ * Get Monthly Revenue
+ */
+export const getMonthlyRevenueOptions = (options?: Options<GetMonthlyRevenueData>) => queryOptions<GetMonthlyRevenueResponse, DefaultError, GetMonthlyRevenueResponse, ReturnType<typeof getMonthlyRevenueQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMonthlyRevenue({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMonthlyRevenueQueryKey(options)
+});
+
+/**
+ * Get Monthly Revenue
+ */
+export const useGetMonthlyRevenueQuery = (options?: Options<GetMonthlyRevenueData>) => useQuery(getMonthlyRevenueOptions(options));
 
 /**
  * Sync All
@@ -2331,6 +2561,29 @@ export const updateMeMutation = (options?: Partial<Options<UpdateMeData>>): UseM
  */
 export const useUpdateMeMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateMeResponse, DefaultError, Options<UpdateMeData>>, 'mutationFn'>>) => useMutation({ ...updateMeMutation(), ...mutationOptions });
 
+export const testErrorQueryKey = (options?: Options<TestErrorData>) => createQueryKey('testError', options, false, ['User Resource']);
+
+/**
+ * Test Error
+ */
+export const testErrorOptions = (options?: Options<TestErrorData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof testErrorQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await testError({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: testErrorQueryKey(options)
+});
+
+/**
+ * Test Error
+ */
+export const useTestErrorQuery = (options?: Options<TestErrorData>) => useQuery(testErrorOptions(options));
+
 /**
  * Delete User
  */
@@ -2397,6 +2650,28 @@ export const updateUserMutation = (options?: Partial<Options<UpdateUserData>>): 
  * Update User
  */
 export const useUpdateUserMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateUserResponse, DefaultError, Options<UpdateUserData>>, 'mutationFn'>>) => useMutation({ ...updateUserMutation(), ...mutationOptions });
+
+/**
+ * Generate a VietQR code as Base64 image
+ */
+export const generateMutation = (options?: Partial<Options<GenerateData>>): UseMutationOptions<unknown, DefaultError, Options<GenerateData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<GenerateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await generate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Generate a VietQR code as Base64 image
+ */
+export const useGenerateMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<GenerateData>>, 'mutationFn'>>) => useMutation({ ...generateMutation(), ...mutationOptions });
 
 export const listVouchersQueryKey = (options?: Options<ListVouchersData>) => createQueryKey('listVouchers', options, false, ['Voucher Resource']);
 
@@ -2645,6 +2920,122 @@ export const myWalletOptions = (options?: Options<MyWalletData>) => queryOptions
  * My Wallet
  */
 export const useMyWalletQuery = (options?: Options<MyWalletData>) => useQuery(myWalletOptions(options));
+
+/**
+ * Update My Bank Details
+ */
+export const updateMyBankDetailsMutation = (options?: Partial<Options<UpdateMyBankDetailsData>>): UseMutationOptions<UpdateMyBankDetailsResponse, DefaultError, Options<UpdateMyBankDetailsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateMyBankDetailsResponse, DefaultError, Options<UpdateMyBankDetailsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateMyBankDetails({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update My Bank Details
+ */
+export const useUpdateMyBankDetailsMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<UpdateMyBankDetailsResponse, DefaultError, Options<UpdateMyBankDetailsData>>, 'mutationFn'>>) => useMutation({ ...updateMyBankDetailsMutation(), ...mutationOptions });
+
+export const getMyTopUpsQueryKey = (options?: Options<GetMyTopUpsData>) => createQueryKey('getMyTopUps', options, false, ['Wallet Resource']);
+
+/**
+ * Get My Top Ups
+ */
+export const getMyTopUpsOptions = (options?: Options<GetMyTopUpsData>) => queryOptions<GetMyTopUpsResponse, DefaultError, GetMyTopUpsResponse, ReturnType<typeof getMyTopUpsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMyTopUps({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMyTopUpsQueryKey(options)
+});
+
+export const getMyTopUpsInfiniteQueryKey = (options?: Options<GetMyTopUpsData>): QueryKey<Options<GetMyTopUpsData>> => createQueryKey('getMyTopUps', options, true);
+
+/**
+ * Get My Top Ups
+ */
+export const getMyTopUpsInfiniteOptions = (options?: Options<GetMyTopUpsData>) => infiniteQueryOptions<GetMyTopUpsResponse, DefaultError, InfiniteData<GetMyTopUpsResponse>, QueryKey<Options<GetMyTopUpsData>>, number | Pick<QueryKey<Options<GetMyTopUpsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+// @ts-ignore
+{
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<QueryKey<Options<GetMyTopUpsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+            query: {
+                offset: pageParam
+            }
+        };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await getMyTopUps({
+            ...options,
+            ...params,
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMyTopUpsInfiniteQueryKey(options)
+});
+
+/**
+ * Get My Top Ups
+ */
+export const useGetMyTopUpsQuery = (options?: Options<GetMyTopUpsData>) => useQuery(getMyTopUpsOptions(options));
+
+/**
+ * Top Up My Wallet
+ */
+export const topUpMyWalletMutation = (options?: Partial<Options<TopUpMyWalletData>>): UseMutationOptions<TopUpMyWalletResponse, DefaultError, Options<TopUpMyWalletData>> => {
+    const mutationOptions: UseMutationOptions<TopUpMyWalletResponse, DefaultError, Options<TopUpMyWalletData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await topUpMyWallet({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Top Up My Wallet
+ */
+export const useTopUpMyWalletMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<TopUpMyWalletResponse, DefaultError, Options<TopUpMyWalletData>>, 'mutationFn'>>) => useMutation({ ...topUpMyWalletMutation(), ...mutationOptions });
+
+/**
+ * Complete Top Up
+ */
+export const completeTopUpMutation = (options?: Partial<Options<CompleteTopUpData>>): UseMutationOptions<unknown, DefaultError, Options<CompleteTopUpData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<CompleteTopUpData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await completeTopUp({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Complete Top Up
+ */
+export const useCompleteTopUpMutation = (mutationOptions?: Partial<Omit<UseMutationOptions<unknown, DefaultError, Options<CompleteTopUpData>>, 'mutationFn'>>) => useMutation({ ...completeTopUpMutation(), ...mutationOptions });
 
 export const getWalletQueryKey = (options: Options<GetWalletData>) => createQueryKey('getWallet', options, false, ['Wallet Resource']);
 

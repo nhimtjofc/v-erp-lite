@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Clock,
   LoaderCircle,
+  LockKeyhole,
   Package,
   PlugZap,
   Receipt,
@@ -21,6 +22,7 @@ import { WooCommerceIntegrationPanel } from './woocommerce-integration-panel'
 export function IntegrationsPage() {
   const { t, i18n } = useTranslation()
   const { data: me } = useMeQuery()
+  const isOperator = me?.role?.name === 'operator'
   const { businessId } = useWooChannel(me?.tenantId)
   const catalogSummaryQuery = useGetCatalogSyncSummaryQuery(
     businessId ? { query: { businessId } } : undefined,
@@ -48,6 +50,13 @@ export function IntegrationsPage() {
         </div>
         <WooChannelSelector />
       </div>
+
+      {isOperator && (
+        <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+          <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>Operator monitoring mode: connection health and sync progress are visible, while integration configuration remains owner-only.</p>
+        </div>
+      )}
 
       {/* WooCommerce connection / health */}
       <WooCommerceIntegrationPanel tenantScope={me?.tenantId} businessId={businessId} />

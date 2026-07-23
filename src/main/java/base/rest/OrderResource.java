@@ -10,19 +10,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import base.entity.Business;
 import base.entity.Customer;
 import base.entity.CustomerVoucher;
+import base.entity.EscrowRecord;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.OrderItem;
+import base.entity.PaymentRefund;
 import base.entity.Product;
 import base.entity.ProductVariant;
-import base.entity.Voucher;
 import base.entity.User;
-import base.entity.Business;
+import base.entity.Voucher;
+import base.entity.Wallet;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.EscrowService;
+import base.service.InventoryCostService;
+import base.service.NotificationService;
+import base.service.OrderFulfillmentService;
+import base.service.PaymentService;
+import base.service.VietQRService;
+import base.service.WalletService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -62,7 +72,28 @@ public class OrderResource {
     EscrowService escrowService;
 
     @Inject
+    OrderFulfillmentService fulfillmentService;
+
+    @Inject
     PaymentAccess paymentAccess;
+
+    @Inject
+    VietQRService vietQRService;
+
+    @Inject
+    BusinessAccess businessAccess;
+
+    @Inject
+    InventoryCostService inventoryCostService;
+
+    @Inject
+    NotificationService notificationService;
+
+    @Inject
+    WalletService walletService;
+
+    @Inject
+    PaymentService paymentService;
 
     public static class CartItem {
         public UUID productId;
@@ -76,13 +107,21 @@ public class OrderResource {
         public String shippingName;
         public String shippingPhone;
         public String shippingAddress;
+        public String shippingWard;
+        public String shippingProvince;
         public String shippingNote;
+        public String paymentMethod; // e.g. COD or BANK_TRANSFER
         public List<CartItem> items;
     }
 
     public static class StatusUpdateRequest {
         public String status;
         public String note;
+    }
+
+    public static class OwnerDecisionRequest {
+        public String decision;
+        public String reason;
     }
 
     public static class OrderUpdateRequest {
@@ -97,11 +136,11 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public List<Order> listOrders(@QueryParam("search") String search,
                             @QueryParam("status") String status) {
         String tenantCode = caller.tenantCode();
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
@@ -109,11 +148,12 @@ public class OrderResource {
         UUID customerId = null;
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
-            if (c == null) {
-                return List.of();
+            if (c != null) {
+                customerId = c.getId();
             }
-            customerId = c.getId();
         }
+
+        boolean isBusinessStaff = businessAccess.isScopedStaff();
 
         String normalizedSearch = search == null ? null : search.trim();
         String normalizedStatus = status == null ? null : status.trim();
@@ -134,19 +174,23 @@ public class OrderResource {
         params.put("tenantId", tenantCode);
 
         if (isCustomer) {
-            query.append(" AND customer.id = :customerId");
-            params.put("customerId", customerId);
+            if (customerId != null) {
+                query.append(" AND (customer.id = :customerId OR createdBy = :userId)");
+                params.put("customerId", customerId);
+                params.put("userId", caller.userId());
+            } else {
+                query.append(" AND createdBy = :userId");
+                params.put("userId", caller.userId());
+            }
         }
 
-        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
-                && !securityIdentity.hasRole("admin");
-        if (isOwner) {
-            Business business = caller.resolveBusiness();
+        if (isBusinessStaff) {
+            Business business = businessAccess.findCurrentBusiness();
             if (business != null) {
                 query.append(" AND business.id = :businessId");
                 params.put("businessId", business.getId());
             } else {
-                query.append(" AND business.id IS NULL");
+                query.append(" AND id IS NULL");
             }
         }
 
@@ -161,7 +205,11 @@ public class OrderResource {
             params.put("search", escaped);
         }
 
-        query.append(" ORDER BY orderDate DESC");
+        if ("PAID_ESCROW".equalsIgnoreCase(normalizedStatus)) {
+            query.append(" ORDER BY ownerDecisionDeadline ASC");
+        } else {
+            query.append(" ORDER BY orderDate DESC");
+        }
         return Order.find(query.toString(), params).list();
     }
 
@@ -174,11 +222,10 @@ public class OrderResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     public Map<String, Object> getStats() {
         String tenantCode = caller.tenantCode();
-        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
-                && !securityIdentity.hasRole("admin");
+        boolean isBusinessStaff = businessAccess.isScopedStaff();
         UUID businessId = null;
-        if (isOwner) {
-            Business business = caller.resolveBusiness();
+        if (isBusinessStaff) {
+            Business business = businessAccess.findCurrentBusiness();
             if (business != null) {
                 businessId = business.getId();
             }
@@ -186,7 +233,7 @@ public class OrderResource {
 
         // Count per status
         List<Object[]> rows;
-        if (isOwner) {
+        if (isBusinessStaff) {
             String sql = "SELECT status, COUNT(*) FROM orders WHERE tenant_id = ?1 AND business_id = ?2 AND deleted_at IS NULL GROUP BY status";
             rows = Order.getEntityManager().createNativeQuery(sql)
                     .setParameter(1, tenantCode)
@@ -199,7 +246,9 @@ public class OrderResource {
                     .getResultList();
         }
         Map<String, Long> countByStatus = new HashMap<>();
-        for (String s : List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED")) {
+        for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
+                "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
+                "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -208,7 +257,7 @@ public class OrderResource {
 
         // Total revenue (COMPLETED orders only)
         List<Order> completed;
-        if (isOwner) {
+        if (isBusinessStaff) {
             completed = Order.list("tenantId = ?1 AND status = ?2 AND business.id = ?3", tenantCode, "COMPLETED", businessId);
         } else {
             completed = Order.list("tenantId = ?1 AND status = ?2", tenantCode, "COMPLETED");
@@ -219,7 +268,7 @@ public class OrderResource {
 
         // Recent 5 orders
         List<Order> recentOrders;
-        if (isOwner) {
+        if (isBusinessStaff) {
             recentOrders = Order.find("tenantId = ?1 AND business.id = ?2 AND deletedAt IS NULL ORDER BY orderDate DESC", tenantCode, businessId)
                     .page(io.quarkus.panache.common.Page.ofSize(5))
                     .list();
@@ -243,27 +292,23 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public Order getOrder(@PathParam("id") UUID id) {
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        requireBusinessStaffAccess(order);
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
-            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
-                throw new ForbiddenException("You are not allowed to view this order");
-            }
-        }
-        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
-                && !securityIdentity.hasRole("admin");
-        if (isOwner) {
-            Business business = caller.resolveBusiness();
-            if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to view this order");
             }
         }
@@ -276,32 +321,86 @@ public class OrderResource {
 
     @GET
     @Path("/{id}/history")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     public List<OrderHistory> getHistory(@PathParam("id") UUID id) {
         // Verify order belongs to tenant
         Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        boolean isCustomer = securityIdentity.hasRole("customer")
+        requireBusinessStaffAccess(order);
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
                 && !securityIdentity.hasRole("admin")
                 && !securityIdentity.hasRole("businessOwner")
                 && !securityIdentity.hasRole("operator");
         if (isCustomer) {
             Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
-            if (c == null || !order.getCustomer().getId().equals(c.getId())) {
-                throw new ForbiddenException("You are not allowed to view this order history");
-            }
-        }
-        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
-                && !securityIdentity.hasRole("admin");
-        if (isOwner) {
-            Business business = caller.resolveBusiness();
-            if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
         }
         return OrderHistory.list("order.id = ?1 ORDER BY createdAt DESC", id);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Escrow Records
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GET
+    @Path("/{id}/escrow")
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
+    public List<EscrowRecord> getEscrowRecords(@PathParam("id") UUID id) {
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
+                throw new ForbiddenException("You are not allowed to view escrow records for this order");
+            }
+        }
+        return EscrowRecord.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Payment Refunds
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GET
+    @Path("/{id}/refunds")
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
+    public List<PaymentRefund> getRefunds(@PathParam("id") UUID id) {
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, caller.tenantCode()).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+        boolean isCustomer = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (isCustomer) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), caller.tenantCode()).firstResult();
+            UUID customerId = c != null ? c.getId() : null;
+            boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                    || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+            if (!isOwner) {
+                throw new ForbiddenException("You are not allowed to view refunds for this order");
+            }
+        }
+        return PaymentRefund.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -310,7 +409,7 @@ public class OrderResource {
 
     @POST
     @Path("/checkout")
-    @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
+    @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     @Transactional
     public Response checkoutOrder(CheckoutRequest request) {
         if (request == null) {
@@ -330,6 +429,12 @@ public class OrderResource {
         }
         if (request.shippingAddress == null || request.shippingAddress.isBlank()) {
             throw new BadRequestException("Shipping address is required");
+        }
+        if (request.shippingWard == null || request.shippingWard.isBlank()) {
+            throw new BadRequestException("Shipping ward is required");
+        }
+        if (request.shippingProvince == null || request.shippingProvince.isBlank()) {
+            throw new BadRequestException("Shipping province is required");
         }
 
         String tenantCode = caller.tenantCode();
@@ -352,6 +457,8 @@ public class OrderResource {
         order.setId(UUID.randomUUID());
         order.setTenantId(tenantCode);
         order.setCreatedBy(userId);
+        Business orderBusiness = null;
+        String orderCurrency = null;
 
         for (CartItem item : request.items) {
             if (item.quantity <= 0) {
@@ -362,6 +469,20 @@ public class OrderResource {
             Product product = Product.find("id = ?1 and tenantId = ?2", item.productId, tenantCode).firstResult();
             if (product == null) {
                 throw new BadRequestException("Product not found");
+            }
+            if (product.getBusiness() == null) {
+                throw new BadRequestException("Every product in an order must belong to a business");
+            }
+            if (orderBusiness == null) {
+                orderBusiness = product.getBusiness();
+            } else if (!orderBusiness.getId().equals(product.getBusiness().getId())) {
+                throw new BadRequestException("Multi-vendor order decisions are not supported; checkout one vendor at a time");
+            }
+            
+            if (orderCurrency == null) {
+                orderCurrency = product.getCurrency() != null ? product.getCurrency() : "VND";
+            } else if (!orderCurrency.equalsIgnoreCase(product.getCurrency())) {
+                throw new BadRequestException("All products in an order must have the same currency");
             }
 
             long unitPrice;
@@ -413,6 +534,7 @@ public class OrderResource {
             orderItem.setProductVariant(variant);
             orderItem.setQuantity(item.quantity);
             orderItem.setUnitPriceMinor(unitPrice);
+            orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
             orderItems.add(orderItem);
         }
@@ -456,12 +578,19 @@ public class OrderResource {
 
         // 8. Populate Order Details
         order.setCustomer(customer);
+        order.setBusiness(orderBusiness);
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
-        order.setStatus("PENDING");
+        order.setCurrency(orderCurrency);
+        
+        String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
+        order.setStatus(initialStatus);
+        
         order.setShippingName(request.shippingName);
         order.setShippingPhone(request.shippingPhone);
         order.setShippingAddress(request.shippingAddress);
+        order.setShippingWard(request.shippingWard);
+        order.setShippingProvince(request.shippingProvince);
         order.setShippingNote(request.shippingNote);
         order.setSubtotalAmountMinor(subtotal);
         order.setDiscountAmountMinor(discount);
@@ -472,8 +601,42 @@ public class OrderResource {
 
         order.persist();
 
-        // 9. Write initial OrderHistory record (order created as PENDING)
-        persistHistory(order, null, "PENDING", "Order created", userId, tenantCode);
+        persistHistory(order, null, initialStatus, "Order created", userId, tenantCode);
+
+        if ("WALLET".equalsIgnoreCase(request.paymentMethod)) {
+            User callerDbUser = caller.resolveUser();
+            Wallet userWallet = walletService.getOrCreateUserWallet(
+                    tenantCode, callerDbUser.getId(), "VND", caller.userId());
+            paymentService.processWalletPayment(order, userWallet, caller.userId());
+        } else if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
+            Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2 and currency = 'VND'", tenantCode, orderBusiness.getId()).firstResult();
+            
+            // Fallback to the first wallet if VND wallet doesn't exist (for legacy compatibility)
+            if (wallet == null) {
+                wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2", tenantCode, orderBusiness.getId()).firstResult();
+            }
+
+            if (wallet == null || wallet.getBankName() == null || wallet.getBankAccountNumber() == null) {
+                throw new jakarta.ws.rs.WebApplicationException(
+                    jakarta.ws.rs.core.Response.status(400)
+                    .entity(java.util.Map.of("message", "Shop owner has not configured banking information for VietQR"))
+                    .build()
+                );
+            }
+            long qrAmount = finalAmount;
+            if ("USD".equalsIgnoreCase(order.getCurrency())) {
+                qrAmount = qrAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
+            }
+            String message = "Thanh toan " + orderNumber;
+            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), qrAmount, message);
+            order.setPaymentQrCodeBase64(qrBase64);
+        }
+
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_PLACED",
+                "New order " + orderNumber + " has been placed and is waiting for processing.",
+                userId);
 
         return Response.created(URI.create("/api/orders/" + order.getId())).entity(order).build();
     }
@@ -481,6 +644,62 @@ public class OrderResource {
     // ─────────────────────────────────────────────────────────────────────────
     // Update Status
     // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{id}/owner-decision")
+    @RolesAllowed({"businessOwner"})
+    @Transactional
+    public Order ownerDecision(@PathParam("id") UUID id, OwnerDecisionRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
+        User owner = caller.resolveUser();
+        return fulfillmentService.decide(
+                caller.tenantCode(), id, owner, request.decision, request.reason, caller.userId());
+    }
+
+    @POST
+    @Path("/{id}/confirm-receipt")
+    @RolesAllowed("customer")
+    @Transactional
+    public Order confirmReceipt(@PathParam("id") UUID id) {
+        boolean isCustomerOnly = securityIdentity.hasRole("customer")
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can confirm receipt");
+        }
+
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        paymentAccess.requireOrderAccess(order);
+
+        String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if ("COMPLETED".equals(oldStatus)) {
+            return order;
+        }
+        if (!"DELIVERED".equals(oldStatus)) {
+            throw new BadRequestException("Only a delivered order can be confirmed as received");
+        }
+
+        UUID userId = caller.userId();
+        completeOrder(order, tenantCode, userId);
+        order.setStatus("COMPLETED");
+        order.setUpdatedBy(userId);
+        persistHistory(order, oldStatus, "COMPLETED", "Buyer confirmed receipt", userId, tenantCode);
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_COMPLETED",
+                "The buyer confirmed receipt of order " + order.getOrderNumber() + ".",
+                userId);
+        return order;
+    }
 
     @PUT
     @Path("/{id}/status")
@@ -499,14 +718,7 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
-                && !securityIdentity.hasRole("admin");
-        if (isOwner) {
-            Business business = caller.resolveBusiness();
-            if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
-                throw new ForbiddenException("You are not allowed to modify this order");
-            }
-        }
+        requireBusinessStaffAccess(order);
 
         String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
         String newStatus = request.status.trim().toUpperCase();
@@ -515,8 +727,9 @@ public class OrderResource {
             return order;
         }
 
-        // Valid statuses: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED
-        if (!List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED").contains(newStatus)) {
+        if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
+                "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPING",
+                "SHIPPED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -527,8 +740,10 @@ public class OrderResource {
         UUID userId = caller.userId();
 
         // Stock and Reservation Lifecycle Management
-        // 1. From PENDING/CONFIRMED to CANCELLED: release reserved quantity
-        if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        // Unpaid cancellation releases reservations. Paid declines are handled
+        // only by the owner-decision endpoint so the payment refund is atomic.
+        if (List.of("PENDING", "PENDING_PAYMENT", "CONFIRMED", "SHIPPING").contains(oldStatus)
+                && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -541,8 +756,10 @@ public class OrderResource {
                 }
             }
         }
-        // 2. From PENDING/CONFIRMED to SHIPPED/COMPLETED: deduct actual stock and clear reservation
-        else if (List.of("PENDING", "CONFIRMED").contains(oldStatus) && List.of("SHIPPED", "COMPLETED").contains(newStatus)) {
+        // Inventory becomes committed when fulfillment starts.
+        else if (("SHIPPING".equals(oldStatus) && "SHIPPED".equals(newStatus))
+                || (List.of("PENDING", "CONFIRMED", "OWNER_ACCEPTED").contains(oldStatus)
+                && List.of("SHIPPED", "FULFILLING", "DELIVERED", "COMPLETED").contains(newStatus))) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -587,32 +804,9 @@ public class OrderResource {
             }
         }
 
-        // Award points & update membership tier upon order completion
+        // Award points, update membership, and release escrow on completion.
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
-            Customer customer = order.getCustomer();
-            if (customer != null) {
-                long amount = order.getFinalAmountMinor();
-                if (customer.getTotalSpendMinor() == null) {
-                    customer.setTotalSpendMinor(0L);
-                }
-                customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
-                // 1 point per 100 units of minor currency
-                int earnedPoints = (int) (amount / 100);
-                customer.setPoints(customer.getPoints() + earnedPoints);
-
-                // Update tier dynamically based on new totalSpend
-                long totalSpend = customer.getTotalSpendMinor();
-                if (totalSpend >= 300000) {
-                    customer.setTier("DIAMOND");
-                } else if (totalSpend >= 100000) {
-                    customer.setTier("PLATINUM");
-                } else if (totalSpend >= 20000) {
-                    customer.setTier("GOLD");
-                } else {
-                    customer.setTier("SILVER");
-                }
-            }
-            escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
+            completeOrder(order, tenantCode, userId);
         }
 
         if ("CANCELLED".equals(newStatus) && !"CANCELLED".equals(oldStatus)) {
@@ -624,6 +818,11 @@ public class OrderResource {
 
         // Record history
         persistHistory(order, oldStatus, newStatus, request.note, userId, tenantCode);
+        notificationService.notifyBuyer(
+                order,
+                "ORDER_STATUS_UPDATED",
+                "Order " + order.getOrderNumber() + " status changed to " + newStatus + ".",
+                userId);
 
         return order;
     }
@@ -642,14 +841,7 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
-                && !securityIdentity.hasRole("admin");
-        if (isOwner) {
-            Business business = caller.resolveBusiness();
-            if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
-                throw new ForbiddenException("You are not allowed to modify this order");
-            }
-        }
+        requireBusinessStaffAccess(order);
 
         BigDecimal discountPct = request.discountPercent != null ? request.discountPercent : order.getDiscountPercent();
         BigDecimal vatPct = request.vatPercent != null ? request.vatPercent : order.getVatPercent();
@@ -708,7 +900,7 @@ public class OrderResource {
         }
 
         String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("COMPLETED", "CANCELLED").contains(status)) {
+        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED").contains(status)) {
             throw new BadRequestException("Only completed or cancelled orders can be deleted");
         }
 
@@ -730,6 +922,40 @@ public class OrderResource {
         history.persist();
     }
 
+    private void completeOrder(Order order, String tenantCode, UUID userId) {
+        Customer customer = order.getCustomer();
+        if (customer != null) {
+            long amount = order.getFinalAmountMinor();
+            if (customer.getTotalSpendMinor() == null) {
+                customer.setTotalSpendMinor(0L);
+            }
+            customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
+            customer.setPoints(customer.getPoints() + (int) (amount / 100));
+
+            long totalSpend = customer.getTotalSpendMinor();
+            if (totalSpend >= 300000) {
+                customer.setTier("DIAMOND");
+            } else if (totalSpend >= 100000) {
+                customer.setTier("PLATINUM");
+            } else if (totalSpend >= 20000) {
+                customer.setTier("GOLD");
+            } else {
+                customer.setTier("SILVER");
+            }
+        }
+        escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
+    }
+
+    private void requireBusinessStaffAccess(Order order) {
+        if (!businessAccess.isScopedStaff()) {
+            return;
+        }
+        if (order.getBusiness() == null) {
+            throw new ForbiddenException("You are not allowed to access this vendor order");
+        }
+        businessAccess.requireAccess(order.getBusiness().getId());
+    }
+
     private void validatePercent(String label, BigDecimal value) {
         if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(ONE_HUNDRED) > 0) {
             throw new BadRequestException(label + " must be between 0 and 100");
@@ -744,11 +970,29 @@ public class OrderResource {
     }
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
+        if ("PENDING_PAYMENT".equals(oldStatus)) {
+            return "CANCELLED".equals(newStatus);
+        }
+        if ("OWNER_ACCEPTED".equals(oldStatus)) {
+            return "FULFILLING".equals(newStatus);
+        }
+        if ("FULFILLING".equals(oldStatus)) {
+            return "DELIVERED".equals(newStatus);
+        }
+        if ("DELIVERED".equals(oldStatus)) {
+            return "COMPLETED".equals(newStatus);
+        }
+        if ("OWNER_DECLINED".equals(oldStatus)) {
+            return "REFUNDED".equals(newStatus);
+        }
         if ("PENDING".equals(oldStatus)) {
             return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
         }
         if ("CONFIRMED".equals(oldStatus)) {
-            return "SHIPPED".equals(newStatus);
+            return List.of("SHIPPING", "CANCELLED").contains(newStatus);
+        }
+        if ("SHIPPING".equals(oldStatus)) {
+            return List.of("SHIPPED", "CANCELLED").contains(newStatus);
         }
         if ("SHIPPED".equals(oldStatus)) {
             return "COMPLETED".equals(newStatus);

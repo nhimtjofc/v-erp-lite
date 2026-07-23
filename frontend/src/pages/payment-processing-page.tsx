@@ -48,6 +48,7 @@ interface MockPaymentSessionResponse {
 type PaymentMethod = 'MOCK_QR'
 
 const TERMINAL_STATUSES = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED'])
+const PAYABLE_ORDER_STATUSES = new Set(['PENDING', 'PENDING_PAYMENT'])
 const MOCK_PAYMENT_ENABLED = import.meta.env.DEV
   || import.meta.env.VITE_ENABLE_MOCK_PAYMENT === 'true'
 
@@ -234,18 +235,18 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
         expired={isExpired}
         error={actionError}
         retrying={isBusy}
-        onRetry={MOCK_PAYMENT_ENABLED && order.status?.toUpperCase() === 'PENDING'
+        onRetry={MOCK_PAYMENT_ENABLED && PAYABLE_ORDER_STATUSES.has(order.status?.toUpperCase() ?? '')
           ? () => void startPayment(true)
           : undefined}
       />
     )
   }
 
-  if (order.status?.toUpperCase() !== 'PENDING') {
+  if (!PAYABLE_ORDER_STATUSES.has(order.status?.toUpperCase() ?? '')) {
     return (
       <PaymentError
         title="Đơn hàng không thể thanh toán"
-        message="Chỉ đơn hàng đang chờ xử lý mới có thể bắt đầu hoặc hoàn tất thanh toán."
+        message="Chỉ đơn hàng đang chờ thanh toán mới có thể bắt đầu hoặc hoàn tất thanh toán."
       />
     )
   }
@@ -302,8 +303,8 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                     <QrCode className="h-5 w-5" />
                   </span>
                   <span className="flex-1">
-                    <span className="block font-semibold">MockPay QR</span>
-                    <span className="block text-sm text-muted-foreground">Quét QR và mô phỏng callback thành công/thất bại</span>
+                    <span className="block font-semibold">Chuyển khoản VietQR</span>
+                    <span className="block text-sm text-muted-foreground">Quét mã VietQR bằng ứng dụng ngân hàng</span>
                   </span>
                   <span className={cn(
                     'flex h-5 w-5 items-center justify-center rounded-full border',
@@ -319,8 +320,8 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                 {actionError && <PaymentAlert message={actionError} />}
 
                 <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-between">
-                  <Link to="/orders/$id" params={{ id: orderId }}>
-                    <Button variant="ghost" className="w-full sm:w-auto">Thanh toán sau</Button>
+                  <Link to="/shop">
+                    <Button variant="ghost" className="w-full sm:w-auto">Tiếp tục mua sắm · Thanh toán sau</Button>
                   </Link>
                   <Button onClick={() => void startPayment()} disabled={isBusy} className="sm:min-w-44">
                     {isBusy ? <LoaderCircle className="animate-spin" /> : <LockKeyhole />}
@@ -354,6 +355,29 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                   <div className="text-2xl font-bold text-primary">{formatMoneyMinor(paymentAmount, paymentCurrency)}</div>
                 </div>
 
+                <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-left text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Gateway</span>
+                    <Badge variant="secondary">{session.gateway}</Badge>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Gateway transaction</span>
+                    <code className="mt-1 block truncate font-mono text-xs" title={session.gatewayTransactionId}>
+                      {session.gatewayTransactionId}
+                    </code>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Session expires</span>
+                    <p className="mt-1 font-medium">{new Date(session.expiresAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Mock gateway URL</span>
+                    <code className="mt-1 block truncate font-mono text-xs text-muted-foreground" title={session.paymentUrl}>
+                      {session.paymentUrl}
+                    </code>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Đang chờ xác nhận từ gateway...
@@ -374,6 +398,10 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
                     </Button>
                   </div>
                 </div>
+
+                <Link to="/shop" className="block">
+                  <Button variant="ghost" className="w-full">Tiếp tục mua sắm · Thanh toán sau</Button>
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -495,7 +523,7 @@ function PaymentResult({
             </h1>
             <p className="mt-2 text-muted-foreground">
               {success
-                ? `Đã ghi nhận ${amount} cho đơn ${orderNumber ?? orderId}.`
+                ? `Đã ghi nhận ${amount} cho đơn ${orderNumber ?? orderId}. Đơn hàng vẫn ở trạng thái Pending cho đến khi nhân viên xác nhận.`
                 : 'Đơn hàng vẫn được giữ ở trạng thái chờ. Bạn có thể tạo một lần thanh toán mới.'}
             </p>
           </div>

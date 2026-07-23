@@ -47,9 +47,12 @@ export function useSelectedBusinessId() {
  * Returns the selection, the health snapshot, and the resolved channelId to
  * pass as `salesChannelId` to orders/catalog queries.
  */
-export function useWooChannel(tenantScope: string | undefined) {
+export function useWooChannel(
+  tenantScope: string | undefined,
+  options?: { enabled?: boolean }
+) {
   const businessId = useSelectedBusinessId()
-  const health = useWooCommerceHealthQuery(tenantScope, businessId)
+  const health = useWooCommerceHealthQuery(tenantScope, businessId, options)
   return {
     businessId,
     setBusinessId: setSelectedBusinessId,
