@@ -221,4 +221,8 @@ public class PaymentIntentService {
             throw new BadRequestException("Ý định thanh toán đã hết hạn");
         }
     }
+
+    public void processWebhookEvent(String intentId, String gateway, String eventId, String status, String rawSignature) throws IllegalStateException {
+        // TODO: Dev A will implement the internal state transitions here
+    }
 }
