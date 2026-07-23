@@ -151,7 +151,6 @@ public class PaymentWebhookResource {
         }
 
         try {
-            idempotencyService.checkAndCreate(tenantId, idempotencyKey, null);
             // 4. Call PaymentIntentService to process webhook event (from Dev A logic)
             paymentIntentService.processWebhookEvent(tenantId, intent.getId(), gatewayName, txnId, payload.status);
             updateLogStatus(gatewayName, eventId, "PROCESSED");
