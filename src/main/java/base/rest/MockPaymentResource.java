@@ -15,10 +15,12 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 
 import java.util.Map;
 import java.util.UUID;
 
+@UnlessBuildProfile("prod")
 @Path("/payments/mock")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

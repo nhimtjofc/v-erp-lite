@@ -26,10 +26,16 @@ public class ChatbotResource {
 
     @GET
     @Path("/stats")
-    public Map<String, Long> getStats(@HeaderParam("X-Chatbot-Key") String headerKey) {
+    public Map<String, Long> getStats(
+            @HeaderParam("X-Chatbot-Key") String headerKey,
+            @HeaderParam("X-Tenant-Code") String tenantCode) {
         validateApiKey(headerKey);
         
-        long count = Product.count();
+        if (tenantCode == null || tenantCode.isBlank()) {
+            throw new BadRequestException("X-Tenant-Code header is required");
+        }
+        
+        long count = Product.count("tenantId", tenantCode);
         Map<String, Long> response = new HashMap<>();
         response.put("totalProducts", count);
         return response;
@@ -39,12 +45,17 @@ public class ChatbotResource {
     @Path("/orders/{orderNumber}")
     public OrderStatusDto getOrderStatus(
             @HeaderParam("X-Chatbot-Key") String headerKey,
+            @HeaderParam("X-Tenant-Code") String tenantCode,
             @PathParam("orderNumber") String orderNumber) {
         validateApiKey(headerKey);
+        
+        if (tenantCode == null || tenantCode.isBlank()) {
+            throw new BadRequestException("X-Tenant-Code header is required");
+        }
 
         // Find order by orderNumber. 
         // Using orderNumber directly as that's what customers usually have.
-        Order order = Order.find("orderNumber = ?1", orderNumber).firstResult();
+        Order order = Order.find("orderNumber = ?1 and tenantId = ?2", orderNumber, tenantCode).firstResult();
         
         if (order == null) {
             throw new NotFoundException("Order not found");
