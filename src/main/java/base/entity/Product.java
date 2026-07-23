@@ -75,6 +75,10 @@ public class Product extends BaseEntity {
     @Column(name = "is_active")
     private boolean active = true;
 
+    @Column(name = "approval_status", nullable = false, length = 32)
+    private String approvalStatus = "PENDING";
+
+
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
 

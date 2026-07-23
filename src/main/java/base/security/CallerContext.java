@@ -1,6 +1,7 @@
 package base.security;
 
 import base.entity.User;
+import base.entity.Business;
 import base.service.UserProvisioningService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.RequestScoped;
@@ -132,6 +133,22 @@ public class CallerContext {
             }
         }
         return user;
+    }
+
+    public Business resolveBusiness() {
+        User user = resolveUser();
+        String tenantCode = tenantCode();
+        Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+        if (business == null && (hasRole("operator") || hasRole("businessOwner"))) {
+            User owner = User.find("email = ?1 and tenantId = ?2", "owner@v-erp.com", tenantCode).firstResult();
+            if (owner != null) {
+                business = Business.find("createdBy = ?1 and tenantId = ?2", owner.getId(), tenantCode).firstResult();
+            }
+            if (business == null) {
+                business = Business.find("tenantId = ?1", tenantCode).firstResult();
+            }
+        }
+        return business;
     }
 
     private static UUID parseUuid(String value) {

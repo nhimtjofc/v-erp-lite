@@ -49,6 +49,7 @@ export interface Product {
   saleStartsAt?: string | null
   saleEndsAt?: string | null
   active?: boolean
+  approvalStatus?: string
   createdAt?: string
   updatedAt?: string
   version?: number

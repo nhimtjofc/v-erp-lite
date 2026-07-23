@@ -29,7 +29,7 @@ export function RegionalPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [regional, setRegional] = useState<RegionalSettings>({})
   const [savedRegional, setSavedRegional] = useState<RegionalSettings>({})

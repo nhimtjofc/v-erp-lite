@@ -791,7 +791,7 @@ export function CartCheckoutPage() {
 
     // Queries
     const { data: customers } = useListCustomersQuery()
-    const { data: products } = useListProductsQuery()
+    const { data: products } = useListProductsQuery({ query: { approvalStatus: 'APPROVED' } })
     const { data: categories } = useQuery({
         queryKey: ['categories'],
         queryFn: () => catalogApi.listCategories(),

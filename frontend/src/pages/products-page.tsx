@@ -221,6 +221,7 @@ export function ProductsPage() {
                   <TableRow>
                     <TableHead>{t('product')}</TableHead>
                     <TableHead>{t('sku')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
                     <TableHead>{t('stockQuantity')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -251,6 +252,17 @@ export function ProductsPage() {
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {product.sku}
+                      </TableCell>
+                      <TableCell>
+                        {product.approvalStatus === 'APPROVED' ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 border-transparent dark:bg-emerald-500/10 dark:text-emerald-400">
+                            {t('approved')}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-500/15 text-amber-700 hover:bg-amber-500/15 border-transparent dark:bg-amber-500/10 dark:text-amber-400 animate-pulse">
+                            {t('pending')}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         {(() => {
@@ -318,9 +330,14 @@ export function ProductsPage() {
                         SKU: {selectedProduct.sku}
                       </DialogDescription>
                     </div>
-                    <Badge variant={selectedProduct.active ? 'default' : 'secondary'} className="shrink-0">
-                      {selectedProduct.active ? t('active') : t('inactive')}
-                    </Badge>
+                    <div className="flex gap-1.5 shrink-0">
+                      <Badge variant={selectedProduct.active ? 'default' : 'secondary'}>
+                        {selectedProduct.active ? t('active') : t('inactive')}
+                      </Badge>
+                      <Badge className={selectedProduct.approvalStatus === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 border-transparent dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 hover:bg-amber-500/15 border-transparent dark:bg-amber-500/10 dark:text-amber-400 animate-pulse'}>
+                        {selectedProduct.approvalStatus === 'APPROVED' ? t('approved') : t('pending')}
+                      </Badge>
+                    </div>
                   </div>
                 </DialogHeader>
 

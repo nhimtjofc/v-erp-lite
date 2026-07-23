@@ -64,7 +64,7 @@ export function ShopPage() {
   const queryClient = useQueryClient()
 
   // Queries
-  const { data: products } = useListProductsQuery()
+  const { data: products } = useListProductsQuery({ query: { approvalStatus: 'APPROVED' } })
   
   // Resolve current user info
   const { data: me } = useMeQuery()

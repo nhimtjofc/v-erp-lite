@@ -353,6 +353,7 @@ export type Product = {
     saleStartsAt?: Instant;
     saleEndsAt?: Instant;
     active?: boolean;
+    approvalStatus?: string;
     stockQuantity?: number;
     lowStockThreshold?: number;
     reservedQuantity?: number;
@@ -1814,6 +1815,28 @@ export type ReconcileOrderResponses = {
     200: unknown;
 };
 
+export type GetOrderStatusData = {
+    body?: never;
+    headers?: {
+        'X-WC-Webhook-Signature'?: string;
+    };
+    path: {
+        externalId: string;
+    };
+    query?: {
+        salesChannelId?: Uuid;
+        tenantId?: string;
+    };
+    url: '/api/integrations/woocommerce/v1/orders/{externalId}/status';
+};
+
+export type GetOrderStatusResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type ListOrdersData = {
     body?: never;
     path?: never;
@@ -2514,6 +2537,7 @@ export type ListProductsData = {
     body?: never;
     path?: never;
     query?: {
+        approvalStatus?: string;
         categoryId?: Uuid;
         search?: string;
         tagId?: Uuid;

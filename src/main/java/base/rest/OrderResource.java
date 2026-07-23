@@ -138,12 +138,10 @@ public class OrderResource {
             params.put("customerId", customerId);
         }
 
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
+        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
+                && !securityIdentity.hasRole("admin");
         if (isOwner) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+            Business business = caller.resolveBusiness();
             if (business != null) {
                 query.append(" AND business.id = :businessId");
                 params.put("businessId", business.getId());
@@ -176,13 +174,11 @@ public class OrderResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     public Map<String, Object> getStats() {
         String tenantCode = caller.tenantCode();
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
+        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
+                && !securityIdentity.hasRole("admin");
         UUID businessId = null;
         if (isOwner) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+            Business business = caller.resolveBusiness();
             if (business != null) {
                 businessId = business.getId();
             }
@@ -263,12 +259,10 @@ public class OrderResource {
                 throw new ForbiddenException("You are not allowed to view this order");
             }
         }
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
+        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
+                && !securityIdentity.hasRole("admin");
         if (isOwner) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            Business business = caller.resolveBusiness();
             if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to view this order");
             }
@@ -299,12 +293,10 @@ public class OrderResource {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
         }
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
+        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
+                && !securityIdentity.hasRole("admin");
         if (isOwner) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            Business business = caller.resolveBusiness();
             if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
@@ -507,12 +499,10 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
+        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
+                && !securityIdentity.hasRole("admin");
         if (isOwner) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+            Business business = caller.resolveBusiness();
             if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to modify this order");
             }
@@ -652,12 +642,10 @@ public class OrderResource {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        boolean isOwner = securityIdentity.hasRole("businessOwner")
-                && !securityIdentity.hasRole("admin")
-                && !securityIdentity.hasRole("operator");
+        boolean isOwner = (securityIdentity.hasRole("businessOwner") || securityIdentity.hasRole("operator"))
+                && !securityIdentity.hasRole("admin");
         if (isOwner) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+            Business business = caller.resolveBusiness();
             if (business == null || order.getBusiness() == null || !order.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to modify this order");
             }

@@ -23,6 +23,8 @@
   "imageUrl": "URL hình ảnh",
   "descriptionField": "Mô tả",
   "status": "Trạng thái",
+  "approved": "Đã duyệt",
+  "pending": "Chờ duyệt",
   "noProducts": "Không tìm thấy sản phẩm.",
   "saveProduct": "Lưu sản phẩm",
   "deleteProduct": "Xóa",

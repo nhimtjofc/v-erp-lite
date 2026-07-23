@@ -23,6 +23,8 @@
   "imageUrl": "Image URL",
   "descriptionField": "Description",
   "status": "Status",
+  "approved": "Approved",
+  "pending": "Pending",
   "noProducts": "No products found.",
   "saveProduct": "Save Product",
   "deleteProduct": "Delete",

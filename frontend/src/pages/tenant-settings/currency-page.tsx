@@ -25,7 +25,7 @@ export function CurrencyPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [currency, setCurrency] = useState<CurrencySettings>({})
   const [savedCurrency, setSavedCurrency] = useState<CurrencySettings>({})

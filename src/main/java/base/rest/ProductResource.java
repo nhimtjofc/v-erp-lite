@@ -37,7 +37,8 @@ public class ProductResource {
     public List<Product> listProducts(
             @QueryParam("search") String search,
             @QueryParam("categoryId") UUID categoryId,
-            @QueryParam("tagId") UUID tagId) {
+            @QueryParam("tagId") UUID tagId,
+            @QueryParam("approvalStatus") String approvalStatus) {
         String tenantCode = caller.tenantCode();
         StringBuilder query = new StringBuilder("SELECT DISTINCT p FROM Product p");
         if (tagId != null) {
@@ -48,15 +49,23 @@ public class ProductResource {
         Map<String, Object> params = new HashMap<>();
         params.put("tenantId", tenantCode);
 
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+        if ((caller.hasRole("businessOwner") || caller.hasRole("operator")) && !caller.hasRole("admin")) {
+            Business business = caller.resolveBusiness();
             if (business != null) {
                 query.append(" AND p.business.id = :businessId");
                 params.put("businessId", business.getId());
             } else {
                 query.append(" AND p.business.id IS NULL");
             }
+        }
+
+        // Restrict non-staff callers to only APPROVED products. Staff can filter via query parameter.
+        boolean isStaff = caller.hasRole("admin") || caller.hasRole("operator") || caller.hasRole("businessOwner");
+        if (!isStaff) {
+            query.append(" AND p.approvalStatus = 'APPROVED'");
+        } else if (approvalStatus != null && !approvalStatus.isBlank()) {
+            query.append(" AND p.approvalStatus = :approvalStatus");
+            params.put("approvalStatus", approvalStatus);
         }
 
         if (categoryId != null) {
@@ -86,9 +95,12 @@ public class ProductResource {
         if (product == null) {
             throw new NotFoundException("Product not found");
         }
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+        boolean isStaff = caller.hasRole("admin") || caller.hasRole("operator") || caller.hasRole("businessOwner");
+        if (!isStaff && !"APPROVED".equals(product.getApprovalStatus())) {
+            throw new NotFoundException("Product not found");
+        }
+        if ((caller.hasRole("businessOwner") || caller.hasRole("operator")) && !caller.hasRole("admin")) {
+            Business business = caller.resolveBusiness();
             if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to view this product");
             }
@@ -106,13 +118,17 @@ public class ProductResource {
         product.setCreatedBy(caller.userId());
         product.setCategory(resolveCategory(product));
         product.setTags(resolveTags(product));
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+        if ((caller.hasRole("businessOwner") || caller.hasRole("operator")) && !caller.hasRole("admin")) {
+            Business business = caller.resolveBusiness();
             if (business == null) {
-                throw new BadRequestException("Owner must have a business first");
+                throw new BadRequestException("Owner or operator must have a business first");
             }
             product.setBusiness(business);
+            product.setApprovalStatus("PENDING");
+        } else {
+            if (product.getApprovalStatus() == null || product.getApprovalStatus().isBlank()) {
+                product.setApprovalStatus("APPROVED");
+            }
         }
 
         if (product.getVariants() != null) {
@@ -138,11 +154,15 @@ public class ProductResource {
         if (product == null) {
             throw new NotFoundException("Product not found");
         }
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+        if ((caller.hasRole("businessOwner") || caller.hasRole("operator")) && !caller.hasRole("admin")) {
+            Business business = caller.resolveBusiness();
             if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to modify this product");
+            }
+            updated.setApprovalStatus(product.getApprovalStatus()); // prevent self-approval
+        } else {
+            if (updated.getApprovalStatus() != null && !updated.getApprovalStatus().isBlank()) {
+                product.setApprovalStatus(updated.getApprovalStatus());
             }
         }
         product.setCategory(resolveCategory(updated));
@@ -210,13 +230,12 @@ public class ProductResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response deleteProduct(@PathParam("id") UUID id) {
-        if (caller.hasRole("businessOwner") && !caller.hasRole("admin") && !caller.hasRole("operator")) {
+        if ((caller.hasRole("businessOwner") || caller.hasRole("operator")) && !caller.hasRole("admin")) {
             Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
             if (product == null) {
                 throw new NotFoundException("Product not found");
             }
-            User user = caller.resolveUser();
-            Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), caller.tenantCode()).firstResult();
+            Business business = caller.resolveBusiness();
             if (business == null || product.getBusiness() == null || !product.getBusiness().getId().equals(business.getId())) {
                 throw new ForbiddenException("You are not allowed to delete this product");
             }

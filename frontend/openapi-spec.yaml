@@ -664,6 +664,8 @@ components:
           $ref: "#/components/schemas/Instant"
         active:
           type: boolean
+        approvalStatus:
+          type: string
         stockQuantity:
           type: integer
           format: int32
@@ -2363,6 +2365,38 @@ paths:
         - admin
         - operator
         - businessOwner
+  /api/integrations/woocommerce/v1/orders/{externalId}/status:
+    get:
+      summary: Get WooCommerce Order Status
+      description: "Returns the current ERP fulfillment status for a WooCommerce order,\
+        \ keyed by the WooCommerce order ID."
+      operationId: getOrderStatus
+      tags:
+      - WooCommerce Orders
+      parameters:
+      - name: externalId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: salesChannelId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: tenantId
+        in: query
+        schema:
+          type: string
+      - name: X-WC-Webhook-Signature
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
   /api/orders:
     get:
       operationId: listOrders
@@ -3065,6 +3099,10 @@ paths:
     get:
       operationId: listProducts
       parameters:
+      - name: approvalStatus
+        in: query
+        schema:
+          type: string
       - name: categoryId
         in: query
         schema:
@@ -3391,6 +3429,7 @@ paths:
       - SecurityScheme:
         - admin
         - businessOwner
+        - operator
   /api/tenant-settings/effective:
     get:
       operationId: getEffectiveSettings
