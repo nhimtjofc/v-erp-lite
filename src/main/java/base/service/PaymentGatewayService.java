@@ -97,12 +97,18 @@ public class PaymentGatewayService {
         if (signature == null || signature.isBlank()) {
             return false;
         }
+        if (io.quarkus.runtime.LaunchMode.current() == io.quarkus.runtime.LaunchMode.NORMAL) {
+            return false;
+        }
         String expected = hmacSha256(payload, MOCK_SECRET);
         return expected.equals(signature.trim());
     }
 
     public boolean verifySignature(String intentId, String gatewayTransactionId, long amountMinor, String signature) {
         if (signature == null || signature.isBlank()) {
+            return false;
+        }
+        if (io.quarkus.runtime.LaunchMode.current() == io.quarkus.runtime.LaunchMode.NORMAL) {
             return false;
         }
         String expected = signPayload(intentId, gatewayTransactionId, amountMinor);

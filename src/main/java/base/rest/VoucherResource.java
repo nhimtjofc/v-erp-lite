@@ -101,6 +101,13 @@ public class VoucherResource {
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public List<Map<String, Object>> myVouchers(@QueryParam("customerId") UUID customerId) {
         String tenantCode = caller.tenantCode();
+        if (caller.hasRole("customer")) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+            if (c == null) {
+                throw new jakarta.ws.rs.ForbiddenException("Customer profile not found");
+            }
+            customerId = c.getId();
+        }
         Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
         if (customer == null) {
             throw new NotFoundException("Customer not found");
@@ -124,6 +131,13 @@ public class VoucherResource {
     @Transactional
     public Response collect(@PathParam("id") UUID voucherId, @QueryParam("customerId") UUID customerId) {
         String tenantCode = caller.tenantCode();
+        if (caller.hasRole("customer")) {
+            Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+            if (c == null) {
+                throw new jakarta.ws.rs.ForbiddenException("Customer profile not found");
+            }
+            customerId = c.getId();
+        }
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", voucherId, tenantCode).firstResult();
         if (voucher == null) {
             throw new NotFoundException("Voucher not found");
@@ -134,11 +148,6 @@ public class VoucherResource {
         }
         CustomerVoucher existing = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3", customerId, voucherId, tenantCode).firstResult();
         if (existing != null) {
-            if (existing.isUsed()) {
-                existing.setUsed(false);
-                existing.setCollectedAt(Instant.now());
-                return Response.ok(existing).build();
-            }
             return Response.ok(existing).build();
         }
         CustomerVoucher cv = new CustomerVoucher();

@@ -462,6 +462,7 @@ public class OrderResource {
         order.setTenantId(tenantCode);
         order.setCreatedBy(userId);
         Business orderBusiness = null;
+        String orderCurrency = null;
 
         for (CartItem item : request.items) {
             if (item.quantity <= 0) {
@@ -480,6 +481,12 @@ public class OrderResource {
                 orderBusiness = product.getBusiness();
             } else if (!orderBusiness.getId().equals(product.getBusiness().getId())) {
                 throw new BadRequestException("Multi-vendor order decisions are not supported; checkout one vendor at a time");
+            }
+            
+            if (orderCurrency == null) {
+                orderCurrency = product.getCurrency() != null ? product.getCurrency() : "VND";
+            } else if (!orderCurrency.equalsIgnoreCase(product.getCurrency())) {
+                throw new BadRequestException("All products in an order must have the same currency");
             }
 
             long unitPrice;
@@ -578,6 +585,7 @@ public class OrderResource {
         order.setBusiness(orderBusiness);
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
+        order.setCurrency(orderCurrency);
         
         String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
         order.setStatus(initialStatus);

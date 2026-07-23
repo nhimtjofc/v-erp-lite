@@ -277,6 +277,7 @@ public class WalletResource {
     
     @POST
     @Path("/top-up/{id}/complete")
+    @RolesAllowed({"admin"})
     @Transactional
     public Response completeTopUp(@PathParam("id") UUID id) {
         WalletTopUp topUp = WalletTopUp.findById(id);
