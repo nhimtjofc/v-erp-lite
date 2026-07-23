@@ -22,7 +22,10 @@ def get_total_products_count() -> str:
     
     try:
         url = "http://localhost:8081/api/chatbot/stats"
-        headers = {"X-Chatbot-Key": "chatbot-secret-v1"}
+        headers = {
+            "X-Chatbot-Key": "chatbot-secret-v1",
+            "X-Tenant-Code": "v-erp-app"
+        }
         response = requests.get(url, headers=headers, timeout=5)
         response.raise_for_status()
         

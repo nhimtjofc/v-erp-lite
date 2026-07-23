@@ -210,6 +210,15 @@ public class PaymentIntentService {
         transaction.persist();
     }
 
+    @Transactional
+    public void processWebhookEvent(String tenantId, UUID intentId, String gateway, String gatewayTransactionId, String status) {
+        if ("SUCCESS".equalsIgnoreCase(status) || "SUCCEEDED".equalsIgnoreCase(status)) {
+            markSucceeded(tenantId, intentId, gateway, gatewayTransactionId, null);
+        } else {
+            markFailed(tenantId, intentId, gateway, gatewayTransactionId, null);
+        }
+    }
+
     private void requireStatus(PaymentIntent intent, String expectedStatus) {
         if (!expectedStatus.equals(intent.getStatus())) {
             throw new BadRequestException("Trạng thái ý định thanh toán không hợp lệ");
