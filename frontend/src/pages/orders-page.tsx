@@ -482,7 +482,7 @@ export function OrdersPage() {
                 </div>
             )}
 
-            {roleName === 'businessOwner' && <OwnerOrderQueue />}
+            {(roleName === 'businessOwner' || roleName === 'operator') && <OwnerOrderQueue />}
 
             {!isCustomer && stats && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -142,7 +142,10 @@ public class TenantConfigService {
         Map<String, Object> result = (Map<String, Object>) deepCopy(DEFAULTS);
         deepMerge(result, getTenantSettings(tenantCode));
         deepMerge(result, getUserSettings(userId));
-        result.put("currency", vndCurrencySettings());
+        Map<String, Object> mergedCurrency = result.get("currency") instanceof Map
+                ? (Map<String, Object>) result.get("currency")
+                : null;
+        result.put("currency", vndCurrencySettings(mergedCurrency));
         return result;
     }
 
@@ -151,15 +154,25 @@ public class TenantConfigService {
         Map<String, Object> normalized = settings == null
                 ? new LinkedHashMap<>()
                 : (Map<String, Object>) deepCopy(settings);
-        normalized.put("currency", vndCurrencySettings());
+        Map<String, Object> existingCurrency = normalized.get("currency") instanceof Map
+                ? (Map<String, Object>) normalized.get("currency")
+                : null;
+        normalized.put("currency", vndCurrencySettings(existingCurrency));
         return normalized;
     }
 
-    private Map<String, Object> vndCurrencySettings() {
+    private static Map<String, Object> vndCurrencySettings() {
+        return vndCurrencySettings(null);
+    }
+
+    private static Map<String, Object> vndCurrencySettings(Map<String, Object> existingCurrency) {
         Map<String, Object> currency = new LinkedHashMap<>();
         currency.put("code", "VND");
         currency.put("symbol", "₫");
         currency.put("decimalPlaces", 0);
+        if (existingCurrency != null && existingCurrency.get("fiscalYearStart") instanceof String fys) {
+            currency.put("fiscalYearStart", fys);
+        }
         return currency;
     }
 

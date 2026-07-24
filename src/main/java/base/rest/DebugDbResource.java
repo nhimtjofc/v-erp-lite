@@ -1,6 +1,9 @@
 package base.rest;
 
+import base.entity.Business;
+import base.entity.Order;
 import base.entity.User;
+import base.security.BusinessAccess;
 import base.security.CallerContext;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -19,6 +22,9 @@ public class DebugDbResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    BusinessAccess businessAccess;
 
     @Inject
     JsonWebToken jwt;
@@ -51,6 +57,37 @@ public class DebugDbResource {
 
         } catch (Exception e) {
             result.put("error", e.getMessage());
+        }
+        return Response.ok(result).build();
+    }
+
+    @GET
+    @Path("/orders")
+    public Response debugOrders() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User u = caller.resolveUser();
+            String tenant = caller.tenantCode();
+            result.put("tenant", tenant);
+            result.put("user_id", u.getId());
+            result.put("user_email", u.getEmail());
+            result.put("user_role", u.getRole() != null ? u.getRole().getName() : null);
+            result.put("user_business_id", u.getBusiness() != null ? u.getBusiness().getId() : null);
+            result.put("user_business_name", u.getBusiness() != null ? u.getBusiness().getName() : null);
+
+            Business found = businessAccess.findCurrentBusiness();
+            result.put("findCurrentBusiness", found != null ? found.getId() + "/" + found.getName() : "null");
+
+            long totalOrders = Order.count("tenantId = ?1 AND deletedAt IS NULL", tenant);
+            result.put("total_orders_in_tenant", totalOrders);
+
+            if (found != null) {
+                long businessOrders = Order.count("tenantId = ?1 AND business.id = ?2 AND deletedAt IS NULL", tenant, found.getId());
+                result.put("orders_for_business", businessOrders);
+            }
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            result.put("error_type", e.getClass().getName());
         }
         return Response.ok(result).build();
     }

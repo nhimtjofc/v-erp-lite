@@ -595,6 +595,7 @@ export function OrderDetailPage() {
   const isShipped = status === 'SHIPPED'
   const isPendingPayment = status === 'PENDING' || status === 'PENDING_PAYMENT'
   const isFinal = ['COMPLETED', 'CANCELLED', 'OWNER_DECLINED', 'REFUNDED'].includes(status)
+  const canShowPayment = !isFinal && isPendingPayment
   const canDelete = isAdmin && isFinal
   const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
   const canCancelItem = isCustomer && cancellableStatuses.includes(status)
@@ -645,7 +646,7 @@ export function OrderDetailPage() {
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
 
-          {canAccessPayment && isPendingPayment && (
+          {!isFinal && canAccessPayment && canShowPayment && (
             <Link to="/orders/payment" search={{ orderId: id }}>
               <Button size="sm">
                 <CreditCard className="h-4 w-4 mr-1.5" /> Payment
@@ -665,7 +666,7 @@ export function OrderDetailPage() {
             </Button>
           )}
 
-          {isOwner && status === 'PAID_ESCROW' && (
+          {!isFinal && isOwner && status === 'PAID_ESCROW' && (
             <>
               <Button onClick={() => submitOwnerDecision('ACCEPT')} disabled={ownerDecisionMutation.isPending} className="font-semibold">
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Accept
@@ -675,7 +676,7 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {isStaff && isPending && (
+          {!isFinal && isStaff && isPending && (
             <>
               <Button onClick={() => openStatusDialog('CONFIRMED')} variant="secondary" className="font-semibold">
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm
@@ -685,12 +686,12 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {isStaff && isConfirmed && (
+          {!isFinal && isStaff && isConfirmed && (
             <Button onClick={() => openStatusDialog('SHIPPING')} className="font-semibold">
               <Package className="h-4 w-4 mr-1.5" /> Start Shipping
             </Button>
           )}
-          {isStaff && isShipping && (
+          {!isFinal && isStaff && isShipping && (
             <>
               <Button onClick={() => openStatusDialog('SHIPPED')} variant="secondary" className="font-semibold">
                 <Truck className="h-4 w-4 mr-1.5" /> Mark Shipped
@@ -700,15 +701,15 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {isStaff && isShipped && (
+          {!isFinal && isStaff && isShipped && (
             <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
               <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
             </Button>
           )}
-          {isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
-          {isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
-          {isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete</Button>}
-          {isCustomer && status === 'DELIVERED' && (
+          {!isFinal && isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
+          {!isFinal && isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
+          {!isFinal && isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete</Button>}
+          {!isFinal && isCustomer && status === 'DELIVERED' && (
             <Button
               onClick={() => confirmReceiptMutation.mutate({ path: { id } })}
               disabled={confirmReceiptMutation.isPending}
@@ -739,7 +740,7 @@ export function OrderDetailPage() {
           isLoading={paymentActivityQuery.isLoading}
           isError={paymentActivityQuery.isError}
           orderId={id}
-          payable={isPendingPayment}
+          payable={canShowPayment}
         />
       )}
 

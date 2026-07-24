@@ -52,11 +52,15 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/orders")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderResource {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderResource.class);
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
     private static final String CURRENCY = "VND";
@@ -195,11 +199,13 @@ public class OrderResource {
 
         if (isBusinessStaff) {
             Business business = businessAccess.findCurrentBusiness();
+            log.info("listOrders: isBusinessStaff=true, business={}", business != null ? business.getId() + "/" + business.getName() : "null");
             if (business != null) {
                 query.append(" AND business.id = :businessId");
                 params.put("businessId", business.getId());
             } else {
                 query.append(" AND id IS NULL");
+                log.warn("listOrders: businessAccess.findCurrentBusiness() returned null for staff user! Query will return no results.");
             }
         }
 
@@ -586,6 +592,9 @@ public class OrderResource {
         long finalAmount = orderAfterDiscount + shippingFee + tax;
 
         // 8. Populate Order Details
+        log.info("checkoutOrder: setting business={} (id={}) on order",
+                orderBusiness != null ? orderBusiness.getName() : "null",
+                orderBusiness != null ? orderBusiness.getId() : "null");
         order.setCustomer(customer);
         order.setBusiness(orderBusiness);
         order.setVoucher(voucher);
