@@ -105,6 +105,14 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     dotClass: 'border-red-400 bg-red-500 text-white',
     icon: XCircle,
   },
+  RETURN_REQUESTED: {
+    label: 'Return requested', badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white', icon: RotateCcw,
+  },
+  RETURN_APPROVED: {
+    label: 'Return approved', badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    dotClass: 'border-sky-400 bg-sky-500 text-white', icon: CheckCircle2,
+  },
 }
 
 function getStatusConfig(status: string) {
@@ -278,6 +286,11 @@ export function OrderDetailPage() {
   const [cancellingItem, setCancellingItem] = useState<any | null>(null)
   const [cancelItemReason, setCancelItemReason] = useState('')
   const [cancelItemError, setCancelItemError] = useState<string | null>(null)
+  const [returningItem, setReturningItem] = useState<any | null>(null)
+  const [returnItemReason, setReturnItemReason] = useState('')
+  const [returnItemError, setReturnItemError] = useState<string | null>(null)
+  const [approvingReturnItem, setApprovingReturnItem] = useState<any | null>(null)
+  const [approveReturnError, setApproveReturnError] = useState<string | null>(null)
   const [notes, setNotes] = useState<string | null>(null)
   const [shippingFeeMinor, setShippingFee] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<string | null>(null)
@@ -412,6 +425,92 @@ export function OrderDetailPage() {
     onError: (err) => setError(err instanceof Error ? err.message : 'Unable to update order.'),
   })
 
+  const returnItemMutation = useMutation({
+    mutationFn: async (body: { itemId: string; reason?: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/request-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: body.reason || undefined }),
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to request return')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setReturningItem(null)
+      setReturnItemReason('')
+      setReturnItemError(null)
+    },
+    onError: (err) => {
+      setReturnItemError(err instanceof Error ? err.message : 'Unable to request return.')
+    },
+  })
+
+  const approveReturnMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/approve-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to approve return')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setApprovingReturnItem(null)
+      setApproveReturnError(null)
+    },
+    onError: (err) => {
+      setApproveReturnError(err instanceof Error ? err.message : 'Unable to approve return.')
+    },
+  })
+
+  const rejectReturnMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/reject-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to reject return')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+    onError: (err) => {
+      setApproveReturnError(err instanceof Error ? err.message : 'Unable to reject return.')
+    },
+  })
+
   const cancelItemMutation = useMutation({
     mutationFn: async (body: { itemId: string; reason?: string }) => {
       const token = localStorage.getItem('access_token')
@@ -499,6 +598,8 @@ export function OrderDetailPage() {
   const canDelete = isAdmin && isFinal
   const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
   const canCancelItem = isCustomer && cancellableStatuses.includes(status)
+  const returnableStatuses = ['DELIVERED', 'COMPLETED']
+  const canRequestReturn = isCustomer && returnableStatuses.includes(status)
 
   const statusCfg = getStatusConfig(status)
   const currentNotes = notes ?? order.notes ?? ''
@@ -658,22 +759,32 @@ export function OrderDetailPage() {
               <div className="divide-y divide-border px-6">
                 {order.items?.map((item, index) => {
                   const isItemCancelled = !!(item as any).cancelledAt
+                  const isReturnRequested = !!(item as any).returnRequestedAt && !(item as any).returnApprovedAt
+                  const isReturnApproved = !!(item as any).returnApprovedAt
+                  const itemReturnStatus = (item as any).returnStatus
                   const variantValues = item.productVariant
                     ? Object.entries(item.productVariant.optionValues ?? {})
                         .map(([_, v]) => v)
                         .join(' / ')
                     : null
+                  const isDimmed = isItemCancelled || isReturnApproved
 
                   return (
-                    <div key={index} className={`py-4 flex items-center justify-between gap-4 ${isItemCancelled ? 'opacity-50' : ''}`}>
+                    <div key={index} className={`py-4 flex items-center justify-between gap-4 ${isDimmed ? 'opacity-50' : ''}`}>
                       <div className="space-y-0.5 min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <h4 className={`font-semibold text-sm ${isItemCancelled ? 'line-through text-muted-foreground' : ''}`}>
+                          <h4 className={`font-semibold text-sm ${isDimmed ? 'line-through text-muted-foreground' : ''}`}>
                             {item.product?.name}
                           </h4>
                           {isItemCancelled && (
                             <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Cancelled</Badge>
+                          )}
+                          {isReturnRequested && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300">Return requested</Badge>
+                          )}
+                          {isReturnApproved && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300">Return approved</Badge>
                           )}
                         </div>
                         {variantValues && (
@@ -683,10 +794,16 @@ export function OrderDetailPage() {
                         {isItemCancelled && (item as any).cancellationReason && (
                           <p className="text-xs text-destructive italic mt-0.5">Reason: {(item as any).cancellationReason}</p>
                         )}
+                        {isReturnRequested && (item as any).returnReason && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-0.5">Return reason: {(item as any).returnReason}</p>
+                        )}
+                        {isReturnApproved && (item as any).returnRefundMinor != null && (
+                          <p className="text-xs text-success italic mt-0.5">Refunded: {formatMoneyMinor(Number((item as any).returnRefundMinor), (item as any).returnRefundCurrency || 'VND')}</p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        {!isItemCancelled && canCancelItem && (
+                        {!isItemCancelled && !isReturnRequested && !isReturnApproved && canCancelItem && (
                           <Button
                             size="sm"
                             variant="destructive"
@@ -699,6 +816,47 @@ export function OrderDetailPage() {
                           >
                             <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
                           </Button>
+                        )}
+                        {!isItemCancelled && !isReturnRequested && !isReturnApproved && canRequestReturn && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs border-amber-500/30 text-amber-700 dark:text-amber-300"
+                            onClick={() => {
+                              setReturningItem(item)
+                              setReturnItemReason('')
+                              setReturnItemError(null)
+                            }}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Request Return
+                          </Button>
+                        )}
+                        {isReturnRequested && isOwner && itemReturnStatus !== 'REJECTED' && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setApprovingReturnItem(item)
+                                setApproveReturnError(null)
+                              }}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                if (window.confirm('Reject return for this item?')) {
+                                  rejectReturnMutation.mutate({ itemId: (item as any).id })
+                                }
+                              }}
+                              disabled={rejectReturnMutation.isPending}
+                            >
+                              <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                            </Button>
+                          </>
                         )}
                         <div className="text-right">
                           <div className="text-sm font-semibold">
@@ -1219,6 +1377,129 @@ export function OrderDetailPage() {
               disabled={cancelItemMutation.isPending || !cancellingItem?.id}
             >
               {cancelItemMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!returningItem} onOpenChange={(open) => { if (!open) setReturningItem(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request return for this item?</DialogTitle>
+            <DialogDescription>
+              The shop owner will review your return request. Refund will be processed if approved.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">{returningItem?.product?.name}</span>
+              </div>
+              {returningItem?.productVariant?.sku && (
+                <p className="text-xs text-muted-foreground ml-6">SKU: {returningItem.productVariant.sku}</p>
+              )}
+              <div className="flex justify-between text-sm ml-6">
+                <span className="text-muted-foreground">{formatUSD(Number(returningItem?.unitPriceMinor))} × {returningItem?.quantity ?? 0}</span>
+                <span className="font-semibold">{formatUSD(Number(returningItem?.unitPriceMinor) * (returningItem?.quantity ?? 0))}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="return-item-reason">Reason for return</Label>
+              <select
+                id="return-item-reason"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={returnItemReason}
+                onChange={(e) => setReturnItemReason(e.target.value)}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Wrong item received">Wrong item received</option>
+                <option value="Product damaged / defective">Product damaged / defective</option>
+                <option value="Not as described">Not as described</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Other">Other...</option>
+              </select>
+              {returnItemReason === 'Other' && (
+                <textarea
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Please describe..."
+                  onChange={(e) => setReturnItemReason(e.target.value)}
+                />
+              )}
+            </div>
+            {returnItemError && (
+              <p className="text-sm text-destructive">{returnItemError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturningItem(null)} disabled={returnItemMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700"
+              onClick={() => {
+                returnItemMutation.mutate({
+                  itemId: returningItem?.id,
+                  reason: returnItemReason,
+                })
+              }}
+              disabled={returnItemMutation.isPending || !returningItem?.id}
+            >
+              {returnItemMutation.isPending ? 'Submitting...' : 'Submit Return Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!approvingReturnItem} onOpenChange={(open) => { if (!open) setApprovingReturnItem(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve return for this item?</DialogTitle>
+            <DialogDescription>
+              Confirm that the returned item has been received. Funds will be transferred accordingly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">{approvingReturnItem?.product?.name}</span>
+              </div>
+              <div className="flex justify-between text-sm ml-6">
+                <span className="text-muted-foreground">Return reason:</span>
+                <span className="font-medium">{(approvingReturnItem as any)?.returnReason || 'N/A'}</span>
+              </div>
+              {(order as any)?.paymentMethod === 'COD' && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm mt-2">
+                  <span className="font-semibold">COD order</span> — No wallet transfer will occur. Please handle refund directly with the customer.
+                </div>
+              )}
+              {((order as any)?.paymentMethod === 'BANK_TRANSFER' || (order as any)?.paymentMethod === 'WALLET') && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm mt-2">
+                  <span className="font-semibold">Wallet transfer</span> — The refund amount will be debited from your wallet and credited to the customer's wallet.
+                </div>
+              )}
+            </div>
+            {approveReturnError && (
+              <p className="text-sm text-destructive">{approveReturnError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApprovingReturnItem(null)} disabled={approveReturnMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="bg-success text-success-foreground hover:bg-success/90"
+              onClick={() => {
+                approveReturnMutation.mutate({
+                  itemId: approvingReturnItem?.id,
+                })
+              }}
+              disabled={approveReturnMutation.isPending || !approvingReturnItem?.id}
+            >
+              {approveReturnMutation.isPending ? 'Approving...' : 'Approve Return'}
             </Button>
           </DialogFooter>
         </DialogContent>

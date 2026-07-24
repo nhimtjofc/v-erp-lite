@@ -1,0 +1,303 @@
+package base.service;
+
+import base.entity.Business;
+import base.entity.Customer;
+import base.entity.Order;
+import base.entity.OrderHistory;
+import base.entity.OrderItem;
+import base.entity.User;
+import base.entity.Wallet;
+import base.model.Money;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@ApplicationScoped
+public class ReturnRefundService {
+
+    @Inject
+    WalletService walletService;
+
+    @Inject
+    NotificationService notificationService;
+
+    @Transactional
+    public OrderItem requestItemReturn(String tenantId, UUID orderId, UUID itemId, String reason, UUID actorId, String actorEmail) {
+        Order order = orderForUpdate(tenantId, orderId);
+        String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!List.of("DELIVERED", "COMPLETED").contains(status)) {
+            throw new BadRequestException("Cannot request return when order is in " + status + " status");
+        }
+
+        Customer c = Customer.find("email = ?1 and tenantId = ?2", actorEmail, tenantId).firstResult();
+        UUID customerId = c != null ? c.getId() : null;
+        boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                || (actorId != null && actorId.equals(order.getCreatedBy()));
+        if (!isOwner) {
+            throw new ForbiddenException("You are not allowed to request return for this order");
+        }
+
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelledAt() != null) {
+            throw new BadRequestException("Cannot request return for a cancelled item");
+        }
+        if (item.getReturnRequestedAt() != null) {
+            throw new BadRequestException("Return already requested for this item");
+        }
+        if (item.getReturnApprovedAt() != null) {
+            throw new BadRequestException("Return already approved for this item");
+        }
+
+        item.setReturnRequestedAt(Instant.now());
+        item.setReturnRequestedBy(actorId);
+        item.setReturnReason(reason != null ? reason.trim() : null);
+        item.setReturnStatus("REQUESTED");
+        item.setUpdatedBy(actorId);
+
+        boolean allReturned = order.getItems().stream()
+                .allMatch(oi -> oi.getCancelledAt() != null || oi.getReturnApprovedAt() != null
+                        || (oi.getId().equals(itemId)));
+        if (allReturned) {
+            String oldStatus = order.getStatus();
+            order.setStatus("RETURN_REQUESTED");
+            order.setUpdatedBy(actorId);
+            persistHistory(order, oldStatus, "RETURN_REQUESTED",
+                    "All items requested return: " + (reason != null ? reason : ""), actorId, tenantId);
+        } else {
+            persistHistory(order, order.getStatus(), order.getStatus(),
+                    "Item return requested: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString())
+                            + (reason != null ? " - " + reason : ""),
+                    actorId, tenantId);
+        }
+
+        notificationService.notifyBusinessStaff(
+                order,
+                "RETURN_REQUESTED",
+                "Customer requested return for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + "."
+                        + (reason != null ? " Reason: " + reason : ""),
+                actorId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem approveItemReturn(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getReturnRequestedAt() == null) {
+            throw new BadRequestException("No return request for this item");
+        }
+        if (item.getReturnApprovedAt() != null) {
+            throw new BadRequestException("Return already approved for this item");
+        }
+
+        item.setReturnApprovedAt(Instant.now());
+        item.setReturnApprovedBy(actorId);
+        item.setReturnStatus("APPROVED");
+        item.setUpdatedBy(actorId);
+
+        String paymentMethod = order.getPaymentMethod();
+        boolean isWalletPayment = "BANK_TRANSFER".equalsIgnoreCase(paymentMethod)
+                || "WALLET".equalsIgnoreCase(paymentMethod);
+
+        long refundAmount = calculateItemRefund(order, item);
+
+        if (isWalletPayment) {
+            item.setReturnRefundMinor(refundAmount);
+            item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
+
+            User customerUser = User.find("email = ?1 and tenantId = ?2",
+                    order.getCustomer().getEmail(), tenantId).firstResult();
+            if (customerUser == null) {
+                throw new BadRequestException("Customer user account not found for wallet transfer");
+            }
+
+            Business business = order.getBusiness();
+            if (business == null) {
+                throw new BadRequestException("Order business not found for wallet transfer");
+            }
+            UUID sellerOwnerId = business.getCreatedBy();
+            if (sellerOwnerId == null) {
+                throw new BadRequestException("Business owner not found for wallet transfer");
+            }
+
+            Wallet sellerWallet = walletService.getOrCreateWallet(
+                    tenantId, "SELLER", sellerOwnerId, order.getCurrency(), actorId);
+            walletService.debitAvailable(
+                    tenantId,
+                    sellerWallet.getId(),
+                    Money.of(refundAmount, order.getCurrency()),
+                    "RETURN_REFUND",
+                    "ORDER_ITEM",
+                    itemId,
+                    actorId,
+                    "Hoàn tiền trả hàng cho sản phẩm " + (item.getProduct() != null ? item.getProduct().getName() : "")
+            );
+
+            Wallet customerWallet = walletService.getOrCreateWallet(
+                    tenantId, "USER", customerUser.getId(), order.getCurrency(), actorId);
+            walletService.creditAvailable(
+                    tenantId,
+                    customerWallet.getId(),
+                    Money.of(refundAmount, order.getCurrency()),
+                    "RETURN_REFUND",
+                    "ORDER_ITEM",
+                    itemId,
+                    actorId,
+                    "Hoàn tiền trả hàng cho sản phẩm " + (item.getProduct() != null ? item.getProduct().getName() : "")
+            );
+        } else {
+            item.setReturnRefundMinor(refundAmount);
+            item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
+        }
+
+        recalculateOrderAfterReturn(order, actorId, tenantId);
+
+        boolean allItemsHandled = order.getItems().stream()
+                .allMatch(oi -> oi.getCancelledAt() != null || oi.getReturnApprovedAt() != null);
+        if (allItemsHandled) {
+            String oldStatus = order.getStatus();
+            order.setStatus("REFUNDED");
+            order.setUpdatedBy(actorId);
+            persistHistory(order, oldStatus, "REFUNDED",
+                    "All items returned and refunded", actorId, tenantId);
+        } else {
+            String orderStatus = order.getStatus();
+            persistHistory(order, orderStatus, orderStatus,
+                    "Item return approved: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString())
+                            + (isWalletPayment ? " - Refunded " + refundAmount : " - COD, no wallet transfer"),
+                    actorId, tenantId);
+        }
+
+        notificationService.notifyBuyer(
+                order,
+                "RETURN_APPROVED",
+                "Return for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + " has been approved."
+                        + (isWalletPayment ? " Refund of " + refundAmount + " VND has been credited to your wallet." : " Please contact the shop for cash refund."),
+                actorId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem rejectItemReturn(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getReturnRequestedAt() == null) {
+            throw new BadRequestException("No return request for this item");
+        }
+        if (item.getReturnApprovedAt() != null) {
+            throw new BadRequestException("Return already approved for this item");
+        }
+
+        item.setReturnStatus("REJECTED");
+        item.setUpdatedBy(actorId);
+
+        String noteText = "Item return rejected: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString());
+        persistHistory(order, order.getStatus(), order.getStatus(), noteText, actorId, tenantId);
+
+        notificationService.notifyBuyer(
+                order,
+                "RETURN_REJECTED",
+                "Return for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + " has been rejected.",
+                actorId);
+
+        return item;
+    }
+
+    private long calculateItemRefund(Order order, OrderItem item) {
+        long itemSubtotal = item.getSubtotalAmountMinor();
+        long orderSubtotal = order.getSubtotalAmountMinor();
+        if (orderSubtotal <= 0) {
+            return itemSubtotal;
+        }
+        long finalAmount = order.getFinalAmountMinor();
+        BigDecimal proportion = BigDecimal.valueOf(itemSubtotal)
+                .divide(BigDecimal.valueOf(orderSubtotal), 10, RoundingMode.HALF_UP);
+        return BigDecimal.valueOf(finalAmount)
+                .multiply(proportion)
+                .setScale(0, RoundingMode.HALF_UP)
+                .longValue();
+    }
+
+    private void recalculateOrderAfterReturn(Order order, UUID actorId, String tenantId) {
+        long activeSubtotal = 0;
+        for (OrderItem oi : order.getItems()) {
+            if (oi.getCancelledAt() == null && oi.getReturnApprovedAt() == null) {
+                activeSubtotal += oi.getSubtotalAmountMinor();
+            }
+        }
+        order.setSubtotalAmountMinor(activeSubtotal);
+
+        BigDecimal discountPct = order.getDiscountPercent() != null ? order.getDiscountPercent() : BigDecimal.ZERO;
+        long discountAmount = BigDecimal.valueOf(activeSubtotal)
+                .multiply(discountPct)
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP)
+                .longValue();
+        order.setDiscountAmountMinor(discountAmount);
+
+        long afterDiscount = Math.max(0, activeSubtotal - discountAmount);
+        long shippingFee = afterDiscount >= 10000 ? 0 : 1000;
+        order.setShippingFeeMinor(shippingFee);
+
+        BigDecimal vatPct = order.getVatPercent() != null ? order.getVatPercent() : BigDecimal.ZERO;
+        long vatAmount = BigDecimal.valueOf(afterDiscount)
+                .multiply(vatPct)
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP)
+                .longValue();
+        long taxAmount = BigDecimal.valueOf(afterDiscount)
+                .multiply(BigDecimal.valueOf(0.10))
+                .setScale(0, RoundingMode.HALF_UP)
+                .longValue();
+        order.setVatAmountMinor(vatAmount);
+        order.setTaxAmountMinor(taxAmount);
+
+        long finalAmount = Math.max(0, afterDiscount + shippingFee + taxAmount);
+        order.setFinalAmountMinor(finalAmount);
+        order.setUpdatedBy(actorId);
+    }
+
+    private void persistHistory(Order order, String oldStatus, String newStatus, String note, UUID userId, String tenantCode) {
+        OrderHistory history = new OrderHistory();
+        history.setId(UUID.randomUUID());
+        history.setOrder(order);
+        history.setTenantId(tenantCode);
+        history.setOldStatus(oldStatus);
+        history.setNewStatus(newStatus);
+        history.setNote(note);
+        history.setCreatedBy(userId);
+        history.persist();
+    }
+
+    private Order orderForUpdate(String tenantId, UUID orderId) {
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", orderId, tenantId)
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        return order;
+    }
+}

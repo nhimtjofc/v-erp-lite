@@ -62,6 +62,30 @@ public class OrderItem extends BaseEntity {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    @Column(name = "return_requested_at")
+    private Instant returnRequestedAt;
+
+    @Column(name = "return_requested_by")
+    private UUID returnRequestedBy;
+
+    @Column(name = "return_reason")
+    private String returnReason;
+
+    @Column(name = "return_approved_at")
+    private Instant returnApprovedAt;
+
+    @Column(name = "return_approved_by")
+    private UUID returnApprovedBy;
+
+    @Column(name = "return_status")
+    private String returnStatus;
+
+    @Column(name = "return_refund_minor")
+    private Long returnRefundMinor;
+
+    @Column(name = "return_refund_currency", length = 3)
+    private String returnRefundCurrency;
+
     public UUID getId() {
         return id;
     }

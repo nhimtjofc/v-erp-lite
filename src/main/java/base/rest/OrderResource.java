@@ -31,6 +31,7 @@ import base.service.InventoryCostService;
 import base.service.NotificationService;
 import base.service.OrderFulfillmentService;
 import base.service.PaymentService;
+import base.service.ReturnRefundService;
 import base.service.VietQRService;
 import base.service.WalletService;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -94,6 +95,9 @@ public class OrderResource {
 
     @Inject
     PaymentService paymentService;
+
+    @Inject
+    ReturnRefundService returnRefundService;
 
     public static class CartItem {
         public UUID productId;
@@ -252,7 +256,8 @@ public class OrderResource {
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
                 "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
-                "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED")) {
+                "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED",
+                "RETURN_REQUESTED", "RETURN_APPROVED")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -586,7 +591,8 @@ public class OrderResource {
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
         order.setCurrency(orderCurrency);
-        
+        order.setPaymentMethod(request.paymentMethod);
+
         String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
         order.setStatus(initialStatus);
         
@@ -733,7 +739,7 @@ public class OrderResource {
 
         if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
                 "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPING",
-                "SHIPPED").contains(newStatus)) {
+                "SHIPPED", "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -1031,6 +1037,45 @@ public class OrderResource {
         return order;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Return / Refund per item
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/request-return")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public OrderItem requestItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can request return");
+        }
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        return returnRefundService.requestItemReturn(
+                caller.tenantCode(), orderId, itemId, reason, caller.userId(), caller.userEmail());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/approve-return")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem approveItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.approveItemReturn(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/reject-return")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem rejectItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.rejectItemReturn(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
     private void persistHistory(Order order, String oldStatus, String newStatus, String note, UUID userId, String tenantCode) {
         OrderHistory history = new OrderHistory();
         history.setId(UUID.randomUUID());
@@ -1117,6 +1162,12 @@ public class OrderResource {
         }
         if ("SHIPPED".equals(oldStatus)) {
             return "COMPLETED".equals(newStatus);
+        }
+        if ("RETURN_REQUESTED".equals(oldStatus)) {
+            return "RETURN_APPROVED".equals(newStatus);
+        }
+        if ("RETURN_APPROVED".equals(oldStatus)) {
+            return "REFUNDED".equals(newStatus);
         }
         return false;
     }
