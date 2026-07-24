@@ -52,6 +52,7 @@ import { Route as AuthenticatedCustomersNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers/$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin/tenants'
 import { Route as AuthenticatedAdminPayoutsRouteImport } from './routes/_authenticated/admin/payouts'
+import { Route as AuthenticatedAdminMockBankRouteImport } from './routes/_authenticated/admin/mock-bank'
 import { Route as AuthenticatedAdminTenantsIndexRouteImport } from './routes/_authenticated/admin/tenants/index'
 import { Route as AuthenticatedAdminTenantsIdRouteImport } from './routes/_authenticated/admin/tenants/$id'
 
@@ -289,6 +290,12 @@ const AuthenticatedAdminPayoutsRoute =
     path: '/admin/payouts',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminMockBankRoute =
+  AuthenticatedAdminMockBankRouteImport.update({
+    id: '/admin/mock-bank',
+    path: '/admin/mock-bank',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminTenantsIndexRoute =
   AuthenticatedAdminTenantsIndexRouteImport.update({
     id: '/',
@@ -321,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/user-wallet': typeof AuthenticatedUserWalletRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/admin/mock-bank': typeof AuthenticatedAdminMockBankRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
@@ -361,6 +369,7 @@ export interface FileRoutesByTo {
   '/user-wallet': typeof AuthenticatedUserWalletRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/admin/mock-bank': typeof AuthenticatedAdminMockBankRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
@@ -408,6 +417,7 @@ export interface FileRoutesById {
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/mock-bank': typeof AuthenticatedAdminMockBankRoute
   '/_authenticated/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/user-wallet'
     | '/vouchers'
     | '/wallet'
+    | '/admin/mock-bank'
     | '/admin/payouts'
     | '/admin/tenants'
     | '/customers/$id'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/user-wallet'
     | '/vouchers'
     | '/wallet'
+    | '/admin/mock-bank'
     | '/admin/payouts'
     | '/customers/$id'
     | '/customers/new'
@@ -541,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/vouchers'
     | '/_authenticated/wallet'
     | '/_authenticated/'
+    | '/_authenticated/admin/mock-bank'
     | '/_authenticated/admin/payouts'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/customers/$id'
@@ -876,6 +889,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPayoutsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/mock-bank': {
+      id: '/_authenticated/admin/mock-bank'
+      path: '/admin/mock-bank'
+      fullPath: '/admin/mock-bank'
+      preLoaderRoute: typeof AuthenticatedAdminMockBankRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/tenants/': {
       id: '/_authenticated/admin/tenants/'
       path: '/'
@@ -1034,6 +1054,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAdminMockBankRoute: typeof AuthenticatedAdminMockBankRoute
   AuthenticatedAdminPayoutsRoute: typeof AuthenticatedAdminPayoutsRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRouteWithChildren
 }
@@ -1055,6 +1076,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedVouchersRoute: AuthenticatedVouchersRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAdminMockBankRoute: AuthenticatedAdminMockBankRoute,
   AuthenticatedAdminPayoutsRoute: AuthenticatedAdminPayoutsRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRouteWithChildren,
 }

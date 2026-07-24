@@ -371,7 +371,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/settings') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
-      pathname.startsWith('/admin/payouts') ||
+      pathname.startsWith('/admin') ||
       pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 

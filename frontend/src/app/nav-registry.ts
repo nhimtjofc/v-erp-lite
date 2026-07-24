@@ -99,9 +99,10 @@ export const navGroups: NavGroup[] = [
   {
     labelKey: 'nav:systemAdmin',
     adminOnly: true,
-    roles: ['systemAdmin'],
+    roles: ['admin', 'systemAdmin'],
     items: [
       { labelKey: 'nav:tenants', to: '/admin/tenants', icon: Building },
+      { labelKey: '🏦 Ngân Hàng Ảo', to: '/admin/mock-bank', icon: Banknote },
     ],
   },
 ]
