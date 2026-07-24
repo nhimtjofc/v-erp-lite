@@ -110,6 +110,9 @@ public class Order extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "payment_method", length = 20)
+    private String paymentMethod;
+
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
@@ -260,6 +263,14 @@ public class Order extends BaseEntity {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public Instant getDeletedAt() {
