@@ -157,7 +157,7 @@ public class MockBankResource {
 
     @POST
     @Path("/simulate-transferred")
-    @RolesAllowed({"qa", "demo", "admin"})
+    @RolesAllowed({"qa", "demo", "admin", "businessOwner", "customer", "user"})
     public Response simulateTransferred(SimulateTransferredRequest request) {
         if (request == null || request.paymentIntentId == null || request.gatewayTransactionId == null) {
             return Response.status(Response.Status.BAD_REQUEST)

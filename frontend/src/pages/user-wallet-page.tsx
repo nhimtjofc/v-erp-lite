@@ -6,7 +6,7 @@ import {
   useSellerWalletQuery, // actually it's a myWallet query inside
   useWalletTransactionsQuery,
 } from '@/shared/api/wallet'
-import { topUpMyWallet, completeTopUp, getMyTopUps } from '@/shared/api/gen/sdk.gen'
+import { topUpMyWallet, completeTopUp, getMyTopUps, simulateTransferred } from '@/shared/api/gen/sdk.gen'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { formatMoneyMinor } from '@/shared/utils/currency'
 import { Badge } from '@/shared/ui/badge'
@@ -90,9 +90,15 @@ function TopUpDialog({
   })
 
   const completeMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await completeTopUp({
-        path: { id },
+    mutationFn: async (topUp: any) => {
+      const res = await simulateTransferred({
+        body: {
+          paymentIntentId: topUp.id,
+          gatewayTransactionId: 'MOCK_TOPUP_' + new Date().getTime(),
+          status: 'SUCCESS',
+          amountMinor: topUp.amountMinor,
+          currency: 'VND',
+        }
       })
       return res.data
     },
@@ -116,7 +122,7 @@ function TopUpDialog({
 
   const handleSimulatePayment = () => {
     if (pendingTopUp) {
-      completeMutation.mutate(pendingTopUp.id)
+      completeMutation.mutate(pendingTopUp)
     }
   }
 
@@ -149,7 +155,7 @@ function TopUpDialog({
             <p className="text-sm font-medium text-center">Quét mã QR sau để nạp tiền:</p>
             {pendingTopUp.paymentQrCodeBase64 && (
               <img
-                src={`data:image/png;base64,${pendingTopUp.paymentQrCodeBase64}`}
+                src={pendingTopUp.paymentQrCodeBase64}
                 alt="VietQR"
                 className="w-48 h-48 mx-auto rounded border"
               />

@@ -1,11 +1,13 @@
 package base.rest;
 
 import base.entity.PaymentIntent;
+import base.entity.WalletTopUp;
 import base.entity.WebhookEvent;
 import base.entity.InboundEventLog;
 import base.security.HmacSecure;
 import base.service.PaymentGatewayService;
 import base.service.PaymentIntentService;
+import base.service.WalletService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -31,6 +33,9 @@ public class PaymentWebhookResource {
 
     @Inject
     PaymentGatewayService paymentGatewayService;
+
+    @Inject
+    WalletService walletService;
 
     @Inject
     PaymentIntentService paymentIntentService;
@@ -111,12 +116,16 @@ public class PaymentWebhookResource {
         event.setPaymentIntentId(intentId);
 
         PaymentIntent intent = PaymentIntent.find("id = ?1", intentId).firstResult();
+        WalletTopUp topUp = null;
         if (intent == null) {
-            updateLogStatus(gatewayName, eventId, "FAILED");
-            return failEvent(event, "PaymentIntent not found");
+            topUp = WalletTopUp.find("id = ?1", intentId).firstResult();
+            if (topUp == null) {
+                updateLogStatus(gatewayName, eventId, "FAILED");
+                return failEvent(event, "PaymentIntent or WalletTopUp not found");
+            }
         }
 
-        String tenantId = intent.getTenantId();
+        String tenantId = intent != null ? intent.getTenantId() : topUp.getTenantId();
         event.setTenantId(tenantId);
 
         String txnId = payload.gatewayTransactionId.trim();
@@ -137,27 +146,47 @@ public class PaymentWebhookResource {
             return failEvent(event, "Invalid webhook signature");
         }
 
-        if ("SUCCEEDED".equals(intent.getStatus())) {
-            updateLogStatus(gatewayName, eventId, "PROCESSED");
-            return succeedEvent(event, "Payment already succeeded");
-        }
-        if ("CANCELLED".equals(intent.getStatus())) {
-            updateLogStatus(gatewayName, eventId, "FAILED");
-            return failEvent(event, "PaymentIntent was cancelled before webhook arrived");
-        }
-        if ("FAILED".equals(intent.getStatus())) {
-            updateLogStatus(gatewayName, eventId, "FAILED");
-            return failEvent(event, "PaymentIntent was already marked failed");
-        }
+        if (intent != null) {
+            if ("SUCCEEDED".equals(intent.getStatus())) {
+                updateLogStatus(gatewayName, eventId, "PROCESSED");
+                return succeedEvent(event, "Payment already succeeded");
+            }
+            if ("CANCELLED".equals(intent.getStatus())) {
+                updateLogStatus(gatewayName, eventId, "FAILED");
+                return failEvent(event, "PaymentIntent was cancelled before webhook arrived");
+            }
+            if ("FAILED".equals(intent.getStatus())) {
+                updateLogStatus(gatewayName, eventId, "FAILED");
+                return failEvent(event, "PaymentIntent was already marked failed");
+            }
 
-        try {
-            // 4. Call PaymentIntentService to process webhook event (from Dev A logic)
-            paymentIntentService.processWebhookEvent(tenantId, intent.getId(), gatewayName, txnId, payload.status);
-            updateLogStatus(gatewayName, eventId, "PROCESSED");
-            return succeedEvent(event, "Payment processed successfully");
-        } catch (Exception e) {
-            updateLogStatus(gatewayName, eventId, "FAILED");
-            return failEvent(event, "Failed to process webhook: " + e.getMessage());
+            try {
+                // 4. Call PaymentIntentService to process webhook event (from Dev A logic)
+                paymentIntentService.processWebhookEvent(tenantId, intent.getId(), gatewayName, txnId, payload.status);
+                updateLogStatus(gatewayName, eventId, "PROCESSED");
+                return succeedEvent(event, "Payment processed successfully");
+            } catch (Exception e) {
+                updateLogStatus(gatewayName, eventId, "FAILED");
+                return failEvent(event, "Failed to process webhook: " + e.getMessage());
+            }
+        } else {
+            if ("COMPLETED".equals(topUp.getStatus())) {
+                updateLogStatus(gatewayName, eventId, "PROCESSED");
+                return succeedEvent(event, "Top-up already completed");
+            }
+            try {
+                if ("SUCCESS".equalsIgnoreCase(payload.status)) {
+                    walletService.completeTopUp(tenantId, topUp.getId(), null);
+                    updateLogStatus(gatewayName, eventId, "PROCESSED");
+                    return succeedEvent(event, "Top-up processed successfully");
+                } else {
+                    updateLogStatus(gatewayName, eventId, "FAILED");
+                    return failEvent(event, "Top-up failed at provider");
+                }
+            } catch (Exception e) {
+                updateLogStatus(gatewayName, eventId, "FAILED");
+                return failEvent(event, "Failed to process top-up webhook: " + e.getMessage());
+            }
         }
     }
 

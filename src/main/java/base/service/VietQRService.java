@@ -49,6 +49,12 @@ public class VietQRService {
         BANK_BINS.put("SGB", "970400"); // Saigonbank
         BANK_BINS.put("BAB", "970409"); // Bac A Bank
         BANK_BINS.put("NAB", "970428"); // Nam A Bank
+        
+        // Full name mappings for common banks in seed data
+        BANK_BINS.put("TECHCOMBANK", "970407");
+        BANK_BINS.put("VIETCOMBANK", "970436");
+        BANK_BINS.put("VIETINBANK", "970415");
+        BANK_BINS.put("AGRIBANK", "970405");
     }
 
     public String generateQrPayload(String bankCode, String accNo, long amount, String message) {
@@ -110,6 +116,8 @@ public class VietQRService {
             String base64 = Base64.getEncoder().encodeToString(baos.toByteArray());
 
             return "data:image/png;base64," + base64;
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to generate VietQR", e);
             throw new RuntimeException("Failed to generate VietQR", e);
