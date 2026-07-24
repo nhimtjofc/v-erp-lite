@@ -130,12 +130,17 @@ public class PaymentWebhookResource {
 
         String txnId = payload.gatewayTransactionId.trim();
         long amountMinor = payload.amountMinor != null ? payload.amountMinor : 0;
+        String currency = payload.currency == null ? "VND" : payload.currency.trim().toUpperCase();
+        if (!"VND".equals(currency)) {
+            updateLogStatus(gatewayName, eventId, "FAILED");
+            return failEvent(event, "Only VND payments are supported");
+        }
 
         String rawPayload = String.format(
                 "{\"payment_intent_id\":\"%s\",\"gateway_transaction_id\":\"%s\",\"status\":\"%s\",\"amount_minor\":%d,\"currency\":\"%s\"}",
                 intentId, txnId, payload.status,
                 amountMinor,
-                payload.currency != null ? payload.currency : "USD"
+                currency
         );
         event.setRawPayload(rawPayload);
 

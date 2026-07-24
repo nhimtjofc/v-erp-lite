@@ -59,8 +59,9 @@ import jakarta.ws.rs.core.Response;
 public class OrderResource {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
-    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
+    private static final String CURRENCY = "VND";
+    private static final long FLAT_SHIPPING_FEE_MINOR = 250_000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2_500_000;
     private static final double TAX_RATE = 0.10;
 
     @Inject
@@ -467,7 +468,7 @@ public class OrderResource {
         order.setTenantId(tenantCode);
         order.setCreatedBy(userId);
         Business orderBusiness = null;
-        String orderCurrency = null;
+        String orderCurrency = CURRENCY;
 
         for (CartItem item : request.items) {
             if (item.quantity <= 0) {
@@ -488,10 +489,8 @@ public class OrderResource {
                 throw new BadRequestException("Multi-vendor order decisions are not supported; checkout one vendor at a time");
             }
             
-            if (orderCurrency == null) {
-                orderCurrency = product.getCurrency() != null ? product.getCurrency() : "VND";
-            } else if (!orderCurrency.equalsIgnoreCase(product.getCurrency())) {
-                throw new BadRequestException("All products in an order must have the same currency");
+            if (!CURRENCY.equalsIgnoreCase(product.getCurrency())) {
+                throw new BadRequestException("All products in an order must use VND");
             }
 
             long unitPrice;
@@ -545,6 +544,7 @@ public class OrderResource {
             orderItem.setUnitPriceMinor(unitPrice);
             orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
+            orderItem.setCurrency(CURRENCY);
             orderItems.add(orderItem);
         }
 
@@ -571,8 +571,8 @@ public class OrderResource {
             }
         }
 
-        // 5. Calculate Shipping Fee (USD)
-        // Flat rate: $10. Free shipping if subtotal - discount >= $100.
+        // 5. Calculate Shipping Fee (VND)
+        // Flat rate: 250,000 VND. Free shipping from 2,500,000 VND.
         long orderAfterDiscount = subtotal - discount;
         long shippingFee = FLAT_SHIPPING_FEE_MINOR;
         if (orderAfterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
@@ -620,11 +620,6 @@ public class OrderResource {
             paymentService.processWalletPayment(order, userWallet, caller.userId());
         } else if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
             Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2 and currency = 'VND'", tenantCode, orderBusiness.getId()).firstResult();
-            
-            // Fallback to the first wallet if VND wallet doesn't exist (for legacy compatibility)
-            if (wallet == null) {
-                wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2", tenantCode, orderBusiness.getId()).firstResult();
-            }
 
             if (wallet == null || wallet.getBankName() == null || wallet.getBankAccountNumber() == null) {
                 throw new jakarta.ws.rs.WebApplicationException(
@@ -633,12 +628,8 @@ public class OrderResource {
                     .build()
                 );
             }
-            long qrAmount = finalAmount;
-            if ("USD".equalsIgnoreCase(order.getCurrency())) {
-                qrAmount = qrAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
-            }
             String message = "Thanh toan " + orderNumber;
-            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), qrAmount, message);
+            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), finalAmount, message);
             order.setPaymentQrCodeBase64(qrBase64);
         }
 
@@ -1096,14 +1087,14 @@ public class OrderResource {
                 customer.setTotalSpendMinor(0L);
             }
             customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
-            customer.setPoints(customer.getPoints() + (int) (amount / 100));
+            customer.setPoints(customer.getPoints() + (int) (amount / 10_000));
 
             long totalSpend = customer.getTotalSpendMinor();
-            if (totalSpend >= 300000) {
+            if (totalSpend >= 75_000_000) {
                 customer.setTier("DIAMOND");
-            } else if (totalSpend >= 100000) {
+            } else if (totalSpend >= 25_000_000) {
                 customer.setTier("PLATINUM");
-            } else if (totalSpend >= 20000) {
+            } else if (totalSpend >= 5_000_000) {
                 customer.setTier("GOLD");
             } else {
                 customer.setTier("SILVER");

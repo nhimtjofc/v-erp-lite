@@ -248,7 +248,7 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
   }
 
   const order = orderQuery.data
-  const currency = order.currency ?? 'USD'
+  const currency = order.currency ?? 'VND'
   const amount = Number(order.finalAmountMinor ?? 0)
   const paymentCurrency = intent?.currency ?? currency
   const paymentAmount = Number(intent?.amountMinor ?? amount)

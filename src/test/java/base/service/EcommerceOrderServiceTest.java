@@ -231,7 +231,7 @@ class EcommerceOrderServiceTest {
         String jsonPayload = String.format(
                 "{\"id\":\"%s\",\"billing\":{\"email\":\"coupon@example.com\",\"first_name\":\"Jane\",\"last_name\":\"Doe\"}," +
                 "\"line_items\":[{\"product_id\":\"%s\",\"variation_id\":\"%s\",\"quantity\":3}]," +
-                "\"coupon_lines\":[{\"code\":\"%s\"}],\"total\":\"92.50\"}",
+                "\"coupon_lines\":[{\"code\":\"%s\"}],\"total\":\"258250\"}",
                 orderId, fixture.externalProductId(), fixture.externalVariantId(), couponCode
         );
         JsonNode orderNode = objectMapper.readTree(jsonPayload);
@@ -248,9 +248,9 @@ class EcommerceOrderServiceTest {
         assertNotNull(order);
         assertEquals(15000L, order.getSubtotalAmountMinor());
         assertEquals(7500L, order.getDiscountAmountMinor());
-        assertEquals(1000L, order.getShippingFeeMinor());
+        assertEquals(250_000L, order.getShippingFeeMinor());
         assertEquals(750L, order.getTaxAmountMinor());
-        assertEquals(9250L, order.getFinalAmountMinor());
+        assertEquals(258_250L, order.getFinalAmountMinor());
         assertNull(order.getNotes());
     }
 

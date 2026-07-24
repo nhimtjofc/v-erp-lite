@@ -31,7 +31,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { Link as RouterLink } from '@tanstack/react-router'
-import { formatUSD, formatMoneyMinor } from '@/shared/utils/currency'
+import { formatVND, formatMoneyMinor } from '@/shared/utils/currency'
 
 const TIMEZONES = [
   'UTC',
@@ -184,19 +184,19 @@ export function PersonalInfoPage() {
 
   if (tier === 'SILVER') {
     nextTier = 'GOLD'
-    spendNeeded = Math.max(0, 200 - totalSpendMinor)
-    progressPercent = Math.min(100, (totalSpendMinor / 200) * 100)
-    progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng VÀNG`
+    spendNeeded = Math.max(0, 5_000_000 - totalSpendMinor)
+    progressPercent = Math.min(100, (totalSpendMinor / 5_000_000) * 100)
+    progressText = `Tiêu thêm ${formatVND(spendNeeded)} để thăng hạng VÀNG`
   } else if (tier === 'GOLD') {
     nextTier = 'PLATINUM'
-    spendNeeded = Math.max(0, 1000 - totalSpendMinor)
-    progressPercent = Math.min(100, ((totalSpendMinor - 200) / (1000 - 200)) * 100)
-    progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng BẠCH KIM`
+    spendNeeded = Math.max(0, 25_000_000 - totalSpendMinor)
+    progressPercent = Math.min(100, ((totalSpendMinor - 5_000_000) / (25_000_000 - 5_000_000)) * 100)
+    progressText = `Tiêu thêm ${formatVND(spendNeeded)} để thăng hạng BẠCH KIM`
   } else if (tier === 'PLATINUM') {
     nextTier = 'DIAMOND'
-    spendNeeded = Math.max(0, 3000 - totalSpendMinor)
-    progressPercent = Math.min(100, ((totalSpendMinor - 1000) / (3000 - 1000)) * 100)
-    progressText = `Tiêu thêm $${spendNeeded.toFixed(2)} để thăng hạng KIM CƯƠNG`
+    spendNeeded = Math.max(0, 75_000_000 - totalSpendMinor)
+    progressPercent = Math.min(100, ((totalSpendMinor - 25_000_000) / (75_000_000 - 25_000_000)) * 100)
+    progressText = `Tiêu thêm ${formatVND(spendNeeded)} để thăng hạng KIM CƯƠNG`
   } else {
     progressPercent = 100
     progressText = 'Chúc mừng! Bạn đã đạt hạng thẻ cao nhất VIP KIM CƯƠNG.'
@@ -397,7 +397,7 @@ export function PersonalInfoPage() {
                 <div className="bg-accent/40 rounded-xl p-3 flex-1 border border-border/40 text-center">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Tổng chi tiêu</p>
                   <p className="text-2xl font-black text-foreground mt-1">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSpendMinor)}
+                    {formatVND(totalSpendMinor)}
                   </p>
                 </div>
               </div>

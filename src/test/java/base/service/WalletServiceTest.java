@@ -46,9 +46,9 @@ class WalletServiceTest {
     @Test
     void moneyServiceNormalizesCurrencyAndRejectsInvalidMoney() {
         assertEquals("VND", moneyService.normalizeCurrency(" vnd "));
-        assertEquals(12_345, moneyService.positiveMoney(12_345, "usd").getAmountMinor());
+        assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(12_345, "USD"));
 
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency(null));
+        assertEquals("VND", moneyService.normalizeCurrency(null));
         assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("VN"));
         assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(0, "VND"));
         assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(-1, "VND"));

@@ -25,6 +25,9 @@ import java.util.UUID;
 @ApplicationScoped
 public class ReturnRefundService {
 
+    private static final long FLAT_SHIPPING_FEE_MINOR = 250_000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2_500_000;
+
     @Inject
     WalletService walletService;
 
@@ -259,7 +262,7 @@ public class ReturnRefundService {
         order.setDiscountAmountMinor(discountAmount);
 
         long afterDiscount = Math.max(0, activeSubtotal - discountAmount);
-        long shippingFee = afterDiscount >= 10000 ? 0 : 1000;
+        long shippingFee = afterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR ? 0 : FLAT_SHIPPING_FEE_MINOR;
         order.setShippingFeeMinor(shippingFee);
 
         BigDecimal vatPct = order.getVatPercent() != null ? order.getVatPercent() : BigDecimal.ZERO;

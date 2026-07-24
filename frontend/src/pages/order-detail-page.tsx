@@ -24,7 +24,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { formatMoneyMinor, formatUSD } from '@/shared/utils/currency'
+import { formatMoneyMinor, formatVND } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
@@ -219,7 +219,7 @@ function PaymentActivityCard({
                   </p>
                 </div>
                 <span className="font-semibold">
-                  {formatMoneyMinor(Number(intent.amountMinor ?? 0), intent.currency ?? 'USD')}
+                  {formatMoneyMinor(Number(intent.amountMinor ?? 0), intent.currency ?? 'VND')}
                 </span>
               </div>
 
@@ -860,10 +860,10 @@ export function OrderDetailPage() {
                         )}
                         <div className="text-right">
                           <div className="text-sm font-semibold">
-                            {formatUSD(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
+                            {formatVND(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {formatUSD(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
+                            {formatVND(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
                           </div>
                         </div>
                       </div>
@@ -1149,7 +1149,7 @@ export function OrderDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatUSD(Number(order.subtotalAmountMinor))}</span>
+                  <span className="font-medium">{formatVND(Number(order.subtotalAmountMinor))}</span>
                 </div>
 
                 {Number(order.discountAmountMinor) > 0 && (
@@ -1158,7 +1158,7 @@ export function OrderDetailPage() {
                       <Tag className="h-3.5 w-3.5" />
                       Discount {order.voucher?.code && `(${order.voucher.code})`}
                     </span>
-                    <span>-{formatUSD(Number(order.discountAmountMinor))}</span>
+                    <span>-{formatVND(Number(order.discountAmountMinor))}</span>
                   </div>
                 )}
 
@@ -1166,20 +1166,20 @@ export function OrderDetailPage() {
                   <span className="text-muted-foreground">Shipping Fee</span>
                   <span>
                     {Number(order.shippingFeeMinor) > 0
-                      ? `${formatUSD(Number(order.shippingFeeMinor))}`
+                      ? `${formatVND(Number(order.shippingFeeMinor))}`
                       : <span className="text-success font-medium">Free</span>}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{formatUSD(Number(order.taxAmountMinor))}</span>
+                  <span>{formatVND(Number(order.taxAmountMinor))}</span>
                 </div>
 
                 <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                   <span>Grand Total</span>
                   <span className="text-primary text-lg">
-                    {formatUSD(Number(order.finalAmountMinor))}
+                    {formatVND(Number(order.finalAmountMinor))}
                   </span>
                 </div>
               </div>
@@ -1212,7 +1212,7 @@ export function OrderDetailPage() {
                       </p>
                     </div>
                     <span className="font-semibold">
-                      {formatMoneyMinor(Number(record.amountMinor ?? 0), record.currency ?? order.currency ?? 'USD')}
+                      {formatMoneyMinor(Number(record.amountMinor ?? 0), record.currency ?? order.currency ?? 'VND')}
                     </span>
                   </div>
                 ))}
@@ -1245,7 +1245,7 @@ export function OrderDetailPage() {
                       <p className="text-xs text-muted-foreground font-mono">Refund ID: {refund.gatewayRefundId}</p>
                     </div>
                     <span className="font-semibold text-destructive">
-                      -{formatMoneyMinor(Number(refund.amountMinor ?? 0), refund.currency ?? order.currency ?? 'USD')}
+                      -{formatMoneyMinor(Number(refund.amountMinor ?? 0), refund.currency ?? order.currency ?? 'VND')}
                     </span>
                   </div>
                 ))}
@@ -1331,8 +1331,8 @@ export function OrderDetailPage() {
                 <p className="text-xs text-muted-foreground ml-6">SKU: {cancellingItem.productVariant.sku}</p>
               )}
               <div className="flex justify-between text-sm ml-6">
-                <span className="text-muted-foreground">{formatUSD(Number(cancellingItem?.unitPriceMinor))} × {cancellingItem?.quantity ?? 0}</span>
-                <span className="font-semibold">{formatUSD(Number(cancellingItem?.unitPriceMinor) * (cancellingItem?.quantity ?? 0))}</span>
+                <span className="text-muted-foreground">{formatVND(Number(cancellingItem?.unitPriceMinor))} × {cancellingItem?.quantity ?? 0}</span>
+                <span className="font-semibold">{formatVND(Number(cancellingItem?.unitPriceMinor) * (cancellingItem?.quantity ?? 0))}</span>
               </div>
             </div>
             <div className="space-y-1.5">
@@ -1400,8 +1400,8 @@ export function OrderDetailPage() {
                 <p className="text-xs text-muted-foreground ml-6">SKU: {returningItem.productVariant.sku}</p>
               )}
               <div className="flex justify-between text-sm ml-6">
-                <span className="text-muted-foreground">{formatUSD(Number(returningItem?.unitPriceMinor))} × {returningItem?.quantity ?? 0}</span>
-                <span className="font-semibold">{formatUSD(Number(returningItem?.unitPriceMinor) * (returningItem?.quantity ?? 0))}</span>
+                <span className="text-muted-foreground">{formatVND(Number(returningItem?.unitPriceMinor))} × {returningItem?.quantity ?? 0}</span>
+                <span className="font-semibold">{formatVND(Number(returningItem?.unitPriceMinor) * (returningItem?.quantity ?? 0))}</span>
               </div>
             </div>
             <div className="space-y-1.5">

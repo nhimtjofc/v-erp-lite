@@ -18,7 +18,7 @@ import {
   getMyCustomerProfileOptions
 } from '@/shared/api'
 import { useSellerWalletQuery } from '@/shared/api/wallet'
-import { formatUSD } from '@/shared/utils/currency'
+import { formatVND } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
@@ -30,8 +30,8 @@ import {
   ShoppingBag, ChevronRight, AlertCircle, Gift, Check, Sparkles,
 } from 'lucide-react'
 
-const FLAT_SHIPPING_FEE = 10
-const FREE_SHIPPING_THRESHOLD = 100
+const FLAT_SHIPPING_FEE = 250_000
+const FREE_SHIPPING_THRESHOLD = 2_500_000
 const VAT_RATE = 0.10
 
 interface CartItem {
@@ -434,8 +434,8 @@ export function ShopPage() {
                     <p className="font-semibold text-xs text-foreground leading-snug line-clamp-2 min-h-[2rem]">{product.name}</p>
                     
                     <div className="flex items-center gap-1.5 mt-1.5">
-                      <span className="font-bold text-sm text-red-500">{formatUSD(Number(product.salePriceMinor))}</span>
-                      <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePriceMinor))}</span>
+                      <span className="font-bold text-sm text-red-500">{formatVND(Number(product.salePriceMinor))}</span>
+                      <span className="text-[10px] line-through text-muted-foreground">{formatVND(Number(product.basePriceMinor))}</span>
                     </div>
 
                     <Button size="sm" className="w-full mt-3.5 h-8 text-[10px] font-bold cursor-pointer transition-all hover:bg-red-600 shadow-xs" disabled={avail <= 0} onClick={() => addToCart(product)}>
@@ -514,9 +514,9 @@ export function ShopPage() {
                   
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <span className={`font-bold text-sm ${sale ? 'text-red-500' : 'text-foreground'}`}>
-                      {formatUSD(sale ? Number(product.salePriceMinor) : Number(product.basePriceMinor))}
+                      {formatVND(sale ? Number(product.salePriceMinor) : Number(product.basePriceMinor))}
                     </span>
-                    {sale && <span className="text-[10px] line-through text-muted-foreground">{formatUSD(Number(product.basePriceMinor))}</span>}
+                    {sale && <span className="text-[10px] line-through text-muted-foreground">{formatVND(Number(product.basePriceMinor))}</span>}
                   </div>
                   
                   <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/40">
@@ -617,14 +617,14 @@ export function ShopPage() {
                                       <X className="h-3 w-3" />
                                     </button>
                                   </div>
-                                  <p className="text-[10px] text-muted-foreground">{formatUSD(item.priceMinor)} each</p>
+                                  <p className="text-[10px] text-muted-foreground">{formatVND(item.priceMinor)} each</p>
                                   <div className="flex items-center justify-between mt-1.5">
                                     <div className="flex items-center gap-1 bg-background border rounded-md p-0.5">
                                       <button onClick={() => updateQty(item.product.id!, item.variant?.id, -1)} className="h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"><Minus className="h-2.5 w-2.5" /></button>
                                       <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
                                       <button onClick={() => updateQty(item.product.id!, item.variant?.id, 1)} className="h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"><Plus className="h-2.5 w-2.5" /></button>
                                     </div>
-                                    <span className="font-bold text-xs">{formatUSD(item.priceMinor * item.quantity)}</span>
+                                    <span className="font-bold text-xs">{formatVND(item.priceMinor * item.quantity)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -635,7 +635,7 @@ export function ShopPage() {
                         {/* Store Subtotal Footer */}
                         <div className="px-3 py-1.5 bg-muted/5 border-t border-border/30 flex justify-between items-center text-[10px] text-muted-foreground">
                           <span>Store subtotal:</span>
-                          <span className="font-semibold text-foreground">{formatUSD(group.subtotal)}</span>
+                          <span className="font-semibold text-foreground">{formatVND(group.subtotal)}</span>
                         </div>
                       </div>
                     );
@@ -647,7 +647,7 @@ export function ShopPage() {
               <div className="border-t p-4 space-y-3">
                 <div className="flex justify-between font-bold text-base">
                   <span>Total</span>
-                  <span className="text-primary">{formatUSD(cartTotal)}</span>
+                  <span className="text-primary">{formatVND(cartTotal)}</span>
                 </div>
                 <Button className="w-full cursor-pointer" onClick={() => { setShowCheckout(true); setShowCart(false) }}>
                   Checkout <ChevronRight className="h-4 w-4 ml-1" />
@@ -675,7 +675,7 @@ export function ShopPage() {
         <span className="font-bold text-sm">Cart</span>
         {cart.length > 0 && (
           <span className="text-xs font-black border-l border-white/20 pl-2">
-            {formatUSD(cartTotal)}
+            {formatVND(cartTotal)}
           </span>
         )}
       </button>
@@ -716,7 +716,7 @@ export function ShopPage() {
                       <span className="text-xl font-black leading-none tracking-tight">
                         {voucher.discountType === 'PERCENTAGE'
                           ? `${Number(voucher.discountValue)}%`
-                          : formatUSD(Number(voucher.discountValue))}
+                          : formatVND(Number(voucher.discountValue))}
                       </span>
                       <span className="mt-1 text-[9px] font-black uppercase tracking-wider opacity-90">OFF</span>
                     </div>
@@ -729,7 +729,7 @@ export function ShopPage() {
                           </span>
                           {voucher.maxDiscountAmountMinor && (
                             <span className="text-[9px] font-medium text-muted-foreground">
-                              Max {formatUSD(Number(voucher.maxDiscountAmountMinor))}
+                              Max {formatVND(Number(voucher.maxDiscountAmountMinor))}
                             </span>
                           )}
                         </div>
@@ -738,7 +738,7 @@ export function ShopPage() {
                         </h3>
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
                           {Number(voucher.minOrderValueMinor) > 0
-                            ? `Min. Spend: ${formatUSD(Number(voucher.minOrderValueMinor))}`
+                            ? `Min. Spend: ${formatVND(Number(voucher.minOrderValueMinor))}`
                             : 'No Min. Spend'}
                         </p>
                       </div>
@@ -834,7 +834,7 @@ export function ShopPage() {
                       <div key={idx} className="border border-border/40 rounded-lg bg-muted/10 p-2 space-y-1">
                         <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/20 pb-0.5 mb-1 flex justify-between">
                           <span>{group.name}</span>
-                          <span className="text-foreground font-semibold">Sub: {formatUSD(group.subtotal)}</span>
+                          <span className="text-foreground font-semibold">Sub: {formatVND(group.subtotal)}</span>
                         </div>
                         {group.items.map((item, i) => {
                           const variantLabel = item.variant?.optionValues 
@@ -845,7 +845,7 @@ export function ShopPage() {
                               <span className="text-muted-foreground truncate flex-1">
                                 {item.product.name}{variantLabel} × {item.quantity}
                               </span>
-                              <span className="font-medium ml-2 shrink-0">{formatUSD(item.priceMinor * item.quantity)}</span>
+                              <span className="font-medium ml-2 shrink-0">{formatVND(item.priceMinor * item.quantity)}</span>
                             </div>
                           );
                         })}
@@ -898,9 +898,9 @@ export function ShopPage() {
                   <input type="radio" name="paymentMethod" value="BANK_TRANSFER" checked={paymentMethod === 'BANK_TRANSFER'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
                   Chuyển khoản (VietQR)
                 </label>
-                <label className={`flex items-center gap-2 text-sm ${!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor * (userWallet.currency === 'VND' ? 254 : 1) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input type="radio" name="paymentMethod" value="WALLET" disabled={!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor * (userWallet.currency === 'VND' ? 254 : 1)} checked={paymentMethod === 'WALLET'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
-                  Ví cá nhân ({userWallet ? formatUSD((userWallet.availableBalanceMinor ?? 0) / (userWallet.currency === 'VND' ? 254 : 1)) : 'Đang tải...'})
+                <label className={`flex items-center gap-2 text-sm ${!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="radio" name="paymentMethod" value="WALLET" disabled={!userWallet || (userWallet.availableBalanceMinor ?? 0) < finalAmountMinor} checked={paymentMethod === 'WALLET'} onChange={(e) => setPaymentMethod(e.target.value as any)} />
+                  Ví cá nhân ({userWallet ? formatVND(userWallet.availableBalanceMinor ?? 0) : 'Đang tải...'})
                 </label>
               </div>
             </div>
@@ -963,7 +963,7 @@ export function ShopPage() {
                             </span>
                             {!isValid && (
                               <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">
-                                Min. spend: {formatUSD(Number(v.minOrderValueMinor))}
+                                Min. spend: {formatVND(Number(v.minOrderValueMinor))}
                               </Badge>
                             )}
                           </div>
@@ -971,11 +971,11 @@ export function ShopPage() {
                         </div>
                         <div className="text-right shrink-0 pl-2">
                           <span className="font-bold text-xs text-primary block">
-                            {v.discountType === 'PERCENTAGE' ? `${v.discountValue}% OFF` : `${formatUSD(Number(v.discountValue))} OFF`}
+                            {v.discountType === 'PERCENTAGE' ? `${v.discountValue}% OFF` : `${formatVND(Number(v.discountValue))} OFF`}
                           </span>
                           {isValid && isSelected && (
                             <span className="text-[10px] text-success font-semibold">
-                              Saved -{formatUSD(previewDiscount)}
+                              Saved -{formatVND(previewDiscount)}
                             </span>
                           )}
                         </div>
@@ -986,7 +986,7 @@ export function ShopPage() {
                 {selectedVoucher && (
                   <div className="flex items-center justify-between text-xs font-medium text-success pt-1.5 border-t border-dashed">
                     <span>Applied: {selectedVoucher.code}</span>
-                    <span>-{formatUSD(discountAmount)}</span>
+                    <span>-{formatVND(discountAmount)}</span>
                   </div>
                 )}
               </div>
@@ -1002,25 +1002,25 @@ export function ShopPage() {
             <div className="border-t pt-3 space-y-1.5 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>{formatUSD(cartTotal)}</span>
+                <span>{formatVND(cartTotal)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-success">
                   <span>Discount</span>
-                  <span>-{formatUSD(discountAmount)}</span>
+                  <span>-{formatVND(discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>{shippingFeeMinor > 0 ? formatUSD(shippingFeeMinor) : 'Free'}</span>
+                <span>{shippingFeeMinor > 0 ? formatVND(shippingFeeMinor) : 'Free'}</span>
               </div>
               <div className="flex justify-between">
                 <span>VAT (10%)</span>
-                <span>{formatUSD(taxAmountMinor)}</span>
+                <span>{formatVND(taxAmountMinor)}</span>
               </div>
               <div className="flex justify-between font-bold text-base border-t pt-1.5">
                 <span>Total</span>
-                <span className="text-primary">{formatUSD(finalAmountMinor)}</span>
+                <span className="text-primary">{formatVND(finalAmountMinor)}</span>
               </div>
             </div>
             {isCustomerRole && (
@@ -1038,7 +1038,7 @@ export function ShopPage() {
           <DialogFooter className="pt-4">
             <Button variant="outline" className="cursor-pointer" onClick={() => setShowCheckout(false)}>Cancel</Button>
             <Button onClick={handleCheckout} className="cursor-pointer" disabled={checkoutMutation.isPending || !customerId}>
-              {checkoutMutation.isPending ? 'Processing...' : `Place Order - ${formatUSD(finalAmountMinor)}`}
+              {checkoutMutation.isPending ? 'Processing...' : `Place Order - ${formatVND(finalAmountMinor)}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1077,7 +1077,7 @@ export function ShopPage() {
                     <p className="text-xs text-muted-foreground">{avail <= 0 ? 'Sold Out' : `${avail} left`}</p>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-sm text-primary">{formatUSD(Number(v.priceMinor))}</span>
+                    <span className="font-bold text-sm text-primary">{formatVND(Number(v.priceMinor))}</span>
                   </div>
                 </div>
               )

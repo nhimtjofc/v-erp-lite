@@ -153,8 +153,12 @@ public class EcommerceOrderResource {
                     if (!dateStr.isBlank()) {
                         orderDate = Instant.parse(dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
                     }
-                    double total = orderNode.path("total").asDouble();
-                    amount = Math.round(total * 100);
+                    String currency = orderNode.path("currency").asText("VND").trim().toUpperCase();
+                    if ("VND".equals(currency)) {
+                        amount = new java.math.BigDecimal(orderNode.path("total").asText("0"))
+                                .setScale(0, java.math.RoundingMode.HALF_UP)
+                                .longValueExact();
+                    }
                 } catch (Exception e) {
                 }
             }

@@ -121,14 +121,10 @@ const TIME_FORMATS = [
 ]
 
 const CURRENCIES = [
-  { value: 'USD', label: 'USD ($)', symbol: '$' },
-  { value: 'EUR', label: 'EUR (€)', symbol: '€' },
-  { value: 'GBP', label: 'GBP (£)', symbol: '£' },
-  { value: 'JPY', label: 'JPY (¥)', symbol: '¥' },
   { value: 'VND', label: 'VND (₫)', symbol: '₫' },
-  { value: 'SGD', label: 'SGD ($)', symbol: 'S$' },
-  { value: 'AUD', label: 'AUD ($)', symbol: 'A$' },
 ]
+
+const VND_CURRENCY: CurrencySettings = { code: 'VND', symbol: '₫', decimalPlaces: 0 }
 
 const NOTIFICATION_CHANNELS = [
   { value: 'email', label: 'Email' },
@@ -167,16 +163,19 @@ function NativeSelect({
   onChange,
   options,
   placeholder,
+  disabled,
 }: {
   value: string
   onChange: (v: string) => void
   options: { value: string; label: string }[]
   placeholder?: string
+  disabled?: boolean
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
       className="flex h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     >
       {placeholder && <option value="">{placeholder}</option>}
@@ -213,7 +212,7 @@ export function SettingsPage() {
   useEffect(() => {
     if (tenantSettings) {
       if (tenantSettings.regional) setRegional(tenantSettings.regional)
-      if (tenantSettings.currency) setCurrency(tenantSettings.currency)
+      if (tenantSettings.currency) setCurrency({ ...tenantSettings.currency, ...VND_CURRENCY })
       if (tenantSettings.security) setSecurity(tenantSettings.security)
       if (tenantSettings.features) setFeatures(tenantSettings.features)
       if (tenantSettings.communication) setCommunication(tenantSettings.communication)
@@ -230,7 +229,7 @@ export function SettingsPage() {
     try {
       const body: SettingsMap = {}
       if (Object.keys(regional).length) body.regional = regional
-      if (Object.keys(currency).length) body.currency = currency
+      body.currency = { ...currency, ...VND_CURRENCY }
       if (Object.keys(security).length) body.security = security
       if (Object.keys(features).length) body.features = features
       if (Object.keys(communication).length) body.communication = communication
@@ -253,7 +252,7 @@ export function SettingsPage() {
 
   const handleReset = useCallback(() => {
     setRegional(tenantSettings?.regional ?? {})
-    setCurrency(tenantSettings?.currency ?? {})
+    setCurrency({ ...(tenantSettings?.currency ?? {}), ...VND_CURRENCY })
     setSecurity(tenantSettings?.security ?? {})
     setFeatures(tenantSettings?.features ?? {})
     setCommunication(tenantSettings?.communication ?? {})
@@ -337,15 +336,9 @@ export function SettingsPage() {
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:currency')}</Label>
               <NativeSelect
-                value={currency.code ?? ''}
-                onChange={(v) => {
-                  const found = CURRENCIES.find((c) => c.value === v)
-                  setCurrency((s) => ({
-                    ...s,
-                    code: v || undefined,
-                    symbol: found?.symbol ?? s.symbol,
-                  }))
-                }}
+                value="VND"
+                onChange={() => undefined}
+                disabled
                 options={CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
                 placeholder={`${t('common:default')} — ${findLabel(CURRENCIES.map((c) => ({ value: c.value, label: c.label })), effectiveSettings?.currency?.code)}`}
               />
@@ -353,10 +346,9 @@ export function SettingsPage() {
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t('settings:currencySymbol')}</Label>
             <Input
-              value={currency.symbol ?? ''}
-              onChange={(e) => setCurrency((s) => ({ ...s, symbol: e.target.value || undefined }))}
-              placeholder="e.g. $, €, ₫"
-              disabled={!isAdmin}
+              value="₫"
+              readOnly
+              disabled
               className="max-w-xs"
             />
           </div>
@@ -366,15 +358,9 @@ export function SettingsPage() {
               type="number"
               min={0}
               max={4}
-              value={currency.decimalPlaces ?? ''}
-              onChange={(e) =>
-                setCurrency((s) => ({
-                  ...s,
-                  decimalPlaces: e.target.value ? parseInt(e.target.value) : undefined,
-                }))
-              }
-              placeholder="e.g. 2"
-              disabled={!isAdmin}
+              value={0}
+              readOnly
+              disabled
               className="max-w-xs"
             />
             {effectiveSettings?.currency?.decimalPlaces !== undefined && (

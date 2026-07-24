@@ -216,7 +216,7 @@ class PaymentWebhookResourceTest {
                 .post("/payments/webhook/MOCK")
                 .then()
                 .statusCode(400)
-                .body("error", containsString("PaymentIntent not found"));
+                .body("error", containsString("PaymentIntent or WalletTopUp not found"));
     }
 
     @Test

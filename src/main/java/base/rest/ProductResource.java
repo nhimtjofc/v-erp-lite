@@ -27,6 +27,8 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProductResource {
 
+    private static final String CURRENCY = "VND";
+
     // Trigger hot reload for new sample vendor products
     @Inject
     CallerContext caller;
@@ -114,6 +116,7 @@ public class ProductResource {
     @Transactional
     public Response createProduct(Product product) {
         validate(product);
+        product.setCurrency(CURRENCY);
         product.setId(UUID.randomUUID());
         product.setTenantId(caller.tenantCode());
         product.setCreatedBy(caller.userId());
@@ -174,6 +177,7 @@ public class ProductResource {
         product.setBasePriceMinor(updated.getBasePriceMinor());
         product.setSalePriceMinor(updated.getSalePriceMinor());
         product.setCostPriceMinor(updated.getCostPriceMinor());
+        product.setCurrency(CURRENCY);
         product.setSaleStartsAt(updated.getSaleStartsAt());
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
@@ -250,6 +254,9 @@ public class ProductResource {
     }
 
     private void validate(Product product) {
+        if (product.getCurrency() != null && !CURRENCY.equalsIgnoreCase(product.getCurrency())) {
+            throw new BadRequestException("Products only support VND");
+        }
         if (product.getSku() == null || product.getSku().isBlank()) {
             throw new BadRequestException("Product SKU is required");
         }

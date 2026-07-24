@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { formatUSD } from '@/shared/utils/currency'
+import { formatVND } from '@/shared/utils/currency'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,8 +42,8 @@ interface CartLine {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const FREE_SHIPPING_THRESHOLD = 100
-const FLAT_SHIPPING_FEE = 10
+const FREE_SHIPPING_THRESHOLD = 2_500_000
+const FLAT_SHIPPING_FEE = 250_000
 const VAT_RATE = 0.10
 const NEW_PRODUCT_DAYS = 14
 
@@ -73,7 +73,7 @@ function getAvailableStock(product: Product, variant?: ProductVariant | null): n
 }
 
 function fmt(n: number): string {
-    return formatUSD(n)
+    return formatVND(n)
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────

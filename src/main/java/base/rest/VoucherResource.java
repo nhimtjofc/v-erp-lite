@@ -25,6 +25,7 @@ import java.util.UUID;
 public class VoucherResource {
 
     private static final Logger LOG = Logger.getLogger(VoucherResource.class);
+    private static final String CURRENCY = "VND";
 
     @Inject
     CallerContext caller;
@@ -175,6 +176,7 @@ public class VoucherResource {
         voucher.setTenantId(caller.tenantCode());
         voucher.setCreatedBy(caller.userId());
         voucher.setCode(voucher.getCode().trim());
+        voucher.setCurrency(CURRENCY);
         voucher.persist();
         return Response.created(URI.create("/api/vouchers/" + voucher.getId())).entity(voucher).build();
     }
@@ -204,6 +206,7 @@ public class VoucherResource {
         voucher.setDiscountValue(updated.getDiscountValue());
         voucher.setMinOrderValueMinor(updated.getMinOrderValueMinor());
         voucher.setMaxDiscountAmountMinor(updated.getMaxDiscountAmountMinor());
+        voucher.setCurrency(CURRENCY);
         voucher.setStartTime(updated.getStartTime());
         voucher.setEndTime(updated.getEndTime());
         voucher.setUsageLimit(updated.getUsageLimit());
@@ -225,6 +228,9 @@ public class VoucherResource {
     }
 
     private void validate(Voucher voucher) {
+        if (voucher.getCurrency() != null && !CURRENCY.equalsIgnoreCase(voucher.getCurrency())) {
+            throw new BadRequestException("Vouchers only support VND");
+        }
         if (voucher.getCode() == null || voucher.getCode().isBlank()) {
             throw new BadRequestException("Voucher code is required");
         }

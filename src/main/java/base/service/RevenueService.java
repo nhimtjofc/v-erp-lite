@@ -365,7 +365,11 @@ public class RevenueService {
     }
 
     private String normalizeCurrency(String currency) {
-        return currency == null || currency.isBlank() ? "USD" : currency.trim().toUpperCase();
+        String normalized = currency == null || currency.isBlank() ? "VND" : currency.trim().toUpperCase();
+        if (!"VND".equals(normalized)) {
+            throw new BadRequestException("Revenue reports only support VND");
+        }
+        return normalized;
     }
 
     public record DailyReport(

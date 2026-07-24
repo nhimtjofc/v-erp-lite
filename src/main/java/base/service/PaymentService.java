@@ -34,6 +34,9 @@ public class PaymentService {
     WalletService walletService;
 
     @Inject
+    MoneyService moneyService;
+
+    @Inject
     EscrowService escrowService;
 
     @Inject
@@ -72,10 +75,8 @@ public class PaymentService {
             return existing;
         }
 
+        moneyService.requireSameCurrency(order.getCurrency(), intent.getCurrency());
         long expectedAmount = order.getFinalAmountMinor();
-        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(intent.getCurrency())) {
-            expectedAmount = expectedAmount * 254;
-        }
 
         if (expectedAmount != intent.getAmountMinor()) {
             throw new BadRequestException("Payment amount does not match order total");
@@ -138,10 +139,8 @@ public class PaymentService {
             return existing;
         }
 
+        moneyService.requireSameCurrency(order.getCurrency(), userWallet.getCurrency());
         long expectedAmount = order.getFinalAmountMinor();
-        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(userWallet.getCurrency())) {
-            expectedAmount = expectedAmount * 254; // Convert USD to VND
-        }
 
         // Deduct from user wallet
         walletService.debitAvailable(

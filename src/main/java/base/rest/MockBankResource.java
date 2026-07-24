@@ -1,6 +1,7 @@
 package base.rest;
 
 import base.security.CallerContext;
+import base.service.MoneyService;
 import base.service.PaymentGatewayService;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.annotation.security.RolesAllowed;
@@ -37,6 +38,9 @@ public class MockBankResource {
 
     @Inject
     PaymentGatewayService paymentGatewayService;
+
+    @Inject
+    MoneyService moneyService;
 
     @Inject
     @ConfigProperty(name = "quarkus.http.port", defaultValue = "8081")
@@ -81,6 +85,7 @@ public class MockBankResource {
                     .build();
         }
 
+        String currency = moneyService.normalizeCurrency(request.currency != null ? request.currency : "VND");
         String transactionId = paymentGatewayService.generateTransactionId("MOCK");
         String signature = paymentGatewayService.signPayload(request.paymentIntentId, transactionId, request.amountMinor);
 
@@ -88,7 +93,7 @@ public class MockBankResource {
                 "intent_id", request.paymentIntentId,
                 "gateway_transaction_id", transactionId,
                 "amount_minor", String.valueOf(request.amountMinor),
-                "currency", request.currency != null ? request.currency : "VND",
+                "currency", currency,
                 "signature", signature
         );
 
@@ -112,11 +117,12 @@ public class MockBankResource {
                     .build();
         }
 
+        String currency = moneyService.normalizeCurrency(request.currency != null ? request.currency : "VND");
         String transactionId = paymentGatewayService.refund(
                 "MOCK",
                 request.gatewayTransactionId,
                 request.amountMinor,
-                request.currency != null ? request.currency : "VND",
+                currency,
                 request.idempotencyKey != null ? request.idempotencyKey : UUID.randomUUID().toString()
         );
 
@@ -166,7 +172,7 @@ public class MockBankResource {
         }
 
         String status = request.status != null ? request.status.trim().toUpperCase() : "SUCCESS";
-        String currency = request.currency != null ? request.currency.trim().toUpperCase() : "VND";
+        String currency = moneyService.normalizeCurrency(request.currency != null ? request.currency : "VND");
 
         try {
             // Generate inner signature

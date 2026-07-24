@@ -30,9 +30,9 @@ public class TenantConfigService {
         regional.put("firstDayOfWeek", "monday");
 
         Map<String, Object> currency = new LinkedHashMap<>();
-        currency.put("code", "USD");
-        currency.put("symbol", "$");
-        currency.put("decimalPlaces", 2);
+        currency.put("code", "VND");
+        currency.put("symbol", "₫");
+        currency.put("decimalPlaces", 0);
 
         Map<String, Object> security = new LinkedHashMap<>();
         security.put("passwordMinLength", 8);
@@ -79,7 +79,7 @@ public class TenantConfigService {
      */
     public Map<String, Object> getTenantSettings(String tenantCode) {
         TenantConfig config = TenantConfig.find("tenantId", tenantCode).firstResult();
-        return config != null ? config.getSettings() : new HashMap<>();
+        return withVndCurrency(config != null ? config.getSettings() : new HashMap<>());
     }
 
     /**
@@ -87,15 +87,16 @@ public class TenantConfigService {
      */
     @Transactional
     public void putTenantSettings(String tenantCode, Map<String, Object> settings, UUID updatedBy) {
+        Map<String, Object> normalizedSettings = withVndCurrency(settings);
         TenantConfig config = TenantConfig.find("tenantId", tenantCode).firstResult();
         if (config == null) {
             config = new TenantConfig();
             config.setTenantId(tenantCode);
-            config.setSettings(settings != null ? settings : new HashMap<>());
+            config.setSettings(normalizedSettings);
             config.setUpdatedBy(updatedBy);
             config.persist();  // only for new
         } else {
-            config.setSettings(settings != null ? settings : new HashMap<>());
+            config.setSettings(normalizedSettings);
             config.setUpdatedBy(updatedBy);
             // managed entity — no persist needed, flush on tx commit
         }
@@ -108,7 +109,7 @@ public class TenantConfigService {
      */
     public Map<String, Object> getUserSettings(UUID userId) {
         UserSettings us = UserSettings.findByUserId(userId);
-        return us != null ? us.getSettings() : new HashMap<>();
+        return withVndCurrency(us != null ? us.getSettings() : new HashMap<>());
     }
 
     /**
@@ -116,15 +117,16 @@ public class TenantConfigService {
      */
     @Transactional
     public void putUserSettings(UUID userId, String tenantCode, Map<String, Object> settings) {
+        Map<String, Object> normalizedSettings = withVndCurrency(settings);
         UserSettings us = UserSettings.findByUserId(userId);
         if (us == null) {
             us = new UserSettings();
             us.setUserId(userId);
             us.setTenantId(tenantCode);
-            us.setSettings(settings != null ? settings : new HashMap<>());
+            us.setSettings(normalizedSettings);
             us.persist();  // only for new
         } else {
-            us.setSettings(settings != null ? settings : new HashMap<>());
+            us.setSettings(normalizedSettings);
             // managed entity — no persist needed
         }
     }
@@ -140,7 +142,25 @@ public class TenantConfigService {
         Map<String, Object> result = (Map<String, Object>) deepCopy(DEFAULTS);
         deepMerge(result, getTenantSettings(tenantCode));
         deepMerge(result, getUserSettings(userId));
+        result.put("currency", vndCurrencySettings());
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> withVndCurrency(Map<String, Object> settings) {
+        Map<String, Object> normalized = settings == null
+                ? new LinkedHashMap<>()
+                : (Map<String, Object>) deepCopy(settings);
+        normalized.put("currency", vndCurrencySettings());
+        return normalized;
+    }
+
+    private Map<String, Object> vndCurrencySettings() {
+        Map<String, Object> currency = new LinkedHashMap<>();
+        currency.put("code", "VND");
+        currency.put("symbol", "₫");
+        currency.put("decimalPlaces", 0);
+        return currency;
     }
 
     // ── deep merge helpers ──

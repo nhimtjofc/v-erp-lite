@@ -43,7 +43,7 @@ class RevenueServiceIntegrationTest {
 
         LocalDate today = LocalDate.now(RevenueService.REPORTING_ZONE);
         RevenueService.DailyReport report = QuarkusTransaction.requiringNew().call(() ->
-                revenueService.dailyReport(tenantId, null, today, today, "USD"));
+                revenueService.dailyReport(tenantId, null, today, today, "VND"));
 
         assertEquals(2, report.totals().orderCount());
         assertEquals(150_000, report.totals().netRevenueMinor());
@@ -53,7 +53,7 @@ class RevenueServiceIntegrationTest {
     private void markCompleted(UUID orderId, boolean addHistory) {
         Order order = Order.findById(orderId);
         order.setStatus("COMPLETED");
-        order.setCurrency("USD");
+        order.setCurrency("VND");
         if (!addHistory) {
             return;
         }

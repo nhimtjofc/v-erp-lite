@@ -39,7 +39,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 
-const CURRENCY = 'USD'
+const CURRENCY = 'VND'
 
 function toDateInput(date: Date): string {
   const year = date.getFullYear()

@@ -26,8 +26,9 @@ public class EcommerceOrderService {
 
     private static final Logger log = LoggerFactory.getLogger(EcommerceOrderService.class);
 
-    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
-    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
+    private static final String CURRENCY = "VND";
+    private static final long FLAT_SHIPPING_FEE_MINOR = 250_000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2_500_000;
     private static final double TAX_RATE = 0.10;
 
     @Inject
@@ -148,6 +149,10 @@ public class EcommerceOrderService {
         if (wooOrderId.isBlank()) {
             throw new BadRequestException("Ecommerce Order ID is missing");
         }
+        String orderCurrency = orderNode.path("currency").asText(CURRENCY).trim().toUpperCase();
+        if (!CURRENCY.equals(orderCurrency)) {
+            throw new BadRequestException("Ecommerce orders only support VND");
+        }
 
         ExternalEntityMapping orderMapping = ExternalEntityMapping.findByExternalId(
                 tenantId, salesChannelId, "ORDER", wooOrderId
@@ -230,6 +235,9 @@ public class EcommerceOrderService {
             if (product == null) {
                 throw new BadRequestException("ERP Product not found for mapping: " + productMapping.getErpEntityId());
             }
+            if (!CURRENCY.equalsIgnoreCase(product.getCurrency())) {
+                throw new BadRequestException("Ecommerce products only support VND");
+            }
 
             ProductVariant variant = null;
             long unitPrice;
@@ -284,6 +292,7 @@ public class EcommerceOrderService {
             orderItem.setUnitPriceMinor(unitPrice);
             orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
+            orderItem.setCurrency(CURRENCY);
             orderItems.add(orderItem);
         }
 
@@ -343,19 +352,25 @@ public class EcommerceOrderService {
             fullShipAddress = customer.getAddress();
         }
 
-        double wooTotalVal = orderNode.path("total").asDouble();
-        long wooTotalMinor = Math.round(wooTotalVal * 100.0);
+        String wooTotalValue = orderNode.path("total").asText("0");
+        long wooTotalMinor;
+        try {
+            wooTotalMinor = new BigDecimal(wooTotalValue).setScale(0, java.math.RoundingMode.HALF_UP).longValueExact();
+        } catch (ArithmeticException | NumberFormatException exception) {
+            throw new BadRequestException("Ecommerce total must be a valid VND amount");
+        }
         String finalNotes = null;
         if (wooTotalMinor != finalAmount) {
             finalNotes = String.format(
-                    "[System Warning] Ecommerce total ($%.2f) differs from ERP calculated total ($%.2f). Discrepancy might be due to tax/shipping configuration difference.",
-                    wooTotalVal, (double) finalAmount / 100.0
+                    "[System Warning] Ecommerce total (%,d VND) differs from ERP calculated total (%,d VND). Discrepancy might be due to tax/shipping configuration difference.",
+                    wooTotalMinor, finalAmount
             );
         }
 
         order.setCustomer(customer);
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
+        order.setCurrency(CURRENCY);
         order.setStatus("PENDING");
         order.setShippingName(shipName);
         order.setShippingPhone(shipPhone);
@@ -446,6 +461,10 @@ public class EcommerceOrderService {
         String wooOrderId = orderNode.path("id").asText();
         if (wooOrderId.isBlank()) {
             throw new BadRequestException("Ecommerce Order ID is missing");
+        }
+        String orderCurrency = orderNode.path("currency").asText(CURRENCY).trim().toUpperCase();
+        if (!CURRENCY.equals(orderCurrency)) {
+            throw new BadRequestException("Ecommerce orders only support VND");
         }
 
         ExternalEntityMapping orderMapping = ExternalEntityMapping.findByExternalId(

@@ -13,10 +13,11 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
+import { formatVND } from '@/shared/utils/currency'
 
 function formatMoney(value?: number | null, language?: string) {
   if (value === null || value === undefined) return '-'
-  return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD' }).format(value)
+  return formatVND(value)
 }
 
 export function ProductsPage() {

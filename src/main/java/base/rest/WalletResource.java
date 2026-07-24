@@ -7,6 +7,7 @@ import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import base.security.CallerContext;
+import base.service.MoneyService;
 import base.service.WalletService;
 import base.service.VietQRService;
 import jakarta.annotation.security.RolesAllowed;
@@ -42,6 +43,9 @@ public class WalletResource {
 
     @Inject
     WalletService walletService;
+
+    @Inject
+    MoneyService moneyService;
 
     @Inject
     VietQRService vietQRService;
@@ -252,8 +256,12 @@ public class WalletResource {
     @Path("/me/top-up")
     @Transactional
     public WalletTopUpResponse topUpMyWallet(WalletTopUpRequest request) {
+        if (request == null) {
+            throw new jakarta.ws.rs.BadRequestException("Request body is required");
+        }
+        Money amount = moneyService.positiveMoney(request.amountMinor, request.currency != null ? request.currency : "VND");
         User user = caller.resolveUser();
-        String currency = request.currency != null ? request.currency : "VND";
+        String currency = amount.getCurrency();
         Wallet wallet = walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), currency, caller.userId());
         
@@ -263,12 +271,12 @@ public class WalletResource {
         topUp.setCreatedBy(caller.userId());
         topUp.setUpdatedBy(caller.userId());
         topUp.setWallet(wallet);
-        topUp.setAmountMinor(request.amountMinor);
+        topUp.setAmountMinor(amount.getAmountMinor());
         topUp.setCurrency(currency);
         topUp.setStatus("PENDING");
         
         // Mock bank account for platform receiving top-ups
-        String qrContent = vietQRService.generateQrBase64("MB", "0123456789", request.amountMinor, "Nap tien " + topUp.getId().toString().substring(0, 8).toUpperCase());
+        String qrContent = vietQRService.generateQrBase64("MB", "0123456789", amount.getAmountMinor(), "Nap tien " + topUp.getId().toString().substring(0, 8).toUpperCase());
         topUp.setPaymentQrCodeBase64(qrContent);
         
         topUp.persist();

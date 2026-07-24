@@ -15,7 +15,7 @@ import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
 import { Link } from '@tanstack/react-router'
-import { formatUSD } from '@/shared/utils/currency'
+import { formatVND } from '@/shared/utils/currency'
 import { OwnerOrderQueue } from './owner-order-queue'
 import {
     Plus, Search, Eye, TrendingUp, ShoppingBag, Clock, CheckCircle2,
@@ -272,7 +272,7 @@ function OrderCard({
                     )}
                     <div className="text-right">
                         <div className="font-bold text-foreground">
-                            {formatUSD(Number(order.finalAmountMinor))}
+                            {formatVND(Number(order.finalAmountMinor))}
                         </div>
                         <div className="text-xs text-muted-foreground">Total</div>
                     </div>
@@ -426,7 +426,7 @@ export function OrdersPage() {
     })
 
     const totalRevenue = stats?.totalRevenue ?? 0
-    const revenueStr = formatUSD(totalRevenue)
+    const revenueStr = formatVND(totalRevenue)
 
     const canDeleteOrder = (order: Order) => {
         const status = order.status?.toUpperCase()
@@ -681,7 +681,7 @@ export function OrdersPage() {
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                                         <div className="text-right">
-                                            <div className="font-bold text-foreground">{formatUSD(Number(wooOrder.finalAmountMinor))}</div>
+                                            <div className="font-bold text-foreground">{formatVND(Number(wooOrder.finalAmountMinor))}</div>
                                             <div className="text-xs text-muted-foreground">Tổng tiền</div>
                                         </div>
                                         {wooOrder.syncStatus !== 'SYNCED' && (
@@ -748,7 +748,7 @@ export function OrdersPage() {
                                             {cfg.label}
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="font-bold text-sm">{formatUSD(Number(order.finalAmountMinor))}</div>
+                                            <div className="font-bold text-sm">{formatVND(Number(order.finalAmountMinor))}</div>
                                         </div>
                                         {canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(status) && (
                                             <Button

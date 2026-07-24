@@ -9,15 +9,17 @@ import java.util.Locale;
 @ApplicationScoped
 public class MoneyService {
 
+    public static final String DEFAULT_CURRENCY = "VND";
+
     public String normalizeCurrency(String currency) {
         if (currency == null || currency.isBlank()) {
-            throw new BadRequestException("Vui lòng nhập mã tiền tệ");
+            return DEFAULT_CURRENCY;
         }
         String normalized = currency.trim().toUpperCase(Locale.ROOT);
-        if (normalized.length() != 3) {
-            throw new BadRequestException("Mã tiền tệ phải gồm 3 chữ cái ISO");
+        if (!DEFAULT_CURRENCY.equals(normalized)) {
+            throw new BadRequestException("Hệ thống chỉ hỗ trợ tiền tệ VND");
         }
-        return normalized;
+        return DEFAULT_CURRENCY;
     }
 
     public Money positiveMoney(long amountMinor, String currency) {
