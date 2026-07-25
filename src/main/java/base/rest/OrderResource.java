@@ -755,6 +755,9 @@ public class OrderResource {
         if (List.of("PENDING", "PENDING_PAYMENT", "CONFIRMED", "SHIPPING").contains(oldStatus)
                 && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
+                if (item.getCancelledAt() != null) {
+                    continue;
+                }
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
                     variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - item.getQuantity()));
@@ -801,17 +804,7 @@ public class OrderResource {
 
         // Reactivate voucher if order is cancelled
         if ("CANCELLED".equals(newStatus)) {
-            if (order.getVoucher() != null) {
-                Voucher v = order.getVoucher();
-                v.setUsedCount(Math.max(0, v.getUsedCount() - 1));
-                v.setUpdatedBy(userId);
-
-                CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3",
-                        order.getCustomer().getId(), v.getId(), tenantCode).firstResult();
-                if (cv != null) {
-                    cv.setUsed(false);
-                }
-            }
+            reactivateVoucher(order, tenantCode, userId);
         }
 
         // Award points, update membership, and release escrow on completion.
@@ -987,6 +980,7 @@ public class OrderResource {
                 activeSubtotal += oi.getSubtotalAmountMinor();
             }
         }
+        boolean allItemsCancelled = areAllItemsCancelled(order);
         order.setSubtotalAmountMinor(activeSubtotal);
 
         BigDecimal discountPct = order.getDiscountPercent() != null ? order.getDiscountPercent() : BigDecimal.ZERO;
@@ -998,7 +992,9 @@ public class OrderResource {
 
         long afterDiscount = Math.max(0, activeSubtotal - discountAmount);
         long shippingFee = order.getShippingFeeMinor();
-        if (afterDiscount < FREE_SHIPPING_THRESHOLD_MINOR && shippingFee == 0) {
+        if (allItemsCancelled) {
+            shippingFee = 0;
+        } else if (afterDiscount < FREE_SHIPPING_THRESHOLD_MINOR && shippingFee == 0) {
             shippingFee = FLAT_SHIPPING_FEE_MINOR;
         } else if (afterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
             shippingFee = 0;
@@ -1017,7 +1013,7 @@ public class OrderResource {
         order.setVatAmountMinor(vatAmount);
         order.setTaxAmountMinor(taxAmount);
 
-        long finalAmount = Math.max(0, afterDiscount + shippingFee + taxAmount);
+        long finalAmount = allItemsCancelled ? 0 : Math.max(0, afterDiscount + shippingFee + taxAmount);
         order.setFinalAmountMinor(finalAmount);
         order.setUpdatedBy(userId);
 
@@ -1025,7 +1021,15 @@ public class OrderResource {
         if (reason != null && !reason.isEmpty()) {
             noteText += " - " + reason;
         }
-        persistHistory(order, orderStatus, orderStatus, noteText, userId, tenantCode);
+        String newStatus = allItemsCancelled ? "CANCELLED" : orderStatus;
+        if (allItemsCancelled) {
+            order.setStatus(newStatus);
+            reactivateVoucher(order, tenantCode, userId);
+            escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+            noteText = "Order cancelled because all items were cancelled"
+                    + (reason != null && !reason.isEmpty() ? " - " + reason : "");
+        }
+        persistHistory(order, orderStatus, newStatus, noteText, userId, tenantCode);
 
         notificationService.notifyBusinessStaff(
                 order,
@@ -1110,6 +1114,31 @@ public class OrderResource {
             }
         }
         escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
+    }
+
+    private void reactivateVoucher(Order order, String tenantCode, UUID userId) {
+        if (order.getVoucher() == null) {
+            return;
+        }
+        Voucher voucher = order.getVoucher();
+        voucher.setUsedCount(Math.max(0, voucher.getUsedCount() - 1));
+        voucher.setUpdatedBy(userId);
+
+        if (order.getCustomer() == null) {
+            return;
+        }
+        CustomerVoucher customerVoucher = CustomerVoucher.find(
+                "customerId = ?1 and voucherId = ?2 and tenantId = ?3",
+                order.getCustomer().getId(), voucher.getId(), tenantCode).firstResult();
+        if (customerVoucher != null) {
+            customerVoucher.setUsed(false);
+        }
+    }
+
+    static boolean areAllItemsCancelled(Order order) {
+        return order.getItems() != null
+                && !order.getItems().isEmpty()
+                && order.getItems().stream().allMatch(item -> item.getCancelledAt() != null);
     }
 
     private void requireBusinessStaffAccess(Order order) {

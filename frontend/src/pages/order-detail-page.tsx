@@ -595,6 +595,7 @@ export function OrderDetailPage() {
   const isShipped = status === 'SHIPPED'
   const isPendingPayment = status === 'PENDING' || status === 'PENDING_PAYMENT'
   const isFinal = ['COMPLETED', 'CANCELLED', 'OWNER_DECLINED', 'REFUNDED'].includes(status)
+  const showHeaderActions = status !== 'REFUNDED'
   const canShowPayment = !isFinal && isPendingPayment
   const canDelete = isAdmin && isFinal
   const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
@@ -637,6 +638,7 @@ export function OrderDetailPage() {
           </p>
         </div>
 
+        {showHeaderActions && (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={refreshOrderPage} disabled={isRefreshing || updateStatusMutation.isPending}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
@@ -720,6 +722,7 @@ export function OrderDetailPage() {
             </Button>
           )}
         </div>
+        )}
       </div>
 
       {deleteError && (
@@ -907,7 +910,7 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {isStaff && (
+          {isStaff && !isFinal && (
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Update Order</CardTitle>
