@@ -600,6 +600,7 @@ export function OrderDetailPage() {
   const canDelete = isAdmin && isFinal
   const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
   const canCancelItem = isCustomer && cancellableStatuses.includes(status)
+  const canCancelPaidOrder = isCustomer && status === 'PAID_ESCROW'
   const returnableStatuses = ['DELIVERED', 'COMPLETED']
   const canRequestReturn = isCustomer && returnableStatuses.includes(status)
 
@@ -665,6 +666,23 @@ export function OrderDetailPage() {
             >
               <Trash2 className="h-4 w-4 mr-1.5" />
               {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          )}
+
+          {canCancelPaidOrder && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                const firstActiveItem = order.items?.find((item) => !(item as any).cancelledAt)
+                if (firstActiveItem) {
+                  setCancellingItem(firstActiveItem)
+                  setCancelItemReason('')
+                  setCancelItemError(null)
+                }
+              }}
+            >
+              <RotateCcw className="h-4 w-4 mr-1.5" /> Cancel & refund
             </Button>
           )}
 
@@ -1320,9 +1338,11 @@ export function OrderDetailPage() {
       <Dialog open={!!cancellingItem} onOpenChange={(open) => { if (!open) setCancellingItem(null) }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cancel this item?</DialogTitle>
+            <DialogTitle>{status === 'PAID_ESCROW' ? 'Cancel and refund this order?' : 'Cancel this item?'}</DialogTitle>
             <DialogDescription>
-              This item will be removed from the order and the total will be recalculated.
+              {status === 'PAID_ESCROW'
+                ? 'The full QR payment will be returned to the original payment method and all items will be cancelled.'
+                : 'This item will be removed from the order and the total will be recalculated.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1380,7 +1400,9 @@ export function OrderDetailPage() {
               }}
               disabled={cancelItemMutation.isPending || !cancellingItem?.id}
             >
-              {cancelItemMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
+              {cancelItemMutation.isPending
+                ? 'Cancelling...'
+                : status === 'PAID_ESCROW' ? 'Cancel & refund' : 'Yes, Cancel'}
             </Button>
           </DialogFooter>
         </DialogContent>

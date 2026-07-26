@@ -30,6 +30,7 @@ import base.service.EscrowService;
 import base.service.InventoryCostService;
 import base.service.NotificationService;
 import base.service.OrderFulfillmentService;
+import base.service.PaymentRefundService;
 import base.service.PaymentService;
 import base.service.ReturnRefundService;
 import base.service.VietQRService;
@@ -100,6 +101,9 @@ public class OrderResource {
 
     @Inject
     PaymentService paymentService;
+
+    @Inject
+    PaymentRefundService paymentRefundService;
 
     @Inject
     ReturnRefundService returnRefundService;
@@ -945,7 +949,7 @@ public class OrderResource {
         }
 
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PENDING", "CONFIRMED", "SHIPPING").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT", "PENDING", "PAID_ESCROW", "CONFIRMED", "SHIPPING").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
         }
 
@@ -959,19 +963,22 @@ public class OrderResource {
 
         String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
 
-        item.setCancelledAt(Instant.now());
-        item.setCancelledBy(userId);
-        item.setCancellationReason(reason);
-        item.setUpdatedBy(userId);
+        Instant cancelledAt = Instant.now();
+        for (OrderItem cancellationTarget : cancellationTargets(order, item)) {
+            cancellationTarget.setCancelledAt(cancelledAt);
+            cancellationTarget.setCancelledBy(userId);
+            cancellationTarget.setCancellationReason(reason);
+            cancellationTarget.setUpdatedBy(userId);
 
-        if (item.getProductVariant() != null) {
-            ProductVariant variant = item.getProductVariant();
-            variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - item.getQuantity()));
-            variant.setUpdatedBy(userId);
-        } else {
-            Product product = item.getProduct();
-            product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - item.getQuantity()));
-            product.setUpdatedBy(userId);
+            if (cancellationTarget.getProductVariant() != null) {
+                ProductVariant variant = cancellationTarget.getProductVariant();
+                variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - cancellationTarget.getQuantity()));
+                variant.setUpdatedBy(userId);
+            } else {
+                Product product = cancellationTarget.getProduct();
+                product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - cancellationTarget.getQuantity()));
+                product.setUpdatedBy(userId);
+            }
         }
 
         long activeSubtotal = 0;
@@ -1025,7 +1032,15 @@ public class OrderResource {
         if (allItemsCancelled) {
             order.setStatus(newStatus);
             reactivateVoucher(order, tenantCode, userId);
-            escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+            if ("PAID_ESCROW".equals(orderStatus)) {
+                paymentRefundService.refundOrder(
+                        tenantCode,
+                        order.getId(),
+                        reason != null && !reason.isEmpty() ? reason : "Buyer cancelled the paid order",
+                        userId);
+            } else {
+                escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+            }
             noteText = "Order cancelled because all items were cancelled"
                     + (reason != null && !reason.isEmpty() ? " - " + reason : "");
         }
@@ -1133,6 +1148,15 @@ public class OrderResource {
         if (customerVoucher != null) {
             customerVoucher.setUsed(false);
         }
+    }
+
+    static List<OrderItem> cancellationTargets(Order order, OrderItem requestedItem) {
+        if (order != null && "PAID_ESCROW".equalsIgnoreCase(order.getStatus())) {
+            return order.getItems().stream()
+                    .filter(item -> item.getCancelledAt() == null)
+                    .toList();
+        }
+        return List.of(requestedItem);
     }
 
     static boolean areAllItemsCancelled(Order order) {

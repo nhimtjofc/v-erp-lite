@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,5 +35,24 @@ class OrderResourceTest {
         order.setItems(List.of());
 
         assertFalse(OrderResource.areAllItemsCancelled(order));
+    }
+
+    @Test
+    void paidEscrowCancellationTargetsEveryActiveItem() {
+        OrderItem requestedItem = new OrderItem();
+        OrderItem otherActiveItem = new OrderItem();
+        OrderItem alreadyCancelledItem = new OrderItem();
+        alreadyCancelledItem.setCancelledAt(Instant.now());
+
+        Order order = new Order();
+        order.setStatus("PAID_ESCROW");
+        order.setItems(List.of(requestedItem, otherActiveItem, alreadyCancelledItem));
+
+        List<OrderItem> targets = OrderResource.cancellationTargets(order, requestedItem);
+
+        assertEquals(2, targets.size());
+        assertTrue(targets.contains(requestedItem));
+        assertTrue(targets.contains(otherActiveItem));
+        assertFalse(targets.contains(alreadyCancelledItem));
     }
 }
