@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -888,7 +888,6 @@ export function CartCheckoutPage() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [error, setError] = useState('')
     const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
-    const [qrCodeData, setQrCodeData] = useState<{qrBase64: string, amount: number, orderNumber: string} | null>(null)
 
     const checkoutMutation = useCheckoutOrderMutation({
         onSuccess: (data) => {
@@ -899,14 +898,12 @@ export function CartCheckoutPage() {
             setCartOpen(false)
             setShowConfirmDialog(false)
             
-            if (createdOrder?.paymentQrCodeBase64) {
-                setQrCodeData({
-                    qrBase64: createdOrder.paymentQrCodeBase64,
-                    amount: createdOrder.finalAmountMinor || 0,
-                    orderNumber: createdOrder.orderNumber || ''
-                })
-            } else if (createdOrder?.id) {
-                navigate({ to: '/orders/payment', search: { orderId: createdOrder.id } })
+            if (createdOrder?.id) {
+                if (paymentMethod === 'BANK_TRANSFER') {
+                    navigate({ to: '/orders/payment', search: { orderId: createdOrder.id } })
+                } else {
+                    navigate({ to: '/orders/$id', params: { id: createdOrder.id } })
+                }
             } else {
                 navigate({ to: '/orders' })
             }
@@ -1416,44 +1413,6 @@ export function CartCheckoutPage() {
                         </Button>
                         <Button onClick={handleConfirmCheckout} className="cursor-pointer" disabled={checkoutMutation.isPending}>
                             {checkoutMutation.isPending ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* QR Code Dialog */}
-            <Dialog open={!!qrCodeData} onOpenChange={(open) => !open && setQrCodeData(null)}>
-                <DialogContent className="max-w-sm text-center">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl">Thanh toán Đơn hàng</DialogTitle>
-                        <DialogDescription>
-                            Vui lòng mở App Ngân hàng và quét mã QR dưới đây để thanh toán.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {qrCodeData && (
-                        <div className="flex flex-col items-center justify-center p-4 space-y-4">
-                            <div className="bg-white p-2 rounded-xl shadow-sm border">
-                                <img
-                                    src={`data:image/png;base64,${qrCodeData.qrBase64}`}
-                                    alt="VietQR"
-                                    className="w-64 h-64 object-contain"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-lg font-bold text-primary">{fmt(qrCodeData.amount)}</p>
-                                <p className="text-sm font-medium">Mã đơn: <span className="text-muted-foreground">{qrCodeData.orderNumber}</span></p>
-                            </div>
-                        </div>
-                    )}
-                    <DialogFooter className="sm:justify-center mt-2">
-                        <Button 
-                            className="w-full" 
-                            onClick={() => {
-                                setQrCodeData(null)
-                                navigate({ to: '/orders' })
-                            }}
-                        >
-                            Hoàn tất
                         </Button>
                     </DialogFooter>
                 </DialogContent>
