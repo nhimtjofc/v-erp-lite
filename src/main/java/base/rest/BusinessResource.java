@@ -53,7 +53,7 @@ public class BusinessResource {
     public Response createBusiness(Business business) {
         business.setId(UUID.randomUUID());
         business.setTenantId(caller.tenantCode());
-        business.setCreatedBy(caller.userId());
+        business.setCreatedBy(caller.resolveUser().getId());
         business.persist();
         if (caller.hasRole("businessOwner") && !caller.hasRole("admin")) {
             User owner = caller.resolveUser();

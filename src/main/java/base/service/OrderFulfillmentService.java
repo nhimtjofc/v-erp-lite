@@ -110,8 +110,12 @@ public class OrderFulfillmentService {
 
     private void requireOwner(Order order, User owner) {
         Business business = order.getBusiness();
-        if (business == null || owner == null || business.getCreatedBy() == null
-                || !business.getCreatedBy().equals(owner.getId())) {
+        if (business == null || owner == null || business.getCreatedBy() == null) {
+            throw new ForbiddenException("Only the owner of this order may make the fulfillment decision");
+        }
+        boolean match = business.getCreatedBy().equals(owner.getId())
+                || business.getCreatedBy().toString().equals(owner.getKeycloakId());
+        if (!match) {
             throw new ForbiddenException("Only the owner of this order may make the fulfillment decision");
         }
     }

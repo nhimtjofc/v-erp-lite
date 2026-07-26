@@ -696,6 +696,11 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
+          {!isFinal && isStaff && status === 'PENDING_PAYMENT' && (
+            <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
+              <XCircle className="h-4 w-4 mr-1.5" /> Cancel
+            </Button>
+          )}
           {!isFinal && isStaff && isPending && (
             <>
               <Button onClick={() => openStatusDialog('CONFIRMED')} variant="secondary" className="font-semibold">
