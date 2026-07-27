@@ -338,6 +338,12 @@ public class KeycloakSyncService {
         // pattern syncOrgMemberships already uses.
         List<User> users = User.listAll();
         for (User user : users) {
+            if (!user.isActive()) {
+                if (user.getKeycloakId() != null) {
+                    disableKeycloakUser(user.getKeycloakId());
+                }
+                continue;
+            }
             syncUser(user, result);
         }
     }

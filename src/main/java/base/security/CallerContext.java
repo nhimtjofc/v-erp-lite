@@ -8,6 +8,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonValue;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.Logger;
@@ -131,6 +132,9 @@ public class CallerContext {
             } else {
                 throw new NotFoundException("User not found for authenticated caller");
             }
+        }
+        if (!user.isActive()) {
+            throw new ForbiddenException("User account is inactive");
         }
         return user;
     }

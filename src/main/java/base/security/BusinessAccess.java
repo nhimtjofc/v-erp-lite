@@ -19,8 +19,7 @@ public class BusinessAccess {
     CallerContext caller;
 
     public boolean isScopedStaff() {
-        return !caller.hasRole("admin")
-                && (caller.hasRole("businessOwner") || caller.hasRole("operator"));
+        return !caller.hasRole("admin") && caller.hasRole("operator");
     }
 
     public Business findCurrentBusiness() {

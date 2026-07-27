@@ -136,13 +136,13 @@ public class ReturnRefundService {
             if (business == null) {
                 throw new BadRequestException("Order business not found for wallet transfer");
             }
-            UUID sellerOwnerId = business.getCreatedBy();
-            if (sellerOwnerId == null) {
-                throw new BadRequestException("Business owner not found for wallet transfer");
+            UUID sellerBusinessId = business.getId();
+            if (sellerBusinessId == null) {
+                throw new BadRequestException("Business wallet not found for wallet transfer");
             }
 
             Wallet sellerWallet = walletService.getOrCreateWallet(
-                    tenantId, "SELLER", sellerOwnerId, order.getCurrency(), actorId);
+                    tenantId, "SELLER", sellerBusinessId, order.getCurrency(), actorId);
             walletService.debitAvailable(
                     tenantId,
                     sellerWallet.getId(),
