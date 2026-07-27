@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import sys
 import os
 
@@ -29,6 +30,7 @@ from agents.router_agent import RouterAgent
 from agents.retrieval_agent import RetrievalAgent
 from agents.order_ops_agent import OrderOpsAgent
 from agents.stats_agent import StatsAgent
+from mcp_server.request_context import verify_bearer, AuthError, RequestContext
 
 app = FastAPI(title="Ecommerce AI Chatbot")
 
@@ -47,11 +49,30 @@ order_ops = OrderOpsAgent()
 stats = StatsAgent()
 
 class ChatRequest(BaseModel):
+    # Only a new message (and, later, a server-issued session id) — never client
+    # history. See intern-ai-agent-design.md: accepting history enables forged
+    # system/assistant/tool messages.
     message: str
 
-@app.post("/chat")
-async def chat(req: ChatRequest):
+
+def require_caller(authorization: Optional[str] = Header(default=None)) -> RequestContext:
+    """FastAPI dependency: authenticate the caller from the Bearer token.
+
+    Identity is derived here and passed to the agent — the model never sees it.
+    """
     try:
+        return verify_bearer(authorization)
+    except AuthError as e:
+        # 401 with a generic message; no crypto/internal detail leaks out.
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+@app.post("/chat")
+async def chat(req: ChatRequest, caller: RequestContext = Depends(require_caller)):
+    try:
+        # caller.tenant / caller.user_id / caller.access_token are now available
+        # to scope backend calls per-user (wired into the tools in Step 2).
+        print(f"[chat] authenticated caller tenant={caller.tenant} roles={list(caller.roles)}")
         user_msg = req.message
         intent = router.route_query(user_msg)
         

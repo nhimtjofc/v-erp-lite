@@ -41,13 +41,27 @@ export function ChatWidget() {
     setIsLoading(true)
 
     try {
+      // Forward the logged-in user's OIDC access token so the agent can derive
+      // identity server-side (see interceptors.ts for the same token source).
+      const token = localStorage.getItem('access_token')
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ message: userMessage }),
       })
+
+      if (res.status === 401) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: '🔒 Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.' },
+        ])
+        return
+      }
 
       if (!res.ok) {
         throw new Error('Network response was not ok')
