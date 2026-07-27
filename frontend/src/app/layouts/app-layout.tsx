@@ -371,7 +371,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       pathname.startsWith('/settings') ||
       pathname.startsWith('/vouchers') ||
       pathname.startsWith('/shop') ||
-      pathname.startsWith('/admin/payouts') ||
+      pathname.startsWith('/admin') ||
       pathname.startsWith('/notifications') ||
       pathname.startsWith('/profile')
 
@@ -424,7 +424,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     }
 
     return (
-      <nav className="flex flex-1 flex-col p-3">
+      <nav className="flex flex-1 flex-col p-3 min-h-0">
         <div className="flex-1 space-y-4 overflow-y-auto">
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null
@@ -443,7 +443,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar">
-        <div className="flex h-14 items-center border-b border-sidebar-border px-4">
+        <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-4">
           <Link
             to={homePath}
             className="flex items-center gap-2 font-semibold text-sidebar-foreground"
@@ -465,7 +465,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onClick={() => setMobileOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar shadow-xl md:hidden">
-            <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
               <Link
                 to={homePath}
                 className="flex items-center gap-2 font-semibold text-sidebar-foreground"

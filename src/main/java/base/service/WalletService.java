@@ -16,10 +16,12 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -455,5 +457,36 @@ public class WalletService {
             throw new BadRequestException("Vui lòng nhập loại giao dịch");
         }
         return transactionType.trim().toUpperCase(Locale.ROOT);
+    }
+
+    public Map<String, Long> getWalletStats(String tenantId) {
+        // We calculate total balance by ownerType
+        Map<String, Long> stats = new HashMap<>();
+        
+        Long customerTotal = entityManager.createQuery(
+            "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'USER'", Long.class)
+            .setParameter("tenantId", tenantId)
+            .getSingleResult();
+            
+        Long platformTotal = entityManager.createQuery(
+            "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'PLATFORM'", Long.class)
+            .setParameter("tenantId", tenantId)
+            .getSingleResult();
+            
+        Long sellerTotal = entityManager.createQuery(
+            "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'SELLER'", Long.class)
+            .setParameter("tenantId", tenantId)
+            .getSingleResult();
+            
+        stats.put("customerBalance", customerTotal);
+        stats.put("escrowBalance", platformTotal);
+        stats.put("sellerBalance", sellerTotal);
+        return stats;
+    }
+
+    public List<WalletTransaction> listAllTransactions(String tenantId, int limit, int offset) {
+        return WalletTransaction.find("tenantId = ?1 ORDER BY createdAt DESC", tenantId)
+                .page(offset / limit, limit)
+                .list();
     }
 }

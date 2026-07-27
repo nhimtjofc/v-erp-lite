@@ -138,6 +138,12 @@ public class WalletResource {
         }
     }
 
+    public static class WalletStatsResponse {
+        public long customerBalance;
+        public long escrowBalance;
+        public long sellerBalance;
+    }
+
     public static class WalletTransactionResponse {
         public UUID id;
         public UUID walletId;
@@ -174,6 +180,29 @@ public class WalletResource {
         return walletService.listWallets(caller.tenantCode(), ownerType, ownerId, currency)
                 .stream()
                 .map(WalletResponse::from)
+                .toList();
+    }
+
+    @GET
+    @Path("/stats")
+    @RolesAllowed({"admin"})
+    public WalletStatsResponse getStats() {
+        Map<String, Long> stats = walletService.getWalletStats(caller.tenantCode());
+        WalletStatsResponse response = new WalletStatsResponse();
+        response.customerBalance = stats.get("customerBalance");
+        response.escrowBalance = stats.get("escrowBalance");
+        response.sellerBalance = stats.get("sellerBalance");
+        return response;
+    }
+
+    @GET
+    @Path("/transactions/all")
+    @RolesAllowed({"admin", "qa", "demo"})
+    public List<WalletTransactionResponse> getAllTransactions(@QueryParam("limit") @DefaultValue("50") int limit,
+                                                              @QueryParam("offset") @DefaultValue("0") int offset) {
+        return walletService.listAllTransactions(caller.tenantCode(), limit, offset)
+                .stream()
+                .map(WalletTransactionResponse::from)
                 .toList();
     }
 
