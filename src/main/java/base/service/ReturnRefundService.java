@@ -38,7 +38,7 @@ public class ReturnRefundService {
     public OrderItem requestItemReturn(String tenantId, UUID orderId, UUID itemId, String reason, UUID actorId, String actorEmail) {
         Order order = orderForUpdate(tenantId, orderId);
         String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("DELIVERED", "COMPLETED", "PENDING_COMPLETION").contains(status)) {
+        if (!List.of("DELIVERED", "PENDING_COMPLETION").contains(status)) {
             throw new BadRequestException("Cannot request return when order is in " + status + " status");
         }
 

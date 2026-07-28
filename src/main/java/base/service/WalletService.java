@@ -506,27 +506,31 @@ public class WalletService {
     }
 
     public Map<String, Long> getWalletStats(String tenantId) {
-        // We calculate total balance by ownerType
         Map<String, Long> stats = new HashMap<>();
-        
+
         Long customerTotal = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'USER'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
-            
-        Long platformTotal = entityManager.createQuery(
+
+        Long platformCommission = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'PLATFORM'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
-            
-        Long sellerTotal = entityManager.createQuery(
+
+        Long sellerAvailable = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'SELLER'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
-            
+
+        Long sellerPending = entityManager.createQuery(
+            "SELECT COALESCE(SUM(w.pendingBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'SELLER'", Long.class)
+            .setParameter("tenantId", tenantId)
+            .getSingleResult();
+
         stats.put("customerBalance", customerTotal);
-        stats.put("escrowBalance", platformTotal);
-        stats.put("sellerBalance", sellerTotal);
+        stats.put("escrowBalance", sellerPending);
+        stats.put("sellerBalance", sellerAvailable + sellerPending);
         return stats;
     }
 

@@ -22,6 +22,7 @@ export function useMyWalletQuery() {
       const response = await myWallet({ throwOnError: true })
       return response.data ?? null
     },
+    refetchInterval: 3000,
   })
 }
 
@@ -37,6 +38,7 @@ export function useWalletTransactionsQuery(walletId?: string) {
       return response.data ?? []
     },
     enabled: !!walletId,
+    refetchInterval: 3000,
   })
 }
 

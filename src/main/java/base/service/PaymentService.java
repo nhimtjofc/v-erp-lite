@@ -28,8 +28,6 @@ import java.util.UUID;
 @ApplicationScoped
 public class PaymentService {
 
-    private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-    private static final int PLATFORM_COMMISSION_PERCENT = 5;
     @Inject
     WalletService walletService;
 
@@ -86,44 +84,20 @@ public class PaymentService {
         }
 
         List<SellerAllocation> allocations = allocateBySeller(order, intent.getAmountMinor());
-        long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
         Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
-            long commission = commissionFor(allocation.amountMinor());
-            long sellerNet = allocation.amountMinor() - commission;
-            platformCommissionTotal += commission;
-            if (sellerNet > 0) {
+            if (allocation.amountMinor() > 0) {
                 records.add(escrowService.holdSellerEscrow(
                         intent.getTenantId(),
                         intent.getOrderId(),
                         allocation.sellerOwnerId(),
-                        Money.of(sellerNet, intent.getCurrency()),
+                        Money.of(allocation.amountMinor(), intent.getCurrency()),
                         escrowHoldUntil,
                         actorId
                 ));
             }
-        }
-
-        if (platformCommissionTotal > 0) {
-            Wallet platformWallet = walletService.getOrCreateWallet(
-                    intent.getTenantId(),
-                    "PLATFORM",
-                    PLATFORM_OWNER_ID,
-                    intent.getCurrency(),
-                    actorId
-            );
-            walletService.creditAvailable(
-                    intent.getTenantId(),
-                    platformWallet.getId(),
-                    Money.of(platformCommissionTotal, intent.getCurrency()),
-                    "COMMISSION",
-                    "ORDER",
-                    intent.getOrderId(),
-                    actorId,
-                    "Platform commission from order"
-            );
         }
 
         markPaidEscrow(order, actorId);
@@ -158,44 +132,20 @@ public class PaymentService {
         );
 
         List<SellerAllocation> allocations = allocateBySeller(order, expectedAmount);
-        long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
         Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
-            long commission = commissionFor(allocation.amountMinor());
-            long sellerNet = allocation.amountMinor() - commission;
-            platformCommissionTotal += commission;
-            if (sellerNet > 0) {
+            if (allocation.amountMinor() > 0) {
                 records.add(escrowService.holdSellerEscrow(
                         order.getTenantId(),
                         order.getId(),
                         allocation.sellerOwnerId(),
-                        Money.of(sellerNet, userWallet.getCurrency()),
+                        Money.of(allocation.amountMinor(), userWallet.getCurrency()),
                         escrowHoldUntil,
                         actorId
                 ));
             }
-        }
-
-        if (platformCommissionTotal > 0) {
-            Wallet platformWallet = walletService.getOrCreateWallet(
-                    order.getTenantId(),
-                    "PLATFORM",
-                    PLATFORM_OWNER_ID,
-                    userWallet.getCurrency(),
-                    actorId
-            );
-            walletService.creditAvailable(
-                    order.getTenantId(),
-                    platformWallet.getId(),
-                    Money.of(platformCommissionTotal, userWallet.getCurrency()),
-                    "COMMISSION",
-                    "ORDER",
-                    order.getId(),
-                    actorId,
-                    "Platform commission from order"
-            );
         }
 
         markPaidEscrow(order, actorId);
@@ -279,13 +229,6 @@ public class PaymentService {
             allocations.add(new SellerAllocation(entry.getKey(), amount));
         }
         return allocations;
-    }
-
-    private long commissionFor(long amountMinor) {
-        return BigDecimal.valueOf(amountMinor)
-                .multiply(BigDecimal.valueOf(PLATFORM_COMMISSION_PERCENT))
-                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP)
-                .longValue();
     }
 
     private record SellerAllocation(UUID sellerOwnerId, long amountMinor) {}

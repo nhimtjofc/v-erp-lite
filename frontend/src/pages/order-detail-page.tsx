@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useGetOrderQuery,
-  useConfirmReceiptMutation,
   useUpdateStatusMutation,
   useOwnerDecisionMutation,
   listOrdersQueryKey,
@@ -28,7 +27,7 @@ import { formatMoneyMinor, formatVND } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2, Save, PlugZap, CreditCard, Shield, RotateCcw, KeyRound,
+  Trash2, Save, PlugZap, CreditCard, Shield, RotateCcw, KeyRound, FastForward,
 } from 'lucide-react'
 
 interface OrderHistoryEntry {
@@ -387,16 +386,6 @@ export function OrderDetailPage() {
     onError: (err) => setDecisionError(err instanceof Error ? err.message : 'Unable to submit owner decision.'),
   })
 
-  const confirmReceiptMutation = useConfirmReceiptMutation({
-    onSuccess: async () => {
-      await refreshOrderPage()
-      await queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
-      setStatusError(null)
-    },
-    onError: (err) => {
-      setStatusError(err instanceof Error ? err.message : 'Unable to confirm receipt.')
-    },
-  })
 
   const deleteMutation = useMutation({
     mutationFn: deleteOrder,
@@ -546,6 +535,23 @@ export function OrderDetailPage() {
     },
   })
 
+  const forceReleaseMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/escrow/force-release`, {
+        method: 'POST',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+      })
+      if (!res.ok) throw new Error(await res.text() || 'Force release failed')
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      await escrowQuery.refetch()
+    },
+  })
+
   const openStatusDialog = (newStatus: string) => {
     setPendingStatus(newStatus)
     setStatusNote('')
@@ -605,7 +611,7 @@ export function OrderDetailPage() {
   const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
   const canCancelItem = isCustomer && cancellableStatuses.includes(status)
   const canCancelPaidOrder = isCustomer && (status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION')
-  const returnableStatuses = ['DELIVERED', 'COMPLETED', 'PENDING_COMPLETION']
+  const returnableStatuses = ['DELIVERED', 'PENDING_COMPLETION']
   const canRequestReturn = isCustomer && returnableStatuses.includes(status)
 
   const statusCfg = getStatusConfig(status)
@@ -737,16 +743,10 @@ export function OrderDetailPage() {
           )}
           {!isFinal && isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
           {!isFinal && isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
-          {!isFinal && isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('PENDING_COMPLETION')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm receipt (start 7-day escrow)</Button>}
-          {!isFinal && isCustomer && status === 'DELIVERED' && (
-            <Button
-              onClick={() => confirmReceiptMutation.mutate({ path: { id } })}
-              disabled={confirmReceiptMutation.isPending}
-              className="bg-success text-success-foreground hover:bg-success/90"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />
-              {confirmReceiptMutation.isPending ? 'Confirming...' : 'Confirm received'}
-            </Button>
+          {!isFinal && isStaff && status === 'DELIVERED' && (
+            <div className="text-sm text-muted-foreground italic">
+              Escrow hold will start automatically upon delivery.
+            </div>
           )}
         </div>
         )}
@@ -765,7 +765,7 @@ export function OrderDetailPage() {
       )}
       {status === 'PENDING_COMPLETION' && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
-          <strong>Escrow hold active.</strong> Funds are held by the platform for 7 days. After the hold period, the order will be auto-completed and funds released to the seller. You can still cancel and refund during this period.
+          <strong>Escrow hold active.</strong> Funds are held by the platform for 7 days. After the hold period, the order will be auto-completed and funds released to the seller.
         </div>
       )}
 
@@ -1224,12 +1224,25 @@ export function OrderDetailPage() {
 
           {escrowRecords && escrowRecords.length > 0 && (
             <Card className="shadow-sm">
-              <CardHeader className="flex flex-row items-center gap-3">
-                <Shield className="h-5 w-5 text-primary" />
-                <div>
-                  <CardTitle className="text-lg">Escrow Records</CardTitle>
-                  <CardDescription>Funds held and released for this order</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg">Escrow Records</CardTitle>
+                    <CardDescription>Funds held and released for this order</CardDescription>
+                  </div>
                 </div>
+                {isAdmin && escrowRecords.some((r: any) => r.status === 'HELD') && (
+                  <Button
+                    size="sm"
+                    onClick={() => forceReleaseMutation.mutate()}
+                    disabled={forceReleaseMutation.isPending}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <FastForward className={`h-4 w-4 mr-1 ${forceReleaseMutation.isPending ? 'animate-spin' : ''}`} />
+                    {forceReleaseMutation.isPending ? 'Releasing...' : 'Release now'}
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
                 {escrowRecords.map((record) => (
@@ -1243,9 +1256,21 @@ export function OrderDetailPage() {
                           {record.status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Release due: {record.releaseDueAt ? new Date(record.releaseDueAt).toLocaleDateString() : '—'}
-                      </p>
+                      {record.status === 'HELD' && (
+                        <p className="text-xs text-muted-foreground">
+                          Hold until: {record.releaseDueAt ? new Date(record.releaseDueAt).toLocaleDateString() : '—'}
+                        </p>
+                      )}
+                      {record.status === 'RELEASED' && (
+                        <p className="text-xs text-success">
+                          Funds released to seller balance
+                        </p>
+                      )}
+                      {record.status === 'REFUNDED' && (
+                        <p className="text-xs text-destructive">
+                          Funds returned to buyer
+                        </p>
+                      )}
                     </div>
                     <span className="font-semibold">
                       {formatMoneyMinor(Number(record.amountMinor ?? 0), record.currency ?? order.currency ?? 'VND')}

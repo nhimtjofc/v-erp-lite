@@ -394,6 +394,20 @@ public class OrderResource {
         return EscrowRecord.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
     }
 
+    @POST
+    @Path("/{id}/escrow/force-release")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public List<EscrowRecord> forceReleaseEscrow(@PathParam("id") UUID id) {
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+        return escrowService.releaseOrderEscrow(tenantCode, id, caller.userId());
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Payment Refunds
     // ─────────────────────────────────────────────────────────────────────────
@@ -810,24 +824,34 @@ public class OrderResource {
             reactivateVoucher(order, tenantCode, userId);
         }
 
+        // Auto-simulate: DELIVERED immediately transitions to PENDING_COMPLETION
+        // (7-day escrow hold starts automatically without manual button)
+        String effectiveStatus = newStatus;
+        if ("DELIVERED".equals(newStatus) && !"DELIVERED".equals(oldStatus)) {
+            effectiveStatus = "PENDING_COMPLETION";
+        }
+
         // Award points, update membership, and release escrow on completion.
-        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+        if ("COMPLETED".equals(effectiveStatus) && !"COMPLETED".equals(oldStatus)) {
             completeOrder(order, tenantCode, userId);
         }
 
-        if ("CANCELLED".equals(newStatus) && !"CANCELLED".equals(oldStatus)) {
+        if ("CANCELLED".equals(effectiveStatus) && !"CANCELLED".equals(oldStatus)) {
             escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
         }
 
-        order.setStatus(newStatus);
+        order.setStatus(effectiveStatus);
         order.setUpdatedBy(userId);
 
         // Record history
-        persistHistory(order, oldStatus, newStatus, request.note, userId, tenantCode);
+        String historyNote = "DELIVERED".equals(newStatus)
+                ? "Delivered; escrow hold auto-started (7 days)"
+                : request.note;
+        persistHistory(order, oldStatus, effectiveStatus, historyNote, userId, tenantCode);
         notificationService.notifyBuyer(
                 order,
                 "ORDER_STATUS_UPDATED",
-                "Order " + order.getOrderNumber() + " status changed to " + newStatus + ".",
+                "Order " + order.getOrderNumber() + " status changed to " + effectiveStatus + ".",
                 userId);
 
         return order;

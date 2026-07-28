@@ -76,6 +76,7 @@ export function useOrderEscrowQuery(orderId: string) {
       return response.data ?? []
     },
     enabled: Boolean(orderId),
+    refetchInterval: 3000,
   })
 }
 

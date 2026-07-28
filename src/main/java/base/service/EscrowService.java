@@ -172,4 +172,25 @@ public class EscrowService {
                 orderId,
                 "HELD");
     }
+
+    @Transactional
+    public int forceReleaseAllHeldEscrows(UUID actorId) {
+        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
+                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
+                Object[].class)
+                .getResultList();
+
+        int successCount = 0;
+        for (Object[] row : eligibleOrders) {
+            UUID orderId = (UUID) row[0];
+            String tenantId = (String) row[1];
+            try {
+                releaseOrderEscrow(tenantId, orderId, actorId);
+                successCount++;
+            } catch (Exception e) {
+                // skip failures silently
+            }
+        }
+        return successCount;
+    }
 }

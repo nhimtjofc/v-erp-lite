@@ -6,6 +6,7 @@ import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import base.security.CallerContext;
+import base.service.EscrowService;
 import base.service.MoneyService;
 import base.service.WalletService;
 import base.service.VietQRService;
@@ -45,6 +46,9 @@ public class WalletResource {
 
     @Inject
     MoneyService moneyService;
+
+    @Inject
+    EscrowService escrowService;
 
     @Inject
     VietQRService vietQRService;
@@ -192,6 +196,18 @@ public class WalletResource {
         response.escrowBalance = stats.get("escrowBalance");
         response.sellerBalance = stats.get("sellerBalance");
         return response;
+    }
+
+    @POST
+    @Path("/escrow/force-release")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public Map<String, Object> forceReleaseEscrows() {
+        int released = escrowService.forceReleaseAllHeldEscrows(caller.userId());
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("releasedOrders", released);
+        result.put("message", released + " order(s) escrow released (simulated 7-day fast-forward)");
+        return result;
     }
 
     @GET
