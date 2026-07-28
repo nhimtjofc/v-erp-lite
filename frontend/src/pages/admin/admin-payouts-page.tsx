@@ -11,6 +11,7 @@ import {
   useRejectPayoutMutation,
   type PayoutRequest,
 } from '@/shared/api/payout'
+import { MY_WALLET_QUERY_KEY } from '@/shared/api/wallet'
 import { formatMoneyMinor } from '@/shared/utils/currency'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -55,7 +56,7 @@ function ReviewDialog({
       await mutation.mutateAsync({ id: payout.id!, reason: reason.trim() || undefined })
       await queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
       await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
-      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      await queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY })
       onClose()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to review payout.')
@@ -124,7 +125,7 @@ export function AdminPayoutsPage() {
       setSelectedIds(new Set())
       await queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
       await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
-      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      await queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY })
     },
   })
 
@@ -137,7 +138,7 @@ export function AdminPayoutsPage() {
       setSelectedIds(new Set())
       await queryClient.invalidateQueries({ queryKey: ['admin-payouts'] })
       await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
-      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      await queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY })
     },
   })
 

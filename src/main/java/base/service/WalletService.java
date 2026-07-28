@@ -83,8 +83,7 @@ public class WalletService {
             throw new NotFoundException("User not found");
         }
         String normalizedCurrency = moneyService.normalizeCurrency(currency);
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2 order by createdAt asc", tenantId, userId).firstResult();
+        Business business = resolveOwnerBusiness(user, tenantId);
         Wallet wallet;
         if (business != null) {
             wallet = getOrCreateWallet(tenantId, "SELLER", business.getId(), normalizedCurrency, actorId);
@@ -99,6 +98,53 @@ public class WalletService {
         wallet.setUser(user);
         wallet.setUpdatedBy(actorId);
         return wallet;
+    }
+
+    public boolean isWalletOwnedByUser(String tenantId, Wallet wallet, User user) {
+        if (wallet == null || user == null || !tenantId.equals(wallet.getTenantId())) {
+            return false;
+        }
+        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())) {
+            return true;
+        }
+        if ("USER".equals(wallet.getOwnerType())) {
+            return user.getId().equals(wallet.getOwnerId());
+        }
+        if (!"SELLER".equals(wallet.getOwnerType()) || !isBusinessOwner(user)) {
+            return false;
+        }
+
+        Business assignedBusiness = user.getBusiness();
+        if (assignedBusiness != null
+                && tenantId.equals(assignedBusiness.getTenantId())
+                && assignedBusiness.getId().equals(wallet.getOwnerId())) {
+            return true;
+        }
+        return Business.count(
+                "id = ?1 and tenantId = ?2 and createdBy = ?3",
+                wallet.getOwnerId(),
+                tenantId,
+                user.getId()
+        ) > 0;
+    }
+
+    private Business resolveOwnerBusiness(User user, String tenantId) {
+        if (!isBusinessOwner(user)) {
+            return null;
+        }
+        Business assignedBusiness = user.getBusiness();
+        if (assignedBusiness != null && tenantId.equals(assignedBusiness.getTenantId())) {
+            return assignedBusiness;
+        }
+        return Business.find(
+                "tenantId = ?1 and createdBy = ?2 order by createdAt asc",
+                tenantId,
+                user.getId()
+        ).firstResult();
+    }
+
+    private boolean isBusinessOwner(User user) {
+        return user.getRole() != null && "businessOwner".equals(user.getRole().getName());
     }
 
     public List<Wallet> listWallets(String tenantId, String ownerType, UUID ownerId, String currency) {

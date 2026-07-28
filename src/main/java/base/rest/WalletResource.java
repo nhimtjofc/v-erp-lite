@@ -1,6 +1,5 @@
 package base.rest;
 
-import base.entity.Business;
 import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTopUp;
@@ -384,16 +383,10 @@ public class WalletResource {
             return wallet;
         }
         User user = caller.resolveUser();
-        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())) {
+        if (walletService.isWalletOwnedByUser(caller.tenantCode(), wallet, user)) {
             return wallet;
         }
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
-        if (business == null || !"SELLER".equals(wallet.getOwnerType())
-                || !business.getId().equals(wallet.getOwnerId())) {
-            throw new ForbiddenException("You are not allowed to access this wallet");
-        }
-        return wallet;
+        throw new ForbiddenException("You are not allowed to access this wallet");
     }
 }
  

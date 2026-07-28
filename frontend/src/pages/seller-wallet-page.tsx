@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { useBanksQuery, useMeQuery } from '@/shared/api'
 import {
-  useSellerWalletQuery,
+  MY_WALLET_QUERY_KEY,
+  useMyWalletQuery,
   useUpdateBankDetailsMutation,
   useWalletTransactionsQuery,
   type SellerWallet,
@@ -103,7 +104,7 @@ function BankDetailsDialog({
         bankAccountHolder: accountHolder.trim(),
         currency: wallet.currency,
       })
-      await queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      await queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY })
       await queryClient.invalidateQueries({ queryKey: ['seller-payouts'] })
       setError('')
       onOpenChange(false)
@@ -182,7 +183,7 @@ function PayoutStatusWidget({ wallet }: { wallet: SellerWallet }) {
           : `Payout screening completed with status ${status}${payout?.flagReason ? `: ${payout.flagReason}` : '.'}`,
       )
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller-wallet'] }),
+        queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] }),
         queryClient.invalidateQueries({ queryKey: ['seller-payouts'] }),
         queryClient.invalidateQueries({ queryKey: ['payout-status'] }),
@@ -309,7 +310,7 @@ function TransactionHistory({ transactions, currency }: { transactions: WalletTr
 export function SellerWalletPage() {
   const { t } = useTranslation()
   const { data: me, isLoading: isMeLoading } = useMeQuery()
-  const { data: wallet, isLoading, isError, error } = useSellerWalletQuery()
+  const { data: wallet, isLoading, isError, error } = useMyWalletQuery()
   const { data: transactions } = useWalletTransactionsQuery(wallet?.id)
 
   if (isMeLoading) return <div className="py-8 text-center text-muted-foreground">Loading access control…</div>
