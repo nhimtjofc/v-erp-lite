@@ -682,7 +682,7 @@ export function OrderDetailPage() {
                 }
               }}
             >
-              <RotateCcw className="h-4 w-4 mr-1.5" /> Cancel & refund
+              <RotateCcw className="h-4 w-4 mr-1.5" /> Cancel
             </Button>
           )}
 
@@ -1343,10 +1343,10 @@ export function OrderDetailPage() {
       <Dialog open={!!cancellingItem} onOpenChange={(open) => { if (!open) setCancellingItem(null) }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{status === 'PAID_ESCROW' ? 'Cancel and refund this order?' : 'Cancel this item?'}</DialogTitle>
+            <DialogTitle>{status === 'PAID_ESCROW' ? 'Cancel this order?' : 'Cancel this item?'}</DialogTitle>
             <DialogDescription>
               {status === 'PAID_ESCROW'
-                ? 'The full QR payment will be returned to the original payment method and all items will be cancelled.'
+                ? 'The order will be cancelled and any payment will be refunded.'
                 : 'This item will be removed from the order and the total will be recalculated.'}
             </DialogDescription>
           </DialogHeader>
@@ -1407,7 +1407,7 @@ export function OrderDetailPage() {
             >
               {cancelItemMutation.isPending
                 ? 'Cancelling...'
-                : status === 'PAID_ESCROW' ? 'Cancel & refund' : 'Yes, Cancel'}
+                : status === 'PAID_ESCROW' ? 'Cancel' : 'Yes, Cancel'}
             </Button>
           </DialogFooter>
         </DialogContent>
