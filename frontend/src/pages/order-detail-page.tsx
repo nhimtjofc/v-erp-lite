@@ -61,6 +61,10 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     label: 'Delivered', badgeClass: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
     dotClass: 'border-emerald-400 bg-emerald-500 text-white', icon: Truck,
   },
+  PENDING_COMPLETION: {
+    label: 'Escrow hold (7 days)', badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white', icon: Clock,
+  },
   OWNER_DECLINED: {
     label: 'Owner declined', badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
     dotClass: 'border-red-400 bg-red-500 text-white', icon: XCircle,
@@ -600,8 +604,8 @@ export function OrderDetailPage() {
   const canDelete = isAdmin && isFinal
   const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
   const canCancelItem = isCustomer && cancellableStatuses.includes(status)
-  const canCancelPaidOrder = isCustomer && status === 'PAID_ESCROW'
-  const returnableStatuses = ['DELIVERED', 'COMPLETED']
+  const canCancelPaidOrder = isCustomer && (status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION')
+  const returnableStatuses = ['DELIVERED', 'COMPLETED', 'PENDING_COMPLETION']
   const canRequestReturn = isCustomer && returnableStatuses.includes(status)
 
   const statusCfg = getStatusConfig(status)
@@ -733,7 +737,7 @@ export function OrderDetailPage() {
           )}
           {!isFinal && isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
           {!isFinal && isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
-          {!isFinal && isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete</Button>}
+          {!isFinal && isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('PENDING_COMPLETION')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm receipt (start 7-day escrow)</Button>}
           {!isFinal && isCustomer && status === 'DELIVERED' && (
             <Button
               onClick={() => confirmReceiptMutation.mutate({ path: { id } })}
@@ -757,6 +761,11 @@ export function OrderDetailPage() {
       {status === 'PAID_ESCROW' && order.ownerDecisionDeadline && (
         <div className="rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm">
           Owner decision deadline: <strong>{new Date(order.ownerDecisionDeadline).toLocaleString()}</strong>. Funds remain in escrow after acceptance.
+        </div>
+      )}
+      {status === 'PENDING_COMPLETION' && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+          <strong>Escrow hold active.</strong> Funds are held by the platform for 7 days. After the hold period, the order will be auto-completed and funds released to the seller. You can still cancel and refund during this period.
         </div>
       )}
 
@@ -1343,9 +1352,9 @@ export function OrderDetailPage() {
       <Dialog open={!!cancellingItem} onOpenChange={(open) => { if (!open) setCancellingItem(null) }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{status === 'PAID_ESCROW' ? 'Cancel and refund this order?' : 'Cancel this item?'}</DialogTitle>
+            <DialogTitle>{status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION' ? 'Cancel and refund this order?' : 'Cancel this item?'}</DialogTitle>
             <DialogDescription>
-              {status === 'PAID_ESCROW'
+              {status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION'
                 ? 'The full QR payment will be returned to the original payment method and all items will be cancelled.'
                 : 'This item will be removed from the order and the total will be recalculated.'}
             </DialogDescription>
@@ -1407,7 +1416,7 @@ export function OrderDetailPage() {
             >
               {cancelItemMutation.isPending
                 ? 'Cancelling...'
-                : status === 'PAID_ESCROW' ? 'Cancel & refund' : 'Yes, Cancel'}
+                : status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION' ? 'Cancel & refund' : 'Yes, Cancel'}
             </Button>
           </DialogFooter>
         </DialogContent>

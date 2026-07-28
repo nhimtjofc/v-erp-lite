@@ -45,6 +45,9 @@ public class PaymentService {
     @ConfigProperty(name = "orders.owner-decision-sla", defaultValue = "PT24H")
     Duration ownerDecisionSla;
 
+    @ConfigProperty(name = "orders.escrow-hold-days", defaultValue = "7")
+    int escrowHoldDays;
+
     @Transactional
     public List<EscrowRecord> settleSucceededIntent(PaymentIntent intent, UUID actorId) {
         if (intent == null) {
@@ -85,7 +88,7 @@ public class PaymentService {
         List<SellerAllocation> allocations = allocateBySeller(order, intent.getAmountMinor());
         long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
-        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
             long commission = commissionFor(allocation.amountMinor());
@@ -97,7 +100,7 @@ public class PaymentService {
                         intent.getOrderId(),
                         allocation.sellerOwnerId(),
                         Money.of(sellerNet, intent.getCurrency()),
-                        ownerDeadline,
+                        escrowHoldUntil,
                         actorId
                 ));
             }
@@ -157,7 +160,7 @@ public class PaymentService {
         List<SellerAllocation> allocations = allocateBySeller(order, expectedAmount);
         long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
-        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
             long commission = commissionFor(allocation.amountMinor());
@@ -169,7 +172,7 @@ public class PaymentService {
                         order.getId(),
                         allocation.sellerOwnerId(),
                         Money.of(sellerNet, userWallet.getCurrency()),
-                        ownerDeadline,
+                        escrowHoldUntil,
                         actorId
                 ));
             }

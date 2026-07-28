@@ -90,6 +90,11 @@ const STATUS_CONFIG: Record<string, {
         bg: 'bg-emerald-50 dark:bg-emerald-900/20', dot: 'bg-emerald-500',
         icon: Truck, badgeVariant: 'success',
     },
+    PENDING_COMPLETION: {
+        label: 'Escrow hold', color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500',
+        icon: Clock, badgeVariant: 'warning',
+    },
     OWNER_DECLINED: {
         label: 'Owner declined', color: 'text-red-500 dark:text-red-400',
         bg: 'bg-red-50 dark:bg-red-900/20', dot: 'bg-red-500',
@@ -144,6 +149,7 @@ const STATUS_TABS = [
     { key: 'OWNER_ACCEPTED', label: 'Accepted' },
     { key: 'FULFILLING', label: 'Fulfilling' },
     { key: 'DELIVERED', label: 'Delivered' },
+    { key: 'PENDING_COMPLETION', label: 'Escrow hold' },
     { key: 'COMPLETED', label: 'Completed' },
     { key: 'OWNER_DECLINED', label: 'Declined' },
     { key: 'REFUNDED', label: 'Refunded' },
@@ -504,7 +510,7 @@ export function OrdersPage() {
                     />
                     <StatCard
                         label="Chờ xử lý"
-                        value={((stats.countByStatus.PAID_ESCROW ?? 0) + (stats.countByStatus.OWNER_ACCEPTED ?? 0) + (stats.countByStatus.FULFILLING ?? 0)).toString()}
+                        value={((stats.countByStatus.PAID_ESCROW ?? 0) + (stats.countByStatus.OWNER_ACCEPTED ?? 0) + (stats.countByStatus.FULFILLING ?? 0) + (stats.countByStatus.PENDING_COMPLETION ?? 0)).toString()}
                         sub="Cần hành động"
                         icon={Clock}
                         gradient="from-amber-500 to-orange-600"

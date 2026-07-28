@@ -268,7 +268,7 @@ public class OrderResource {
         for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
                 "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
                 "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED",
-                "RETURN_REQUESTED", "RETURN_APPROVED")) {
+                "RETURN_REQUESTED", "RETURN_APPROVED", "PENDING_COMPLETION")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -695,7 +695,7 @@ public class OrderResource {
         paymentAccess.requireOrderAccess(order);
 
         String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if ("COMPLETED".equals(oldStatus)) {
+        if ("PENDING_COMPLETION".equals(oldStatus) || "COMPLETED".equals(oldStatus)) {
             return order;
         }
         if (!"DELIVERED".equals(oldStatus)) {
@@ -703,14 +703,13 @@ public class OrderResource {
         }
 
         UUID userId = caller.userId();
-        completeOrder(order, tenantCode, userId);
-        order.setStatus("COMPLETED");
+        order.setStatus("PENDING_COMPLETION");
         order.setUpdatedBy(userId);
-        persistHistory(order, oldStatus, "COMPLETED", "Buyer confirmed receipt", userId, tenantCode);
+        persistHistory(order, oldStatus, "PENDING_COMPLETION", "Buyer confirmed receipt; awaiting 7-day escrow hold", userId, tenantCode);
         notificationService.notifyBusinessStaff(
                 order,
-                "ORDER_COMPLETED",
-                "The buyer confirmed receipt of order " + order.getOrderNumber() + ".",
+                "ORDER_RECEIVED",
+                "The buyer confirmed receipt of order " + order.getOrderNumber() + ". Escrow hold starts now (7 days).",
                 userId);
         return order;
     }
@@ -743,7 +742,7 @@ public class OrderResource {
 
         if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
                 "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPING",
-                "SHIPPED", "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
+                "SHIPPED", "RETURN_REQUESTED", "RETURN_APPROVED", "PENDING_COMPLETION").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -791,8 +790,8 @@ public class OrderResource {
                 }
             }
         }
-        // 3. From SHIPPED/COMPLETED to CANCELLED: return actual stock
-        else if (List.of("SHIPPED", "COMPLETED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        // 3. From SHIPPED/COMPLETED/PENDING_COMPLETION to CANCELLED: return actual stock
+        else if (List.of("SHIPPED", "COMPLETED", "PENDING_COMPLETION").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -907,7 +906,7 @@ public class OrderResource {
         }
 
         String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED").contains(status)) {
+        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED", "PENDING_COMPLETION").contains(status)) {
             throw new BadRequestException("Only completed or cancelled orders can be deleted");
         }
 
@@ -1199,7 +1198,10 @@ public class OrderResource {
             return "DELIVERED".equals(newStatus);
         }
         if ("DELIVERED".equals(oldStatus)) {
-            return "COMPLETED".equals(newStatus);
+            return "PENDING_COMPLETION".equals(newStatus);
+        }
+        if ("PENDING_COMPLETION".equals(oldStatus)) {
+            return List.of("COMPLETED", "CANCELLED").contains(newStatus);
         }
         if ("OWNER_DECLINED".equals(oldStatus)) {
             return "REFUNDED".equals(newStatus);

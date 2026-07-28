@@ -1,6 +1,8 @@
 package base.service;
 
 import base.entity.EscrowRecord;
+import base.entity.Order;
+import base.entity.OrderHistory;
 import base.entity.Wallet;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -91,6 +93,28 @@ public class EscrowService {
             record.setStatus("RELEASED");
             record.setUpdatedBy(actorId);
         }
+
+        // Auto-complete order when escrow is released (after 7-day hold period)
+        if (!records.isEmpty()) {
+            Order order = Order.find("id = ?1 and tenantId = ?2", orderId, tenantId).firstResult();
+            if (order != null && "PENDING_COMPLETION".equals(order.getStatus())) {
+                String oldStatus = order.getStatus();
+                order.setStatus("COMPLETED");
+                order.setUpdatedBy(actorId);
+                order.persist();
+
+                OrderHistory history = new OrderHistory();
+                history.setId(UUID.randomUUID());
+                history.setOrder(order);
+                history.setTenantId(tenantId);
+                history.setOldStatus(oldStatus);
+                history.setNewStatus("COMPLETED");
+                history.setNote("Auto-completed after escrow hold period");
+                history.setCreatedBy(actorId);
+                history.persist();
+            }
+        }
+
         return records;
     }
 
