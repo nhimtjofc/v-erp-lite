@@ -14,6 +14,7 @@ interface Message {
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -52,7 +53,7 @@ export function ChatWidget() {
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ message: userMessage, session_id: sessionId }),
       })
 
       if (res.status === 401) {
@@ -68,6 +69,9 @@ export function ChatWidget() {
       }
 
       const data = await res.json()
+      if (data.session_id) {
+        setSessionId(data.session_id)
+      }
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: data.response || 'Xin lỗi, tôi không thể xử lý yêu cầu lúc này.' },

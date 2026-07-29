@@ -12,6 +12,7 @@ Verification matches Quarkus quarkus-oidc defaults for this realm:
   - audience NOT enforced (Quarkus has no `quarkus.oidc.token.audience` configured).
 """
 import os
+import contextvars
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -111,3 +112,8 @@ def verify_bearer(authorization_header: str | None) -> RequestContext:
         roles=_roles_from_claims(claims),
         access_token=token,
     )
+
+
+# Thread/coroutine-local context variable to propagate trusted RequestContext to tool functions
+current_request_context: contextvars.ContextVar[RequestContext] = contextvars.ContextVar("current_request_context")
+
