@@ -54,9 +54,6 @@ public class WalletResource {
     @Inject
     VietQRService vietQRService;
 
-    @Inject
-    base.service.EscrowService escrowService;
-
     public static class EnsureWalletRequest {
         public String ownerType;
         public UUID ownerId;
