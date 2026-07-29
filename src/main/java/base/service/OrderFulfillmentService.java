@@ -194,9 +194,12 @@ public class OrderFulfillmentService {
                     walletService.refundPending(
                             tenantId, platformWallet.getId(),
                             Money.of(actualRefund, order.getCurrency()),
-                            "ESCROW", escrow.getId(), actorId,
+                            "ORDER_ITEM", itemId, actorId,
                             "Refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
                     escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
+                    if (escrow.getAmountMinor() <= 0) {
+                        escrow.setStatus("REFUNDED");
+                    }
                     escrow.setUpdatedBy(actorId);
                 }
 

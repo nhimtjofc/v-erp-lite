@@ -278,6 +278,12 @@ export function OrderDetailPage() {
   const [returnItemError, setReturnItemError] = useState<string | null>(null)
   const [approvingReturnItem, setApprovingReturnItem] = useState<any | null>(null)
   const [approveReturnError, setApproveReturnError] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    title: string
+    description: string
+    onConfirm: () => void
+  }>({ open: false, title: '', description: '', onConfirm: () => {} })
   const [notes, setNotes] = useState<string | null>(null)
   const [shippingFeeMinor, setShippingFee] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<string | null>(null)
@@ -865,13 +871,19 @@ export function OrderDetailPage() {
                 const items = (order as any).items ?? []
                 const approvedItems = items.filter((i: any) => i.returnApprovedAt && i.returnStatus !== 'REFUNDED')
                 if (approvedItems.length === 0) return
-                if (window.confirm(`Process refund for ${approvedItems.length} returned item(s)?`)) {
-                  Promise.all(approvedItems.map((i: any) =>
-                    processReturnRefundMutation.mutateAsync({ itemId: i.id })
-                  )).then(() => {
-                    refreshOrderPage()
-                  })
-                }
+                setConfirmDialog({
+                  open: true,
+                  title: 'Process Return Refunds',
+                  description: `Process refund for ${approvedItems.length} returned item(s)?`,
+                  onConfirm: () => {
+                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                    Promise.all(approvedItems.map((i: any) =>
+                      processReturnRefundMutation.mutateAsync({ itemId: i.id })
+                    )).then(() => {
+                      refreshOrderPage()
+                    })
+                  },
+                })
               }}
               disabled={processReturnRefundMutation.isPending}
             >
@@ -1046,9 +1058,15 @@ export function OrderDetailPage() {
                               variant="destructive"
                               className="h-8 text-xs"
                               onClick={() => {
-                                if (window.confirm('Reject return for this item?')) {
-                                  rejectReturnMutation.mutate({ itemId: (item as any).id })
-                                }
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Reject Return',
+                                  description: 'Reject return for this item?',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    rejectReturnMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
                               }}
                               disabled={rejectReturnMutation.isPending}
                             >
@@ -1062,9 +1080,15 @@ export function OrderDetailPage() {
                               size="sm"
                               className="h-8 text-xs"
                               onClick={() => {
-                                if (window.confirm('Approve cancellation for this item? Refund will be pending admin decision.')) {
-                                  approveCancelMutation.mutate({ itemId: (item as any).id })
-                                }
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Approve Cancellation',
+                                  description: 'Approve cancellation for this item? Refund will be pending admin decision.',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    approveCancelMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
                               }}
                               disabled={approveCancelMutation.isPending}
                             >
@@ -1075,9 +1099,15 @@ export function OrderDetailPage() {
                               variant="destructive"
                               className="h-8 text-xs"
                               onClick={() => {
-                                if (window.confirm('Reject cancellation for this item?')) {
-                                  rejectCancelMutation.mutate({ itemId: (item as any).id })
-                                }
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Reject Cancellation',
+                                  description: 'Reject cancellation for this item?',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    rejectCancelMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
                               }}
                               disabled={rejectCancelMutation.isPending}
                             >
@@ -1091,9 +1121,15 @@ export function OrderDetailPage() {
                               size="sm"
                               className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90"
                               onClick={() => {
-                                if (window.confirm('Refund to customer? Money goes from escrow to customer wallet.')) {
-                                  processCancelRefundMutation.mutate({ itemId: (item as any).id })
-                                }
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Refund to Customer',
+                                  description: 'Refund to customer? Money goes from escrow to customer wallet.',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    processCancelRefundMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
                               }}
                               disabled={processCancelRefundMutation.isPending}
                             >
@@ -1104,9 +1140,15 @@ export function OrderDetailPage() {
                               variant="secondary"
                               className="h-8 text-xs"
                               onClick={() => {
-                                if (window.confirm('Release to seller? Money goes from escrow to seller wallet.')) {
-                                  releaseCancelToSellerMutation.mutate({ itemId: (item as any).id })
-                                }
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Release to Seller',
+                                  description: 'Release to seller? Money goes from escrow to seller wallet.',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    releaseCancelToSellerMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
                               }}
                               disabled={releaseCancelToSellerMutation.isPending}
                             >
@@ -1119,9 +1161,15 @@ export function OrderDetailPage() {
                             size="sm"
                             className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90"
                             onClick={() => {
-                              if (window.confirm('Process return refund for this item?')) {
-                                processReturnRefundMutation.mutate({ itemId: (item as any).id })
-                              }
+                              setConfirmDialog({
+                                open: true,
+                                title: 'Process Return Refund',
+                                description: 'Process return refund for this item?',
+                                onConfirm: () => {
+                                  setConfirmDialog(prev => ({ ...prev, open: false }))
+                                  processReturnRefundMutation.mutate({ itemId: (item as any).id })
+                                },
+                              })
                             }}
                             disabled={processReturnRefundMutation.isPending}
                           >
@@ -1796,6 +1844,23 @@ export function OrderDetailPage() {
               disabled={approveReturnMutation.isPending || !approvingReturnItem?.id}
             >
               {approveReturnMutation.isPending ? 'Approving...' : 'Approve Return'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.title}</DialogTitle>
+            <DialogDescription>{confirmDialog.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>
+              Cancel
+            </Button>
+            <Button variant="default" className="bg-success text-success-foreground hover:bg-success/90" onClick={confirmDialog.onConfirm}>
+              Confirm
             </Button>
           </DialogFooter>
         </DialogContent>

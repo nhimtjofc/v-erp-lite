@@ -250,9 +250,12 @@ public class ReturnRefundService {
             walletService.refundPending(
                     tenantId, platformWallet.getId(),
                     Money.of(actualRefund, order.getCurrency()),
-                    "ESCROW", escrow.getId(), actorId,
+                    "ORDER_ITEM", itemId, actorId,
                     "Admin refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
             escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
+            if (escrow.getAmountMinor() <= 0) {
+                escrow.setStatus("REFUNDED");
+            }
             escrow.setUpdatedBy(actorId);
         }
 
@@ -394,9 +397,12 @@ public class ReturnRefundService {
             walletService.refundPending(
                     tenantId, platformWallet.getId(),
                     Money.of(actualRefund, order.getCurrency()),
-                    "ESCROW", escrow.getId(), actorId,
+                    "ORDER_ITEM", itemId, actorId,
                     "Admin refund for returned item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
             escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
+            if (escrow.getAmountMinor() <= 0) {
+                escrow.setStatus("REFUNDED");
+            }
             escrow.setUpdatedBy(actorId);
         }
 

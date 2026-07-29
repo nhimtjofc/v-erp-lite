@@ -2,6 +2,7 @@ package base.rest;
 
 import base.entity.User;
 import base.entity.Wallet;
+import base.entity.EscrowRecord;
 import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
@@ -201,12 +202,29 @@ public class WalletResource {
     @POST
     @Path("/escrow/force-release")
     @RolesAllowed({"admin"})
-    @Transactional
     public Map<String, Object> forceReleaseEscrows() {
-        int released = escrowService.forceReleaseAllHeldEscrows(caller.userId());
+        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
+                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
+                Object[].class)
+                .getResultList();
+
+        int released = 0;
+        int failed = 0;
+        for (Object[] row : eligibleOrders) {
+            UUID orderId = (UUID) row[0];
+            String tenantId = (String) row[1];
+            try {
+                escrowService.releaseOrderEscrow(tenantId, orderId, caller.userId());
+                released++;
+            } catch (Exception e) {
+                failed++;
+            }
+        }
+
         Map<String, Object> result = new java.util.HashMap<>();
         result.put("releasedOrders", released);
-        result.put("message", released + " order(s) escrow released (simulated 7-day fast-forward)");
+        result.put("message", released + " order(s) escrow released, "
+                + failed + " failed (simulated 7-day fast-forward)");
         return result;
     }
 

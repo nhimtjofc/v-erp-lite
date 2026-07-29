@@ -34,11 +34,20 @@ export function MockBankDashboardPage() {
   // Fast-forward 7 days mutation
   const fastForwardMutation = useMutation({
     mutationFn: async () => {
-      const res = await client.post<unknown>({
-        url: '/api/wallets/escrow/force-release',
+      const token = localStorage.getItem('access_token');
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const res = await fetch(`${baseUrl}/api/wallets/escrow/force-release`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
       });
-      if (res.error) throw res.error;
-      return res.data as unknown as { releasedOrders: number; message: string };
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        throw new Error(errBody || `Request failed (${res.status})`);
+      }
+      return res.json() as unknown as { releasedOrders: number; message: string };
     },
     onSuccess: (data) => {
       setFfMessage(data.message);
