@@ -27,8 +27,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class PaymentService {
-
-    private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     @Inject
     WalletService walletService;
 
@@ -43,6 +41,9 @@ public class PaymentService {
 
     @ConfigProperty(name = "orders.owner-decision-sla", defaultValue = "PT24H")
     Duration ownerDecisionSla;
+
+    @ConfigProperty(name = "orders.escrow-hold-days", defaultValue = "7")
+    int escrowHoldDays;
 
     @Transactional
     public List<EscrowRecord> settleSucceededIntent(PaymentIntent intent, UUID actorId) {
@@ -83,7 +84,7 @@ public class PaymentService {
 
         List<SellerAllocation> allocations = allocateBySeller(order, intent.getAmountMinor());
         List<EscrowRecord> records = new ArrayList<>();
-        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
             if (allocation.amountMinor() > 0) {
@@ -92,7 +93,7 @@ public class PaymentService {
                         intent.getOrderId(),
                         allocation.sellerOwnerId(),
                         Money.of(allocation.amountMinor(), intent.getCurrency()),
-                        ownerDeadline,
+                        escrowHoldUntil,
                         actorId
                 ));
             }
@@ -131,7 +132,7 @@ public class PaymentService {
 
         List<SellerAllocation> allocations = allocateBySeller(order, expectedAmount);
         List<EscrowRecord> records = new ArrayList<>();
-        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
             if (allocation.amountMinor() > 0) {
@@ -140,7 +141,7 @@ public class PaymentService {
                         order.getId(),
                         allocation.sellerOwnerId(),
                         Money.of(allocation.amountMinor(), userWallet.getCurrency()),
-                        ownerDeadline,
+                        escrowHoldUntil,
                         actorId
                 ));
             }
@@ -228,7 +229,6 @@ public class PaymentService {
         }
         return allocations;
     }
-
 
     private record SellerAllocation(UUID sellerOwnerId, long amountMinor) {}
 }

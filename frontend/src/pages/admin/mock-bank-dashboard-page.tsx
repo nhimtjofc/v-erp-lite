@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
-import { Building2, Users, Store, ArrowRightLeft, ShieldCheck, Activity } from 'lucide-react';
+import { Button } from '@/shared/ui/button';
+import { Building2, Users, Store, ArrowRightLeft, ShieldCheck, Activity, FastForward } from 'lucide-react';
 import { formatMoneyMinor } from '@/shared/utils/currency';
 import { client } from '@/shared/api/gen/client.gen';
 
@@ -28,6 +29,38 @@ interface WalletTransactionResponse {
 }
 
 export function MockBankDashboardPage() {
+  const queryClient = useQueryClient();
+  const [ffMessage, setFfMessage] = useState('');
+
+  // Fast-forward 7 days mutation
+  const fastForwardMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('access_token');
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const res = await fetch(`${baseUrl}/api/wallets/escrow/force-release`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        throw new Error(errBody || `Request failed (${res.status})`);
+      }
+      return res.json() as unknown as { releasedOrders: number; message: string };
+    },
+    onSuccess: (data) => {
+      setFfMessage(data.message);
+      queryClient.invalidateQueries({ queryKey: ['mock-bank-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['mock-bank-transactions'] });
+      setTimeout(() => setFfMessage(''), 5000);
+    },
+    onError: (err) => {
+      setFfMessage(err instanceof Error ? err.message : 'Fast-forward failed');
+      setTimeout(() => setFfMessage(''), 5000);
+    },
+  });
   // Query for stats
   const { data: stats, isLoading: statsLoading } = useQuery<WalletStatsResponse>({
     queryKey: ['mock-bank-stats'],
@@ -62,7 +95,15 @@ export function MockBankDashboardPage() {
             Real-time sandbox environment for monitoring the flow of funds and escrow locks.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => fastForwardMutation.mutate()}
+            disabled={fastForwardMutation.isPending}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+          >
+            <FastForward className={`h-4 w-4 mr-1.5 ${fastForwardMutation.isPending ? 'animate-spin' : ''}`} />
+            {fastForwardMutation.isPending ? 'Releasing...' : 'Fast-forward 7 days'}
+          </Button>
           <Badge variant="outline" className="px-3 py-1 text-sm bg-success/10 text-success border-success/20">
             <span className="relative flex h-2 w-2 mr-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
@@ -72,6 +113,11 @@ export function MockBankDashboardPage() {
           </Badge>
         </div>
       </div>
+      {ffMessage && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+          {ffMessage}
+        </div>
+      )}
 
       {/* Overview Cards */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
@@ -104,7 +150,7 @@ export function MockBankDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-amber-600 dark:text-amber-500 flex items-center">
               <ShieldCheck className="w-4 h-4 mr-2" />
-              Ví Trung Gian (Platform Escrow)
+              Ví Trung Gian (Escrow từ Shop)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -154,7 +200,7 @@ export function MockBankDashboardPage() {
               {statsLoading ? '...' : formatMoneyMinor(stats?.sellerBalance || 0, 'VND')}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Tiền Shop đã thực nhận từ Nền tảng
+              Tổng số dư Shop (khả dụng + đang chờ escrow)
             </p>
           </CardContent>
         </Card>

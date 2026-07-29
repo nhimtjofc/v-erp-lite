@@ -266,8 +266,7 @@ public class OrderResource {
         }
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
-                "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
-                "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED",
+                "DELIVERED", "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
                 "RETURN_REQUESTED", "RETURN_APPROVED")) {
             countByStatus.put(s, 0L);
         }
@@ -392,6 +391,20 @@ public class OrderResource {
             }
         }
         return EscrowRecord.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
+    }
+
+    @POST
+    @Path("/{id}/escrow/force-release")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public List<EscrowRecord> forceReleaseEscrow(@PathParam("id") UUID id) {
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+        return escrowService.releaseOrderEscrow(tenantCode, id, caller.userId());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -606,7 +619,7 @@ public class OrderResource {
         order.setCurrency(orderCurrency);
         order.setPaymentMethod(request.paymentMethod);
 
-        String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
+        String initialStatus = "PENDING_PAYMENT";
         order.setStatus(initialStatus);
         
         order.setShippingName(request.shippingName);
@@ -695,7 +708,7 @@ public class OrderResource {
         paymentAccess.requireOrderAccess(order);
 
         String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if ("COMPLETED".equals(oldStatus)) {
+        if ("PENDING_COMPLETION".equals(oldStatus) || "COMPLETED".equals(oldStatus)) {
             return order;
         }
         if (!"DELIVERED".equals(oldStatus)) {
@@ -703,14 +716,13 @@ public class OrderResource {
         }
 
         UUID userId = caller.userId();
-        completeOrder(order, tenantCode, userId);
-        order.setStatus("COMPLETED");
+        order.setStatus("PENDING_COMPLETION");
         order.setUpdatedBy(userId);
-        persistHistory(order, oldStatus, "COMPLETED", "Buyer confirmed receipt", userId, tenantCode);
+        persistHistory(order, oldStatus, "PENDING_COMPLETION", "Buyer confirmed receipt; awaiting 7-day escrow hold", userId, tenantCode);
         notificationService.notifyBusinessStaff(
                 order,
-                "ORDER_COMPLETED",
-                "The buyer confirmed receipt of order " + order.getOrderNumber() + ".",
+                "ORDER_RECEIVED",
+                "The buyer confirmed receipt of order " + order.getOrderNumber() + ". Escrow hold starts now (7 days).",
                 userId);
         return order;
     }
@@ -741,9 +753,9 @@ public class OrderResource {
             return order;
         }
 
-        if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
-                "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPING",
-                "SHIPPED", "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
+        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED",
+                "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
+                "CANCEL_REQUESTED", "CANCEL_APPROVED", "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -791,8 +803,8 @@ public class OrderResource {
                 }
             }
         }
-        // 3. From SHIPPED/COMPLETED to CANCELLED: return actual stock
-        else if (List.of("SHIPPED", "COMPLETED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        // 3. From SHIPPED/COMPLETED/PENDING_COMPLETION to CANCELLED: return actual stock
+        else if (List.of("SHIPPED", "COMPLETED", "PENDING_COMPLETION").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -811,8 +823,15 @@ public class OrderResource {
             reactivateVoucher(order, tenantCode, userId);
         }
 
+        // Auto-simulate: DELIVERED immediately transitions to PENDING_COMPLETION
+        // (7-day escrow hold starts automatically without manual button)
+        String effectiveStatus = newStatus;
+        if ("DELIVERED".equals(newStatus) && !"DELIVERED".equals(oldStatus)) {
+            effectiveStatus = "PENDING_COMPLETION";
+        }
+
         // Award points, update membership, and release escrow on completion.
-        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+        if ("COMPLETED".equals(effectiveStatus) && !"COMPLETED".equals(oldStatus)) {
             completeOrder(order, tenantCode, userId);
         }
 
@@ -825,15 +844,18 @@ public class OrderResource {
             }
         }
 
-        order.setStatus(newStatus);
+        order.setStatus(effectiveStatus);
         order.setUpdatedBy(userId);
 
         // Record history
-        persistHistory(order, oldStatus, newStatus, request.note, userId, tenantCode);
+        String historyNote = "DELIVERED".equals(newStatus)
+                ? "Delivered; escrow hold auto-started (7 days)"
+                : request.note;
+        persistHistory(order, oldStatus, effectiveStatus, historyNote, userId, tenantCode);
         notificationService.notifyBuyer(
                 order,
                 "ORDER_STATUS_UPDATED",
-                "Order " + order.getOrderNumber() + " status changed to " + newStatus + ".",
+                "Order " + order.getOrderNumber() + " status changed to " + effectiveStatus + ".",
                 userId);
 
         return order;
@@ -912,7 +934,7 @@ public class OrderResource {
         }
 
         String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED").contains(status)) {
+        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED", "PENDING_COMPLETION").contains(status)) {
             throw new BadRequestException("Only completed or cancelled orders can be deleted");
         }
 
@@ -954,7 +976,7 @@ public class OrderResource {
         }
 
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
         }
 
@@ -1012,6 +1034,11 @@ public class OrderResource {
         }
         requireBusinessStaffAccess(order);
 
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if ("PAID_ESCROW".equals(orderStatus)) {
+            throw new BadRequestException("For paid orders, use the cancel request approval flow instead. POST /orders/{id}/items/{itemId}/approve-cancel");
+        }
+
         String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
         OrderItem item = fulfillmentService.cancelItem(tenantCode, orderId, itemId, reason, caller.userId());
 
@@ -1063,7 +1090,7 @@ public class OrderResource {
         }
 
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel order when it is in " + orderStatus + " status");
         }
 
@@ -1131,6 +1158,76 @@ public class OrderResource {
     @Transactional
     public OrderItem rejectItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
         return returnRefundService.rejectItemReturn(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cancel request / Approve / Reject (PAID_ESCROW flow)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/request-cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public OrderItem requestCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can request cancellation");
+        }
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        return returnRefundService.requestCancelItem(
+                caller.tenantCode(), orderId, itemId, reason, caller.userId(), caller.userEmail());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/approve-cancel")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem approveCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.approveCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/reject-cancel")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem rejectCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.rejectCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Admin cancel refund disposition
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/refund-cancel")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem processCancelRefund(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.processCancelRefund(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/release-cancel-to-seller")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem releaseCancelToSeller(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.releaseCancelToSeller(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/refund-return")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem processReturnRefund(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.processReturnRefund(
                 caller.tenantCode(), orderId, itemId, caller.userId());
     }
 
@@ -1224,7 +1321,10 @@ public class OrderResource {
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
         if ("PENDING_PAYMENT".equals(oldStatus)) {
-            return "CANCELLED".equals(newStatus);
+            return List.of("PAID_ESCROW", "CANCELLED").contains(newStatus);
+        }
+        if ("PAID_ESCROW".equals(oldStatus)) {
+            return List.of("OWNER_ACCEPTED", "OWNER_DECLINED", "CANCELLED").contains(newStatus);
         }
         if ("OWNER_ACCEPTED".equals(oldStatus)) {
             return "FULFILLING".equals(newStatus);
@@ -1233,22 +1333,13 @@ public class OrderResource {
             return "DELIVERED".equals(newStatus);
         }
         if ("DELIVERED".equals(oldStatus)) {
-            return "COMPLETED".equals(newStatus);
+            return "PENDING_COMPLETION".equals(newStatus);
+        }
+        if ("PENDING_COMPLETION".equals(oldStatus)) {
+            return List.of("COMPLETED", "CANCELLED").contains(newStatus);
         }
         if ("OWNER_DECLINED".equals(oldStatus)) {
             return "REFUNDED".equals(newStatus);
-        }
-        if ("PENDING".equals(oldStatus)) {
-            return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
-        }
-        if ("CONFIRMED".equals(oldStatus)) {
-            return List.of("SHIPPING", "CANCELLED").contains(newStatus);
-        }
-        if ("SHIPPING".equals(oldStatus)) {
-            return "SHIPPED".equals(newStatus);
-        }
-        if ("SHIPPED".equals(oldStatus)) {
-            return "COMPLETED".equals(newStatus);
         }
         if ("RETURN_REQUESTED".equals(oldStatus)) {
             return "RETURN_APPROVED".equals(newStatus);

@@ -1,6 +1,8 @@
 package base.service;
 
 import base.entity.EscrowRecord;
+import base.entity.Order;
+import base.entity.OrderHistory;
 import base.entity.Wallet;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -129,6 +131,28 @@ public class EscrowService {
             record.setStatus("RELEASED");
             record.setUpdatedBy(actorId);
         }
+
+        // Auto-complete order when escrow is released (after 7-day hold period)
+        if (!records.isEmpty()) {
+            Order order = Order.find("id = ?1 and tenantId = ?2", orderId, tenantId).firstResult();
+            if (order != null && "PENDING_COMPLETION".equals(order.getStatus())) {
+                String oldStatus = order.getStatus();
+                order.setStatus("COMPLETED");
+                order.setUpdatedBy(actorId);
+                order.persist();
+
+                OrderHistory history = new OrderHistory();
+                history.setId(UUID.randomUUID());
+                history.setOrder(order);
+                history.setTenantId(tenantId);
+                history.setOldStatus(oldStatus);
+                history.setNewStatus("COMPLETED");
+                history.setNote("Auto-completed after escrow hold period");
+                history.setCreatedBy(actorId);
+                history.persist();
+            }
+        }
+
         return records;
     }
 
@@ -195,5 +219,26 @@ public class EscrowService {
                 .multiply(java.math.BigDecimal.valueOf(PLATFORM_COMMISSION_PERCENT))
                 .divide(java.math.BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP)
                 .longValue();
+    }
+
+    @Transactional
+    public int forceReleaseAllHeldEscrows(UUID actorId) {
+        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
+                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
+                Object[].class)
+                .getResultList();
+
+        int successCount = 0;
+        for (Object[] row : eligibleOrders) {
+            UUID orderId = (UUID) row[0];
+            String tenantId = (String) row[1];
+            try {
+                releaseOrderEscrow(tenantId, orderId, actorId);
+                successCount++;
+            } catch (Exception e) {
+                // skip failures silently
+            }
+        }
+        return successCount;
     }
 }

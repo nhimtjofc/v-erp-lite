@@ -90,6 +90,11 @@ const STATUS_CONFIG: Record<string, {
         bg: 'bg-emerald-50 dark:bg-emerald-900/20', dot: 'bg-emerald-500',
         icon: Truck, badgeVariant: 'success',
     },
+    PENDING_COMPLETION: {
+        label: 'Escrow hold', color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500',
+        icon: Clock, badgeVariant: 'warning',
+    },
     OWNER_DECLINED: {
         label: 'Owner declined', color: 'text-red-500 dark:text-red-400',
         bg: 'bg-red-50 dark:bg-red-900/20', dot: 'bg-red-500',
@@ -99,26 +104,6 @@ const STATUS_CONFIG: Record<string, {
         label: 'Refunded', color: 'text-slate-600 dark:text-slate-400',
         bg: 'bg-slate-50 dark:bg-slate-900/20', dot: 'bg-slate-500',
         icon: RotateCcw, badgeVariant: 'secondary',
-    },
-    PENDING: {
-        label: 'Pending', color: 'text-amber-600 dark:text-amber-400',
-        bg: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500',
-        icon: Clock, badgeVariant: 'warning',
-    },
-    CONFIRMED: {
-        label: 'Confirmed', color: 'text-blue-600 dark:text-blue-400',
-        bg: 'bg-blue-50 dark:bg-blue-900/20', dot: 'bg-blue-500',
-        icon: CheckCircle2, badgeVariant: 'info',
-    },
-    SHIPPING: {
-        label: 'Shipping', color: 'text-violet-600 dark:text-violet-400',
-        bg: 'bg-violet-50 dark:bg-violet-900/20', dot: 'bg-violet-500',
-        icon: Package, badgeVariant: 'info',
-    },
-    SHIPPED: {
-        label: 'Shipped', color: 'text-orange-600 dark:text-orange-400',
-        bg: 'bg-orange-50 dark:bg-orange-900/20', dot: 'bg-orange-500',
-        icon: Truck, badgeVariant: 'orange',
     },
     COMPLETED: {
         label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400',
@@ -144,14 +129,11 @@ const STATUS_TABS = [
     { key: 'OWNER_ACCEPTED', label: 'Accepted' },
     { key: 'FULFILLING', label: 'Fulfilling' },
     { key: 'DELIVERED', label: 'Delivered' },
+    { key: 'PENDING_COMPLETION', label: 'Escrow hold' },
     { key: 'COMPLETED', label: 'Completed' },
     { key: 'OWNER_DECLINED', label: 'Declined' },
     { key: 'REFUNDED', label: 'Refunded' },
     { key: 'CANCELLED', label: 'Cancelled' },
-    { key: 'PENDING', label: 'Legacy pending' },
-    { key: 'CONFIRMED', label: 'Legacy confirmed' },
-    { key: 'SHIPPING', label: 'Legacy shipping' },
-    { key: 'SHIPPED', label: 'Legacy shipped' },
     { key: 'WOOCOMMERCE', label: 'Ecommerce Sync' },
 ] as const
 
@@ -504,7 +486,7 @@ export function OrdersPage() {
                     />
                     <StatCard
                         label="Chờ xử lý"
-                        value={((stats.countByStatus.PAID_ESCROW ?? 0) + (stats.countByStatus.OWNER_ACCEPTED ?? 0) + (stats.countByStatus.FULFILLING ?? 0)).toString()}
+                        value={((stats.countByStatus.PAID_ESCROW ?? 0) + (stats.countByStatus.OWNER_ACCEPTED ?? 0) + (stats.countByStatus.FULFILLING ?? 0) + (stats.countByStatus.PENDING_COMPLETION ?? 0)).toString()}
                         sub="Cần hành động"
                         icon={Clock}
                         gradient="from-amber-500 to-orange-600"
@@ -710,7 +692,7 @@ export function OrdersPage() {
                                     onDelete={() => handleDeleteOrder(order)}
                                     onPayment={() => navigate({ to: '/orders/payment', search: { orderId: order.id! } })}
                                     canDelete={canDeleteOrder(order)}
-                                    showPaymentAction={canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(order.status?.toUpperCase() ?? '')}
+                                    showPaymentAction={canAccessPayment && order.status?.toUpperCase() === 'PENDING_PAYMENT'}
                                     isDeleting={deletingOrderId === order.id}
                                 />
                             ))}
@@ -750,7 +732,7 @@ export function OrdersPage() {
                                         <div className="text-right shrink-0">
                                             <div className="font-bold text-sm">{formatVND(Number(order.finalAmountMinor))}</div>
                                         </div>
-                                        {canAccessPayment && ['PENDING', 'PENDING_PAYMENT'].includes(status) && (
+                                        {canAccessPayment && status === 'PENDING_PAYMENT' && (
                                             <Button
                                                 size="sm"
                                                 onClick={(event) => {

@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMeQuery } from '@/shared/api'
 import {
-  useSellerWalletQuery, // actually it's a myWallet query inside
+  MY_WALLET_QUERY_KEY,
+  useMyWalletQuery,
   useWalletTransactionsQuery,
 } from '@/shared/api/wallet'
 import { topUpMyWallet, completeTopUp, getMyTopUps, simulateTransferred } from '@/shared/api/gen/sdk.gen'
@@ -103,7 +104,7 @@ function TopUpDialog({
       return res.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] })
       setPendingTopUp(null)
       onOpenChange(false)
@@ -187,7 +188,7 @@ function TopUpDialog({
 
 export function UserWalletPage() {
   const { data: user } = useMeQuery()
-  const { data: wallet, isLoading: walletLoading } = useSellerWalletQuery()
+  const { data: wallet, isLoading: walletLoading } = useMyWalletQuery()
   const { data: transactions, isLoading: txLoading } = useWalletTransactionsQuery(wallet?.id)
   
   const [topUpOpen, setTopUpOpen] = useState(false)

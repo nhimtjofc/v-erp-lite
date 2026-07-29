@@ -83,8 +83,7 @@ public class WalletService {
             throw new NotFoundException("User not found");
         }
         String normalizedCurrency = moneyService.normalizeCurrency(currency);
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2 order by createdAt asc", tenantId, userId).firstResult();
+        Business business = resolveOwnerBusiness(user, tenantId);
         Wallet wallet;
         if (business != null) {
             wallet = getOrCreateWallet(tenantId, "SELLER", business.getId(), normalizedCurrency, actorId);
@@ -99,6 +98,53 @@ public class WalletService {
         wallet.setUser(user);
         wallet.setUpdatedBy(actorId);
         return wallet;
+    }
+
+    public boolean isWalletOwnedByUser(String tenantId, Wallet wallet, User user) {
+        if (wallet == null || user == null || !tenantId.equals(wallet.getTenantId())) {
+            return false;
+        }
+        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())) {
+            return true;
+        }
+        if ("USER".equals(wallet.getOwnerType())) {
+            return user.getId().equals(wallet.getOwnerId());
+        }
+        if (!"SELLER".equals(wallet.getOwnerType()) || !isBusinessOwner(user)) {
+            return false;
+        }
+
+        Business assignedBusiness = user.getBusiness();
+        if (assignedBusiness != null
+                && tenantId.equals(assignedBusiness.getTenantId())
+                && assignedBusiness.getId().equals(wallet.getOwnerId())) {
+            return true;
+        }
+        return Business.count(
+                "id = ?1 and tenantId = ?2 and createdBy = ?3",
+                wallet.getOwnerId(),
+                tenantId,
+                user.getId()
+        ) > 0;
+    }
+
+    private Business resolveOwnerBusiness(User user, String tenantId) {
+        if (!isBusinessOwner(user)) {
+            return null;
+        }
+        Business assignedBusiness = user.getBusiness();
+        if (assignedBusiness != null && tenantId.equals(assignedBusiness.getTenantId())) {
+            return assignedBusiness;
+        }
+        return Business.find(
+                "tenantId = ?1 and createdBy = ?2 order by createdAt asc",
+                tenantId,
+                user.getId()
+        ).firstResult();
+    }
+
+    private boolean isBusinessOwner(User user) {
+        return user.getRole() != null && "businessOwner".equals(user.getRole().getName());
     }
 
     public List<Wallet> listWallets(String tenantId, String ownerType, UUID ownerId, String currency) {
@@ -459,34 +505,43 @@ public class WalletService {
         return transactionType.trim().toUpperCase(Locale.ROOT);
     }
 
+    public long getPendingEscrowForSeller(String tenantId, Wallet wallet) {
+        if (!"SELLER".equals(wallet.getOwnerType()) || wallet.getOwnerId() == null) return 0;
+        Long total = entityManager.createQuery(
+            "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e WHERE e.tenantId = :tenantId AND e.sellerWallet.id = :walletId AND e.status = 'HELD'",
+            Long.class)
+            .setParameter("tenantId", tenantId)
+            .setParameter("walletId", wallet.getId())
+            .getSingleResult();
+        return total;
+    }
+
     public Map<String, Long> getWalletStats(String tenantId) {
-        // We calculate total balance by ownerType
         Map<String, Long> stats = new HashMap<>();
-        
+
         Long customerTotal = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'USER'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
-            
-        Long platformAvailable = entityManager.createQuery(
+        Long platformCommission = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'PLATFORM'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
-            
-        Long platformPending = entityManager.createQuery(
-            "SELECT COALESCE(SUM(w.pendingBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'PLATFORM'", Long.class)
-            .setParameter("tenantId", tenantId)
-            .getSingleResult();
-            
-        Long sellerTotal = entityManager.createQuery(
+
+        Long sellerAvailable = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'SELLER'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
-            
+
+        Long escrowHeld = entityManager.createQuery(
+            "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e WHERE e.tenantId = :tenantId AND e.status = 'HELD'", Long.class)
+            .setParameter("tenantId", tenantId)
+            .getSingleResult();
+
         stats.put("customerBalance", customerTotal);
-        stats.put("platformCommission", platformAvailable);
-        stats.put("escrowBalance", platformPending);
-        stats.put("sellerBalance", sellerTotal);
+        stats.put("platformCommission", platformCommission);
+        stats.put("escrowBalance", escrowHeld);
+        stats.put("sellerBalance", sellerAvailable + escrowHeld);
         return stats;
     }
 

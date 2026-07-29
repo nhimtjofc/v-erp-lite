@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { getWallet, myWallet, transactions, updateMyBankDetails } from './gen/sdk.gen'
+import { myWallet, transactions, updateMyBankDetails } from './gen/sdk.gen'
 import type { WalletResponse, WalletTransactionResponse } from './gen/types.gen'
 
 export type SellerWallet = WalletResponse
@@ -13,17 +13,16 @@ export interface BankDetailsInput {
 }
 
 const TRANSACTIONS_PAGE_SIZE = 50
+export const MY_WALLET_QUERY_KEY = ['my-wallet'] as const
 
-export function useSellerWalletQuery() {
+export function useMyWalletQuery() {
   return useQuery({
-    queryKey: ['seller-wallet'],
+    queryKey: MY_WALLET_QUERY_KEY,
     queryFn: async () => {
-      const pinnedId = import.meta.env.VITE_SELLER_WALLET_ID as string | undefined
-      const response = pinnedId
-        ? await getWallet({ path: { id: pinnedId }, throwOnError: true })
-        : await myWallet({ throwOnError: true })
+      const response = await myWallet({ throwOnError: true })
       return response.data ?? null
     },
+    refetchInterval: 3000,
   })
 }
 
@@ -39,6 +38,7 @@ export function useWalletTransactionsQuery(walletId?: string) {
       return response.data ?? []
     },
     enabled: !!walletId,
+    refetchInterval: 3000,
   })
 }
 

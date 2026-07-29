@@ -17,7 +17,7 @@ import {
   myVouchersOptions,
   getMyCustomerProfileOptions
 } from '@/shared/api'
-import { useSellerWalletQuery } from '@/shared/api/wallet'
+import { useMyWalletQuery } from '@/shared/api/wallet'
 import { formatVND } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
@@ -71,7 +71,7 @@ export function ShopPage() {
   const { data: me } = useMeQuery()
   const isCustomerRole = me?.role?.name === 'customer' || me?.role?.name === 'user'
   
-  const { data: userWallet } = useSellerWalletQuery()
+  const { data: userWallet } = useMyWalletQuery()
 
   // Fetch list of customers if admin/operator
   const { data: customers } = useQuery({

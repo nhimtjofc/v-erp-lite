@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getUser } from '@/shared/auth'
 import { useMeQuery, useUpdateMeMutation, useGetMyCustomerProfileQuery } from '@/shared/api'
-import { useSellerWalletQuery } from '@/shared/api/wallet'
+import { useMyWalletQuery } from '@/shared/api/wallet'
 import { Badge } from '@/shared/ui/badge'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -78,7 +78,7 @@ export function PersonalInfoPage() {
   const [flipped, setFlipped] = useState(false)
   const [cardQrUrl, setCardQrUrl] = useState('')
   const { data: customerProfile } = useGetMyCustomerProfileQuery()
-  const { data: userWallet } = useSellerWalletQuery()
+  const { data: userWallet } = useMyWalletQuery()
 
   useEffect(() => {
     if (!customerProfile?.cardNumber) return

@@ -1,12 +1,13 @@
 package base.rest;
 
-import base.entity.Business;
 import base.entity.User;
 import base.entity.Wallet;
+import base.entity.EscrowRecord;
 import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import base.security.CallerContext;
+import base.service.EscrowService;
 import base.service.MoneyService;
 import base.service.WalletService;
 import base.service.VietQRService;
@@ -46,6 +47,9 @@ public class WalletResource {
 
     @Inject
     MoneyService moneyService;
+
+    @Inject
+    EscrowService escrowService;
 
     @Inject
     VietQRService vietQRService;
@@ -200,6 +204,35 @@ public class WalletResource {
         return response;
     }
 
+    @POST
+    @Path("/escrow/force-release")
+    @RolesAllowed({"admin"})
+    public Map<String, Object> forceReleaseEscrows() {
+        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
+                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
+                Object[].class)
+                .getResultList();
+
+        int released = 0;
+        int failed = 0;
+        for (Object[] row : eligibleOrders) {
+            UUID orderId = (UUID) row[0];
+            String tenantId = (String) row[1];
+            try {
+                escrowService.releaseOrderEscrow(tenantId, orderId, caller.userId());
+                released++;
+            } catch (Exception e) {
+                failed++;
+            }
+        }
+
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("releasedOrders", released);
+        result.put("message", released + " order(s) escrow released, "
+                + failed + " failed (simulated 7-day fast-forward)");
+        return result;
+    }
+
     @GET
     @Path("/transactions/all")
     @RolesAllowed({"admin", "qa", "demo"})
@@ -228,12 +261,13 @@ public class WalletResource {
         }
         Wallet wallet = walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), currency, caller.userId());
-        WalletResponse response = WalletResponse.from(wallet);
+        WalletResponse resp = WalletResponse.from(wallet);
+        // Seller's pending balance is held in the platform wallet as escrow;
+        // show the actual pending escrow amount on the seller wallet UI.
         if ("SELLER".equals(wallet.getOwnerType())) {
-            long escrowHeld = escrowService.sumHeldForSeller(wallet.getTenantId(), wallet.getId());
-            response.pendingBalanceMinor += escrowHeld;
+            resp.pendingBalanceMinor = walletService.getPendingEscrowForSeller(caller.tenantCode(), wallet);
         }
-        return response;
+        return resp;
     }
 
     @POST
@@ -400,16 +434,10 @@ public class WalletResource {
             return wallet;
         }
         User user = caller.resolveUser();
-        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())) {
+        if (walletService.isWalletOwnedByUser(caller.tenantCode(), wallet, user)) {
             return wallet;
         }
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
-        if (business == null || !"SELLER".equals(wallet.getOwnerType())
-                || !business.getId().equals(wallet.getOwnerId())) {
-            throw new ForbiddenException("You are not allowed to access this wallet");
-        }
-        return wallet;
+        throw new ForbiddenException("You are not allowed to access this wallet");
     }
 }
  
