@@ -99,7 +99,7 @@ public class OrderFulfillmentService {
     public OrderItem cancelItem(String tenantId, UUID orderId, UUID itemId, String reason, UUID actorId) {
         Order order = orderForUpdate(tenantId, orderId);
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
         }
 

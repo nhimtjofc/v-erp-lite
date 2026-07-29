@@ -1,6 +1,5 @@
 package base.service;
 
-import base.entity.Business;
 import base.entity.Customer;
 import base.entity.EscrowRecord;
 import base.entity.Order;
@@ -191,60 +190,256 @@ public class ReturnRefundService {
         long newFinalAmount = allCancelled ? 0 : Math.max(0, afterDiscount + shippingFee + taxAmount);
         order.setFinalAmountMinor(newFinalAmount);
 
-        // Refund from escrow (platform wallet) → customer wallet (proportional)
+        // No refund here — money stays in escrow. Admin decides the final disposition.
         long refundAmount = calculateItemRefund(order, item);
         item.setReturnRefundMinor(refundAmount);
         item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
 
-        if (refundAmount > 0) {
-            List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
-            Wallet platformWallet = walletService.getOrCreateWallet(
-                    tenantId, "PLATFORM", PLATFORM_OWNER_ID,
-                    order.getCurrency() != null ? order.getCurrency() : "VND", actorId);
-            for (EscrowRecord escrow : escrows) {
-                if (!"HELD".equals(escrow.getStatus())) continue;
-                long actualRefund = Math.min(refundAmount, escrow.getAmountMinor());
-                walletService.refundPending(
-                        tenantId, platformWallet.getId(),
-                        Money.of(actualRefund, order.getCurrency()),
-                        "ESCROW", escrow.getId(), actorId,
-                        "Refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
-                escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
-                escrow.setUpdatedBy(actorId);
-            }
-
-            boolean isWalletPayment = "BANK_TRANSFER".equalsIgnoreCase(order.getPaymentMethod())
-                    || "WALLET".equalsIgnoreCase(order.getPaymentMethod());
-            if (isWalletPayment && order.getCustomer() != null) {
-                User customerUser = User.find("email = ?1 and tenantId = ?2",
-                        order.getCustomer().getEmail(), tenantId).firstResult();
-                if (customerUser != null) {
-                    Wallet customerWallet = walletService.getOrCreateWallet(
-                            tenantId, "USER", customerUser.getId(), order.getCurrency(), actorId);
-                    walletService.creditAvailable(
-                            tenantId, customerWallet.getId(),
-                            Money.of(refundAmount, order.getCurrency()),
-                            "CANCEL_REFUND", "ORDER_ITEM", itemId, actorId,
-                            "Refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
-                }
-            }
-        }
-
-        String newStatus = allCancelled ? "REFUNDED" : order.getStatus();
+        String newStatus = allCancelled ? "CANCEL_APPROVED" : order.getStatus();
         order.setUpdatedBy(actorId);
 
-        String noteText = "Cancel request approved for item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString());
+        String noteText = "Cancel request approved for item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString())
+                + ". Awaiting admin refund decision.";
         persistHistory(order, order.getStatus(), newStatus, noteText, actorId, tenantId);
 
         if (allCancelled) {
-            order.setStatus("REFUNDED");
+            order.setStatus("CANCEL_APPROVED");
         }
 
         notificationService.notifyBuyer(
                 order,
                 "CANCEL_APPROVED",
                 "Cancellation for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
-                        + " in order " + order.getOrderNumber() + " has been approved. Refund issued.",
+                        + " in order " + order.getOrderNumber() + " has been approved by the owner. "
+                        + "Refund is pending admin review.",
+                actorId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem processCancelRefund(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelApprovedAt() == null) {
+            throw new BadRequestException("Cancellation has not been approved yet");
+        }
+        if (item.getCancelledAt() == null) {
+            throw new BadRequestException("Item has not been cancelled");
+        }
+        if (item.getReturnRefundMinor() == null || item.getReturnRefundMinor() <= 0) {
+            throw new BadRequestException("No refund amount calculated for this item");
+        }
+        // Prevent double-processing
+        if (item.getCancelStatus() != null && "REFUNDED".equals(item.getCancelStatus())) {
+            throw new BadRequestException("Refund already processed for this item");
+        }
+
+        long refundAmount = item.getReturnRefundMinor();
+
+        List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
+        Wallet platformWallet = walletService.getOrCreateWallet(
+                tenantId, "PLATFORM", PLATFORM_OWNER_ID,
+                order.getCurrency() != null ? order.getCurrency() : "VND", actorId);
+        for (EscrowRecord escrow : escrows) {
+            if (!"HELD".equals(escrow.getStatus())) continue;
+            long actualRefund = Math.min(refundAmount, escrow.getAmountMinor());
+            walletService.refundPending(
+                    tenantId, platformWallet.getId(),
+                    Money.of(actualRefund, order.getCurrency()),
+                    "ESCROW", escrow.getId(), actorId,
+                    "Admin refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+            escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
+            escrow.setUpdatedBy(actorId);
+        }
+
+        boolean isWalletPayment = "BANK_TRANSFER".equalsIgnoreCase(order.getPaymentMethod())
+                || "WALLET".equalsIgnoreCase(order.getPaymentMethod());
+        if (isWalletPayment && order.getCustomer() != null) {
+            User customerUser = User.find("email = ?1 and tenantId = ?2",
+                    order.getCustomer().getEmail(), tenantId).firstResult();
+            if (customerUser != null) {
+                Wallet customerWallet = walletService.getOrCreateWallet(
+                        tenantId, "USER", customerUser.getId(), order.getCurrency(), actorId);
+                walletService.creditAvailable(
+                        tenantId, customerWallet.getId(),
+                        Money.of(refundAmount, order.getCurrency()),
+                        "CANCEL_REFUND", "ORDER_ITEM", itemId, actorId,
+                        "Admin refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+            }
+        }
+
+        item.setCancelStatus("REFUNDED");
+        item.setUpdatedBy(actorId);
+
+        boolean allHandled = order.getItems().stream()
+                .allMatch(oi -> oi.getCancelledAt() != null);
+        if (allHandled) {
+            String oldStatus = order.getStatus();
+            order.setStatus("REFUNDED");
+            order.setUpdatedBy(actorId);
+            persistHistory(order, oldStatus, "REFUNDED",
+                    "Admin processed refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString()),
+                    actorId, tenantId);
+        } else {
+            persistHistory(order, order.getStatus(), order.getStatus(),
+                    "Admin processed refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString()),
+                    actorId, tenantId);
+        }
+
+        notificationService.notifyBuyer(
+                order,
+                "CANCEL_REFUNDED",
+                "Refund of " + refundAmount + " for cancelled item "
+                        + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + " has been processed by admin.",
+                actorId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem releaseCancelToSeller(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelApprovedAt() == null) {
+            throw new BadRequestException("Cancellation has not been approved yet");
+        }
+        if (item.getCancelledAt() == null) {
+            throw new BadRequestException("Item has not been cancelled");
+        }
+        if (item.getCancelStatus() != null && "RELEASED".equals(item.getCancelStatus())) {
+            throw new BadRequestException("Funds already released to seller for this item");
+        }
+
+        long releaseAmount = item.getReturnRefundMinor() != null ? item.getReturnRefundMinor() : 0;
+
+        if (releaseAmount > 0) {
+            List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
+            for (EscrowRecord escrow : escrows) {
+                if (!"HELD".equals(escrow.getStatus())) continue;
+                long actualRelease = Math.min(releaseAmount, escrow.getAmountMinor());
+                Wallet platformWallet = walletService.getOrCreateWallet(
+                        tenantId, "PLATFORM", PLATFORM_OWNER_ID,
+                        order.getCurrency() != null ? order.getCurrency() : "VND", actorId);
+
+                walletService.releasePendingToAvailable(
+                        tenantId, platformWallet.getId(),
+                        Money.of(actualRelease, order.getCurrency()),
+                        "ESCROW", escrow.getId(), actorId,
+                        "Admin release to seller for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+
+                walletService.debitAvailable(
+                        tenantId, platformWallet.getId(),
+                        Money.of(actualRelease, order.getCurrency()),
+                        "ESCROW_RELEASE_SELLER", "ESCROW", escrow.getId(), actorId,
+                        "Transfer to seller for cancelled item");
+
+                Wallet sellerWallet = escrow.getSellerWallet();
+                if (sellerWallet != null) {
+                    walletService.creditAvailable(
+                            tenantId, sellerWallet.getId(),
+                            Money.of(actualRelease, order.getCurrency()),
+                            "ESCROW_SELLER_CREDIT", "ESCROW", escrow.getId(), actorId,
+                            "Payment for cancelled item released by admin");
+                }
+
+                escrow.setStatus("RELEASED");
+                escrow.setUpdatedBy(actorId);
+            }
+        }
+
+        item.setCancelStatus("RELEASED");
+        item.setUpdatedBy(actorId);
+
+        persistHistory(order, order.getStatus(), order.getStatus(),
+                "Admin released cancelled item funds to seller: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString()),
+                actorId, tenantId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem processReturnRefund(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getReturnApprovedAt() == null) {
+            throw new BadRequestException("Return has not been approved yet");
+        }
+        if (item.getReturnRefundMinor() == null || item.getReturnRefundMinor() <= 0) {
+            throw new BadRequestException("No refund amount calculated for this item");
+        }
+        if (item.getReturnStatus() != null && "REFUNDED".equals(item.getReturnStatus())) {
+            throw new BadRequestException("Refund already processed for this item");
+        }
+
+        long refundAmount = item.getReturnRefundMinor();
+
+        List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
+        Wallet platformWallet = walletService.getOrCreateWallet(
+                tenantId, "PLATFORM", PLATFORM_OWNER_ID,
+                order.getCurrency() != null ? order.getCurrency() : "VND", actorId);
+        for (EscrowRecord escrow : escrows) {
+            if (!"HELD".equals(escrow.getStatus())) continue;
+            long actualRefund = Math.min(refundAmount, escrow.getAmountMinor());
+            walletService.refundPending(
+                    tenantId, platformWallet.getId(),
+                    Money.of(actualRefund, order.getCurrency()),
+                    "ESCROW", escrow.getId(), actorId,
+                    "Admin refund for returned item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+            escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
+            escrow.setUpdatedBy(actorId);
+        }
+
+        boolean isWalletPayment = "BANK_TRANSFER".equalsIgnoreCase(order.getPaymentMethod())
+                || "WALLET".equalsIgnoreCase(order.getPaymentMethod());
+        if (isWalletPayment && order.getCustomer() != null) {
+            User customerUser = User.find("email = ?1 and tenantId = ?2",
+                    order.getCustomer().getEmail(), tenantId).firstResult();
+            if (customerUser != null) {
+                Wallet customerWallet = walletService.getOrCreateWallet(
+                        tenantId, "USER", customerUser.getId(), order.getCurrency(), actorId);
+                walletService.creditAvailable(
+                        tenantId, customerWallet.getId(),
+                        Money.of(refundAmount, order.getCurrency()),
+                        "RETURN_REFUND", "ORDER_ITEM", itemId, actorId,
+                        "Admin refund for returned item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+            }
+        }
+
+        item.setReturnStatus("REFUNDED");
+        item.setUpdatedBy(actorId);
+
+        boolean allHandled = order.getItems().stream()
+                .allMatch(oi -> oi.getCancelledAt() != null || "REFUNDED".equals(oi.getReturnStatus()));
+        if (allHandled) {
+            String oldStatus = order.getStatus();
+            order.setStatus("REFUNDED");
+            order.setUpdatedBy(actorId);
+            persistHistory(order, oldStatus, "REFUNDED",
+                    "Admin processed refund for returned item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString()),
+                    actorId, tenantId);
+        } else {
+            persistHistory(order, order.getStatus(), order.getStatus(),
+                    "Admin processed refund for returned item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString()),
+                    actorId, tenantId);
+        }
+
+        notificationService.notifyBuyer(
+                order,
+                "RETURN_REFUNDED",
+                "Refund of " + refundAmount + " for returned item "
+                        + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + " has been processed by admin.",
                 actorId);
 
         return item;
@@ -366,60 +561,9 @@ public class ReturnRefundService {
         item.setReturnStatus("APPROVED");
         item.setUpdatedBy(actorId);
 
-        String paymentMethod = order.getPaymentMethod();
-        boolean isWalletPayment = "BANK_TRANSFER".equalsIgnoreCase(paymentMethod)
-                || "WALLET".equalsIgnoreCase(paymentMethod);
-
         long refundAmount = calculateItemRefund(order, item);
-
-        if (isWalletPayment) {
-            item.setReturnRefundMinor(refundAmount);
-            item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
-
-            User customerUser = User.find("email = ?1 and tenantId = ?2",
-                    order.getCustomer().getEmail(), tenantId).firstResult();
-            if (customerUser == null) {
-                throw new BadRequestException("Customer user account not found for wallet transfer");
-            }
-
-            Business business = order.getBusiness();
-            if (business == null) {
-                throw new BadRequestException("Order business not found for wallet transfer");
-            }
-            UUID sellerBusinessId = business.getId();
-            if (sellerBusinessId == null) {
-                throw new BadRequestException("Business wallet not found for wallet transfer");
-            }
-
-            Wallet sellerWallet = walletService.getOrCreateWallet(
-                    tenantId, "SELLER", sellerBusinessId, order.getCurrency(), actorId);
-            walletService.debitAvailable(
-                    tenantId,
-                    sellerWallet.getId(),
-                    Money.of(refundAmount, order.getCurrency()),
-                    "RETURN_REFUND",
-                    "ORDER_ITEM",
-                    itemId,
-                    actorId,
-                    "Hoàn tiền trả hàng cho sản phẩm " + (item.getProduct() != null ? item.getProduct().getName() : "")
-            );
-
-            Wallet customerWallet = walletService.getOrCreateWallet(
-                    tenantId, "USER", customerUser.getId(), order.getCurrency(), actorId);
-            walletService.creditAvailable(
-                    tenantId,
-                    customerWallet.getId(),
-                    Money.of(refundAmount, order.getCurrency()),
-                    "RETURN_REFUND",
-                    "ORDER_ITEM",
-                    itemId,
-                    actorId,
-                    "Hoàn tiền trả hàng cho sản phẩm " + (item.getProduct() != null ? item.getProduct().getName() : "")
-            );
-        } else {
-            item.setReturnRefundMinor(refundAmount);
-            item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
-        }
+        item.setReturnRefundMinor(refundAmount);
+        item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
 
         recalculateOrderAfterReturn(order, actorId, tenantId);
 
@@ -427,15 +571,15 @@ public class ReturnRefundService {
                 .allMatch(oi -> oi.getCancelledAt() != null || oi.getReturnApprovedAt() != null);
         if (allItemsHandled) {
             String oldStatus = order.getStatus();
-            order.setStatus("REFUNDED");
+            order.setStatus("RETURN_APPROVED");
             order.setUpdatedBy(actorId);
-            persistHistory(order, oldStatus, "REFUNDED",
-                    "All items returned and refunded", actorId, tenantId);
+            persistHistory(order, oldStatus, "RETURN_APPROVED",
+                    "All items return approved, awaiting admin refund", actorId, tenantId);
         } else {
             String orderStatus = order.getStatus();
             persistHistory(order, orderStatus, orderStatus,
                     "Item return approved: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString())
-                            + (isWalletPayment ? " - Refunded " + refundAmount : " - COD, no wallet transfer"),
+                            + " - Refund pending admin review",
                     actorId, tenantId);
         }
 
@@ -443,8 +587,8 @@ public class ReturnRefundService {
                 order,
                 "RETURN_APPROVED",
                 "Return for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
-                        + " in order " + order.getOrderNumber() + " has been approved."
-                        + (isWalletPayment ? " Refund of " + refundAmount + " VND has been credited to your wallet." : " Please contact the shop for cash refund."),
+                        + " in order " + order.getOrderNumber() + " has been approved. "
+                        + "Refund is pending admin review.",
                 actorId);
 
         return item;

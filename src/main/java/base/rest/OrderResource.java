@@ -755,7 +755,7 @@ public class OrderResource {
 
         if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED",
                 "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
-                "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
+                "CANCEL_REQUESTED", "CANCEL_APPROVED", "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -976,7 +976,7 @@ public class OrderResource {
         }
 
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
         }
 
@@ -1034,6 +1034,11 @@ public class OrderResource {
         }
         requireBusinessStaffAccess(order);
 
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if ("PAID_ESCROW".equals(orderStatus)) {
+            throw new BadRequestException("For paid orders, use the cancel request approval flow instead. POST /orders/{id}/items/{itemId}/approve-cancel");
+        }
+
         String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
         OrderItem item = fulfillmentService.cancelItem(tenantCode, orderId, itemId, reason, caller.userId());
 
@@ -1085,7 +1090,7 @@ public class OrderResource {
         }
 
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel order when it is in " + orderStatus + " status");
         }
 
@@ -1192,6 +1197,37 @@ public class OrderResource {
     @Transactional
     public OrderItem rejectCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
         return returnRefundService.rejectCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Admin cancel refund disposition
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/refund-cancel")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem processCancelRefund(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.processCancelRefund(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/release-cancel-to-seller")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem releaseCancelToSeller(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.releaseCancelToSeller(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/refund-return")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem processReturnRefund(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.processReturnRefund(
                 caller.tenantCode(), orderId, itemId, caller.userId());
     }
 

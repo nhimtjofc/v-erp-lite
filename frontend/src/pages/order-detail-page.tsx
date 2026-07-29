@@ -96,6 +96,10 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     label: 'Cancel requested', badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
     dotClass: 'border-red-400 bg-red-500 text-white', icon: XCircle,
   },
+  CANCEL_APPROVED: {
+    label: 'Cancel approved (awaiting admin)', badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    dotClass: 'border-orange-400 bg-orange-500 text-white', icon: Clock,
+  },
 }
 
 function getStatusConfig(status: string) {
@@ -593,6 +597,77 @@ export function OrderDetailPage() {
     },
   })
 
+  const processCancelRefundMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/refund-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to process cancel refund')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const releaseCancelToSellerMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/release-cancel-to-seller`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to release funds to seller')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const processReturnRefundMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/refund-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to process return refund')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
   const forceReleaseMutation = useMutation({
     mutationFn: async () => {
       const token = localStorage.getItem('access_token')
@@ -782,8 +857,29 @@ export function OrderDetailPage() {
               <XCircle className="h-4 w-4 mr-1.5" /> Cancel Order
             </Button>
           )}
+          {isAdmin && status === 'RETURN_APPROVED' && (
+            <Button
+              size="sm"
+              className="bg-success text-success-foreground hover:bg-success/90"
+              onClick={() => {
+                const items = (order as any).items ?? []
+                const approvedItems = items.filter((i: any) => i.returnApprovedAt && i.returnStatus !== 'REFUNDED')
+                if (approvedItems.length === 0) return
+                if (window.confirm(`Process refund for ${approvedItems.length} returned item(s)?`)) {
+                  Promise.all(approvedItems.map((i: any) =>
+                    processReturnRefundMutation.mutateAsync({ itemId: i.id })
+                  )).then(() => {
+                    refreshOrderPage()
+                  })
+                }
+              }}
+              disabled={processReturnRefundMutation.isPending}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Process Return Refunds
+            </Button>
+          )}
         </div>
-        )}
+      )}
       </div>
 
       {deleteError && (
@@ -833,6 +929,7 @@ export function OrderDetailPage() {
                   const isReturnApproved = !!(item as any).returnApprovedAt
                   const itemReturnStatus = (item as any).returnStatus
                   const isCancelRequested = !!(item as any).cancelRequestedAt && !(item as any).cancelApprovedAt && (item as any).cancelStatus !== 'REJECTED'
+                  const isCancelApproved = !!(item as any).cancelApprovedAt && (item as any).cancelStatus === 'APPROVED'
                   const isCancelRejected = (item as any).cancelStatus === 'REJECTED'
                   const variantValues = item.productVariant
                     ? Object.entries(item.productVariant.optionValues ?? {})
@@ -881,8 +978,11 @@ export function OrderDetailPage() {
                         {isReturnRequested && (item as any).returnReason && (
                           <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-0.5">Return reason: {(item as any).returnReason}</p>
                         )}
-                        {isReturnApproved && (item as any).returnRefundMinor != null && (
+                        {isReturnApproved && itemReturnStatus === 'REFUNDED' && (item as any).returnRefundMinor != null && (
                           <p className="text-xs text-success italic mt-0.5">Refunded: {formatMoneyMinor(Number((item as any).returnRefundMinor), (item as any).returnRefundCurrency || 'VND')}</p>
+                        )}
+                        {isReturnApproved && itemReturnStatus !== 'REFUNDED' && (item as any).returnRefundMinor != null && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-0.5">Refund pending: {formatMoneyMinor(Number((item as any).returnRefundMinor), (item as any).returnRefundCurrency || 'VND')}</p>
                         )}
                       </div>
 
@@ -962,7 +1062,7 @@ export function OrderDetailPage() {
                               size="sm"
                               className="h-8 text-xs"
                               onClick={() => {
-                                if (window.confirm('Approve cancellation for this item? Refund will be issued from escrow.')) {
+                                if (window.confirm('Approve cancellation for this item? Refund will be pending admin decision.')) {
                                   approveCancelMutation.mutate({ itemId: (item as any).id })
                                 }
                               }}
@@ -984,6 +1084,49 @@ export function OrderDetailPage() {
                               <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
                             </Button>
                           </>
+                        )}
+                        {isCancelApproved && isAdmin && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90"
+                              onClick={() => {
+                                if (window.confirm('Refund to customer? Money goes from escrow to customer wallet.')) {
+                                  processCancelRefundMutation.mutate({ itemId: (item as any).id })
+                                }
+                              }}
+                              disabled={processCancelRefundMutation.isPending}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Refund to Customer
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                if (window.confirm('Release to seller? Money goes from escrow to seller wallet.')) {
+                                  releaseCancelToSellerMutation.mutate({ itemId: (item as any).id })
+                                }
+                              }}
+                              disabled={releaseCancelToSellerMutation.isPending}
+                            >
+                              <Shield className="h-3.5 w-3.5 mr-1" /> Release to Seller
+                            </Button>
+                          </>
+                        )}
+                        {isReturnApproved && isAdmin && itemReturnStatus !== 'REFUNDED' && (
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90"
+                            onClick={() => {
+                              if (window.confirm('Process return refund for this item?')) {
+                                processReturnRefundMutation.mutate({ itemId: (item as any).id })
+                              }
+                            }}
+                            disabled={processReturnRefundMutation.isPending}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Refund to Customer
+                          </Button>
                         )}
                         <div className="text-right">
                           <div className="text-sm font-semibold">
@@ -1620,7 +1763,7 @@ export function OrderDetailPage() {
           <DialogHeader>
             <DialogTitle>Approve return for this item?</DialogTitle>
             <DialogDescription>
-              Confirm that the returned item has been received. Funds will be transferred accordingly.
+              Confirm that the returned item has been received. The refund will be processed by the admin.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1633,16 +1776,6 @@ export function OrderDetailPage() {
                 <span className="text-muted-foreground">Return reason:</span>
                 <span className="font-medium">{(approvingReturnItem as any)?.returnReason || 'N/A'}</span>
               </div>
-              {(order as any)?.paymentMethod === 'COD' && (
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm mt-2">
-                  <span className="font-semibold">COD order</span> — No wallet transfer will occur. Please handle refund directly with the customer.
-                </div>
-              )}
-              {((order as any)?.paymentMethod === 'BANK_TRANSFER' || (order as any)?.paymentMethod === 'WALLET') && (
-                <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm mt-2">
-                  <span className="font-semibold">Wallet transfer</span> — The refund amount will be debited from your wallet and credited to the customer's wallet.
-                </div>
-              )}
             </div>
             {approveReturnError && (
               <p className="text-sm text-destructive">{approveReturnError}</p>
