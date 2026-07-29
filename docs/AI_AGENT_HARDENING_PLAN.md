@@ -77,6 +77,7 @@ Ngược lại, `ChatbotResource.java` là con đường tắt không an toàn (
 - [ ] Gói 3 agent thành tool registry schema cố định + `MAX_STEPS`; mỗi tool_call ↔ đúng 1 tool_result.
 - [ ] Guard: reject arg chứa `user/tenant/customer/account` hoặc field danh tính tương đương.
 - [ ] Test bằng fake provider (scripted) trước khi nối Gemini thật.
+- [ ] 🔴 **BẮT BUỘC (rò rỉ đang sống): sửa `server.py:70`** — handler `/chat` hiện `return {"response": f"❌ Lỗi Server: <pre>{tb}</pre>"}`, in nguyên traceback ra UI. Khi viết lại loop, thay bằng thông báo lỗi generic (không kèm `tb`/stacktrace); log chi tiết chỉ ở server-side. Validator Bước 5 (`output_validator`) sẽ bắt `tech_leak` như lớp lưới thứ hai, nhưng lỗi này phải được sửa tận gốc tại đây.
 
 ### Bước 4 — Session server-owned, append-only
 - [ ] `/chat` nhận `{ session_id?, message }`, **không nhận history từ client**.
@@ -84,8 +85,13 @@ Ngược lại, `ChatbotResource.java` là con đường tắt không an toàn (
 - [ ] Chặn turn đồng thời (concurrent) thay vì trộn lẫn. Turn lỗi không lưu history dở.
 
 ### Bước 5 — Output validation + dọn lỗi lộ thông tin
-- [ ] **Bỏ in stack trace ra UI** (`server.py:70` đang leak traceback).
-- [ ] Chặn deterministic: lộ instruction, bịa status/giá/record, claim "đã xử lý" mà backend chưa confirm. 1 retry no-tool → fallback an toàn. Validate trước khi stream.
+**Mảng A — validator độc lập ✅ ĐÃ XONG** (`mcp_server/output_validator.py`, `tests/test_output_validator.py`, 20/20 pass)
+- [x] Check deterministic: `tech_leak` (traceback/tên file `.py`/`<pre>`), `instruction_leak` (marker hệ thống + `protected_fragments` truyền vào), `action_claim` (self-claim write kiểu "tôi đã hủy/hoàn tiền..." — không bắt nhầm status "đã giao/đã thanh toán"), `pii` (SĐT/email trong reply mà tool result không có).
+- [x] `validate_reply(reply, tool_results, protected_fragments) -> ValidationResult`; hằng `SAFE_FALLBACK`. Không đụng model/`server.py`.
+
+**Mảng B — nối vào luồng ⛔ CHỜ Bước 3** (đụng `server.py`/agents dev kia đang viết)
+- [ ] `validate_reply` → 1 retry no-tool → `SAFE_FALLBACK`; validate **trước khi stream**.
+- [ ] **Bỏ in stack trace ra UI** — xem mục 🔴 bắt buộc ở Bước 3 (`server.py:70`).
 - [ ] Chuyển bảo mật PII từ prompt (`order_ops_agent.py:73`) sang backend (đã có `OrderStatusDto` + ownership check).
 
 ### Bước 6 — Dọn secret + tài liệu + demo (Definition of Done)
