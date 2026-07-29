@@ -50,6 +50,9 @@ public class WalletResource {
     @Inject
     VietQRService vietQRService;
 
+    @Inject
+    base.service.EscrowService escrowService;
+
     public static class EnsureWalletRequest {
         public String ownerType;
         public UUID ownerId;
@@ -140,6 +143,7 @@ public class WalletResource {
 
     public static class WalletStatsResponse {
         public long customerBalance;
+        public long platformCommission;
         public long escrowBalance;
         public long sellerBalance;
     }
@@ -190,6 +194,7 @@ public class WalletResource {
         Map<String, Long> stats = walletService.getWalletStats(caller.tenantCode());
         WalletStatsResponse response = new WalletStatsResponse();
         response.customerBalance = stats.get("customerBalance");
+        response.platformCommission = stats.get("platformCommission");
         response.escrowBalance = stats.get("escrowBalance");
         response.sellerBalance = stats.get("sellerBalance");
         return response;
@@ -223,7 +228,12 @@ public class WalletResource {
         }
         Wallet wallet = walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), currency, caller.userId());
-        return WalletResponse.from(wallet);
+        WalletResponse response = WalletResponse.from(wallet);
+        if ("SELLER".equals(wallet.getOwnerType())) {
+            long escrowHeld = escrowService.sumHeldForSeller(wallet.getTenantId(), wallet.getId());
+            response.pendingBalanceMinor += escrowHeld;
+        }
+        return response;
     }
 
     @POST
@@ -245,7 +255,13 @@ public class WalletResource {
     @GET
     @Path("/{id}")
     public WalletResponse getWallet(@PathParam("id") UUID id) {
-        return WalletResponse.from(requireWalletAccess(id));
+        Wallet wallet = requireWalletAccess(id);
+        WalletResponse response = WalletResponse.from(wallet);
+        if ("SELLER".equals(wallet.getOwnerType())) {
+            long escrowHeld = escrowService.sumHeldForSeller(wallet.getTenantId(), wallet.getId());
+            response.pendingBalanceMinor += escrowHeld;
+        }
+        return response;
     }
 
     @GET

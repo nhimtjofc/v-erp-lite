@@ -1,6 +1,36 @@
 -- Complete the legacy USD-to-VND conversion and make VND the only accepted currency.
 -- V39 converted the main aggregates at 1 USD cent = 250 VND but did not cover
 -- product variants, carts, payment transactions, refunds, or currency defaults.
+-- Also catch any products/vouchers/orders inserted after V39 with the old USD default.
+
+UPDATE products
+SET base_price_minor = base_price_minor * 250,
+    sale_price_minor = sale_price_minor * 250,
+    cost_price_minor = cost_price_minor * 250,
+    currency = 'VND'
+WHERE currency = 'USD';
+
+UPDATE vouchers
+SET discount_value = CASE WHEN discount_type = 'FLAT' THEN discount_value * 250 ELSE discount_value END,
+    min_order_value_minor = min_order_value_minor * 250,
+    max_discount_amount_minor = CASE WHEN max_discount_amount_minor IS NOT NULL THEN max_discount_amount_minor * 250 ELSE NULL END,
+    currency = 'VND'
+WHERE currency = 'USD';
+
+UPDATE orders
+SET subtotal_amount_minor = subtotal_amount_minor * 250,
+    discount_amount_minor = discount_amount_minor * 250,
+    shipping_fee_minor = shipping_fee_minor * 250,
+    tax_amount_minor = tax_amount_minor * 250,
+    vat_amount_minor = vat_amount_minor * 250,
+    final_amount_minor = final_amount_minor * 250,
+    currency = 'VND'
+WHERE currency = 'USD';
+
+UPDATE payment_intents
+SET amount_minor = amount_minor * 250, 
+    currency = 'VND' 
+WHERE currency = 'USD';
 
 UPDATE product_variants
 SET price_minor = price_minor * 250,

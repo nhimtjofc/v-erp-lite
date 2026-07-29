@@ -11,6 +11,7 @@ interface WalletStatsResponse {
   customerBalance: number;
   escrowBalance: number;
   sellerBalance: number;
+  platformCommission: number;
 }
 
 interface WalletTransactionResponse {
@@ -73,9 +74,9 @@ export function MockBankDashboardPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         {/* Customer Wallet */}
-        <Card className="border-l-4 border-l-blue-500 shadow-sm relative overflow-hidden group">
+        <Card className="h-full flex flex-col justify-between border-l-4 border-l-blue-500 shadow-sm relative overflow-hidden group">
           <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity p-4">
             <Users className="w-24 h-24" />
           </div>
@@ -96,7 +97,7 @@ export function MockBankDashboardPage() {
         </Card>
 
         {/* Escrow Wallet */}
-        <Card className="border-l-4 border-l-amber-500 shadow-md scale-105 relative overflow-hidden group bg-gradient-to-br from-background to-amber-500/5">
+        <Card className="h-full flex flex-col justify-between border-l-4 border-l-amber-500 shadow-md relative overflow-hidden group bg-gradient-to-br from-background to-amber-500/5">
           <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity p-4">
             <ShieldCheck className="w-24 h-24 text-amber-500" />
           </div>
@@ -116,8 +117,29 @@ export function MockBankDashboardPage() {
           </CardContent>
         </Card>
 
+        {/* Commission Wallet */}
+        <Card className="h-full flex flex-col justify-between border-l-4 border-l-purple-500 shadow-sm relative overflow-hidden group">
+          <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity p-4">
+            <Activity className="w-24 h-24" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+              <Activity className="w-4 h-4 mr-2" />
+              Doanh thu Nền tảng (Commission)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+              {statsLoading ? '...' : formatMoneyMinor(stats?.platformCommission || 0, 'VND')}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Tiền phí (Lợi nhuận) của Admin
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Seller Wallet */}
-        <Card className="border-l-4 border-l-emerald-500 shadow-sm relative overflow-hidden group">
+        <Card className="h-full flex flex-col justify-between border-l-4 border-l-emerald-500 shadow-sm relative overflow-hidden group">
           <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity p-4">
             <Store className="w-24 h-24" />
           </div>

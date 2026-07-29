@@ -44,24 +44,7 @@ public class PaymentRefundService {
             // Fallback for Wallet payments that don't use PaymentIntent
             WalletTransaction wt = WalletTransaction.find("referenceType = 'ORDER' and referenceId = ?1 and transactionType = 'PAYMENT' and type = 'DEBIT' and tenantId = ?2", orderId, tenantId).firstResult();
             if (wt != null) {
-                List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
-                long sellerEscrowTotal = escrows.stream().mapToLong(EscrowRecord::getAmountMinor).sum();
-                long platformCommission = Math.max(0, wt.getAmountMinor() - sellerEscrowTotal);
-
                 escrowService.refundOrderEscrow(tenantId, orderId, actorId);
-                if (platformCommission > 0) {
-                    Wallet platformWallet = walletService.getOrCreateWallet(
-                            tenantId, "PLATFORM", PLATFORM_OWNER_ID, wt.getWallet().getCurrency(), actorId);
-                    walletService.debitAvailable(
-                            tenantId,
-                            platformWallet.getId(),
-                            Money.of(platformCommission, wt.getWallet().getCurrency()),
-                            "COMMISSION_REFUND",
-                            "ORDER",
-                            orderId,
-                            actorId,
-                            "Reverse platform commission for refunded order");
-                }
 
                 walletService.creditAvailable(
                         tenantId,
@@ -85,10 +68,6 @@ public class PaymentRefundService {
             throw new BadRequestException("The original payment method could not be resolved");
         }
 
-        List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
-        long sellerEscrowTotal = escrows.stream().mapToLong(EscrowRecord::getAmountMinor).sum();
-        long platformCommission = Math.max(0, intent.getAmountMinor() - sellerEscrowTotal);
-
         String idempotencyKey = "order-refund:" + orderId;
         String gatewayRefundId = paymentGatewayService.refund(
                 payment.getGateway(),
@@ -98,19 +77,6 @@ public class PaymentRefundService {
                 idempotencyKey);
 
         escrowService.refundOrderEscrow(tenantId, orderId, actorId);
-        if (platformCommission > 0) {
-            Wallet platformWallet = walletService.getOrCreateWallet(
-                    tenantId, "PLATFORM", PLATFORM_OWNER_ID, intent.getCurrency(), actorId);
-            walletService.debitAvailable(
-                    tenantId,
-                    platformWallet.getId(),
-                    Money.of(platformCommission, intent.getCurrency()),
-                    "COMMISSION_REFUND",
-                    "ORDER",
-                    orderId,
-                    actorId,
-                    "Reverse platform commission for refunded order");
-        }
 
         PaymentRefund refund = new PaymentRefund();
         refund.setId(UUID.randomUUID());

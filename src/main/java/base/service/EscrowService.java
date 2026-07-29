@@ -18,6 +18,7 @@ import java.util.UUID;
 public class EscrowService {
 
     private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final int PLATFORM_COMMISSION_PERCENT = 5;
 
     @Inject
     WalletService walletService;
@@ -77,6 +78,22 @@ public class EscrowService {
         return EscrowRecord.list("tenantId = ?1 and status = ?2", tenantId, status.trim().toUpperCase());
     }
 
+    public long sumHeldForSeller(String tenantId, UUID sellerWalletId) {
+        List<Long> amounts = EscrowRecord.getEntityManager()
+                .createQuery("select e.amountMinor from EscrowRecord e where e.tenantId = :tenantId and e.sellerWallet.id = :sellerWalletId and e.status = 'HELD'", Long.class)
+                .setParameter("tenantId", tenantId)
+                .setParameter("sellerWalletId", sellerWalletId)
+                .getResultList();
+        
+        long totalNet = 0;
+        for (Long amt : amounts) {
+            if (amt != null) {
+                totalNet += (amt - commissionFor(amt));
+            }
+        }
+        return totalNet;
+    }
+
     @Transactional
     public List<EscrowRecord> releaseOrderEscrow(String tenantId, UUID orderId, UUID actorId) {
         List<EscrowRecord> records = heldRecords(tenantId, orderId);
@@ -94,15 +111,20 @@ public class EscrowService {
                     "ESCROW", record.getId(), actorId,
                     "Giải ngân tiền tạm giữ đơn hàng từ ví platform");
 
-            walletService.debitAvailable(
-                    tenantId, platformWallet.getId(), amount,
-                    "ESCROW_RELEASE_SELLER", "ESCROW", record.getId(), actorId,
-                    "Chuyển tiền bán hàng cho người bán");
+            long commission = commissionFor(record.getAmountMinor());
+            long sellerNet = record.getAmountMinor() - commission;
 
-            walletService.creditAvailable(
-                    tenantId, sellerWallet.getId(), amount,
-                    "ESCROW_SELLER_CREDIT", "ESCROW", record.getId(), actorId,
-                    "Nhận tiền từ đơn hàng đã giải ngân");
+            if (sellerNet > 0) {
+                walletService.debitAvailable(
+                        tenantId, platformWallet.getId(), Money.of(sellerNet, record.getCurrency()),
+                        "ESCROW_RELEASE_SELLER", "ESCROW", record.getId(), actorId,
+                        "Chuyển tiền bán hàng cho người bán");
+
+                walletService.creditAvailable(
+                        tenantId, sellerWallet.getId(), Money.of(sellerNet, record.getCurrency()),
+                        "ESCROW_SELLER_CREDIT", "ESCROW", record.getId(), actorId,
+                        "Nhận tiền từ đơn hàng đã giải ngân");
+            }
 
             record.setStatus("RELEASED");
             record.setUpdatedBy(actorId);
@@ -166,5 +188,12 @@ public class EscrowService {
                 tenantId,
                 orderId,
                 "HELD");
+    }
+
+    private long commissionFor(long amountMinor) {
+        return java.math.BigDecimal.valueOf(amountMinor)
+                .multiply(java.math.BigDecimal.valueOf(PLATFORM_COMMISSION_PERCENT))
+                .divide(java.math.BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP)
+                .longValue();
     }
 }

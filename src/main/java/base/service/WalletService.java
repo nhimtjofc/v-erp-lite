@@ -468,8 +468,13 @@ public class WalletService {
             .setParameter("tenantId", tenantId)
             .getSingleResult();
             
-        Long platformTotal = entityManager.createQuery(
+        Long platformAvailable = entityManager.createQuery(
             "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'PLATFORM'", Long.class)
+            .setParameter("tenantId", tenantId)
+            .getSingleResult();
+            
+        Long platformPending = entityManager.createQuery(
+            "SELECT COALESCE(SUM(w.pendingBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'PLATFORM'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
             
@@ -479,7 +484,8 @@ public class WalletService {
             .getSingleResult();
             
         stats.put("customerBalance", customerTotal);
-        stats.put("escrowBalance", platformTotal);
+        stats.put("platformCommission", platformAvailable);
+        stats.put("escrowBalance", platformPending);
         stats.put("sellerBalance", sellerTotal);
         return stats;
     }
