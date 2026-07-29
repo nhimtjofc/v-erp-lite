@@ -505,6 +505,17 @@ public class WalletService {
         return transactionType.trim().toUpperCase(Locale.ROOT);
     }
 
+    public long getPendingEscrowForSeller(String tenantId, Wallet wallet) {
+        if (!"SELLER".equals(wallet.getOwnerType()) || wallet.getOwnerId() == null) return 0;
+        Long total = entityManager.createQuery(
+            "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e WHERE e.tenantId = :tenantId AND e.sellerWallet.id = :walletId AND e.status = 'HELD'",
+            Long.class)
+            .setParameter("tenantId", tenantId)
+            .setParameter("walletId", wallet.getId())
+            .getSingleResult();
+        return total;
+    }
+
     public Map<String, Long> getWalletStats(String tenantId) {
         Map<String, Long> stats = new HashMap<>();
 
@@ -523,14 +534,14 @@ public class WalletService {
             .setParameter("tenantId", tenantId)
             .getSingleResult();
 
-        Long sellerPending = entityManager.createQuery(
-            "SELECT COALESCE(SUM(w.pendingBalanceMinor), 0) FROM Wallet w WHERE w.tenantId = :tenantId AND w.ownerType = 'SELLER'", Long.class)
+        Long escrowHeld = entityManager.createQuery(
+            "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e WHERE e.tenantId = :tenantId AND e.status = 'HELD'", Long.class)
             .setParameter("tenantId", tenantId)
             .getSingleResult();
 
         stats.put("customerBalance", customerTotal);
-        stats.put("escrowBalance", sellerPending);
-        stats.put("sellerBalance", sellerAvailable + sellerPending);
+        stats.put("escrowBalance", escrowHeld);
+        stats.put("sellerBalance", sellerAvailable + escrowHeld);
         return stats;
     }
 

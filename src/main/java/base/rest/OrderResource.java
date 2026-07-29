@@ -266,9 +266,8 @@ public class OrderResource {
         }
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
-                "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
-                "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED",
-                "RETURN_REQUESTED", "RETURN_APPROVED", "PENDING_COMPLETION")) {
+                "DELIVERED", "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
+                "RETURN_REQUESTED", "RETURN_APPROVED")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -620,7 +619,7 @@ public class OrderResource {
         order.setCurrency(orderCurrency);
         order.setPaymentMethod(request.paymentMethod);
 
-        String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
+        String initialStatus = "PENDING_PAYMENT";
         order.setStatus(initialStatus);
         
         order.setShippingName(request.shippingName);
@@ -754,9 +753,9 @@ public class OrderResource {
             return order;
         }
 
-        if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
-                "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPING",
-                "SHIPPED", "RETURN_REQUESTED", "RETURN_APPROVED", "PENDING_COMPLETION").contains(newStatus)) {
+        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED",
+                "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
+                "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -1157,6 +1156,45 @@ public class OrderResource {
                 caller.tenantCode(), orderId, itemId, caller.userId());
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cancel request / Approve / Reject (PAID_ESCROW flow)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/request-cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public OrderItem requestCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can request cancellation");
+        }
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        return returnRefundService.requestCancelItem(
+                caller.tenantCode(), orderId, itemId, reason, caller.userId(), caller.userEmail());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/approve-cancel")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem approveCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.approveCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/reject-cancel")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem rejectCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.rejectCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
     private void persistHistory(Order order, String oldStatus, String newStatus, String note, UUID userId, String tenantCode) {
         OrderHistory history = new OrderHistory();
         history.setId(UUID.randomUUID());
@@ -1247,7 +1285,10 @@ public class OrderResource {
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
         if ("PENDING_PAYMENT".equals(oldStatus)) {
-            return "CANCELLED".equals(newStatus);
+            return List.of("PAID_ESCROW", "CANCELLED").contains(newStatus);
+        }
+        if ("PAID_ESCROW".equals(oldStatus)) {
+            return List.of("OWNER_ACCEPTED", "OWNER_DECLINED", "CANCELLED").contains(newStatus);
         }
         if ("OWNER_ACCEPTED".equals(oldStatus)) {
             return "FULFILLING".equals(newStatus);
@@ -1263,18 +1304,6 @@ public class OrderResource {
         }
         if ("OWNER_DECLINED".equals(oldStatus)) {
             return "REFUNDED".equals(newStatus);
-        }
-        if ("PENDING".equals(oldStatus)) {
-            return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
-        }
-        if ("CONFIRMED".equals(oldStatus)) {
-            return List.of("SHIPPING", "CANCELLED").contains(newStatus);
-        }
-        if ("SHIPPING".equals(oldStatus)) {
-            return "SHIPPED".equals(newStatus);
-        }
-        if ("SHIPPED".equals(oldStatus)) {
-            return "COMPLETED".equals(newStatus);
         }
         if ("RETURN_REQUESTED".equals(oldStatus)) {
             return "RETURN_APPROVED".equals(newStatus);

@@ -72,30 +72,6 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     label: 'Refunded', badgeClass: 'border-slate-500/30 bg-slate-500/15 text-slate-700 dark:text-slate-300',
     dotClass: 'border-slate-400 bg-slate-500 text-white', icon: RefreshCw,
   },
-  PENDING: {
-    label: 'Pending',
-    badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
-    dotClass: 'border-amber-400 bg-amber-500 text-white',
-    icon: Clock,
-  },
-  CONFIRMED: {
-    label: 'Confirmed',
-    badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
-    dotClass: 'border-sky-400 bg-sky-500 text-white',
-    icon: CheckCircle2,
-  },
-  SHIPPING: {
-    label: 'Shipping',
-    badgeClass: 'border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
-    dotClass: 'border-violet-400 bg-violet-500 text-white',
-    icon: Package,
-  },
-  SHIPPED: {
-    label: 'Shipped',
-    badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
-    dotClass: 'border-orange-400 bg-orange-500 text-white',
-    icon: Truck,
-  },
   COMPLETED: {
     label: 'Completed',
     badgeClass: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
@@ -115,6 +91,10 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
   RETURN_APPROVED: {
     label: 'Return approved', badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
     dotClass: 'border-sky-400 bg-sky-500 text-white', icon: CheckCircle2,
+  },
+  CANCEL_REQUESTED: {
+    label: 'Cancel requested', badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
+    dotClass: 'border-red-400 bg-red-500 text-white', icon: XCircle,
   },
 }
 
@@ -535,6 +515,84 @@ export function OrderDetailPage() {
     },
   })
 
+  const requestCancelItemMutation = useMutation({
+    mutationFn: async (body: { itemId: string; reason?: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/request-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: body.reason || undefined }),
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to request cancellation')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setCancellingItem(null)
+      setCancelItemReason('')
+      setCancelItemError(null)
+    },
+    onError: (err) => {
+      setCancelItemError(err instanceof Error ? err.message : 'Unable to request cancellation.')
+    },
+  })
+
+  const approveCancelMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/approve-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to approve cancellation')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const rejectCancelMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/reject-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to reject cancellation')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
   const forceReleaseMutation = useMutation({
     mutationFn: async () => {
       const token = localStorage.getItem('access_token')
@@ -598,19 +656,15 @@ export function OrderDetailPage() {
     )
   }
 
-  const status = order.status?.toUpperCase() ?? 'PENDING'
-  const isPending = status === 'PENDING'
-  const isConfirmed = status === 'CONFIRMED'
-  const isShipping = status === 'SHIPPING'
-  const isShipped = status === 'SHIPPED'
-  const isPendingPayment = status === 'PENDING' || status === 'PENDING_PAYMENT'
+  const status = order.status?.toUpperCase() ?? 'PENDING_PAYMENT'
+  const isPendingPayment = status === 'PENDING_PAYMENT'
   const isFinal = ['COMPLETED', 'CANCELLED', 'OWNER_DECLINED', 'REFUNDED'].includes(status)
   const showHeaderActions = status !== 'REFUNDED'
   const canShowPayment = !isFinal && isPendingPayment
   const canDelete = isAdmin && isFinal
-  const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING', 'CONFIRMED', 'SHIPPING']
-  const canCancelItem = isCustomer && cancellableStatuses.includes(status)
-  const canCancelPaidOrder = isCustomer && (status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION')
+  const immediateCancellableStatuses = ['PENDING_PAYMENT']
+  const canCancelItem = isCustomer && immediateCancellableStatuses.includes(status)
+  const canRequestCancel = isCustomer && status === 'PAID_ESCROW'
   const returnableStatuses = ['DELIVERED', 'PENDING_COMPLETION']
   const canRequestReturn = isCustomer && returnableStatuses.includes(status)
 
@@ -679,12 +733,12 @@ export function OrderDetailPage() {
             </Button>
           )}
 
-          {canCancelPaidOrder && (
+          {canRequestCancel && (
             <Button
               variant="destructive"
               size="sm"
               onClick={() => {
-                const firstActiveItem = order.items?.find((item) => !(item as any).cancelledAt)
+                const firstActiveItem = order.items?.find((item) => !(item as any).cancelledAt && !(item as any).cancelRequestedAt)
                 if (firstActiveItem) {
                   setCancellingItem(firstActiveItem)
                   setCancelItemReason('')
@@ -692,7 +746,7 @@ export function OrderDetailPage() {
                 }
               }}
             >
-              <RotateCcw className="h-4 w-4 mr-1.5" /> Cancel
+              <RotateCcw className="h-4 w-4 mr-1.5" /> Request Cancel
             </Button>
           )}
 
@@ -706,14 +760,9 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {!isFinal && isStaff && status === 'PENDING_PAYMENT' && (
-            <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-              <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-            </Button>
-          )}
-          {!isFinal && isStaff && isPending && (
+          {!isFinal && isStaff && isPendingPayment && (
             <>
-              <Button onClick={() => openStatusDialog('CONFIRMED')} variant="secondary" className="font-semibold">
+              <Button onClick={() => openStatusDialog('PAID_ESCROW')} variant="secondary" className="font-semibold">
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm
               </Button>
               <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
@@ -721,32 +770,17 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {!isFinal && isStaff && isConfirmed && (
-            <Button onClick={() => openStatusDialog('SHIPPING')} className="font-semibold">
-              <Package className="h-4 w-4 mr-1.5" /> Start Shipping
-            </Button>
-          )}
-          {!isFinal && isStaff && isShipping && (
-            <>
-              <Button onClick={() => openStatusDialog('SHIPPED')} variant="secondary" className="font-semibold">
-                <Truck className="h-4 w-4 mr-1.5" /> Mark Shipped
-              </Button>
-              <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-              </Button>
-            </>
-          )}
-          {!isFinal && isStaff && isShipped && (
-            <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
-              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
-            </Button>
-          )}
           {!isFinal && isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
           {!isFinal && isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
           {!isFinal && isStaff && status === 'DELIVERED' && (
             <div className="text-sm text-muted-foreground italic">
               Escrow hold will start automatically upon delivery.
             </div>
+          )}
+          {!isFinal && isStaff && status === 'PENDING_COMPLETION' && (
+            <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" size="sm">
+              <XCircle className="h-4 w-4 mr-1.5" /> Cancel Order
+            </Button>
           )}
         </div>
         )}
@@ -798,6 +832,8 @@ export function OrderDetailPage() {
                   const isReturnRequested = !!(item as any).returnRequestedAt && !(item as any).returnApprovedAt
                   const isReturnApproved = !!(item as any).returnApprovedAt
                   const itemReturnStatus = (item as any).returnStatus
+                  const isCancelRequested = !!(item as any).cancelRequestedAt && !(item as any).cancelApprovedAt && (item as any).cancelStatus !== 'REJECTED'
+                  const isCancelRejected = (item as any).cancelStatus === 'REJECTED'
                   const variantValues = item.productVariant
                     ? Object.entries(item.productVariant.optionValues ?? {})
                         .map(([_, v]) => v)
@@ -816,6 +852,12 @@ export function OrderDetailPage() {
                           {isItemCancelled && (
                             <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Cancelled</Badge>
                           )}
+                          {isCancelRequested && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300">Cancel requested</Badge>
+                          )}
+                          {isCancelRejected && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 bg-muted/20 text-muted-foreground">Cancel rejected</Badge>
+                          )}
                           {isReturnRequested && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300">Return requested</Badge>
                           )}
@@ -829,6 +871,12 @@ export function OrderDetailPage() {
                         <p className="text-xs text-muted-foreground">SKU: {item.productVariant?.sku ?? item.product?.sku}</p>
                         {isItemCancelled && (item as any).cancellationReason && (
                           <p className="text-xs text-destructive italic mt-0.5">Reason: {(item as any).cancellationReason}</p>
+                        )}
+                        {isCancelRequested && (item as any).cancellationReason && (
+                          <p className="text-xs text-red-600 dark:text-red-400 italic mt-0.5">Cancel reason: {(item as any).cancellationReason}</p>
+                        )}
+                        {isCancelRejected && (
+                          <p className="text-xs text-muted-foreground italic mt-0.5">Cancel request rejected</p>
                         )}
                         {isReturnRequested && (item as any).returnReason && (
                           <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-0.5">Return reason: {(item as any).returnReason}</p>
@@ -851,6 +899,20 @@ export function OrderDetailPage() {
                             }}
                           >
                             <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
+                        )}
+                        {!isItemCancelled && !isReturnRequested && !isReturnApproved && canRequestCancel && !(item as any).cancelRequestedAt && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              setCancellingItem(item)
+                              setCancelItemReason('')
+                              setCancelItemError(null)
+                            }}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Request Cancel
                           </Button>
                         )}
                         {!isItemCancelled && !isReturnRequested && !isReturnApproved && canRequestReturn && (
@@ -889,6 +951,35 @@ export function OrderDetailPage() {
                                 }
                               }}
                               disabled={rejectReturnMutation.isPending}
+                            >
+                              <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                            </Button>
+                          </>
+                        )}
+                        {isCancelRequested && isOwner && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                if (window.confirm('Approve cancellation for this item? Refund will be issued from escrow.')) {
+                                  approveCancelMutation.mutate({ itemId: (item as any).id })
+                                }
+                              }}
+                              disabled={approveCancelMutation.isPending}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                if (window.confirm('Reject cancellation for this item?')) {
+                                  rejectCancelMutation.mutate({ itemId: (item as any).id })
+                                }
+                              }}
+                              disabled={rejectCancelMutation.isPending}
                             >
                               <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
                             </Button>
@@ -1377,11 +1468,11 @@ export function OrderDetailPage() {
       <Dialog open={!!cancellingItem} onOpenChange={(open) => { if (!open) setCancellingItem(null) }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION' ? 'Cancel this order?' : 'Cancel this item?'}</DialogTitle>
+            <DialogTitle>{status === 'PENDING_PAYMENT' ? 'Cancel this item?' : 'Request cancellation?'}</DialogTitle>
             <DialogDescription>
-              {status === 'PAID_ESCROW'
-                ? 'The order will be cancelled and any payment will be refunded.'
-                : 'This item will be removed from the order and the total will be recalculated.'}
+              {status === 'PENDING_PAYMENT'
+                ? 'This item will be removed from the order and the total will be recalculated.'
+                : 'A cancellation request will be sent to the shop owner for approval. If approved, the payment will be refunded from escrow.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1432,16 +1523,23 @@ export function OrderDetailPage() {
             <Button
               variant="destructive"
               onClick={() => {
-                cancelItemMutation.mutate({
-                  itemId: cancellingItem?.id,
-                  reason: cancelItemReason,
-                })
+                if (status === 'PENDING_PAYMENT') {
+                  cancelItemMutation.mutate({
+                    itemId: cancellingItem?.id,
+                    reason: cancelItemReason,
+                  })
+                } else {
+                  requestCancelItemMutation.mutate({
+                    itemId: cancellingItem?.id,
+                    reason: cancelItemReason,
+                  })
+                }
               }}
-              disabled={cancelItemMutation.isPending || !cancellingItem?.id}
+              disabled={cancelItemMutation.isPending || requestCancelItemMutation.isPending || !cancellingItem?.id}
             >
-              {cancelItemMutation.isPending
-                ? 'Cancelling...'
-                : status === 'PAID_ESCROW' || status === 'PENDING_COMPLETION' ? 'Cancel' : 'Yes, Cancel'}
+              {cancelItemMutation.isPending || requestCancelItemMutation.isPending
+                ? 'Submitting...'
+                : status === 'PENDING_PAYMENT' ? 'Yes, Cancel' : 'Submit Cancel Request'}
             </Button>
           </DialogFooter>
         </DialogContent>

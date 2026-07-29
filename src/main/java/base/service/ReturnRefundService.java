@@ -2,9 +2,12 @@ package base.service;
 
 import base.entity.Business;
 import base.entity.Customer;
+import base.entity.EscrowRecord;
 import base.entity.Order;
 import base.entity.OrderHistory;
 import base.entity.OrderItem;
+import base.entity.Product;
+import base.entity.ProductVariant;
 import base.entity.User;
 import base.entity.Wallet;
 import base.model.Money;
@@ -20,19 +23,266 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @ApplicationScoped
 public class ReturnRefundService {
 
+    private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     private static final long FLAT_SHIPPING_FEE_MINOR = 250_000;
     private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2_500_000;
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     @Inject
     WalletService walletService;
 
     @Inject
+    EscrowService escrowService;
+
+    @Inject
+    PaymentRefundService paymentRefundService;
+
+    @Inject
     NotificationService notificationService;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cancel request flow (PAID_ESCROW → owner approval → refund from escrow)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public OrderItem requestCancelItem(String tenantId, UUID orderId, UUID itemId, String reason, UUID actorId, String actorEmail) {
+        Order order = orderForUpdate(tenantId, orderId);
+        String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!"PAID_ESCROW".equals(status)) {
+            throw new BadRequestException("Cannot request cancellation when order is in " + status + " status");
+        }
+
+        Customer c = Customer.find("email = ?1 and tenantId = ?2", actorEmail, tenantId).firstResult();
+        UUID customerId = c != null ? c.getId() : null;
+        boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                || (actorId != null && actorId.equals(order.getCreatedBy()));
+        if (!isOwner) {
+            throw new ForbiddenException("You are not allowed to request cancellation for this order");
+        }
+
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelledAt() != null) {
+            throw new BadRequestException("This item has already been cancelled");
+        }
+        if (item.getCancelRequestedAt() != null) {
+            throw new BadRequestException("Cancel already requested for this item");
+        }
+        if (item.getCancelApprovedAt() != null) {
+            throw new BadRequestException("Cancel already approved for this item");
+        }
+
+        item.setCancelRequestedAt(Instant.now());
+        item.setCancelRequestedBy(actorId);
+        item.setCancelStatus("REQUESTED");
+        item.setCancellationReason(reason != null ? reason.trim() : null);
+        item.setUpdatedBy(actorId);
+
+        boolean allCancelled = order.getItems().stream()
+                .allMatch(oi -> oi.getCancelledAt() != null || oi.getCancelRequestedAt() != null
+                        || (oi.getId().equals(itemId)));
+        if (allCancelled) {
+            String oldStatus = order.getStatus();
+            order.setStatus("CANCEL_REQUESTED");
+            order.setUpdatedBy(actorId);
+            persistHistory(order, oldStatus, "CANCEL_REQUESTED",
+                    "All items requested cancellation: " + (reason != null ? reason : ""), actorId, tenantId);
+        } else {
+            persistHistory(order, order.getStatus(), order.getStatus(),
+                    "Item cancel requested: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString())
+                            + (reason != null ? " - " + reason : ""),
+                    actorId, tenantId);
+        }
+
+        notificationService.notifyBusinessStaff(
+                order,
+                "CANCEL_REQUESTED",
+                "Customer requested cancellation for item "
+                        + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + "."
+                        + (reason != null ? " Reason: " + reason : ""),
+                actorId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem approveCancelItem(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelRequestedAt() == null) {
+            throw new BadRequestException("No cancellation request for this item");
+        }
+        if (item.getCancelApprovedAt() != null) {
+            throw new BadRequestException("Cancellation already approved for this item");
+        }
+        if (item.getCancelledAt() != null) {
+            throw new BadRequestException("This item has already been cancelled");
+        }
+
+        // Mark item as cancelled
+        item.setCancelledAt(Instant.now());
+        item.setCancelledBy(actorId);
+        item.setCancelApprovedAt(Instant.now());
+        item.setCancelApprovedBy(actorId);
+        item.setCancelStatus("APPROVED");
+        item.setUpdatedBy(actorId);
+
+        // Release inventory
+        ProductVariant variant = item.getProductVariant();
+        if (variant != null) {
+            variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - item.getQuantity()));
+            variant.setUpdatedBy(actorId);
+        } else {
+            Product product = item.getProduct();
+            product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - item.getQuantity()));
+            product.setUpdatedBy(actorId);
+        }
+
+        // Recalculate order totals
+        long originalSubtotal = order.getItems().stream()
+                .filter(oi -> oi.getCancelledAt() == null && !oi.getId().equals(itemId))
+                .mapToLong(OrderItem::getSubtotalAmountMinor).sum();
+        boolean allCancelled = order.getItems().stream()
+                .allMatch(oi -> oi.getCancelledAt() != null);
+        order.setSubtotalAmountMinor(originalSubtotal);
+
+        BigDecimal discountPct = order.getDiscountPercent() != null ? order.getDiscountPercent() : BigDecimal.ZERO;
+        long discountAmount = BigDecimal.valueOf(originalSubtotal)
+                .multiply(discountPct)
+                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
+                .longValue();
+        order.setDiscountAmountMinor(discountAmount);
+
+        long afterDiscount = Math.max(0, originalSubtotal - discountAmount);
+        long shippingFee = order.getShippingFeeMinor();
+        if (allCancelled) {
+            shippingFee = 0;
+        } else if (afterDiscount < FREE_SHIPPING_THRESHOLD_MINOR && shippingFee == 0) {
+            shippingFee = FLAT_SHIPPING_FEE_MINOR;
+        } else if (afterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
+            shippingFee = 0;
+        }
+        order.setShippingFeeMinor(shippingFee);
+
+        BigDecimal vatPct = order.getVatPercent() != null ? order.getVatPercent() : BigDecimal.ZERO;
+        long vatAmount = BigDecimal.valueOf(afterDiscount)
+                .multiply(vatPct)
+                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
+                .longValue();
+        long taxAmount = BigDecimal.valueOf(afterDiscount)
+                .multiply(BigDecimal.valueOf(0.10))
+                .setScale(0, RoundingMode.HALF_UP)
+                .longValue();
+        order.setVatAmountMinor(vatAmount);
+        order.setTaxAmountMinor(taxAmount);
+
+        long newFinalAmount = allCancelled ? 0 : Math.max(0, afterDiscount + shippingFee + taxAmount);
+        order.setFinalAmountMinor(newFinalAmount);
+
+        // Refund from escrow (platform wallet) → customer wallet (proportional)
+        long refundAmount = calculateItemRefund(order, item);
+        item.setReturnRefundMinor(refundAmount);
+        item.setReturnRefundCurrency(order.getCurrency() != null ? order.getCurrency() : "VND");
+
+        if (refundAmount > 0) {
+            List<EscrowRecord> escrows = escrowService.listByOrder(tenantId, orderId);
+            Wallet platformWallet = walletService.getOrCreateWallet(
+                    tenantId, "PLATFORM", PLATFORM_OWNER_ID,
+                    order.getCurrency() != null ? order.getCurrency() : "VND", actorId);
+            for (EscrowRecord escrow : escrows) {
+                if (!"HELD".equals(escrow.getStatus())) continue;
+                long actualRefund = Math.min(refundAmount, escrow.getAmountMinor());
+                walletService.refundPending(
+                        tenantId, platformWallet.getId(),
+                        Money.of(actualRefund, order.getCurrency()),
+                        "ESCROW", escrow.getId(), actorId,
+                        "Refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+                escrow.setAmountMinor(escrow.getAmountMinor() - actualRefund);
+                escrow.setUpdatedBy(actorId);
+            }
+
+            boolean isWalletPayment = "BANK_TRANSFER".equalsIgnoreCase(order.getPaymentMethod())
+                    || "WALLET".equalsIgnoreCase(order.getPaymentMethod());
+            if (isWalletPayment && order.getCustomer() != null) {
+                User customerUser = User.find("email = ?1 and tenantId = ?2",
+                        order.getCustomer().getEmail(), tenantId).firstResult();
+                if (customerUser != null) {
+                    Wallet customerWallet = walletService.getOrCreateWallet(
+                            tenantId, "USER", customerUser.getId(), order.getCurrency(), actorId);
+                    walletService.creditAvailable(
+                            tenantId, customerWallet.getId(),
+                            Money.of(refundAmount, order.getCurrency()),
+                            "CANCEL_REFUND", "ORDER_ITEM", itemId, actorId,
+                            "Refund for cancelled item: " + (item.getProduct() != null ? item.getProduct().getName() : ""));
+                }
+            }
+        }
+
+        String newStatus = allCancelled ? "REFUNDED" : order.getStatus();
+        order.setUpdatedBy(actorId);
+
+        String noteText = "Cancel request approved for item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString());
+        persistHistory(order, order.getStatus(), newStatus, noteText, actorId, tenantId);
+
+        if (allCancelled) {
+            order.setStatus("REFUNDED");
+        }
+
+        notificationService.notifyBuyer(
+                order,
+                "CANCEL_APPROVED",
+                "Cancellation for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + " has been approved. Refund issued.",
+                actorId);
+
+        return item;
+    }
+
+    @Transactional
+    public OrderItem rejectCancelItem(String tenantId, UUID orderId, UUID itemId, UUID actorId) {
+        Order order = orderForUpdate(tenantId, orderId);
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantId).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelRequestedAt() == null) {
+            throw new BadRequestException("No cancellation request for this item");
+        }
+        if (item.getCancelApprovedAt() != null) {
+            throw new BadRequestException("Cancellation already approved for this item");
+        }
+
+        item.setCancelStatus("REJECTED");
+        item.setUpdatedBy(actorId);
+
+        String noteText = "Cancel request rejected for item: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString());
+        persistHistory(order, order.getStatus(), order.getStatus(), noteText, actorId, tenantId);
+
+        notificationService.notifyBuyer(
+                order,
+                "CANCEL_REJECTED",
+                "Cancellation for item " + (item.getProduct() != null ? item.getProduct().getName() : "")
+                        + " in order " + order.getOrderNumber() + " has been rejected.",
+                actorId);
+
+        return item;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Return flow
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
     public OrderItem requestItemReturn(String tenantId, UUID orderId, UUID itemId, String reason, UUID actorId, String actorEmail) {

@@ -238,7 +238,13 @@ public class WalletResource {
         }
         Wallet wallet = walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), currency, caller.userId());
-        return WalletResponse.from(wallet);
+        WalletResponse resp = WalletResponse.from(wallet);
+        // Seller's pending balance is held in the platform wallet as escrow;
+        // show the actual pending escrow amount on the seller wallet UI.
+        if ("SELLER".equals(wallet.getOwnerType())) {
+            resp.pendingBalanceMinor = walletService.getPendingEscrowForSeller(caller.tenantCode(), wallet);
+        }
+        return resp;
     }
 
     @POST

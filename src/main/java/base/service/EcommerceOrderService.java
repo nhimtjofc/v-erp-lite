@@ -371,7 +371,7 @@ public class EcommerceOrderService {
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
         order.setCurrency(CURRENCY);
-        order.setStatus("PENDING");
+        order.setStatus("PENDING_PAYMENT");
         order.setShippingName(shipName);
         order.setShippingPhone(shipPhone);
         order.setShippingAddress(fullShipAddress);
@@ -392,7 +392,7 @@ public class EcommerceOrderService {
         history.setTenantId(tenantId);
         history.setOrder(order);
         history.setOldStatus(null);
-        history.setNewStatus("PENDING");
+        history.setNewStatus("PENDING_PAYMENT");
         history.setNote("Ecommerce order created via integration webhook");
         history.persist();
 
@@ -488,9 +488,9 @@ public class EcommerceOrderService {
         } else if ("completed".equals(wooStatus)) {
             newStatus = "COMPLETED";
         } else if ("processing".equals(wooStatus)) {
-            newStatus = "CONFIRMED";
+            newStatus = "OWNER_ACCEPTED";
         } else if ("on-hold".equals(wooStatus)) {
-            newStatus = "PENDING";
+            newStatus = "PENDING_PAYMENT";
         } else {
             newStatus = oldStatus;
         }
@@ -504,7 +504,7 @@ public class EcommerceOrderService {
             return order;
         }
 
-        if (List.of("PENDING", "CONFIRMED", "SHIPPING").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        if (List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = ProductVariant.find("id = ?1 and tenantId = ?2", item.getProductVariant().getId(), tenantId)
@@ -518,26 +518,6 @@ public class EcommerceOrderService {
                             .withLock(LockModeType.PESSIMISTIC_WRITE)
                             .firstResult();
                     if (product != null) {
-                        product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - item.getQuantity()));
-                    }
-                }
-            }
-        } else if ("SHIPPING".equals(oldStatus) && "SHIPPED".equals(newStatus)) {
-            for (OrderItem item : order.getItems()) {
-                if (item.getProductVariant() != null) {
-                    ProductVariant variant = ProductVariant.find("id = ?1 and tenantId = ?2", item.getProductVariant().getId(), tenantId)
-                            .withLock(LockModeType.PESSIMISTIC_WRITE)
-                            .firstResult();
-                    if (variant != null) {
-                        variant.setStockQuantity(Math.max(0, variant.getStockQuantity() - item.getQuantity()));
-                        variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - item.getQuantity()));
-                    }
-                } else {
-                    Product product = Product.find("id = ?1 and tenantId = ?2", item.getProduct().getId(), tenantId)
-                            .withLock(LockModeType.PESSIMISTIC_WRITE)
-                            .firstResult();
-                    if (product != null) {
-                        product.setStockQuantity(Math.max(0, product.getStockQuantity() - item.getQuantity()));
                         product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - item.getQuantity()));
                     }
                 }
@@ -561,14 +541,18 @@ public class EcommerceOrderService {
     private boolean isAllowedStatusTransition(String from, String to) {
         if (from.equals(to)) return true;
         switch (from) {
-            case "PENDING":
-                return List.of("CONFIRMED", "CANCELLED").contains(to);
-            case "CONFIRMED":
-                return List.of("SHIPPING", "CANCELLED").contains(to);
-            case "SHIPPING":
-                return List.of("SHIPPED", "CANCELLED").contains(to);
-            case "SHIPPED":
-                return "COMPLETED".equals(to);
+            case "PENDING_PAYMENT":
+                return List.of("PAID_ESCROW", "CANCELLED").contains(to);
+            case "PAID_ESCROW":
+                return List.of("OWNER_ACCEPTED", "OWNER_DECLINED", "CANCELLED").contains(to);
+            case "OWNER_ACCEPTED":
+                return "FULFILLING".equals(to);
+            case "FULFILLING":
+                return "DELIVERED".equals(to);
+            case "DELIVERED":
+                return "PENDING_COMPLETION".equals(to);
+            case "PENDING_COMPLETION":
+                return List.of("COMPLETED", "CANCELLED").contains(to);
             case "COMPLETED":
             case "CANCELLED":
             default:

@@ -50,7 +50,7 @@ interface MockPaymentSessionResponse {
 type PaymentMethod = 'MOCK_QR'
 
 const TERMINAL_STATUSES = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED'])
-const PAYABLE_ORDER_STATUSES = new Set(['PENDING', 'PENDING_PAYMENT'])
+const PAYABLE_ORDER_STATUSES = new Set(['PENDING_PAYMENT'])
 const MOCK_PAYMENT_ENABLED = import.meta.env.DEV
   || import.meta.env.VITE_ENABLE_MOCK_PAYMENT === 'true'
 
