@@ -836,8 +836,13 @@ public class OrderResource {
             completeOrder(order, tenantCode, userId);
         }
 
-        if ("CANCELLED".equals(effectiveStatus) && !"CANCELLED".equals(oldStatus)) {
-            escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+        if ("CANCELLED".equals(newStatus) && !"CANCELLED".equals(oldStatus)) {
+            if (List.of("CONFIRMED", "SHIPPING").contains(oldStatus)) {
+                paymentRefundService.refundOrder(tenantCode, order.getId(),
+                        "Order cancelled by staff", userId);
+            } else {
+                escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+            }
         }
 
         order.setStatus(effectiveStatus);
@@ -972,7 +977,7 @@ public class OrderResource {
         }
 
         String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("PENDING_PAYMENT", "PENDING", "PAID_ESCROW", "CONFIRMED", "SHIPPING").contains(orderStatus)) {
+        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
             throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
         }
 
@@ -985,98 +990,132 @@ public class OrderResource {
         }
 
         String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        fulfillmentService.cancelItem(tenantCode, orderId, itemId, reason, userId);
 
-        Instant cancelledAt = Instant.now();
-        for (OrderItem cancellationTarget : cancellationTargets(order, item)) {
-            cancellationTarget.setCancelledAt(cancelledAt);
-            cancellationTarget.setCancelledBy(userId);
-            cancellationTarget.setCancellationReason(reason);
-            cancellationTarget.setUpdatedBy(userId);
+        order = Order.find("id = ?1 and tenantId = ?2", orderId, tenantCode).firstResult();
 
-            if (cancellationTarget.getProductVariant() != null) {
-                ProductVariant variant = cancellationTarget.getProductVariant();
-                variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - cancellationTarget.getQuantity()));
-                variant.setUpdatedBy(userId);
-            } else {
-                Product product = cancellationTarget.getProduct();
-                product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - cancellationTarget.getQuantity()));
-                product.setUpdatedBy(userId);
-            }
-        }
-
-        long activeSubtotal = 0;
-        for (OrderItem oi : order.getItems()) {
-            if (oi.getCancelledAt() == null) {
-                activeSubtotal += oi.getSubtotalAmountMinor();
-            }
-        }
-        boolean allItemsCancelled = areAllItemsCancelled(order);
-        order.setSubtotalAmountMinor(activeSubtotal);
-
-        BigDecimal discountPct = order.getDiscountPercent() != null ? order.getDiscountPercent() : BigDecimal.ZERO;
-        long discountAmount = BigDecimal.valueOf(activeSubtotal)
-                .multiply(discountPct)
-                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
-                .longValue();
-        order.setDiscountAmountMinor(discountAmount);
-
-        long afterDiscount = Math.max(0, activeSubtotal - discountAmount);
-        long shippingFee = order.getShippingFeeMinor();
-        if (allItemsCancelled) {
-            shippingFee = 0;
-        } else if (afterDiscount < FREE_SHIPPING_THRESHOLD_MINOR && shippingFee == 0) {
-            shippingFee = FLAT_SHIPPING_FEE_MINOR;
-        } else if (afterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
-            shippingFee = 0;
-        }
-        order.setShippingFeeMinor(shippingFee);
-
-        BigDecimal vatPct = order.getVatPercent() != null ? order.getVatPercent() : BigDecimal.ZERO;
-        long vatAmount = BigDecimal.valueOf(afterDiscount)
-                .multiply(vatPct)
-                .divide(ONE_HUNDRED, 0, RoundingMode.HALF_UP)
-                .longValue();
-        long taxAmount = BigDecimal.valueOf(afterDiscount)
-                .multiply(BigDecimal.valueOf(TAX_RATE))
-                .setScale(0, RoundingMode.HALF_UP)
-                .longValue();
-        order.setVatAmountMinor(vatAmount);
-        order.setTaxAmountMinor(taxAmount);
-
-        long finalAmount = allItemsCancelled ? 0 : Math.max(0, afterDiscount + shippingFee + taxAmount);
-        order.setFinalAmountMinor(finalAmount);
-        order.setUpdatedBy(userId);
-
-        String noteText = "Item cancelled: " + (item.getProduct() != null ? item.getProduct().getName() : itemId.toString());
-        if (reason != null && !reason.isEmpty()) {
-            noteText += " - " + reason;
-        }
-        String newStatus = allItemsCancelled ? "CANCELLED" : orderStatus;
-        if (allItemsCancelled) {
-            order.setStatus(newStatus);
+        // Reactivate voucher if all items cancelled
+        if (areAllItemsCancelled(order)) {
             reactivateVoucher(order, tenantCode, userId);
-            if ("PAID_ESCROW".equals(orderStatus)) {
-                paymentRefundService.refundOrder(
-                        tenantCode,
-                        order.getId(),
-                        reason != null && !reason.isEmpty() ? reason : "Buyer cancelled the paid order",
-                        userId);
-            } else {
-                escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
-            }
-            noteText = "Order cancelled because all items were cancelled"
-                    + (reason != null && !reason.isEmpty() ? " - " + reason : "");
         }
-        persistHistory(order, orderStatus, newStatus, noteText, userId, tenantCode);
 
+        String productName = item.getProduct() != null ? item.getProduct().getName() : "";
         notificationService.notifyBusinessStaff(
                 order,
                 "ORDER_ITEM_CANCELLED",
-                "Item " + (item.getProduct() != null ? item.getProduct().getName() : "") + " in order " + order.getOrderNumber() + " was cancelled by the customer."
+                productName + " in order " + order.getOrderNumber() + " was cancelled by the customer."
+                        + (reason != null ? " Reason: " + reason : ""),
+                userId);
+
+        notificationService.notifyBuyer(
+                order,
+                "ITEM_CANCELLED",
+                "You cancelled " + productName + " in order " + order.getOrderNumber() + "."
                         + (reason != null ? " Reason: " + reason : ""),
                 userId);
 
         return order;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Owner / Staff Cancel Item
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/owner-cancel")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public OrderItem ownerCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", orderId, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        OrderItem item = fulfillmentService.cancelItem(tenantCode, orderId, itemId, reason, caller.userId());
+
+        Order refreshed = Order.find("id = ?1 and tenantId = ?2", orderId, tenantCode).firstResult();
+        String productName = item.getProduct() != null ? item.getProduct().getName() : "";
+        notificationService.notifyBuyer(
+                refreshed,
+                "ITEM_CANCELLED_BY_OWNER",
+                "The vendor cancelled " + productName + " in order " + refreshed.getOrderNumber() + "."
+                        + (reason != null ? " Reason: " + reason : ""),
+                caller.userId());
+
+        return item;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Customer Cancel Entire Order
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{id}/cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public Response cancelOrder(@PathParam("id") UUID id, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can cancel the order");
+        }
+
+        String tenantCode = caller.tenantCode();
+        UUID userId = caller.userId();
+
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+        UUID customerId = c != null ? c.getId() : null;
+        boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+        if (!isOwner) {
+            throw new ForbiddenException("You are not allowed to cancel this order");
+        }
+
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "CONFIRMED").contains(orderStatus)) {
+            throw new BadRequestException("Cannot cancel order when it is in " + orderStatus + " status");
+        }
+
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+
+        // Cancel all remaining items via cancelItem (handles proportional refund correctly)
+        List<OrderItem> activeItems = order.getItems().stream()
+                .filter(oi -> oi.getCancelledAt() == null).toList();
+        for (OrderItem item : activeItems) {
+            fulfillmentService.cancelItem(tenantCode, id, item.getId(), reason, userId);
+        }
+
+        order = Order.find("id = ?1 and tenantId = ?2", id, tenantCode).firstResult();
+
+        boolean isPaid = List.of("PAID_ESCROW", "CONFIRMED").contains(orderStatus);
+        reactivateVoucher(order, tenantCode, userId);
+
+        notificationService.notifyBusinessStaff(
+                order, "ORDER_CANCELLED",
+                "Order " + order.getOrderNumber() + " was cancelled by the customer."
+                        + (reason != null ? " Reason: " + reason : ""), userId);
+
+        notificationService.notifyBuyer(
+                order, "ORDER_CANCELLED",
+                "You cancelled order " + order.getOrderNumber() + "."
+                        + (isPaid ? " A full refund has been processed." : "")
+                        + (reason != null ? " Reason: " + reason : ""), userId);
+
+        return Response.ok(order).build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1174,11 +1213,6 @@ public class OrderResource {
     }
 
     static List<OrderItem> cancellationTargets(Order order, OrderItem requestedItem) {
-        if (order != null && "PAID_ESCROW".equalsIgnoreCase(order.getStatus())) {
-            return order.getItems().stream()
-                    .filter(item -> item.getCancelledAt() == null)
-                    .toList();
-        }
         return List.of(requestedItem);
     }
 
@@ -1237,7 +1271,7 @@ public class OrderResource {
             return List.of("SHIPPING", "CANCELLED").contains(newStatus);
         }
         if ("SHIPPING".equals(oldStatus)) {
-            return List.of("SHIPPED", "CANCELLED").contains(newStatus);
+            return "SHIPPED".equals(newStatus);
         }
         if ("SHIPPED".equals(oldStatus)) {
             return "COMPLETED".equals(newStatus);
