@@ -136,11 +136,22 @@ public class WalletService {
         if (assignedBusiness != null && tenantId.equals(assignedBusiness.getTenantId())) {
             return assignedBusiness;
         }
-        return Business.find(
+        Business business = Business.find(
                 "tenantId = ?1 and createdBy = ?2 order by createdAt asc",
                 tenantId,
                 user.getId()
         ).firstResult();
+        if (business != null) {
+            return business;
+        }
+        User owner = User.find("email = ?1 and tenantId = ?2", "owner@v-erp.com", tenantId).firstResult();
+        if (owner != null) {
+            business = Business.find("tenantId = ?1 and createdBy = ?2", tenantId, owner.getId()).firstResult();
+        }
+        if (business != null) {
+            return business;
+        }
+        return Business.find("tenantId = ?1", tenantId).firstResult();
     }
 
     private boolean isBusinessOwner(User user) {
@@ -512,6 +523,20 @@ public class WalletService {
             Long.class)
             .setParameter("tenantId", tenantId)
             .setParameter("walletId", wallet.getId())
+            .getSingleResult();
+        return total;
+    }
+
+    public long getPendingEscrowForTenantBusinesses(String tenantId, String currency) {
+        Long total = entityManager.createQuery(
+            "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e "
+                + "WHERE e.tenantId = :tenantId "
+                + "AND e.sellerWallet.ownerType = 'SELLER' "
+                + "AND e.currency = :currency "
+                + "AND e.status = 'HELD'",
+            Long.class)
+            .setParameter("tenantId", tenantId)
+            .setParameter("currency", moneyService.normalizeCurrency(currency))
             .getSingleResult();
         return total;
     }

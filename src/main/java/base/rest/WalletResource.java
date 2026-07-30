@@ -1,20 +1,28 @@
 package base.rest;
 
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import base.entity.EscrowRecord;
 import base.entity.User;
 import base.entity.Wallet;
-import base.entity.EscrowRecord;
 import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import base.security.CallerContext;
 import base.service.EscrowService;
 import base.service.MoneyService;
-import base.service.WalletService;
 import base.service.VietQRService;
+import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -22,16 +30,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @Path("/wallets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -251,7 +251,8 @@ public class WalletResource {
      * The wallet of the currently logged-in user.
      *
      * A business owner is linked to the existing SELLER wallet for their business,
-     * preserving order and payout balances. Other users receive a USER wallet.
+     * preserving order and payout balances. Their pending balance is the held
+     * escrow across all seller wallets in the tenant. Other users receive a USER wallet.
      * The VND wallet is created on demand if provisioning has not created it yet.
      */
     @GET
@@ -266,9 +267,10 @@ public class WalletResource {
                 caller.tenantCode(), user.getId(), currency, caller.userId());
         WalletResponse resp = WalletResponse.from(wallet);
         // Seller's pending balance is held in the platform wallet as escrow;
-        // show the actual pending escrow amount on the seller wallet UI.
+        // the marketplace owner sees held escrow across all tenant businesses.
         if ("SELLER".equals(wallet.getOwnerType())) {
-            resp.pendingBalanceMinor = walletService.getPendingEscrowForSeller(caller.tenantCode(), wallet);
+            resp.pendingBalanceMinor = walletService.getPendingEscrowForTenantBusinesses(
+                    caller.tenantCode(), wallet.getCurrency());
         }
         return resp;
     }
@@ -295,8 +297,7 @@ public class WalletResource {
         Wallet wallet = requireWalletAccess(id);
         WalletResponse response = WalletResponse.from(wallet);
         if ("SELLER".equals(wallet.getOwnerType())) {
-            long escrowHeld = escrowService.sumHeldForSeller(wallet.getTenantId(), wallet.getId());
-            response.pendingBalanceMinor += escrowHeld;
+            response.pendingBalanceMinor += escrowService.sumHeldForSeller(wallet.getTenantId(), wallet.getId());
         }
         return response;
     }
