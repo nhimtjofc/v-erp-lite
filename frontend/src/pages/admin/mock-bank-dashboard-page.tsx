@@ -3,7 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
-import { Building2, Users, Store, ArrowRightLeft, ShieldCheck, Activity, FastForward } from 'lucide-react';
+import {
+  Building2, Users, Store, ShieldCheck, Activity, FastForward,
+  ArrowRight, ArrowDown, Split,
+} from 'lucide-react';
 import { formatMoneyMinor } from '@/shared/utils/currency';
 import { client } from '@/shared/api/gen/client.gen';
 
@@ -150,7 +153,7 @@ export function MockBankDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-amber-600 dark:text-amber-500 flex items-center">
               <ShieldCheck className="w-4 h-4 mr-2" />
-              Ví Trung Gian (Escrow từ Shop)
+              Ví Trung Gian (Escrow)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -158,7 +161,7 @@ export function MockBankDashboardPage() {
               {statsLoading ? '...' : formatMoneyMinor(stats?.escrowBalance || 0, 'VND')}
             </div>
             <p className="text-xs font-medium text-amber-700/70 dark:text-amber-400/70 mt-2">
-              Tiền bị khoá chờ hoàn tất giao hàng
+              Tiền tạm giữ chờ hoàn tất đơn hàng — chưa chia cho ai
             </p>
           </CardContent>
         </Card>
@@ -171,7 +174,7 @@ export function MockBankDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
               <Activity className="w-4 h-4 mr-2" />
-              Doanh thu Nền tảng (Commission)
+              Hoa hồng Nền tảng (Commission)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -179,7 +182,7 @@ export function MockBankDashboardPage() {
               {statsLoading ? '...' : formatMoneyMinor(stats?.platformCommission || 0, 'VND')}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Tiền phí (Lợi nhuận) của Admin
+              5% phí nền tảng — chỉ tăng khi escrow được giải ngân (đơn hoàn tất)
             </p>
           </CardContent>
         </Card>
@@ -200,7 +203,7 @@ export function MockBankDashboardPage() {
               {statsLoading ? '...' : formatMoneyMinor(stats?.sellerBalance || 0, 'VND')}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Tổng số dư Shop (khả dụng + đang chờ escrow)
+              Số dư khả dụng + tiền trong escrow (đã trừ 5% hoa hồng)
             </p>
           </CardContent>
         </Card>
@@ -208,41 +211,66 @@ export function MockBankDashboardPage() {
 
       {/* Live Flow Diagram */}
       <Card className="bg-muted/30 border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ArrowRight className="h-5 w-5 text-primary" />
+            Dòng tiền qua các giai đoạn
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Thanh toán → Escrow (tạm giữ) → Hoàn tất → Chia hoa hồng + thanh toán cho shop
+          </p>
+        </CardHeader>
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-center">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2">
-                <Users className="text-blue-600 dark:text-blue-400" />
+          <div className="flex flex-col items-center gap-6">
+            {/* Row 1: Customer → Escrow (on payment) */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-center w-full">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2">
+                  <Users className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="font-medium text-sm">Khách hàng</span>
               </div>
-              <span className="font-medium text-sm">Khách hàng</span>
-            </div>
-            
-            <div className="flex-1 flex flex-col items-center px-4 max-w-xs">
-              <span className="text-xs text-muted-foreground mb-1">Thanh toán đơn hàng</span>
-              <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-amber-400 rounded-full relative">
-                <div className="absolute right-0 -top-1.5 w-4 h-4 rounded-full bg-amber-400 animate-pulse"></div>
+
+              <div className="flex-1 flex flex-col items-center px-4 max-w-xs">
+                <span className="text-xs text-muted-foreground mb-1">Thanh toán đơn hàng</span>
+                <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-amber-400 rounded-full relative">
+                  <div className="absolute right-0 -top-1.5 w-4 h-4 rounded-full bg-amber-400 animate-pulse" />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2 shadow-inner border-2 border-amber-200 dark:border-amber-800">
+                  <ShieldCheck className="text-amber-600 dark:text-amber-500 w-8 h-8" />
+                </div>
+                <span className="font-bold text-amber-600 dark:text-amber-500">Ví Escrow</span>
+                <span className="text-xs text-muted-foreground">(Tạm giữ, chưa chia)</span>
               </div>
             </div>
 
-            <div className="flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2 shadow-inner border-2 border-amber-200 dark:border-amber-800">
-                <ShieldCheck className="text-amber-600 dark:text-amber-500 w-8 h-8" />
-              </div>
-              <span className="font-bold text-amber-600 dark:text-amber-500">Ví Escrow</span>
+            {/* Row 2: Escrow → Split (on completion) */}
+            <div className="flex flex-col items-center w-full">
+              <span className="text-xs text-muted-foreground mb-2">Đơn hoàn tất → Giải ngân</span>
+              <div className="w-1 h-8 bg-gradient-to-b from-amber-400 to-purple-500 rounded-full" />
             </div>
 
-            <div className="flex-1 flex flex-col items-center px-4 max-w-xs">
-              <span className="text-xs text-muted-foreground mb-1">Hoàn tất giao hàng</span>
-              <div className="w-full h-1 bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full relative">
-                <div className="absolute right-0 -top-1.5 w-4 h-4 rounded-full bg-emerald-400 animate-pulse"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-lg mx-auto">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-2 border-2 border-purple-300 dark:border-purple-700">
+                  <Activity className="text-purple-600 dark:text-purple-400 w-6 h-6" />
+                </div>
+                <span className="font-semibold text-purple-600 dark:text-purple-400">Platform</span>
+                <span className="text-xs text-muted-foreground">Giữ lại 5% hoa hồng</span>
+                <span className="text-[10px] text-muted-foreground">(Commission)</span>
               </div>
-            </div>
 
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-2">
-                <Store className="text-emerald-600 dark:text-emerald-400" />
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-2 border-2 border-emerald-300 dark:border-emerald-700">
+                  <Store className="text-emerald-600 dark:text-emerald-400 w-6 h-6" />
+                </div>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Chủ Shop</span>
+                <span className="text-xs text-muted-foreground">Nhận 95%</span>
+                <span className="text-[10px] text-muted-foreground">(trừ hoa hồng)</span>
               </div>
-              <span className="font-medium text-sm">Chủ Shop</span>
             </div>
           </div>
         </CardContent>
@@ -297,6 +325,11 @@ export function MockBankDashboardPage() {
                           tx.transactionType === 'TOP_UP' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' :
                           tx.transactionType === 'PAYMENT' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30' :
                           tx.transactionType === 'PAYOUT' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
+                          tx.transactionType === 'ESCROW_HOLD' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 font-semibold' :
+                          tx.transactionType === 'ESCROW_RELEASE' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                          tx.transactionType === 'ESCROW_REFUND' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
+                          tx.transactionType === 'ESCROW_RELEASE_SELLER' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
+                          tx.transactionType === 'ESCROW_SELLER_CREDIT' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
                           'bg-gray-100 text-gray-700 dark:bg-gray-800'
                         }>
                           {tx.transactionType}
