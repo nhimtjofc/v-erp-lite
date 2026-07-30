@@ -336,7 +336,7 @@ export function SellerWalletPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <BalanceCard icon={TrendingUp} label="Available balance" value={formatMoneyMinor(available, currency)} hint="Eligible for the next automated payout run" />
         <BalanceCard icon={Clock} label="Pending balance" value={formatMoneyMinor(pending, currency)} hint="Held in escrow for 7 days after delivery" />
-        <BalanceCard icon={Coins} label="Total balance" value={formatMoneyMinor(available + pending, currency)} hint="Available plus pending (7-day escrow)" />
+        <BalanceCard icon={Coins} label="Total balance" value={formatMoneyMinor(available, currency)} hint="Confirmed earnings from completed orders (after commission)" />
       </div>
       <PayoutStatusWidget wallet={wallet} />
       <TransactionHistory transactions={transactions ?? []} currency={currency} />
