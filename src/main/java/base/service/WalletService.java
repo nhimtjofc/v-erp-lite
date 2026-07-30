@@ -27,8 +27,6 @@ import java.util.UUID;
 @ApplicationScoped
 public class WalletService {
 
-    private static final int PLATFORM_COMMISSION_PERCENT = 5;
-
     public record WalletMutation(Wallet wallet, WalletTransaction transaction) {}
 
     @Inject
@@ -509,25 +507,13 @@ public class WalletService {
 
     public long getPendingEscrowForSeller(String tenantId, Wallet wallet) {
         if (!"SELLER".equals(wallet.getOwnerType()) || wallet.getOwnerId() == null) return 0;
-        List<Long> amounts = entityManager.createQuery(
-            "SELECT e.amountMinor FROM EscrowRecord e WHERE e.tenantId = :tenantId AND e.sellerWallet.id = :walletId AND e.status = 'HELD'", Long.class)
+        Long total = entityManager.createQuery(
+            "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e WHERE e.tenantId = :tenantId AND e.sellerWallet.id = :walletId AND e.status = 'HELD'",
+            Long.class)
             .setParameter("tenantId", tenantId)
             .setParameter("walletId", wallet.getId())
-            .getResultList();
-        long totalNet = 0;
-        for (Long amt : amounts) {
-            if (amt != null) {
-                totalNet += (amt - commissionFor(amt));
-            }
-        }
-        return totalNet;
-    }
-
-    private long commissionFor(long amountMinor) {
-        return java.math.BigDecimal.valueOf(amountMinor)
-                .multiply(java.math.BigDecimal.valueOf(PLATFORM_COMMISSION_PERCENT))
-                .divide(java.math.BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP)
-                .longValue();
+            .getSingleResult();
+        return total;
     }
 
     public Map<String, Long> getWalletStats(String tenantId) {
@@ -553,18 +539,16 @@ public class WalletService {
             .getResultList();
 
         long escrowHeld = 0;
-        long escrowNet = 0;
         for (Long amt : escrowAmounts) {
             if (amt != null) {
                 escrowHeld += amt;
-                escrowNet += (amt - commissionFor(amt));
             }
         }
 
         stats.put("customerBalance", customerTotal);
         stats.put("platformCommission", platformCommission);
         stats.put("escrowBalance", escrowHeld);
-        stats.put("sellerBalance", sellerAvailable + escrowNet);
+        stats.put("sellerBalance", sellerAvailable);
         return stats;
     }
 

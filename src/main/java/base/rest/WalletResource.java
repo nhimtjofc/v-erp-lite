@@ -184,7 +184,13 @@ public class WalletResource {
                                      @QueryParam("currency") String currency) {
         return walletService.listWallets(caller.tenantCode(), ownerType, ownerId, currency)
                 .stream()
-                .map(WalletResponse::from)
+                .map(w -> {
+                    WalletResponse r = WalletResponse.from(w);
+                    if ("SELLER".equals(w.getOwnerType())) {
+                        r.pendingBalanceMinor = escrowService.sumHeldForSeller(w.getTenantId(), w.getId());
+                    }
+                    return r;
+                })
                 .toList();
     }
 

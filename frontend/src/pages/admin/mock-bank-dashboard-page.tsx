@@ -203,7 +203,7 @@ export function MockBankDashboardPage() {
               {statsLoading ? '...' : formatMoneyMinor(stats?.sellerBalance || 0, 'VND')}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Số dư khả dụng + tiền trong escrow (đã trừ 5% hoa hồng)
+              Số dư khả dụng trong ví chủ shop
             </p>
           </CardContent>
         </Card>

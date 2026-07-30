@@ -81,19 +81,12 @@ public class EscrowService {
     }
 
     public long sumHeldForSeller(String tenantId, UUID sellerWalletId) {
-        List<Long> amounts = EscrowRecord.getEntityManager()
-                .createQuery("select e.amountMinor from EscrowRecord e where e.tenantId = :tenantId and e.sellerWallet.id = :sellerWalletId and e.status = 'HELD'", Long.class)
+        Long total = EscrowRecord.getEntityManager()
+                .createQuery("select COALESCE(SUM(e.amountMinor), 0) from EscrowRecord e where e.tenantId = :tenantId and e.sellerWallet.id = :sellerWalletId and e.status = 'HELD'", Long.class)
                 .setParameter("tenantId", tenantId)
                 .setParameter("sellerWalletId", sellerWalletId)
-                .getResultList();
-        
-        long totalNet = 0;
-        for (Long amt : amounts) {
-            if (amt != null) {
-                totalNet += (amt - commissionFor(amt));
-            }
-        }
-        return totalNet;
+                .getSingleResult();
+        return total;
     }
 
     @Transactional
