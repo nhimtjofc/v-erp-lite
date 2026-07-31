@@ -1,9 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import sys
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 orig_stdout_write = sys.stdout.write
 orig_stderr_write = sys.stderr.write
@@ -25,10 +29,19 @@ sys.stderr.write = safe_stderr_write
 
 # Fix path so we can import agents from parent dir
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from agents.router_agent import RouterAgent
-from agents.retrieval_agent import RetrievalAgent
-from agents.order_ops_agent import OrderOpsAgent
-from agents.stats_agent import StatsAgent
+from agents.unified_agent import UnifiedAgent
+from mcp_server.session_store import (
+    default_store,
+    SessionBusy,
+    SessionNotFound,
+    SessionAccessDenied,
+)
+from mcp_server.request_context import (
+    verify_bearer,
+    AuthError,
+    RequestContext,
+    current_request_context,
+)
 
 app = FastAPI(title="Ecommerce AI Chatbot")
 
@@ -41,33 +54,78 @@ app.add_middleware(
 )
 
 print("SERVER IS STARTING. API KEY IS:", os.environ.get("GEMINI_API_KEY"))
-router = RouterAgent()
-retrieval = RetrievalAgent()
-order_ops = OrderOpsAgent()
-stats = StatsAgent()
+unified_agent = UnifiedAgent()
 
 class ChatRequest(BaseModel):
+    # Only a new message and a server-issued session id — never client history.
+    # See intern-ai-agent-design.md: accepting history enables forged system/assistant/tool messages.
     message: str
+    session_id: Optional[str] = None
+
+
+def require_caller(authorization: Optional[str] = Header(default=None)) -> RequestContext:
+    """FastAPI dependency: authenticate the caller from the Bearer token.
+
+    Identity is derived here and passed to the agent — the model never sees it.
+    """
+    try:
+        return verify_bearer(authorization)
+    except AuthError as e:
+        # 401 with a generic message; no crypto/internal detail leaks out.
+        raise HTTPException(status_code=401, detail=str(e))
+
 
 @app.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, caller: RequestContext = Depends(require_caller)):
+    # Propagate trusted RequestContext via contextvar
+    token_reset = current_request_context.set(caller)
     try:
+        session_id = req.session_id
+        if not session_id:
+            session_id = default_store.create(caller)
+
         user_msg = req.message
-        intent = router.route_query(user_msg)
-        
-        if intent == "STORE_STATS":
-            answer = stats.handle_query(user_msg)
-        elif intent == "ORDER_OPS":
-            answer = order_ops.handle_query(user_msg)
-        else:
-            answer = retrieval.handle_query(user_msg)
-            
+        print(f"[chat] session={session_id} tenant={caller.tenant} user={caller.user_id}")
+
+        with default_store.turn(session_id, caller):
+            # Load server-owned history
+            history = default_store.load(session_id, caller)
+
+            # Process query via UnifiedAgent with Bounded Tool Loop
+            answer, updated_history = unified_agent.handle_query_with_history(user_msg, history)
+
+            # Append only new messages to the store atomically
+            new_messages = updated_history[len(history):]
+            new_messages_dicts = [type(msg).to_dict(msg) for msg in new_messages]
+            default_store.append_turn(session_id, caller, new_messages_dicts)
+
         html_answer = answer.replace('\n', '<br>')
-        return {"response": f"🤖 Ý định: <b>{intent}</b><br><hr style='border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;'>{html_answer}"}
+        return {
+            "response": html_answer,
+            "session_id": session_id
+        }
+
+    except SessionBusy:
+        raise HTTPException(
+            status_code=409,
+            detail="A turn is already in progress for this session."
+        )
+    except (SessionNotFound, SessionAccessDenied):
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found or access denied."
+        )
     except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        return {"response": f"❌ Lỗi Server: <pre>{tb}</pre>"}
+        # Hide traceback in production/UI to prevent stack trace leaks
+        import sys
+        print(f"[ERROR] Chat route failed: {e}", file=sys.stderr)
+        return {
+            "response": "Dạ hệ thống hỗ trợ đang bận hoặc gặp sự cố nhỏ, bạn vui lòng thử lại sau nhé.",
+            "session_id": req.session_id
+        }
+    finally:
+        current_request_context.reset(token_reset)
+
 
 @app.get("/")
 async def get_ui():
