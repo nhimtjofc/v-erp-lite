@@ -151,6 +151,37 @@ public class PaymentService {
         return records;
     }
 
+    /**
+     * Creates the escrow hold for an order whose payment was collected outside
+     * the online payment flow (e.g. COD / cash on delivery). No-op if escrow
+     * already exists. The hold uses the standard release due date so both the
+     * release scheduler and the admin "fast-forward 7 days" button apply.
+     */
+    @Transactional
+    public List<EscrowRecord> createEscrowHoldForOrder(Order order, UUID actorId) {
+        List<EscrowRecord> existing = escrowService.listByOrder(order.getTenantId(), order.getId());
+        if (!existing.isEmpty()) {
+            return existing;
+        }
+        String currency = order.getCurrency() != null ? order.getCurrency() : "VND";
+        List<SellerAllocation> allocations = allocateBySeller(order, order.getFinalAmountMinor());
+        List<EscrowRecord> records = new ArrayList<>();
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
+        for (SellerAllocation allocation : allocations) {
+            if (allocation.amountMinor() > 0) {
+                records.add(escrowService.holdSellerEscrow(
+                        order.getTenantId(),
+                        order.getId(),
+                        allocation.sellerOwnerId(),
+                        Money.of(allocation.amountMinor(), currency),
+                        escrowHoldUntil,
+                        actorId
+                ));
+            }
+        }
+        return records;
+    }
+
     private void markPaidEscrow(Order order, UUID actorId) {
         if ("PAID_ESCROW".equals(order.getStatus())) {
             return;

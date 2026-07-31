@@ -1,12 +1,12 @@
 package base.rest;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import base.entity.EscrowRecord;
 import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTopUp;
@@ -211,28 +211,14 @@ public class WalletResource {
     @Path("/escrow/force-release")
     @RolesAllowed({"admin"})
     public Map<String, Object> forceReleaseEscrows() {
-        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
-                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
-                Object[].class)
-                .getResultList();
-
-        int released = 0;
-        int failed = 0;
-        for (Object[] row : eligibleOrders) {
-            UUID orderId = (UUID) row[0];
-            String tenantId = (String) row[1];
-            try {
-                escrowService.releaseOrderEscrow(tenantId, orderId, caller.userId());
-                released++;
-            } catch (Exception e) {
-                failed++;
-            }
-        }
+        EscrowService.EscrowReleaseSummary summary = escrowService.releaseDueEscrows(
+                Instant.now().plus(Duration.ofDays(7)), caller.userId());
 
         Map<String, Object> result = new java.util.HashMap<>();
-        result.put("releasedOrders", released);
-        result.put("message", released + " order(s) escrow released, "
-                + failed + " failed (simulated 7-day fast-forward)");
+        result.put("releasedOrders", summary.releasedOrders());
+        result.put("failedOrders", summary.failedOrders());
+        result.put("message", summary.releasedOrders() + " order(s) escrow released, "
+                + summary.failedOrders() + " failed (simulated 7-day fast-forward)");
         return result;
     }
 
