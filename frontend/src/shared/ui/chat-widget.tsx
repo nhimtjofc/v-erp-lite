@@ -14,6 +14,7 @@ interface Message {
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -41,19 +42,36 @@ export function ChatWidget() {
     setIsLoading(true)
 
     try {
+      // Forward the logged-in user's OIDC access token so the agent can derive
+      // identity server-side (see interceptors.ts for the same token source).
+      const token = localStorage.getItem('access_token')
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: userMessage }),
+        headers,
+        body: JSON.stringify({ message: userMessage, session_id: sessionId }),
       })
+
+      if (res.status === 401) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: '🔒 Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.' },
+        ])
+        return
+      }
 
       if (!res.ok) {
         throw new Error('Network response was not ok')
       }
 
       const data = await res.json()
+      if (data.session_id) {
+        setSessionId(data.session_id)
+      }
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: data.response || 'Xin lỗi, tôi không thể xử lý yêu cầu lúc này.' },

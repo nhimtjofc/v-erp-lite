@@ -6,3 +6,4 @@ python-dotenv
 pinecone
 mysql-connector-python
 requests
+PyJWT[crypto]
