@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react'
+import { MessageCircle, X, Send, Bot } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { getAccessToken, userManager } from '@/shared/auth'
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -44,22 +45,42 @@ export function ChatWidget() {
     try {
       // Forward the logged-in user's OIDC access token so the agent can derive
       // identity server-side (see interceptors.ts for the same token source).
-      const token = localStorage.getItem('access_token')
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+      let token = await getAccessToken()
+      if (!token) {
+        token = localStorage.getItem('access_token')
       }
 
-      const res = await fetch('http://localhost:8000/chat', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ message: userMessage, session_id: sessionId }),
-      })
+      const sendChatRequest = async (authToken: string | null) => {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`
+        }
+        return fetch('http://localhost:8000/chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message: userMessage, session_id: sessionId }),
+        })
+      }
+
+      let res = await sendChatRequest(token)
+
+      // Coalesced retry on 401 using silent token renewal
+      if (res.status === 401) {
+        try {
+          const renewed = await userManager.signinSilent()
+          if (renewed?.access_token) {
+            localStorage.setItem('access_token', renewed.access_token)
+            res = await sendChatRequest(renewed.access_token)
+          }
+        } catch {
+          // silent refresh failed
+        }
+      }
 
       if (res.status === 401) {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: '🔒 Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.' },
+          { role: 'assistant', content: '🔒 Phiên đăng nhập đã hết hạn. Vui lòng làm mới trang (F5) hoặc đăng nhập lại để tiếp tục.' },
         ])
         return
       }

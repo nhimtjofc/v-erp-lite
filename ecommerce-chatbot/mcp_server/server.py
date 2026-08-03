@@ -42,6 +42,7 @@ from mcp_server.request_context import (
     RequestContext,
     current_request_context,
 )
+from mcp_server.telemetry import TurnTelemetry
 
 app = FastAPI(title="Ecommerce AI Chatbot")
 
@@ -79,11 +80,17 @@ def require_caller(authorization: Optional[str] = Header(default=None)) -> Reque
 async def chat(req: ChatRequest, caller: RequestContext = Depends(require_caller)):
     # Propagate trusted RequestContext via contextvar
     token_reset = current_request_context.set(caller)
-    try:
-        session_id = req.session_id
-        if not session_id:
-            session_id = default_store.create(caller)
+    session_id = req.session_id
+    if not session_id:
+        session_id = default_store.create(caller)
 
+    telemetry = TurnTelemetry(
+        session_id=session_id,
+        tenant=caller.tenant,
+        user_id=caller.user_id
+    )
+
+    try:
         user_msg = req.message
         print(f"[chat] session={session_id} tenant={caller.tenant} user={caller.user_id}")
 
@@ -91,13 +98,21 @@ async def chat(req: ChatRequest, caller: RequestContext = Depends(require_caller
             # Load server-owned history
             history = default_store.load(session_id, caller)
 
-            # Process query via UnifiedAgent with Bounded Tool Loop
-            answer, updated_history = unified_agent.handle_query_with_history(user_msg, history)
+            # Process query via UnifiedAgent with Bounded Tool Loop & Output Validation
+            answer, updated_history, is_valid = unified_agent.handle_query_with_history(
+                user_msg,
+                history,
+                telemetry=telemetry
+            )
 
-            # Append only new messages to the store atomically
-            new_messages = updated_history[len(history):]
-            new_messages_dicts = [type(msg).to_dict(msg) for msg in new_messages]
-            default_store.append_turn(session_id, caller, new_messages_dicts)
+            # Atomicity: Append only on valid completion (Rule #4 & #5)
+            if is_valid:
+                new_messages = updated_history[len(history):]
+                new_messages_dicts = [type(msg).to_dict(msg) for msg in new_messages]
+                default_store.append_turn(session_id, caller, new_messages_dicts)
+                telemetry.finish(status="success")
+            else:
+                telemetry.finish(status="validation_fallback")
 
         html_answer = answer.replace('\n', '<br>')
         return {
@@ -106,11 +121,13 @@ async def chat(req: ChatRequest, caller: RequestContext = Depends(require_caller
         }
 
     except SessionBusy:
+        telemetry.finish(status="busy", error_type="SessionBusy")
         raise HTTPException(
             status_code=409,
             detail="A turn is already in progress for this session."
         )
     except (SessionNotFound, SessionAccessDenied):
+        telemetry.finish(status="access_denied", error_type="SessionAccessDenied")
         raise HTTPException(
             status_code=404,
             detail="Session not found or access denied."
@@ -119,6 +136,7 @@ async def chat(req: ChatRequest, caller: RequestContext = Depends(require_caller
         # Hide traceback in production/UI to prevent stack trace leaks
         import sys
         print(f"[ERROR] Chat route failed: {e}", file=sys.stderr)
+        telemetry.finish(status="error", error_type=type(e).__name__)
         return {
             "response": "Dạ hệ thống hỗ trợ đang bận hoặc gặp sự cố nhỏ, bạn vui lòng thử lại sau nhé.",
             "session_id": req.session_id
@@ -170,7 +188,7 @@ async def get_ui():
                 input.value = "";
                 
                 const loadingId = "loading-" + Date.now();
-                messages.innerHTML += `<div id="${loadingId}" class="msg ai-msg">⏳ Đang vắt óc suy nghĩ... (Có thể mất đến 1 phút nếu bị kẹt mạng)</div>`;
+                messages.innerHTML += `<div id="${loadingId}" class="msg ai-msg">⏳ Đang xử lý...</div>`;
                 messages.scrollTop = messages.scrollHeight;
                 
                 const response = await fetch("/chat", {

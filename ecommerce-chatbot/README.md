@@ -1,54 +1,74 @@
-# Trợ lý AI Shopping - Thiết kế Bảo mật (Hardening Agent)
+# Trợ lý AI Shopping - Thiết kế Bảo mật Toàn diện (Hardened AI Agent)
 
-Tài liệu này mô tả chi tiết kiến trúc bảo mật của AI Shopping Assistant sau khi thực hiện hardening theo tài liệu thiết kế `intern-ai-agent-design.md`.
+Tài liệu này mô tả chi tiết kiến trúc bảo mật của AI Shopping Assistant sau khi thực hiện hardening đạt 100% các tiêu chuẩn và nguyên tắc thiết kế trong tài liệu `intern-ai-agent-design.md`.
+
+---
 
 ## 1. Kiến trúc Bảo mật (Security Architecture)
 
 ```
-[Frontend ChatWidget] ──(message + token + session_id)──> [FastAPI Server:8000]
+[Frontend ChatWidget] ──(message + Bearer JWT + session_id)──> [FastAPI Server:8000]
+                                                                      │
+                                                           [RequestContext] (ContextVar)
+                                                                      │
+                                                           [UnifiedAgent] (Bounded Loop)
+                                                                      │
+                        (Authorization: Bearer JWT) ──────────┼──────────> [Quarkus Backend:8081]
+                                                              │            (Per-User Scoped)
+                                                              ▼
+                                                   [Deterministic Output Validator]
+                                                    └─ 1-step No-tool Retry / Fallback
                                                               │
-                                                      [RequestContext] (ContextVar)
-                                                              │
-                                                      [UnifiedAgent] (Tool Loop)
-                                                              │
-                    (Authorization: Bearer JWT) ──────┴───────> [Quarkus Backend:8081]
-                                                                (Per-User Auth Enforced)
+                                                   [Server-Owned SessionStore]
+                                                    (Atomic Append on Valid Turn)
 ```
 
-Thay vì sử dụng một shared-secret không an toàn (`X-Chatbot-Key`) và bỏ qua việc xác thực quyền sở hữu dữ liệu của khách hàng, hệ thống đã được cải tiến để đạt được nguyên tắc **Identity nằm ngoài model**:
-*   **JWT Token Forwarding**: ChatWidget trích xuất OIDC JWT token hiện tại của người dùng đang đăng nhập và truyền xuống FastAPI.
-*   **RequestContext Propagation**: FastAPI xác thực chữ ký JWT, tạo ra `RequestContext` tin cậy, lưu vào biến `contextvars` cục bộ để tự động inject vào mọi lượt gọi API Backend.
-*   **Per-User Scoped Backend**: Quarkus Backend tự động giải quyết email người dùng từ JWT và thực hiện lọc dữ liệu per-user (User A chỉ có thể tìm kiếm đơn hàng của chính mình).
+### Nguyên tắc Cốt lõi
+*   **Identity nằm ngoài Model**: Toàn bộ định danh người dùng (`tenant`, `user_id`, `email`, `roles`) được giải mã và kiểm tra chữ ký RS256 từ JWT Keycloak, lưu trữ trong `RequestContext` và truyền ngầm qua `contextvars`. Model không nhận và không quyết định danh tính.
+*   **Per-User Scoped Backend**: Backend Quarkus (`OrderResource.java`) kiểm tra quyền của token và tự động cô lập dữ liệu theo `(customer.id = :customerId OR createdBy = :userId)`.
+*   **Bounded Tool Loop**: Vòng lặp công cụ giới hạn tối đa `max_steps = 5`, mỗi tool call nhận đúng 1 tool response, bọc bảo vệ chống crash khi model không đưa ra văn bản cuối.
+*   **Deterministic Output Validation**: Trước khi gửi tin nhắn cho người dùng hoặc lưu vào session, câu trả lời bắt buộc phải qua 4 tầng kiểm tra tất định:
+    1. `tech_leak`: Chặn rò rỉ mã lỗi, stack trace, đường dẫn file `.py`, `.java`.
+    2. `instruction_leak`: Chặn tiết lộ prompt hệ thống hoặc câu lệnh ẩn.
+    3. `action_claim`: Chặn tự nhận đã thực hiện thay đổi dữ liệu (hủy đơn, hoàn tiền, sửa đổi) khi hệ thống là read-only.
+    4. `pii`: Chặn rò rỉ hoặc bịa đặt số điện thoại, email không có trong kết quả trả về từ công cụ.
+*   **1-Step No-Tool Corrective Retry**: Khi phát hiện vi phạm, hệ thống gửi lời nhắc hiệu chỉnh cho model mà **không cấp quyền gọi tool**. Nếu thử lại vẫn vi phạm, hệ thống trả về `SAFE_FALLBACK` và hủy lượt lưu lịch sử dở dang.
+*   **Privacy-Safe Telemetry**: Ghi nhận chỉ số hoạt động (thời gian xử lý, số lượt gọi từng tool, trạng thái lượt chat, số lần retry) mà **tuyệt đối không lưu trữ prompt, tin nhắn của người dùng, tham số hay dữ liệu trả về của tool**.
 
 ---
 
-## 2. Danh sách Công cụ (Tools List)
+## 2. Danh sách Công cụ (MVP Read-Only Tools)
 
-Hệ thống AI Assistant được đăng ký 3 công cụ (Tools) với schema cố định:
+Hệ thống AI Assistant được đăng ký 4 công cụ (Tools) với schema cố định, chỉ nhận tham số ngữ nghĩa (Semantic Arguments):
 
-1.  **`get_order_status(order_id: str) -> str`**:
-    *   *Mô tả*: Tra cứu tình trạng giao hàng và thanh toán của đơn hàng.
-    *   *Bảo mật*: Nhận tham số phi danh tính (`order_id`). Token JWT của phiên hiện tại được lấy từ `RequestContext` cục bộ để gửi đến `/api/orders?search={order_id}`.
-2.  **`get_total_products_count() -> str`**:
-    *   *Mô tả*: Lấy tổng số lượng sản phẩm hiện có trong cửa hàng.
-    *   *Bảo mật*: Không nhận tham số định danh. Sử dụng JWT gửi đến `/api/products` để lấy số lượng sản phẩm được phân quyền cho Tenant đó.
-3.  **`search_knowledge_base(query: str) -> str`**:
-    *   *Mô tả*: Tìm kiếm thông tin sản phẩm (mô tả, giá cả, tồn kho) trên CSDL Vector (Pinecone).
+1.  **`list_customer_orders(status_filter: Optional[str] = None) -> str`**:
+    *   *Mô tả*: Lấy danh sách các đơn hàng gần đây của chính người dùng đang đăng nhập. Có thể lọc theo trạng thái (ví dụ: `SHIPPING`, `DELIVERED`, `PENDING_PAYMENT`, `PAID_ESCROW`, `FULFILLING`, `CANCELLED`, v.v.) hoặc để trống để xem tất cả đơn gần nhất.
+    *   *Bảo mật*: Token JWT được inject tự động từ `RequestContext` để gọi `GET /api/orders?status=...`. Backend tự động lọc theo quyền sở hữu của user. Kết quả được định dạng ngắn gọn, loại bỏ mọi PII nhạy cảm.
+
+2.  **`get_order_status(order_id: str) -> str`**:
+    *   *Mô tả*: Tra cứu tình trạng chi tiết của một đơn hàng cụ thể theo mã đơn (ví dụ: `ORD-123`).
+    *   *Bảo mật*: Nhận tham số phi danh tính `order_id`. Token JWT được gửi đến `/api/orders?search={order_id}`.
+
+3.  **`get_total_products_count() -> str`**:
+    *   *Mô tả*: Đếm tổng số lượng sản phẩm hiện có trong cửa hàng.
+    *   *Bảo mật*: Không nhận tham số định danh. Sử dụng JWT gửi đến `/api/products` để lấy số lượng sản phẩm thuộc Tenant hiện tại.
+
+4.  **`search_knowledge_base(query: str) -> str`**:
+    *   *Mô tả*: Tìm kiếm thông tin sản phẩm (mô tả, giá cả, tồn kho) trên CSDL Vector (Pinecone) dựa trên từ khóa ngữ nghĩa.
 
 ---
 
 ## 3. Phân biệt Kiểm soát Cấu trúc và Hành vi (Structural vs. Behavioral Controls)
 
-### Kiểm soát Cấu trúc (Structural Controls - Non-bypassable)
-Đây là các rào cản kỹ thuật cứng rắn ở cấp mã nguồn (code-level) mà mô hình AI không thể vượt qua:
-*   **No Identity Parameters in Schema**: Schema của các công cụ tuyệt đối không chứa các tham số định danh như `userId`, `tenantId`, hay `customerEmail`.
-*   **Argument Security Guard**: Bộ kiểm duyệt đầu vào (input parameter guard) sẽ chặn và hủy lệnh thực thi công cụ ngay lập tức nếu mô hình gửi tham số có chứa từ khóa nhạy cảm (`user`, `tenant`, `customer`, `account`).
-*   **Server-Owned Session Store**: Lịch sử trò chuyện được lưu trữ hoàn toàn ở server (InMemorySessionStore) và scope theo `(tenant, user_id)` lấy từ JWT đã xác thực. Client không thể tiêm nhiễm (inject) tin nhắn hệ thống hoặc giả mạo lịch sử.
-*   **Sanitized Error Responses**: Mọi lỗi hệ thống (exception/stack trace) được bắt giữ và làm sạch tại FastAPI, trả về thông báo lỗi chung dạng văn bản để ngăn ngừa rò rỉ cấu trúc ứng dụng.
-
-### Kiểm soát Hành vi (Behavioral Controls - Prompt-based)
-Các hướng dẫn hành vi giúp mô hình tương tác một cách tự nhiên và an toàn:
-*   **System Instructions**: Prompt hệ thống cấu hình tĩnh tại `UnifiedAgent` hướng dẫn mô hình không được giả mạo thông tin nếu công cụ không tìm thấy dữ liệu, và từ chối cung cấp thông tin nhạy cảm của người dùng khác.
+| Loại kiểm soát | Cơ chế triển khai | Mô tả & Tính bất khả xâm phạm |
+|---|---|---|
+| **Cấu trúc (Structural)** | JWT Verification & RequestContext | Xác thực chữ ký RS256 ngoài model, model không có quyền can thiệp vào định danh. |
+| **Cấu trúc (Structural)** | Schema & Argument Security Guard | Schema không chứa `user_id`/`tenant_id`. Bộ lọc chặn ngay lập tức nếu đối số chứa từ khóa danh tính. |
+| **Cấu trúc (Structural)** | Backend Isolation | `OrderResource.java` bắt buộc thêm điều kiện `tenantId` và `customerId/userId`. |
+| **Cấu trúc (Structural)** | Server-Owned SessionStore | Lịch sử lưu trên server, scope theo `(tenant, user_id)`, kiểm soát đồng thời `turn()` chống race-condition. |
+| **Cấu trúc (Structural)** | Output Validator & Fallback | Regex và chuỗi kiểm tra tất định độc lập với LLM; tự động fallback nếu model trả lời sai. |
+| **Cấu trúc (Structural)** | Privacy Telemetry | Chỉ ghi nhận metric thời gian/số lượng; không có trường dữ liệu lưu trữ prompt hay PII. |
+| **Hành vi (Behavioral)** | Static System Instruction | Cấu hình trong `UnifiedAgent` định hướng văn phong, cách hành văn lịch sự và nhắc nhở không bịa đặt. |
 
 ---
 
@@ -57,24 +77,41 @@ Các hướng dẫn hành vi giúp mô hình tương tác một cách tự nhiê
 ### `POST /chat`
 *   **Headers**:
     ```http
-    Authorization: Bearer <JWT_Token>
+    Authorization: Bearer <Keycloak_OIDC_JWT>
     Content-Type: application/json
     ```
-*   **Request Body**:
+*   **Request Body** (Chỉ nhận tin nhắn và session_id, tuyệt đối không nhận lịch sử từ client):
     ```json
     {
-      "message": "Tra cứu đơn hàng giúp tôi",
-      "session_id": "optional-session-id-here"
+      "message": "Tôi có những đơn hàng nào đang giao?",
+      "session_id": "optional-session-id"
     }
     ```
 *   **Response Body**:
     ```json
     {
-      "response": "🤖 Đơn hàng của bạn đang được xử lý...",
-      "session_id": "secure-server-generated-session-id"
+      "response": "🤖 Dạ hiện tại bạn có 1 đơn hàng đang trên đường giao:<br>- Mã: ORD-001 | Trạng thái: SHIPPING | Tổng tiền: 250000 VND...",
+      "session_id": "server-generated-session-id"
     }
     ```
 *   **Mã lỗi HTTP**:
-    *   `401 Unauthorized`: Token bị thiếu hoặc không hợp lệ.
-    *   `409 Conflict`: Có một lượt xử lý (turn) đang diễn ra đồng thời trên cùng một session.
-    *   `404 Not Found`: Không tìm thấy session hoặc session thuộc sở hữu của người dùng khác (được trả về đồng nhất để tránh tấn công dò tìm ID).
+    *   `401 Unauthorized`: Token bị thiếu, hết hạn hoặc không hợp lệ.
+    *   `409 Conflict`: Có lượt xử lý khác đang diễn ra đồng thời trên session này (`SessionBusy`).
+    *   `404 Not Found`: Session không tồn tại hoặc thuộc quyền sở hữu của người khác (`SessionAccessDenied` được map sang 404 để chống tấn công dò quét ID).
+
+---
+
+## 5. Hướng dẫn Chạy Kiểm thử (Test Suite)
+
+Để kiểm tra toàn bộ 48 bài kiểm thử bất biến bảo mật (Security Invariants & Hardening Tests) hoàn toàn offline:
+
+```bash
+cd ecommerce-chatbot
+python run_tests.py
+```
+
+### Các nhóm kiểm thử tự động:
+1. `test_agent_loop.py`: Kiểm thử tool `list_customer_orders`, Argument Security Guard, và Telemetry.
+2. `test_session_store.py`: Kiểm thử quyền sở hữu session, append-only, giới hạn dung lượng, giải phóng lock khi exception, chống race condition đa luồng.
+3. `test_output_validator.py`: Kiểm thử 4 tầng lọc rò rỉ mã lỗi, system prompt, claim hành động thay đổi dữ liệu, và PII giả mạo.
+4. `test_request_context.py`: Kiểm thử bóc tách tenant/roles từ JWT và từ chối header không hợp lệ.
