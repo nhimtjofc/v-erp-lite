@@ -844,6 +844,12 @@ public class OrderResource {
             }
         }
 
+        // Payment collected outside the online flow (COD / cash on delivery):
+        // create the escrow hold so the 7-day release applies to this order too.
+        if ("PAID_ESCROW".equals(effectiveStatus) && !"PAID_ESCROW".equals(oldStatus)) {
+            paymentService.createEscrowHoldForOrder(order, userId);
+        }
+
         order.setStatus(effectiveStatus);
         order.setUpdatedBy(userId);
 

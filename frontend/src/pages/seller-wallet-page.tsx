@@ -323,6 +323,7 @@ export function SellerWalletPage() {
   const currency = wallet.currency ?? 'VND'
   const available = Number(wallet.availableBalanceMinor ?? 0)
   const pending = Number(wallet.pendingBalanceMinor ?? 0)
+  const total = Number((wallet as SellerWallet & { totalBalanceMinor?: number }).totalBalanceMinor ?? available)
 
   return (
     <div className="space-y-6">
@@ -336,7 +337,7 @@ export function SellerWalletPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <BalanceCard icon={TrendingUp} label="Available balance" value={formatMoneyMinor(available, currency)} hint="Eligible for the next automated payout run" />
         <BalanceCard icon={Clock} label="Pending balance" value={formatMoneyMinor(pending, currency)} hint="Held in escrow for 7 days after delivery" />
-        <BalanceCard icon={Coins} label="Total balance" value={formatMoneyMinor(available, currency)} hint="Confirmed earnings from completed orders (after commission)" />
+        <BalanceCard icon={Coins} label="Total balance" value={formatMoneyMinor(total, currency)} hint="Released earnings from completed orders across your shops (after commission)" />
       </div>
       <PayoutStatusWidget wallet={wallet} />
       <TransactionHistory transactions={transactions ?? []} currency={currency} />

@@ -7,7 +7,7 @@ import {
   useMyWalletQuery,
   useWalletTransactionsQuery,
 } from '@/shared/api/wallet'
-import { topUpMyWallet, completeTopUp, getMyTopUps, simulateTransferred } from '@/shared/api/gen/sdk.gen'
+import { topUpMyWallet, completeTopUp, getMyTopUps } from '@/shared/api/gen/sdk.gen'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { formatMoneyMinor } from '@/shared/utils/currency'
 import { Badge } from '@/shared/ui/badge'
@@ -92,15 +92,7 @@ function TopUpDialog({
 
   const completeMutation = useMutation({
     mutationFn: async (topUp: any) => {
-      const res = await simulateTransferred({
-        body: {
-          paymentIntentId: topUp.id,
-          gatewayTransactionId: 'MOCK_TOPUP_' + new Date().getTime(),
-          status: 'SUCCESS',
-          amountMinor: topUp.amountMinor,
-          currency: 'VND',
-        }
-      })
+      const res = await completeTopUp({ path: { id: topUp.id } })
       return res.data
     },
     onSuccess: () => {
@@ -109,8 +101,11 @@ function TopUpDialog({
       setPendingTopUp(null)
       onOpenChange(false)
     },
-  })
+    onError: (err: any) => {
+      setError(err?.message || 'Unable to complete wallet top-up')
+    },
 
+  })
   const handleCreate = () => {
     setError('')
     const amount = Number.parseInt(amountStr.replace(/\D/g, ''), 10)
@@ -154,6 +149,7 @@ function TopUpDialog({
         ) : (
           <div className="grid gap-4 py-4 flex flex-col items-center">
             <p className="text-sm font-medium text-center">Quét mã QR sau để nạp tiền:</p>
+            {error && <div className="w-full text-sm font-medium text-destructive">{error}</div>}
             {pendingTopUp.paymentQrCodeBase64 && (
               <img
                 src={pendingTopUp.paymentQrCodeBase64}

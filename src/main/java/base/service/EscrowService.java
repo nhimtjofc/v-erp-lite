@@ -214,24 +214,35 @@ public class EscrowService {
                 .longValue();
     }
 
+    /**
+     * Releases every escrow whose hold period has elapsed as of {@code referenceNow}.
+     * This mirrors EscrowReleaseScheduler but lets callers simulate time passing
+     * (e.g. the admin "fast-forward 7 days" button passes now + 7 days).
+     */
     @Transactional
-    public int forceReleaseAllHeldEscrows(UUID actorId) {
+    public EscrowReleaseSummary releaseDueEscrows(Instant referenceNow, UUID actorId) {
         List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
-                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
+                "select distinct e.orderId, e.tenantId from EscrowRecord e "
+                        + "where e.status = 'HELD' and e.releaseDueAt <= :referenceNow",
                 Object[].class)
+                .setParameter("referenceNow", referenceNow)
                 .getResultList();
 
-        int successCount = 0;
+        int released = 0;
+        int failed = 0;
         for (Object[] row : eligibleOrders) {
             UUID orderId = (UUID) row[0];
             String tenantId = (String) row[1];
             try {
                 releaseOrderEscrow(tenantId, orderId, actorId);
-                successCount++;
+                released++;
             } catch (Exception e) {
-                // skip failures silently
+                failed++;
             }
         }
-        return successCount;
+        return new EscrowReleaseSummary(released, failed);
+    }
+
+    public record EscrowReleaseSummary(int releasedOrders, int failedOrders) {
     }
 }

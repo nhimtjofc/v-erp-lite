@@ -1,12 +1,12 @@
 package base.rest;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import base.entity.EscrowRecord;
 import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTopUp;
@@ -110,6 +110,7 @@ public class WalletResource {
         public UUID userId;
         public long availableBalanceMinor;
         public long pendingBalanceMinor;
+        public long totalBalanceMinor;
         public String currency;
         public UUID bankId;
         public String bankCode;
@@ -128,6 +129,7 @@ public class WalletResource {
             response.ownerId = wallet.getOwnerId();
             response.userId = wallet.getUser() == null ? null : wallet.getUser().getId();
             response.availableBalanceMinor = wallet.getAvailableBalanceMinor();
+            response.totalBalanceMinor = wallet.getAvailableBalanceMinor();
             response.pendingBalanceMinor = wallet.getPendingBalanceMinor();
             response.currency = wallet.getCurrency();
             response.bankId = wallet.getBank() == null ? null : wallet.getBank().getId();
@@ -211,28 +213,14 @@ public class WalletResource {
     @Path("/escrow/force-release")
     @RolesAllowed({"admin"})
     public Map<String, Object> forceReleaseEscrows() {
-        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
-                "select distinct e.orderId, e.tenantId from EscrowRecord e where e.status = 'HELD'",
-                Object[].class)
-                .getResultList();
-
-        int released = 0;
-        int failed = 0;
-        for (Object[] row : eligibleOrders) {
-            UUID orderId = (UUID) row[0];
-            String tenantId = (String) row[1];
-            try {
-                escrowService.releaseOrderEscrow(tenantId, orderId, caller.userId());
-                released++;
-            } catch (Exception e) {
-                failed++;
-            }
-        }
+        EscrowService.EscrowReleaseSummary summary = escrowService.releaseDueEscrows(
+                Instant.now().plus(Duration.ofDays(7)), caller.userId());
 
         Map<String, Object> result = new java.util.HashMap<>();
-        result.put("releasedOrders", released);
-        result.put("message", released + " order(s) escrow released, "
-                + failed + " failed (simulated 7-day fast-forward)");
+        result.put("releasedOrders", summary.releasedOrders());
+        result.put("failedOrders", summary.failedOrders());
+        result.put("message", summary.releasedOrders() + " order(s) escrow released, "
+                + summary.failedOrders() + " failed (simulated 7-day fast-forward)");
         return result;
     }
 
@@ -269,8 +257,10 @@ public class WalletResource {
         // Seller's pending balance is held in the platform wallet as escrow;
         // the marketplace owner sees held escrow across all tenant businesses.
         if ("SELLER".equals(wallet.getOwnerType())) {
-            resp.pendingBalanceMinor = walletService.getPendingEscrowForTenantBusinesses(
-                    caller.tenantCode(), wallet.getCurrency());
+            resp.totalBalanceMinor = walletService.getReleasedSellerBalanceForOwner(
+                    caller.tenantCode(), user, wallet.getCurrency());
+            resp.pendingBalanceMinor = walletService.getPendingEscrowForOwnerBusinesses(
+                    caller.tenantCode(), user, wallet.getCurrency());
         }
         return resp;
     }
@@ -383,6 +373,29 @@ public class WalletResource {
                 .toList();
     }
 
+
+    /**
+     * Completes a pending top-up in the local mock-payment flow. Real payment
+     * providers complete top-ups through their authenticated webhook instead.
+     */
+    @POST
+    @Path("/top-up/{id}/complete")
+    @Transactional
+    public WalletTopUpResponse completeTopUp(@PathParam("id") UUID id) {
+        WalletTopUp topUp = WalletTopUp.find("id = ?1 and tenantId = ?2", id, caller.tenantCode())
+                .firstResult();
+        if (topUp == null) {
+            throw new jakarta.ws.rs.NotFoundException("Top-up request not found");
+        }
+        if (!caller.hasRole("admin")) {
+            User user = caller.resolveUser();
+            if (!walletService.isWalletOwnedByUser(caller.tenantCode(), topUp.getWallet(), user)) {
+                throw new ForbiddenException("You are not allowed to complete this top-up");
+            }
+        }
+        walletService.completeTopUp(caller.tenantCode(), id, caller.userId());
+        return WalletTopUpResponse.from(topUp);
+    }
     @POST
     @Path("/{id}/credit")
     @RolesAllowed({"admin"})
