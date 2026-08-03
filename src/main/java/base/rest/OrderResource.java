@@ -39,6 +39,9 @@ import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -115,15 +118,36 @@ public class OrderResource {
     }
 
     public static class CheckoutRequest {
+        @NotNull(message = "Customer ID is required")
         public UUID customerId;
+
         public String voucherCode;
+
+        @NotBlank(message = "Shipping name is required")
         public String shippingName;
+
+        @NotBlank(message = "Shipping phone number is required")
         public String shippingPhone;
+
+        @NotBlank(message = "Province code is required")
+        public String provinceCode;
+
+        @NotBlank(message = "District code is required")
+        public String districtCode;
+
+        @NotBlank(message = "Ward code is required")
+        public String wardCode;
+
+        @NotBlank(message = "Street address is required")
+        public String streetAddress;
+
         public String shippingAddress;
         public String shippingWard;
         public String shippingProvince;
         public String shippingNote;
         public String paymentMethod; // e.g. COD or BANK_TRANSFER
+
+        @NotNull(message = "Order must contain at least one item")
         public List<CartItem> items;
     }
 
@@ -444,7 +468,7 @@ public class OrderResource {
     @Path("/checkout")
     @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     @Transactional
-    public Response checkoutOrder(CheckoutRequest request) {
+    public Response checkoutOrder(@Valid CheckoutRequest request) {
         if (request == null) {
             throw new BadRequestException("Request body is required");
         }
@@ -460,14 +484,17 @@ public class OrderResource {
         if (request.shippingPhone == null || request.shippingPhone.isBlank()) {
             throw new BadRequestException("Shipping phone number is required");
         }
-        if (request.shippingAddress == null || request.shippingAddress.isBlank()) {
-            throw new BadRequestException("Shipping address is required");
+        if (request.provinceCode == null || request.provinceCode.isBlank()) {
+            throw new BadRequestException("Province code is required");
         }
-        if (request.shippingWard == null || request.shippingWard.isBlank()) {
-            throw new BadRequestException("Shipping ward is required");
+        if (request.districtCode == null || request.districtCode.isBlank()) {
+            throw new BadRequestException("District code is required");
         }
-        if (request.shippingProvince == null || request.shippingProvince.isBlank()) {
-            throw new BadRequestException("Shipping province is required");
+        if (request.wardCode == null || request.wardCode.isBlank()) {
+            throw new BadRequestException("Ward code is required");
+        }
+        if (request.streetAddress == null || request.streetAddress.isBlank()) {
+            throw new BadRequestException("Street address is required");
         }
 
         String tenantCode = caller.tenantCode();
@@ -622,12 +649,23 @@ public class OrderResource {
         String initialStatus = "PENDING_PAYMENT";
         order.setStatus(initialStatus);
         
-        order.setShippingName(request.shippingName);
-        order.setShippingPhone(request.shippingPhone);
-        order.setShippingAddress(request.shippingAddress);
-        order.setShippingWard(request.shippingWard);
-        order.setShippingProvince(request.shippingProvince);
-        order.setShippingNote(request.shippingNote);
+        order.setShippingName(request.shippingName.trim());
+        order.setShippingPhone(request.shippingPhone.trim());
+        order.setProvinceCode(request.provinceCode.trim());
+        order.setDistrictCode(request.districtCode.trim());
+        order.setWardCode(request.wardCode.trim());
+        order.setStreetAddress(request.streetAddress.trim());
+
+        String shipWard = (request.shippingWard != null && !request.shippingWard.isBlank()) ? request.shippingWard.trim() : request.wardCode.trim();
+        String shipProv = (request.shippingProvince != null && !request.shippingProvince.isBlank()) ? request.shippingProvince.trim() : request.provinceCode.trim();
+        String fullAddress = (request.shippingAddress != null && !request.shippingAddress.isBlank())
+                ? request.shippingAddress.trim()
+                : (request.streetAddress.trim() + ", " + shipWard + ", " + shipProv);
+
+        order.setShippingAddress(fullAddress);
+        order.setShippingWard(shipWard);
+        order.setShippingProvince(shipProv);
+        order.setShippingNote(request.shippingNote != null ? request.shippingNote.trim() : null);
         order.setSubtotalAmountMinor(subtotal);
         order.setDiscountAmountMinor(discount);
         order.setShippingFeeMinor(shippingFee);
@@ -1293,7 +1331,12 @@ public class OrderResource {
     }
 
     static List<OrderItem> cancellationTargets(Order order, OrderItem requestedItem) {
-        return List.of(requestedItem);
+        if (order != null && "PAID_ESCROW".equalsIgnoreCase(order.getStatus()) && order.getItems() != null) {
+            return order.getItems().stream()
+                    .filter(item -> item.getCancelledAt() == null)
+                    .toList();
+        }
+        return requestedItem != null ? List.of(requestedItem) : List.of();
     }
 
     static boolean areAllItemsCancelled(Order order) {

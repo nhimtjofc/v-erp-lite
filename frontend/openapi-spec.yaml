@@ -247,6 +247,14 @@ components:
           type: string
         shippingPhone:
           type: string
+        provinceCode:
+          type: string
+        districtCode:
+          type: string
+        wardCode:
+          type: string
+        streetAddress:
+          type: string
         shippingAddress:
           type: string
         shippingWard:
@@ -301,6 +309,14 @@ components:
         phone:
           type: string
         address:
+          type: string
+        provinceCode:
+          type: string
+        districtCode:
+          type: string
+        wardCode:
+          type: string
+        streetAddress:
           type: string
         birthDate:
           $ref: "#/components/schemas/LocalDate"
@@ -569,6 +585,14 @@ components:
         shippingName:
           type: string
         shippingPhone:
+          type: string
+        provinceCode:
+          type: string
+        districtCode:
+          type: string
+        wardCode:
+          type: string
+        streetAddress:
           type: string
         shippingAddress:
           type: string

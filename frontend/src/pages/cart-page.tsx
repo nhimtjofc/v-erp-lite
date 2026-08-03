@@ -23,6 +23,7 @@ import {
 import { formatVND } from '@/shared/utils/currency'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Badge } from '@/shared/ui/badge'
+import { CascadingAddressSelect } from '@/shared/ui/cascading-address-select'
 import { Link } from '@tanstack/react-router'
 
 interface CartItem {
@@ -258,9 +259,13 @@ export function CartPage() {
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [customerAddress, setCustomerAddress] = useState('')
-  const [shippingWard, setShippingWard] = useState('')
-  const [shippingProvince, setShippingProvince] = useState('')
+  const [provinceCode, setProvinceCode] = useState('')
+  const [provinceName, setProvinceName] = useState('')
+  const [districtCode, setDistrictCode] = useState('')
+  const [districtName, setDistrictName] = useState('')
+  const [wardCode, setWardCode] = useState('')
+  const [wardName, setWardName] = useState('')
+  const [streetAddress, setStreetAddress] = useState('')
   const [shippingNote, setShippingNote] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
 
@@ -273,7 +278,10 @@ export function CartPage() {
       setCustomerName(`${firstName} ${lastName}`.trim())
       setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
       setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
-      setCustomerAddress(myCustomerProfile?.address ?? '')
+      setProvinceCode((myCustomerProfile as any)?.provinceCode ?? '')
+      setDistrictCode((myCustomerProfile as any)?.districtCode ?? '')
+      setWardCode((myCustomerProfile as any)?.wardCode ?? '')
+      setStreetAddress((myCustomerProfile as any)?.streetAddress ?? myCustomerProfile?.address ?? '')
     }
   }, [isCustomer, me, myCustomerProfile])
 
@@ -361,10 +369,14 @@ export function CartPage() {
       setError('Vui lòng chọn một cửa hàng để tạo đơn và thanh toán.')
       return
     }
-    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
-      setError('Vui lòng điền đầy đủ thông tin giao hàng bắt buộc')
+    if (!customerName.trim() || !customerPhone.trim() || !provinceCode.trim() || !districtCode.trim() || !wardCode.trim() || !streetAddress.trim()) {
+      setError('Vui lòng chọn Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập địa chỉ cụ thể')
       return
     }
+    const shipWard = wardName || wardCode
+    const shipProv = provinceName || provinceCode
+    const fullAddress = `${streetAddress.trim()}, ${shipWard}, ${districtName || districtCode}, ${shipProv}`
+
     customerCheckoutMutation.mutate({
       body: {
         customerId,
@@ -372,16 +384,20 @@ export function CartPage() {
         voucherCode: selectedVoucher?.code ?? undefined,
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
-        shippingAddress: customerAddress.trim(),
-        shippingWard: shippingWard.trim(),
-        shippingProvince: shippingProvince.trim(),
+        provinceCode: provinceCode.trim(),
+        districtCode: districtCode.trim(),
+        wardCode: wardCode.trim(),
+        streetAddress: streetAddress.trim(),
+        shippingAddress: fullAddress,
+        shippingWard: shipWard,
+        shippingProvince: shipProv,
         shippingNote: shippingNote.trim() || undefined,
         items: checkoutItems.map(item => ({
           productId: item.product.id,
           productVariantId: item.variant?.id ?? null,
           quantity: item.quantity,
         })) as any,
-      }
+      } as any,
     })
   }
 
@@ -705,7 +721,7 @@ export function CartPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="shippingPhone">Số điện thoại liên lạc</Label>
+                <Label htmlFor="shippingPhone">Số điện thoại liên lạc *</Label>
                 <Input
                   id="shippingPhone"
                   value={customerPhone}
@@ -714,35 +730,40 @@ export function CartPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="shippingAddress">Địa chỉ nhận hàng</Label>
-                <Input
-                  id="shippingAddress"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-                />
-              </div>
+              <CascadingAddressSelect
+                provinceCode={provinceCode}
+                districtCode={districtCode}
+                wardCode={wardCode}
+                streetAddress={streetAddress}
+                onProvinceChange={(code, name) => {
+                  setProvinceCode(code)
+                  setProvinceName(name)
+                  setDistrictCode('')
+                  setDistrictName('')
+                  setWardCode('')
+                  setWardName('')
+                }}
+                onDistrictChange={(code, name) => {
+                  setDistrictCode(code)
+                  setDistrictName(name)
+                  setWardCode('')
+                  setWardName('')
+                }}
+                onWardChange={(code, name) => {
+                  setWardCode(code)
+                  setWardName(name)
+                }}
+                onStreetAddressChange={setStreetAddress}
+              />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="shippingProvince">Tỉnh/Thành phố *</Label>
-                  <Input
-                    id="shippingProvince"
-                    value={shippingProvince}
-                    onChange={(e) => setShippingProvince(e.target.value)}
-                    placeholder="Tỉnh/Thành phố"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="shippingWard">Phường/Xã/Quận *</Label>
-                  <Input
-                    id="shippingWard"
-                    value={shippingWard}
-                    onChange={(e) => setShippingWard(e.target.value)}
-                    placeholder="Phường/Xã/Quận"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="shippingNote">Ghi chú giao hàng</Label>
+                <Input
+                  id="shippingNote"
+                  value={shippingNote}
+                  onChange={(e) => setShippingNote(e.target.value)}
+                  placeholder="Ghi chú thêm cho shipper (tùy chọn)..."
+                />
               </div>
 
               <div className="space-y-1.5">

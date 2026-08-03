@@ -50,7 +50,13 @@ public class PaymentTestDataFactory {
         order.setStatus("PENDING");
         order.setShippingName("Khách kiểm thử");
         order.setShippingPhone("0900000000");
-        order.setShippingAddress("Địa chỉ kiểm thử");
+        order.setProvinceCode("01");
+        order.setDistrictCode("001");
+        order.setWardCode("00001");
+        order.setStreetAddress("123 Đường Kiểm Thử");
+        order.setShippingAddress("123 Đường Kiểm Thử, Phường Phúc Xá, Quận Ba Đình, Hà Nội");
+        order.setShippingWard("Phường Phúc Xá");
+        order.setShippingProvince("Hà Nội");
         order.setSubtotalAmountMinor(finalAmount.longValueExact());
         order.setDiscountAmountMinor(0L);
         order.setShippingFeeMinor(0L);

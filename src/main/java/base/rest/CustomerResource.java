@@ -96,6 +96,10 @@ public class CustomerResource {
         customer.setEmail(updated.getEmail());
         customer.setPhone(updated.getPhone());
         customer.setAddress(updated.getAddress());
+        customer.setProvinceCode(updated.getProvinceCode());
+        customer.setDistrictCode(updated.getDistrictCode());
+        customer.setWardCode(updated.getWardCode());
+        customer.setStreetAddress(updated.getStreetAddress());
         customer.setBirthDate(updated.getBirthDate());
         customer.setNotes(updated.getNotes());
         customer.setActive(updated.isActive());

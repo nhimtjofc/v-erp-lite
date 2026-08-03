@@ -375,6 +375,12 @@ public class EcommerceOrderService {
         order.setShippingName(shipName);
         order.setShippingPhone(shipPhone);
         order.setShippingAddress(fullShipAddress);
+        order.setStreetAddress(shipAddress_1 != null && !shipAddress_1.isBlank() ? shipAddress_1 : fullShipAddress);
+        order.setProvinceCode(shipCity != null && !shipCity.isBlank() ? shipCity : "");
+        order.setDistrictCode(shipAddress_2 != null && !shipAddress_2.isBlank() ? shipAddress_2 : "");
+        order.setWardCode("");
+        order.setShippingProvince(shipCity != null && !shipCity.isBlank() ? shipCity : "");
+        order.setShippingWard(shipAddress_2 != null && !shipAddress_2.isBlank() ? shipAddress_2 : "");
         order.setShippingNote(orderNode.path("customer_note").asText());
         order.setSubtotalAmountMinor(subtotal);
         order.setDiscountAmountMinor(discount);

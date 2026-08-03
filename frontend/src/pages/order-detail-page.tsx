@@ -1212,7 +1212,33 @@ export function OrderDetailPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <span className="text-muted-foreground block text-xs">Shipping Address</span>
-                  <span className="font-medium text-sm block whitespace-pre-wrap">{order.shippingAddress}</span>
+                  <span className="font-medium text-sm block whitespace-pre-wrap">
+                    {order.shippingAddress || (order as any).streetAddress || '—'}
+                  </span>
+                  {((order as any).wardCode || (order as any).districtCode || (order as any).provinceCode) && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                      {(order as any).streetAddress && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Số nhà/Đường: {(order as any).streetAddress}
+                        </span>
+                      )}
+                      {(order as any).wardCode && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Phường/Xã: {(order as any).wardCode}
+                        </span>
+                      )}
+                      {(order as any).districtCode && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Quận/Huyện: {(order as any).districtCode}
+                        </span>
+                      )}
+                      {(order as any).provinceCode && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Tỉnh/Thành: {(order as any).provinceCode}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {order.shippingNote && (
                   <div className="sm:col-span-2">

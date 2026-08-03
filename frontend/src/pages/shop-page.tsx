@@ -25,6 +25,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
+import { CascadingAddressSelect } from '@/shared/ui/cascading-address-select'
 import {
   ShoppingCart, Package, Tag, Plus, Minus, X, Search, Flame,
   ShoppingBag, ChevronRight, AlertCircle, Gift, Check, Sparkles,
@@ -280,9 +281,13 @@ export function ShopPage() {
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [customerAddress, setCustomerAddress] = useState('')
-  const [shippingWard, setShippingWard] = useState('')
-  const [shippingProvince, setShippingProvince] = useState('')
+  const [provinceCode, setProvinceCode] = useState('')
+  const [provinceName, setProvinceName] = useState('')
+  const [districtCode, setDistrictCode] = useState('')
+  const [districtName, setDistrictName] = useState('')
+  const [wardCode, setWardCode] = useState('')
+  const [wardName, setWardName] = useState('')
+  const [streetAddress, setStreetAddress] = useState('')
   const [shippingNote, setShippingNote] = useState('')
 
   // Pre-populate checkout from the customer profile, with the signed-in account
@@ -294,23 +299,33 @@ export function ShopPage() {
       setCustomerName(`${firstName} ${lastName}`.trim())
       setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
       setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
-      setCustomerAddress(myCustomerProfile?.address ?? '')
+      setProvinceCode((myCustomerProfile as any)?.provinceCode ?? '')
+      setDistrictCode((myCustomerProfile as any)?.districtCode ?? '')
+      setWardCode((myCustomerProfile as any)?.wardCode ?? '')
+      setStreetAddress((myCustomerProfile as any)?.streetAddress ?? myCustomerProfile?.address ?? '')
     } else if (!isCustomerRole && selectedCustomerId && customers) {
       const found = customers.find(c => c.id === selectedCustomerId)
       if (found) {
         setCustomerName(`${found.firstName ?? ''} ${found.lastName ?? ''}`.trim())
         setCustomerEmail(found.email ?? '')
         setCustomerPhone(found.phone ?? '')
-        setCustomerAddress(found.address ?? '')
+        setProvinceCode((found as any)?.provinceCode ?? '')
+        setDistrictCode((found as any)?.districtCode ?? '')
+        setWardCode((found as any)?.wardCode ?? '')
+        setStreetAddress((found as any)?.streetAddress ?? found.address ?? '')
       }
     }
   }, [isCustomerRole, me, myCustomerProfile, selectedCustomerId, customers])
 
   async function handleCheckout() {
-    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
-      setError('Please fill in all required shipping fields')
+    if (!customerName.trim() || !customerPhone.trim() || !provinceCode.trim() || !districtCode.trim() || !wardCode.trim() || !streetAddress.trim()) {
+      setError('Please fill in all required shipping address fields')
       return
     }
+
+    const shipWard = wardName || wardCode
+    const shipProv = provinceName || provinceCode
+    const fullAddress = `${streetAddress.trim()}, ${shipWard}, ${districtName || districtCode}, ${shipProv}`
 
     checkoutMutation.mutate({
       body: {
@@ -319,16 +334,20 @@ export function ShopPage() {
         voucherCode: selectedVoucher?.code ?? undefined,
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
-        shippingAddress: customerAddress.trim(),
-        shippingWard: shippingWard.trim(),
-        shippingProvince: shippingProvince.trim(),
+        provinceCode: provinceCode.trim(),
+        districtCode: districtCode.trim(),
+        wardCode: wardCode.trim(),
+        streetAddress: streetAddress.trim(),
+        shippingAddress: fullAddress,
+        shippingWard: shipWard,
+        shippingProvince: shipProv,
         shippingNote: shippingNote.trim() || undefined,
         items: cart.map(i => ({
           productId: i.product.id!,
           productVariantId: i.variant?.id ?? null,
           quantity: i.quantity,
         })) as any,
-      },
+      } as any,
     })
   }
 
@@ -868,25 +887,32 @@ export function ShopPage() {
               <Label>Phone *</Label>
               <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="+1 555-0000" />
             </div>
-            <div>
-              <Label>Shipping Address *</Label>
-              <textarea
-                className="flex min-h-[60px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-                value={customerAddress}
-                onChange={e => setCustomerAddress(e.target.value)}
-                placeholder="123 Main St, City"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Province/City *</Label>
-                <Input value={shippingProvince} onChange={e => setShippingProvince(e.target.value)} placeholder="Tỉnh/Thành phố" />
-              </div>
-              <div>
-                <Label>Ward/District *</Label>
-                <Input value={shippingWard} onChange={e => setShippingWard(e.target.value)} placeholder="Xã/Phường/Quận" />
-              </div>
-            </div>
+
+            <CascadingAddressSelect
+              provinceCode={provinceCode}
+              districtCode={districtCode}
+              wardCode={wardCode}
+              streetAddress={streetAddress}
+              onProvinceChange={(code, name) => {
+                setProvinceCode(code)
+                setProvinceName(name)
+                setDistrictCode('')
+                setDistrictName('')
+                setWardCode('')
+                setWardName('')
+              }}
+              onDistrictChange={(code, name) => {
+                setDistrictCode(code)
+                setDistrictName(name)
+                setWardCode('')
+                setWardName('')
+              }}
+              onWardChange={(code, name) => {
+                setWardCode(code)
+                setWardName(name)
+              }}
+              onStreetAddressChange={setStreetAddress}
+            />
             <div>
               <Label>Payment Method *</Label>
               <div className="flex gap-4 mt-2">

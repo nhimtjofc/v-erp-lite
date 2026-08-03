@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Badge } from '@/shared/ui/badge'
+import { CascadingAddressSelect } from '@/shared/ui/cascading-address-select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import {
     ShoppingCart, User, Truck, Tag, AlertCircle, Trash2, Plus, Minus, ArrowLeft,
@@ -224,15 +225,17 @@ interface CartDrawerProps {
     onCustomerChange: (id: string) => void
     shippingName: string
     shippingPhone: string
-    shippingAddress: string
-    shippingWard: string
-    shippingProvince: string
+    provinceCode: string
+    districtCode: string
+    wardCode: string
+    streetAddress: string
     shippingNote: string
     onShippingNameChange: (v: string) => void
     onShippingPhoneChange: (v: string) => void
-    onShippingAddressChange: (v: string) => void
-    onShippingWardChange: (v: string) => void
-    onShippingProvinceChange: (v: string) => void
+    onProvinceChange: (code: string, name: string) => void
+    onDistrictChange: (code: string, name: string) => void
+    onWardChange: (code: string, name: string) => void
+    onStreetAddressChange: (v: string) => void
     onShippingNoteChange: (v: string) => void
     collectedVouchers: any[]
     selectedVoucherId: string
@@ -254,8 +257,8 @@ interface CartDrawerProps {
 function CartDrawer({
     open, onClose, cart, onUpdateQty, onRemoveItem, onClearCart,
     customers, selectedCustomerId, onCustomerChange,
-    shippingName, shippingPhone, shippingAddress, shippingWard, shippingProvince, shippingNote,
-    onShippingNameChange, onShippingPhoneChange, onShippingAddressChange, onShippingWardChange, onShippingProvinceChange, onShippingNoteChange,
+    shippingName, shippingPhone, provinceCode, districtCode, wardCode, streetAddress, shippingNote,
+    onShippingNameChange, onShippingPhoneChange, onProvinceChange, onDistrictChange, onWardChange, onStreetAddressChange, onShippingNoteChange,
     collectedVouchers, selectedVoucherId, onSelectVoucherId,
     discountAmount, subtotal, shippingFeeMinor, taxAmountMinor, finalAmountMinor, freeShipGap, freeShipProgress,
     onCheckout, isCheckingOut, error, paymentMethod, onPaymentMethodChange
@@ -585,23 +588,15 @@ function CartDrawer({
                                 placeholder="Số điện thoại *"
                                 className="h-9 text-sm"
                             />
-                            <Input
-                                value={shippingProvince}
-                                onChange={(e) => onShippingProvinceChange(e.target.value)}
-                                placeholder="Tỉnh/Thành phố *"
-                                className="h-9 text-sm"
-                            />
-                            <Input
-                                value={shippingWard}
-                                onChange={(e) => onShippingWardChange(e.target.value)}
-                                placeholder="Xã/Phường *"
-                                className="h-9 text-sm"
-                            />
-                            <textarea
-                                className="flex min-h-[70px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-                                value={shippingAddress}
-                                onChange={(e) => onShippingAddressChange(e.target.value)}
-                                placeholder="Số nhà, Tên đường *"
+                            <CascadingAddressSelect
+                                provinceCode={provinceCode}
+                                districtCode={districtCode}
+                                wardCode={wardCode}
+                                streetAddress={streetAddress}
+                                onProvinceChange={onProvinceChange}
+                                onDistrictChange={onDistrictChange}
+                                onWardChange={onWardChange}
+                                onStreetAddressChange={onStreetAddressChange}
                             />
                             <textarea
                                 className="flex min-h-[50px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
@@ -862,9 +857,13 @@ export function CartCheckoutPage() {
     const [selectedCustomerId, setSelectedCustomerId] = useState('')
     const [shippingName, setShippingName] = useState('')
     const [shippingPhone, setShippingPhone] = useState('')
-    const [shippingAddress, setShippingAddress] = useState('')
-    const [shippingWard, setShippingWard] = useState('')
-    const [shippingProvince, setShippingProvince] = useState('')
+    const [provinceCode, setProvinceCode] = useState('')
+    const [provinceName, setProvinceName] = useState('')
+    const [districtCode, setDistrictCode] = useState('')
+    const [districtName, setDistrictName] = useState('')
+    const [wardCode, setWardCode] = useState('')
+    const [wardName, setWardName] = useState('')
+    const [streetAddress, setStreetAddress] = useState('')
     const [shippingNote, setShippingNote] = useState('')
 
     // Voucher selection and queries
@@ -925,12 +924,18 @@ export function CartCheckoutPage() {
                 const fullName = [customer.firstName, customer.lastName].filter(Boolean).join(' ') || 'Unnamed'
                 setShippingName(fullName)
                 setShippingPhone(customer.phone ?? '')
-                setShippingAddress(customer.address ?? '')
+                setProvinceCode((customer as any).provinceCode ?? '')
+                setDistrictCode((customer as any).districtCode ?? '')
+                setWardCode((customer as any).wardCode ?? '')
+                setStreetAddress((customer as any).streetAddress ?? customer.address ?? '')
             }
         } else {
             setShippingName('')
             setShippingPhone('')
-            setShippingAddress('')
+            setProvinceCode('')
+            setDistrictCode('')
+            setWardCode('')
+            setStreetAddress('')
         }
     }, [selectedCustomerId, customers])
 
@@ -1072,8 +1077,8 @@ export function CartCheckoutPage() {
     function handleCheckoutClick() {
         if (!selectedCustomerId) { setError('Vui lòng chọn khách hàng'); return }
         if (cart.length === 0) { setError('Giỏ hàng đang trống'); return }
-        if (!shippingName.trim() || !shippingPhone.trim() || !shippingAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
-            setError('Vui lòng điền đầy đủ thông tin giao hàng')
+        if (!shippingName.trim() || !shippingPhone.trim() || !provinceCode.trim() || !districtCode.trim() || !wardCode.trim() || !streetAddress.trim()) {
+            setError('Vui lòng chọn Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập địa chỉ cụ thể')
             return
         }
         setError('')
@@ -1083,15 +1088,23 @@ export function CartCheckoutPage() {
 
     function handleConfirmCheckout() {
         setShowConfirmDialog(false)
+        const shipWard = wardName || wardCode
+        const shipProv = provinceName || provinceCode
+        const fullAddress = `${streetAddress.trim()}, ${shipWard}, ${districtName || districtCode}, ${shipProv}`
+        
         checkoutMutation.mutate({
             body: {
                 customerId: selectedCustomerId,
                 voucherCode: appliedVoucher ?? undefined,
                 shippingName: shippingName.trim(),
                 shippingPhone: shippingPhone.trim(),
-                shippingAddress: shippingAddress.trim(),
-                shippingWard: shippingWard.trim(),
-                shippingProvince: shippingProvince.trim(),
+                provinceCode: provinceCode.trim(),
+                districtCode: districtCode.trim(),
+                wardCode: wardCode.trim(),
+                streetAddress: streetAddress.trim(),
+                shippingAddress: fullAddress,
+                shippingWard: shipWard,
+                shippingProvince: shipProv,
                 shippingNote: shippingNote.trim() || undefined,
                 paymentMethod: paymentMethod,
                 items: cart.map(line => ({
@@ -1099,7 +1112,7 @@ export function CartCheckoutPage() {
                     productVariantId: line.variant?.id ?? null,
                     quantity: line.quantity,
                 })) as any,
-            },
+            } as any,
         })
     }
 
@@ -1296,15 +1309,32 @@ export function CartCheckoutPage() {
                 onCustomerChange={setSelectedCustomerId}
                 shippingName={shippingName}
                 shippingPhone={shippingPhone}
-                shippingAddress={shippingAddress}
-                shippingWard={shippingWard}
-                shippingProvince={shippingProvince}
+                provinceCode={provinceCode}
+                districtCode={districtCode}
+                wardCode={wardCode}
+                streetAddress={streetAddress}
                 shippingNote={shippingNote}
                 onShippingNameChange={setShippingName}
                 onShippingPhoneChange={setShippingPhone}
-                onShippingAddressChange={setShippingAddress}
-                onShippingWardChange={setShippingWard}
-                onShippingProvinceChange={setShippingProvince}
+                onProvinceChange={(code, name) => {
+                    setProvinceCode(code)
+                    setProvinceName(name)
+                    setDistrictCode('')
+                    setDistrictName('')
+                    setWardCode('')
+                    setWardName('')
+                }}
+                onDistrictChange={(code, name) => {
+                    setDistrictCode(code)
+                    setDistrictName(name)
+                    setWardCode('')
+                    setWardName('')
+                }}
+                onWardChange={(code, name) => {
+                    setWardCode(code)
+                    setWardName(name)
+                }}
+                onStreetAddressChange={setStreetAddress}
                 onShippingNoteChange={setShippingNote}
                 collectedVouchers={collectedVoucherList}
                 selectedVoucherId={selectedVoucherId}
@@ -1348,7 +1378,9 @@ export function CartCheckoutPage() {
                             <div className="font-semibold text-xs text-muted-foreground uppercase tracking-wide mb-2">Giao đến</div>
                             <div className="font-semibold">{shippingName}</div>
                             <div className="text-muted-foreground">{shippingPhone}</div>
-                            <div className="text-muted-foreground">{shippingAddress}</div>
+                            <div className="text-muted-foreground font-medium mt-1">
+                                {streetAddress ? `${streetAddress}, ${wardName || wardCode}, ${districtName || districtCode}, ${provinceName || provinceCode}` : 'Chưa có địa chỉ'}
+                            </div>
                         </div>
 
                         {/* Items grouped by Seller */}

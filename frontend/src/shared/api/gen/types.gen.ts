@@ -141,6 +141,10 @@ export type CheckoutRequest = {
     voucherCode?: string;
     shippingName?: string;
     shippingPhone?: string;
+    provinceCode?: string;
+    districtCode?: string;
+    wardCode?: string;
+    streetAddress?: string;
     shippingAddress?: string;
     shippingWard?: string;
     shippingProvince?: string;
@@ -173,6 +177,10 @@ export type Customer = {
     email?: string;
     phone?: string;
     address?: string;
+    provinceCode?: string;
+    districtCode?: string;
+    wardCode?: string;
+    streetAddress?: string;
     birthDate?: LocalDate;
     notes?: string;
     active?: boolean;
@@ -309,6 +317,10 @@ export type Order = {
     ownerDecisionDeadline?: Instant;
     shippingName?: string;
     shippingPhone?: string;
+    provinceCode?: string;
+    districtCode?: string;
+    wardCode?: string;
+    streetAddress?: string;
     shippingAddress?: string;
     shippingWard?: string;
     shippingProvince?: string;
