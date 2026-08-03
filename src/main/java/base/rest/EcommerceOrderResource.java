@@ -6,6 +6,7 @@ import base.entity.SalesChannel;
 import base.entity.WebhookEvent;
 import base.security.CallerContext;
 import base.service.EcommerceOrderService;
+import base.service.EntitlementService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.security.PermitAll;
@@ -32,6 +33,9 @@ public class EcommerceOrderResource {
 
     @Inject
     EcommerceOrderService orderService;
+
+    @Inject
+    EntitlementService entitlementService;
 
     @Inject
     CallerContext caller;
@@ -225,6 +229,7 @@ public class EcommerceOrderResource {
         if (tenantId == null || tenantId.isBlank()) {
             throw new BadRequestException("Query param tenantId is required");
         }
+        entitlementService.requireFeature(tenantId, EntitlementService.FEATURE_ECOMMERCE);
         if (salesChannelId == null) {
             throw new BadRequestException("Query param salesChannelId is required");
         }
@@ -299,6 +304,7 @@ public class EcommerceOrderResource {
         if (tenantId == null || tenantId.isBlank()) {
             throw new BadRequestException("Query param tenantId is required");
         }
+        entitlementService.requireFeature(tenantId, EntitlementService.FEATURE_ECOMMERCE);
         if (salesChannelId == null) {
             throw new BadRequestException("Query param salesChannelId is required");
         }

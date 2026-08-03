@@ -7,6 +7,7 @@ import base.entity.VendorRiskEvent;
 import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.service.KeycloakSyncService;
+import base.service.EntitlementService;
 import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -50,6 +51,9 @@ public class AdminResource {
     @Inject
     BusinessAccess businessAccess;
 
+    @Inject
+    EntitlementService entitlementService;
+
     // ──────────────────────────────────────────────
     // Tenant management
     // ──────────────────────────────────────────────
@@ -79,6 +83,7 @@ public class AdminResource {
         if (tenant == null) {
             throw new NotFoundException("Tenant not found: " + tenantId);
         }
+        entitlementService.requireUserCapacity(tenantId);
 
         // Persist locally first
         user.setId(UUID.randomUUID());

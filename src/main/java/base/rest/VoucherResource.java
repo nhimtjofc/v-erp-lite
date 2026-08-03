@@ -4,6 +4,7 @@ import base.entity.Customer;
 import base.entity.CustomerVoucher;
 import base.entity.Voucher;
 import base.security.CallerContext;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -29,6 +30,9 @@ public class VoucherResource {
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    EntitlementService entitlementService;
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
@@ -165,6 +169,7 @@ public class VoucherResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response createVoucher(Voucher voucher) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_VOUCHERS);
         validate(voucher);
         // Check for duplicates
         Voucher existing = Voucher.find("code = ?1 and tenantId = ?2", voucher.getCode().trim(), caller.tenantCode()).firstResult();
@@ -186,6 +191,7 @@ public class VoucherResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Voucher updateVoucher(@PathParam("id") UUID id, Voucher updated) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_VOUCHERS);
         validate(updated);
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
@@ -220,6 +226,7 @@ public class VoucherResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response deleteVoucher(@PathParam("id") UUID id) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_VOUCHERS);
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Voucher not found");

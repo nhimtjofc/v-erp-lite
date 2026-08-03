@@ -6,6 +6,7 @@ import base.entity.ProductVariant;
 import base.entity.Tag;
 import base.security.BusinessAccess;
 import base.security.CallerContext;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -35,6 +36,9 @@ public class ProductResource {
 
     @Inject
     BusinessAccess businessAccess;
+
+    @Inject
+    EntitlementService entitlementService;
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
@@ -115,6 +119,7 @@ public class ProductResource {
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response createProduct(Product product) {
+        entitlementService.requireProductCapacity(caller.tenantCode());
         validate(product);
         product.setCurrency(CURRENCY);
         product.setId(UUID.randomUUID());

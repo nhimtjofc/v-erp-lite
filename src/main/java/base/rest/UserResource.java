@@ -4,6 +4,7 @@ import base.entity.Role;
 import base.entity.User;
 import base.security.BusinessAccess;
 import base.security.CallerContext;
+import base.service.EntitlementService;
 import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -29,6 +30,9 @@ public class UserResource {
 
     @Inject
     BusinessAccess businessAccess;
+
+    @Inject
+    EntitlementService entitlementService;
 
     @GET
     @Path("/test-error")
@@ -87,6 +91,7 @@ public class UserResource {
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response createUser(User user) {
+        entitlementService.requireUserCapacity(caller.tenantCode());
         user.setId(UUID.randomUUID());
         user.setTenantId(caller.tenantCode());
         if (user.getRole() != null && user.getRole().getId() != null) {
