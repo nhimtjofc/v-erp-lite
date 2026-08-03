@@ -1,5 +1,5 @@
 ALTER TABLE notifications
-    ADD COLUMN user_id UUID NULL;
+    ADD COLUMN IF NOT EXISTS user_id UUID NULL;
 
 ALTER TABLE notifications
     MODIFY COLUMN customer_id UUID NULL;
