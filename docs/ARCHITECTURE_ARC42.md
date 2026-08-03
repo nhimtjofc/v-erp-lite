@@ -39,22 +39,24 @@
 Hệ thống được thiết kế theo mô hình **Multi-tenant** (Đa khách thuê), cho phép nhiều tổ chức/doanh nghiệp cùng vận hành trên một phiên bản cài đặt dùng chung hạ tầng nhưng bảo đảm cô lập dữ liệu tuyệt đối.
 
 ```mermaid
-flowchart LR
-    subgraph Users ["👤 Nhóm Người Dùng"]
-        Admin["Quản trị viên<br>(Admin)"]
-        Owner["Chủ doanh nghiệp<br>(Seller)"]
-        Operator["Nhân viên<br>(Operator)"]
-        Buyer["Khách mua<br>(Customer)"]
+flowchart TB
+    subgraph Users ["👤 1. Nhóm Người Dùng Tương Tác"]
+        direction TB
+        Admin["🛡️ Quản trị viên (Admin)"]
+        Owner["🏪 Chủ doanh nghiệp (Seller)"]
+        Operator["📦 Nhân viên vận hành (Operator)"]
+        Buyer["🛒 Khách mua hàng (Customer)"]
     end
 
-    subgraph Platform ["🏢 Nền Tảng V-ERP Lite"]
-        CoreERP["📦 Lõi ERP<br>(Catalog, Đơn, Kho)"]
-        FinEngine["💰 Tài Chính<br>(Ví, Ký quỹ, Payout)"]
-        OmniSync["🔄 Bán Đa Kênh<br>(WooCommerce Sync)"]
-        AIAssistant["🤖 Trợ Lý AI<br>(MCP Chatbot)"]
+    subgraph Platform ["🏢 2. Nền Tảng V-ERP Lite (Lõi Hệ Thống)"]
+        direction TB
+        CoreERP["📦 Lõi ERP: Danh mục, Đơn hàng & Kho bãi"]
+        FinEngine["💰 Động cơ Tài chính: Ví, Ký quỹ Escrow & Payout"]
+        OmniSync["🔄 Đồng bộ Bán đa kênh: WooCommerce Sync"]
+        AIAssistant["🤖 Trợ lý AI: FastAPI MCP Shopping Assistant"]
     end
 
-    Users --> Platform
+    Users ==>|"Truy cập & Vận hành"| Platform
 ```
 
 ### 1.2 Mục tiêu Kinh doanh Cốt lõi (Core Business Goals)
@@ -76,39 +78,43 @@ flowchart LR
 ### 1.4 Mục tiêu Chất lượng Hàng đầu (Top Quality Goals)
 
 ```mermaid
-flowchart LR
-    Root(["🎯 Mục Tiêu Chất Lượng"])
+flowchart TB
+    Root(["🎯 4 Trụ Cột Mục Tiêu Chất Lượng Cốt Lõi"])
 
-    subgraph Q1 ["1. Bảo Mật & Cô Lập"]
-        Q1A["Xác thực OIDC RS256"]
-        Q1B["Phân quyền RBAC Đa Cấp"]
-        Q1C["Cô lập Dữ liệu Mức Hàng"]
-        Q1D["Hardened AI Zero-PII"]
+    subgraph Q1 ["🛡️ 1. Bảo Mật & Cô Lập Dữ Liệu"]
+        direction TB
+        Q1A["Xác thực OIDC RS256 qua Keycloak"]
+        Q1B["Phân quyền RBAC đa cấp (Admin/Owner/Operator/Buyer)"]
+        Q1C["Cô lập dữ liệu Tenant & Business mức CSDL"]
+        Q1D["Hardened AI: Zero-PII Leakage & Identity Outside Model"]
     end
 
-    subgraph Q2 ["2. Toàn Vẹn Tài Chính"]
-        Q2A["Đơn vị Tiền tệ Minor Units"]
-        Q2B["Khóa Bi Quan Pessimistic Lock"]
-        Q2C["Sổ Cái Bất Biến Append-only"]
-        Q2D["Idempotency Transaction"]
+    subgraph Q2 ["💰 2. Tính Toàn Vẹn Tài Chính"]
+        direction TB
+        Q2A["Đơn vị tiền tệ chuẩn hóa Minor Units (BIGINT VND)"]
+        Q2B["Khóa bi quan (Pessimistic Lock) chống race-condition ví"]
+        Q2C["Sổ cái bất biến (Append-only Ledger) & Checkpoint kiểm toán"]
+        Q2D["Khóa Idempotency cho mọi giao dịch thanh toán"]
     end
 
-    subgraph Q3 ["3. Hiệu Năng Phản Hồi"]
-        Q3A["Khởi động Sub-second Quarkus"]
-        Q3B["Độ trễ API < 200ms"]
-        Q3C["Client Cache Invalidation"]
+    subgraph Q3 ["⚡ 3. Hiệu Năng & Khả Năng Phản Hồi"]
+        direction TB
+        Q3A["Khởi động siêu tốc Quarkus (< 3s)"]
+        Q3B["Độ trễ phản hồi API p95 < 200ms"]
+        Q3C["TanStack React Query Invalidation & Client Caching"]
     end
 
-    subgraph Q4 ["4. Mở Rộng & Tích Hợp"]
-        Q4A["OpenAPI Chuẩn Sinh Tự Động SDK"]
-        Q4B["Khử Trùng Lặp Webhook"]
-        Q4C["Giao thức MCP cho AI"]
+    subgraph Q4 ["🔌 4. Khả Năng Mở Rộng & Tích Hợp"]
+        direction TB
+        Q4A["OpenAPI-First tự động sinh Hey-API TypeScript SDK"]
+        Q4B["Xác thực & Khử trùng lặp Webhook Inbound (HMAC SHA-256)"]
+        Q4C["Kiến trúc chuẩn Model Context Protocol (MCP) cho AI"]
     end
 
-    Root --> Q1
-    Root --> Q2
-    Root --> Q3
-    Root --> Q4
+    Root ==> Q1
+    Q1 ==> Q2
+    Q2 ==> Q3
+    Q3 ==> Q4
 ```
 
 ---
@@ -202,21 +208,39 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph S1 ["🛡️ 1. Cô Lập Đa Khách Thuê"]
-        T1["Lọc CSDL theo tenant_id"] --> T2["Request-Scoped CallerContext"] --> T3["BusinessAccess RBAC Guard"]
+    subgraph S1 ["🛡️ Chiến lược 1: Cô Lập Đa Khách Thuê (Multi-tenancy & Isolation)"]
+        direction TB
+        T1["1. Lọc CSDL thủ công qua cột tenant_id"]
+        T2["2. Trích xuất danh tính qua Request-Scoped CallerContext"]
+        T3["3. Kiểm soát quyền cấp 2 qua BusinessAccess Guard"]
+        T1 --> T2 --> T3
     end
 
-    subgraph S2 ["💰 2. Toàn Vẹn Tài Chính"]
-        F1["Khóa Bi Quan Pessimistic Lock"] --> F2["Sổ Cái Bất Biến Append-only"] --> F3["Động Cơ Giải Phóng Escrow"]
+    subgraph S2 ["💰 Chiến lược 2: Toàn Vẹn Tài Chính & Ký Quỹ (Financial Consistency)"]
+        direction TB
+        F1["1. Khóa bi quan Pessimistic Write Lock trên bảng Wallet"]
+        F2["2. Sổ cái bất biến Append-Only Ledger & Checkpoint"]
+        F3["3. Động cơ giải phóng ký quỹ State-driven Escrow Engine"]
+        F1 --> F2 --> F3
     end
 
-    subgraph S3 ["🤖 3. Bảo Mật AI Agent"]
-        A1["Identity Ngoài Model (JWT Context)"] --> A2["Vòng Lặp Tool Có Giới Hạn"] --> A3["Bộ Lọc Tất Định 4 Tầng"]
+    subgraph S3 ["🤖 Chiến lược 3: Bảo Mật AI Tuyệt Đối (Hardened AI Architecture)"]
+        direction TB
+        A1["1. Danh tính ngoài Model (JWT Token Context Injection)"]
+        A2["2. Vòng lặp gọi Semantic Tools có giới hạn (Bounded Loop)"]
+        A3["3. Bộ kiểm duyệt phản hồi tất định 4 tầng (Output Validator)"]
+        A1 --> A2 --> A3
     end
 
-    subgraph S4 ["⚡ 4. Giao Tiếp Frontend-Backend"]
-        C1["Đặc Tả OpenAPI Chuẩn"] --> C2["Tự Động Sinh Hey-API SDK"] --> C3["TanStack React Query Cache"]
+    subgraph S4 ["⚡ Chiến lược 4: Hợp Đồng API Chặt Chẽ (Clean Contract Frontend)"]
+        direction TB
+        C1["1. Định nghĩa chuẩn OpenAPI-First từ Quarkus REST"]
+        C2["2. Tự động sinh Hey-API TypeScript SDK cho React"]
+        C3["3. Đồng bộ trạng thái giao diện qua TanStack Query Cache"]
+        C1 --> C2 --> C3
     end
+
+    S1 ==> S2 ==> S3 ==> S4
 ```
 
 ### 4.1 Kiến trúc Lõi Backend: Modular Monolith với Panache Active Record
@@ -574,20 +598,39 @@ flowchart TB
 ## 8. Các Khái niệm Xuyên suốt (Cross-cutting Concepts)
 
 ```mermaid
-flowchart LR
-    RootConcept(["🧩 Khái Niệm Xuyên Suốt"])
+flowchart TB
+    RootConcept(["🧩 5 Khái Niệm Xuyên Suốt Hệ Thống"])
 
-    C1["8.1 Bảo Mật & RBAC"]
-    C2["8.2 Toàn Vẹn Tài Chính"]
-    C3["8.3 Xử Lý Ngoại Lệ"]
-    C4["8.4 Logging & Telemetry"]
-    C5["8.5 Đa Ngôn Ngữ i18n"]
+    subgraph C1 ["🛡️ 8.1 Bảo Mật, Xác Thực & Phân Quyền (Security, AuthN & AuthZ)"]
+        direction TB
+        C1_D["Keycloak OIDC PKCE, RBAC 4 vai trò, Xác thực 2 bước MFA TOTP RFC 6238"]
+    end
 
-    RootConcept --> C1
-    RootConcept --> C2
-    RootConcept --> C3
-    RootConcept --> C4
-    RootConcept --> C5
+    subgraph C2 ["💰 8.2 An Toàn Giao Dịch & Khóa Đồng Thời (Financial Concurrency)"]
+        direction TB
+        C2_D["Tiền tệ Minor Units, Khóa Pessimistic Write Lock trên Ví, Sổ cái bất biến"]
+    end
+
+    subgraph C3 ["⚠️ 8.3 Xử Lý Ngoại Lệ Chuẩn Hóa (Exception Handling)"]
+        direction TB
+        C3_D["JAX-RS ExceptionMapper tập trung (Conflict 409, Bad Request 400, Unauthorized 401)"]
+    end
+
+    subgraph C4 ["📊 8.4 Ghi Log & Đo Kiểm An Toàn (Logging & Privacy Telemetry)"]
+        direction TB
+        C4_D["Structured Logging, MicroProfile Health Probes, Privacy-Safe AI Telemetry không lưu PII"]
+    end
+
+    subgraph C5 ["🌐 8.5 Đa Ngôn Ngữ Động (Dynamic Internationalization - i18n)"]
+        direction TB
+        C5_D["i18next-http-backend kết hợp SHA-256 ETag Cache trên Quarkus Backend"]
+    end
+
+    RootConcept ==> C1
+    C1 ==> C2
+    C2 ==> C3
+    C3 ==> C4
+    C4 ==> C5
 ```
 
 ### 8.1 Bảo mật, Xác thực & Phân quyền (Security, AuthN & AuthZ)
