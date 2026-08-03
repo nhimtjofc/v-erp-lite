@@ -110,6 +110,7 @@ public class WalletResource {
         public UUID userId;
         public long availableBalanceMinor;
         public long pendingBalanceMinor;
+        public long totalBalanceMinor;
         public String currency;
         public UUID bankId;
         public String bankCode;
@@ -128,6 +129,7 @@ public class WalletResource {
             response.ownerId = wallet.getOwnerId();
             response.userId = wallet.getUser() == null ? null : wallet.getUser().getId();
             response.availableBalanceMinor = wallet.getAvailableBalanceMinor();
+            response.totalBalanceMinor = wallet.getAvailableBalanceMinor();
             response.pendingBalanceMinor = wallet.getPendingBalanceMinor();
             response.currency = wallet.getCurrency();
             response.bankId = wallet.getBank() == null ? null : wallet.getBank().getId();
@@ -255,8 +257,10 @@ public class WalletResource {
         // Seller's pending balance is held in the platform wallet as escrow;
         // the marketplace owner sees held escrow across all tenant businesses.
         if ("SELLER".equals(wallet.getOwnerType())) {
-            resp.pendingBalanceMinor = walletService.getPendingEscrowForTenantBusinesses(
-                    caller.tenantCode(), wallet.getCurrency());
+            resp.totalBalanceMinor = walletService.getReleasedSellerBalanceForOwner(
+                    caller.tenantCode(), user, wallet.getCurrency());
+            resp.pendingBalanceMinor = walletService.getPendingEscrowForOwnerBusinesses(
+                    caller.tenantCode(), user, wallet.getCurrency());
         }
         return resp;
     }
@@ -369,6 +373,29 @@ public class WalletResource {
                 .toList();
     }
 
+
+    /**
+     * Completes a pending top-up in the local mock-payment flow. Real payment
+     * providers complete top-ups through their authenticated webhook instead.
+     */
+    @POST
+    @Path("/top-up/{id}/complete")
+    @Transactional
+    public WalletTopUpResponse completeTopUp(@PathParam("id") UUID id) {
+        WalletTopUp topUp = WalletTopUp.find("id = ?1 and tenantId = ?2", id, caller.tenantCode())
+                .firstResult();
+        if (topUp == null) {
+            throw new jakarta.ws.rs.NotFoundException("Top-up request not found");
+        }
+        if (!caller.hasRole("admin")) {
+            User user = caller.resolveUser();
+            if (!walletService.isWalletOwnedByUser(caller.tenantCode(), topUp.getWallet(), user)) {
+                throw new ForbiddenException("You are not allowed to complete this top-up");
+            }
+        }
+        walletService.completeTopUp(caller.tenantCode(), id, caller.userId());
+        return WalletTopUpResponse.from(topUp);
+    }
     @POST
     @Path("/{id}/credit")
     @RolesAllowed({"admin"})

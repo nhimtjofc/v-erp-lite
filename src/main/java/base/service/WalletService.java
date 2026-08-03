@@ -541,6 +541,53 @@ public class WalletService {
         return total;
     }
 
+    public long getReleasedSellerBalanceForOwner(String tenantId, User user, String currency) {
+        List<UUID> businessIds = businessIdsForOwner(tenantId, user);
+        if (businessIds.isEmpty()) {
+            return 0;
+        }
+        Long total = entityManager.createQuery(
+                "SELECT COALESCE(SUM(w.availableBalanceMinor), 0) FROM Wallet w "
+                        + "WHERE w.tenantId = :tenantId AND w.ownerType = 'SELLER' "
+                        + "AND w.ownerId IN :businessIds AND w.currency = :currency",
+                Long.class)
+                .setParameter("tenantId", tenantId)
+                .setParameter("businessIds", businessIds)
+                .setParameter("currency", moneyService.normalizeCurrency(currency))
+                .getSingleResult();
+        return total;
+    }
+
+    public long getPendingEscrowForOwnerBusinesses(String tenantId, User user, String currency) {
+        List<UUID> businessIds = businessIdsForOwner(tenantId, user);
+        if (businessIds.isEmpty()) {
+            return 0;
+        }
+        Long total = entityManager.createQuery(
+                "SELECT COALESCE(SUM(e.amountMinor), 0) FROM EscrowRecord e "
+                        + "WHERE e.tenantId = :tenantId AND e.sellerWallet.ownerId IN :businessIds "
+                        + "AND e.currency = :currency AND e.status = 'HELD'",
+                Long.class)
+                .setParameter("tenantId", tenantId)
+                .setParameter("businessIds", businessIds)
+                .setParameter("currency", moneyService.normalizeCurrency(currency))
+                .getSingleResult();
+        return total;
+    }
+
+    private List<UUID> businessIdsForOwner(String tenantId, User user) {
+        List<UUID> businessIds = new java.util.ArrayList<>(Business.<Business>list(
+                "tenantId = ?1 and createdBy = ?2", tenantId, user.getId())
+                .stream()
+                .map(Business::getId)
+                .toList());
+        if (user.getBusiness() != null && tenantId.equals(user.getBusiness().getTenantId())
+                && !businessIds.contains(user.getBusiness().getId())) {
+            businessIds.add(user.getBusiness().getId());
+        }
+        return businessIds;
+    }
+
     public Map<String, Long> getWalletStats(String tenantId) {
         Map<String, Long> stats = new HashMap<>();
 

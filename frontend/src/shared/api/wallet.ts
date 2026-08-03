@@ -23,6 +23,8 @@ export function useMyWalletQuery() {
       return response.data ?? null
     },
     refetchInterval: 3000,
+    staleTime: 0,
+    refetchOnWindowFocus: 'always',
   })
 }
 
