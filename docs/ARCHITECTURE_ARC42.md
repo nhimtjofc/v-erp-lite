@@ -39,22 +39,22 @@
 Hệ thống được thiết kế theo mô hình **Multi-tenant** (Đa khách thuê), cho phép nhiều tổ chức/doanh nghiệp cùng vận hành trên một phiên bản cài đặt dùng chung hạ tầng nhưng bảo đảm cô lập dữ liệu tuyệt đối.
 
 ```mermaid
-graph LR
-    subgraph Users ["Đối tượng tương tác"]
-        Admin[Quản trị viên / Admin]
-        Owner[Chủ doanh nghiệp / Merchant]
-        Operator[Nhân viên vận hành / Operator]
-        Buyer[Khách mua hàng / Customer]
+flowchart LR
+    subgraph Users ["👤 Nhóm Người Dùng"]
+        Admin["Quản trị viên<br>(Admin)"]
+        Owner["Chủ doanh nghiệp<br>(Seller)"]
+        Operator["Nhân viên<br>(Operator)"]
+        Buyer["Khách mua<br>(Customer)"]
     end
 
-    subgraph System ["V-ERP Lite Platform"]
-        CoreERP[Lõi ERP: Danh mục, Đơn hàng, Kho]
-        FinEngine[Động cơ Tài chính: Ví, Ký quỹ, Payout]
-        OmniSync[Đồng bộ Đa kênh: WooCommerce Sync]
-        AIAssistant[Trợ lý AI MCP Shopping Assistant]
+    subgraph Platform ["🏢 Nền Tảng V-ERP Lite"]
+        CoreERP["📦 Lõi ERP<br>(Catalog, Đơn, Kho)"]
+        FinEngine["💰 Tài Chính<br>(Ví, Ký quỹ, Payout)"]
+        OmniSync["🔄 Bán Đa Kênh<br>(WooCommerce Sync)"]
+        AIAssistant["🤖 Trợ Lý AI<br>(MCP Chatbot)"]
     end
 
-    Users --> System
+    Users --> Platform
 ```
 
 ### 1.2 Mục tiêu Kinh doanh Cốt lõi (Core Business Goals)
@@ -76,26 +76,39 @@ graph LR
 ### 1.4 Mục tiêu Chất lượng Hàng đầu (Top Quality Goals)
 
 ```mermaid
-mindmap
-  root((Chất lượng Cốt lõi))
-    QG1: Bảo mật & Cô lập Dữ liệu
-      Xác thực OIDC RS256
-      Phân quyền RBAC đa cấp
-      Cô lập Tenant & Business mức Row
-      AI Hardening & Zero-PII Leakage
-    QG2: Tính Toàn vẹn Tài chính
-      Đơn vị Tiền tệ Minor Units
-      Khóa Bi quan Pessimistic Lock trên Ví
-      Sổ cái Bất biến Append-only Ledger
-      Idempotency Transaction Key
-    QG3: Hiệu năng & Khả năng Phản hồi
-      Thời gian khởi động Sub-second Quarkus
-      Phản hồi API dưới 200ms
-      Debounced & Cached Client Queries
-    QG4: Khả năng Mở rộng & Tích hợp
-      OpenAPI chuẩn hóa sinh tự động SDK
-      Cơ chế Khử trùng Webhook Inbound
-      Kiến trúc MCP cho AI Assistant
+flowchart LR
+    Root(["🎯 Mục Tiêu Chất Lượng"])
+
+    subgraph Q1 ["1. Bảo Mật & Cô Lập"]
+        Q1A["Xác thực OIDC RS256"]
+        Q1B["Phân quyền RBAC Đa Cấp"]
+        Q1C["Cô lập Dữ liệu Mức Hàng"]
+        Q1D["Hardened AI Zero-PII"]
+    end
+
+    subgraph Q2 ["2. Toàn Vẹn Tài Chính"]
+        Q2A["Đơn vị Tiền tệ Minor Units"]
+        Q2B["Khóa Bi Quan Pessimistic Lock"]
+        Q2C["Sổ Cái Bất Biến Append-only"]
+        Q2D["Idempotency Transaction"]
+    end
+
+    subgraph Q3 ["3. Hiệu Năng Phản Hồi"]
+        Q3A["Khởi động Sub-second Quarkus"]
+        Q3B["Độ trễ API < 200ms"]
+        Q3C["Client Cache Invalidation"]
+    end
+
+    subgraph Q4 ["4. Mở Rộng & Tích Hợp"]
+        Q4A["OpenAPI Chuẩn Sinh Tự Động SDK"]
+        Q4B["Khử Trùng Lặp Webhook"]
+        Q4C["Giao thức MCP cho AI"]
+    end
+
+    Root --> Q1
+    Root --> Q2
+    Root --> Q3
+    Root --> Q4
 ```
 
 ---
@@ -127,32 +140,47 @@ mindmap
 Hệ thống V-ERP Lite đóng vai trò là hạt nhân điều phối dòng thông tin thương mại và dòng tiền giữa Người mua, Người bán, Kênh bán lẻ vệ tinh (WooCommerce) và Hạ tầng Tài chính.
 
 ```mermaid
-C4Context
-    title Context Diagram (C4 Level 1) - Hệ sinh thái V-ERP Lite
+flowchart TB
+    %% --- TẦNG NGƯỜI DÙNG ---
+    subgraph Users ["👤 TẦNG NGƯỜI DÙNG TƯƠNG TÁC"]
+        direction LR
+        Buyer["🛒 Khách Mua Hàng<br><i>(Duyệt hàng, Đặt đơn, Thanh toán, Chat AI)</i>"]
+        Seller["🏪 Chủ Doanh Nghiệp (Seller)<br><i>(Quản lý kho, Duyệt đơn, Rút tiền ví)</i>"]
+        Operator["📦 Nhân Viên Vận Hành<br><i>(Xử lý đơn hàng, Giao vận, Đối soát)</i>"]
+        Admin["🛡️ Quản Trị Viên Sàn (Admin)<br><i>(Quản lý Tenant, Duyệt rủi ro Payout)</i>"]
+    end
 
-    Person(buyer, "Khách Mua Hàng", "Duyệt sản phẩm, đặt hàng, thanh toán qua QR/Gateway, tra cứu qua AI Chatbot")
-    Person(seller, "Chủ Doanh Nghiệp (Seller)", "Quản lý sản phẩm, tiếp nhận/giao đơn, quản lý số dư ví và nhận Payout")
-    Person(operator, "Nhân Viên Vận Hành", "Xử lý đơn hàng, đóng gói, bàn giao vận chuyển, đối soát")
-    Person(admin, "Quản Trị Viên Sàn (Admin)", "Quản lý Tenant, duyệt rủi ro payout, cấu hình hệ thống")
+    %% --- HỆ THỐNG CỐT LÕI ---
+    subgraph CorePlatform ["🏢 HỆ THỐNG V-ERP LITE (CỐT LÕI)"]
+        direction TB
+        FrontendApp["🌐 Storefront & Admin Portal (React 19 SPA)"]
+        CoreBackend["⚙️ Lõi ERP Backend (Quarkus 3.33 / MariaDB)<br><i>Quản lý Đơn, Tồn kho, Sổ cái, Ký quỹ Escrow & Payout</i>"]
+        ChatbotApp["🤖 Trợ Lý Mua Sắm AI (FastAPI MCP Server)"]
 
-    Enterprise_Boundary(verp_boundary, "Hệ Thống V-ERP Lite") {
-        System(verp_system, "Nền tảng V-ERP Lite", "Lõi xử lý ERP, Storefront SPA, Escrow, Ví, Omnichannel Sync & Trợ lý AI")
-    }
+        FrontendApp <-->|"REST API / JSON"| CoreBackend
+        FrontendApp <-->|"Chat Message / JSON"| ChatbotApp
+        ChatbotApp <-->|"MCP Tools / Context JWT"| CoreBackend
+    end
 
-    System_Ext(keycloak, "Keycloak IAM", "Máy chủ xác thực OIDC, cấp phát JWT Bearer Token")
-    System_Ext(woo, "WordPress / WooCommerce", "Kênh bán hàng đối tác bên ngoài đồng bộ Catalog & Đơn hàng")
-    System_Ext(gemini, "Google Gemini AI & Pinecone", "Mô hình ngôn ngữ lớn LLM và CSDL Vector ngữ nghĩa")
-    System_Ext(bank, "Cổng Thanh toán / VietQR Bank", "Tạo mã VietQR EMV Co chuẩn NAPAS và Webhook thanh toán")
+    %% --- HỆ THỐNG BÊN NGOÀI ---
+    subgraph ExternalSystems ["🔌 HỆ THỐNG & ĐỐI TÁC NGOẠI VI"]
+        direction LR
+        Keycloak["🔐 Keycloak IAM<br><i>(Xác thực OIDC & JWT RS256)</i>"]
+        WooCommerce["🛍️ WordPress / WooCommerce<br><i>(Đồng bộ Catalog & Webhook đơn)</i>"]
+        BankGateway["💳 Ngân Hàng / Cổng VietQR<br><i>(Sinh mã VietQR EMVCo & Webhook IPN)</i>"]
+        GeminiAI["🧠 Google Gemini & Pinecone<br><i>(LLM Model & CSDL Vector)</i>"]
+    end
 
-    Rel(buyer, verp_system, "Duyệt hàng, Đặt đơn, Thanh toán, Chat AI", "HTTPS / JSON")
-    Rel(seller, verp_system, "Quản lý kho, Duyệt đơn, Rút tiền ví", "HTTPS / JSON")
-    Rel(operator, verp_system, "Vận hành kho, Giao vận", "HTTPS / JSON")
-    Rel(admin, verp_system, "Cấu hình, Giám sát rủi ro", "HTTPS / JSON")
+    %% --- LIÊN KẾT GIỮA CÁC TẦNG ---
+    Buyer -->|"Truy cập Storefront"| FrontendApp
+    Seller -->|"Quản trị Gian hàng"| FrontendApp
+    Operator -->|"Xử lý Giao vận"| FrontendApp
+    Admin -->|"Cấu hình Hệ thống"| FrontendApp
 
-    Rel(verp_system, keycloak, "Xác thực JWT & Quản lý User/Role", "OIDC / REST (RS256)")
-    Rel(verp_system, woo, "Đồng bộ Catalog & Nhận Webhook đơn", "HTTPS / HMAC SHA-256")
-    Rel(verp_system, gemini, "Embeddings & Suy luận AI", "gRPC / HTTPS")
-    Rel(verp_system, bank, "Tạo VietQR & Nhận IPN Webhook", "HTTPS / HMAC")
+    CorePlatform <-->|"OIDC Auth & Discovery"| Keycloak
+    CorePlatform <-->|"HMAC SHA-256 Webhook"| WooCommerce
+    CorePlatform <-->|"Tạo QR & Nhận IPN"| BankGateway
+    ChatbotApp <-->|"Embeddings & Suy Luận"| GeminiAI
 ```
 
 ### 3.2 Ngữ cảnh Kỹ thuật (Technical Context)
@@ -173,25 +201,21 @@ C4Context
 Để giải quyết đồng thời các bài toán về hiệu năng, an toàn tài chính, đa khách thuê và trợ lý AI thông minh, kiến trúc áp dụng các chiến lược nền tảng sau:
 
 ```mermaid
-flowchart TD
-    subgraph S1 ["Chiến lược 1: Multi-tenancy & Isolation"]
-        T1["Manual Column-based Filtering"] --> T2["Request-Scoped CallerContext"]
-        T2 --> T3["BusinessAccess Guard Layer"]
+flowchart TB
+    subgraph S1 ["🛡️ 1. Cô Lập Đa Khách Thuê"]
+        T1["Lọc CSDL theo tenant_id"] --> T2["Request-Scoped CallerContext"] --> T3["BusinessAccess RBAC Guard"]
     end
 
-    subgraph S2 ["Chiến lược 2: Financial Consistency"]
-        F1["Pessimistic Write Locking on Wallet"] --> F2["Append-Only Ledger & Checkpoint"]
-        F2 --> F3["State-driven Escrow Release Engine"]
+    subgraph S2 ["💰 2. Toàn Vẹn Tài Chính"]
+        F1["Khóa Bi Quan Pessimistic Lock"] --> F2["Sổ Cái Bất Biến Append-only"] --> F3["Động Cơ Giải Phóng Escrow"]
     end
 
-    subgraph S3 ["Chiến lược 3: Hardened AI Architecture"]
-        A1["Identity Outside LLM (JWT Guard)"] --> A2["Bounded Tool Execution Loop"]
-        A2 --> A3["Deterministic 4-Stage Output Validator"]
+    subgraph S3 ["🤖 3. Bảo Mật AI Agent"]
+        A1["Identity Ngoài Model (JWT Context)"] --> A2["Vòng Lặp Tool Có Giới Hạn"] --> A3["Bộ Lọc Tất Định 4 Tầng"]
     end
 
-    subgraph S4 ["Chiến lược 4: Clean Contract Frontend"]
-        C1["OpenAPI-First Schema Definition"] --> C2["Auto-generated Hey-API SDK"]
-        C2 --> C3["TanStack React Query Cache Invalidation"]
+    subgraph S4 ["⚡ 4. Giao Tiếp Frontend-Backend"]
+        C1["Đặc Tả OpenAPI Chuẩn"] --> C2["Tự Động Sinh Hey-API SDK"] --> C3["TanStack React Query Cache"]
     end
 ```
 
@@ -228,74 +252,71 @@ Tuân thủ nguyên tắc **Zero-Trust đối với LLM**:
 ### 5.1 Phân rã Cấp độ 1: Tổng thể Hệ thống (Level 1 - System Decomposition)
 
 ```mermaid
-graph TD
-    subgraph ClientTier ["Tầng Trình duyệt & Kênh ngoài"]
-        SPA["Frontend SPA (React 19 / TanStack)"]
-        WC["WordPress / WooCommerce Store"]
+flowchart TB
+    subgraph ClientLayer ["1. Tầng Trình Duyệt & Đối Tác"]
+        SPA["🌐 Frontend React 19 SPA<br><i>(:5174)</i>"]
+        WC["🛍️ WordPress / WooCommerce<br><i>(:8090)</i>"]
     end
 
-    subgraph SecurityTier ["Tầng Định danh & Bảo mật"]
-        KC["Keycloak OIDC Server (:8181)"]
+    subgraph AuthLayer ["2. Tầng Định Danh Tập Trung"]
+        KC["🔐 Keycloak OIDC Server<br><i>(:8181)</i>"]
     end
 
-    subgraph AppTier ["Tầng Ứng dụng & Dịch vụ"]
-        QuarkusApp["Quarkus Core ERP Backend (:8081)"]
-        FastAPIChat["FastAPI AI Chatbot (:8000)"]
+    subgraph AppLayer ["3. Tầng Ứng Dụng & Trí Tuệ Nhân Tạo"]
+        QuarkusApp["⚙️ Quarkus Core ERP Backend<br><i>(:8081)</i>"]
+        FastAPIChat["🤖 FastAPI AI MCP Chatbot<br><i>(:8000)</i>"]
     end
 
-    subgraph DataTier ["Tầng Dữ liệu & Vector"]
-        MariaDB[("MariaDB 11.4 (:3307)")]
-        Pinecone[("Pinecone Vector Cloud")]
+    subgraph DataLayer ["4. Tầng Dữ Liệu & Vector"]
+        MariaDB[("🗄️ MariaDB 11.4 CSDL Chính<br><i>(:3307)</i>")]
+        Pinecone[("☁️ Pinecone Vector Database")]
     end
 
-    SPA -->|OIDC Auth / PKCE| KC
-    SPA -->|REST API / Bearer Token| QuarkusApp
-    SPA -->|Chat Message / Bearer Token| FastAPIChat
+    SPA -->|"OIDC PKCE"| KC
+    SPA -->|"REST API / Bearer Token"| QuarkusApp
+    SPA -->|"Chat / Bearer Token"| FastAPIChat
 
-    WC -->|Inbound Webhooks / HMAC| QuarkusApp
-    QuarkusApp -->|Catalog Sync / REST| WC
+    WC -->|"Inbound Webhook / HMAC"| QuarkusApp
+    QuarkusApp -->|"Catalog Sync / REST"| WC
 
-    FastAPIChat -->|MCP Tools / Injected JWT| QuarkusApp
-    FastAPIChat -->|Vector Semantic Search| Pinecone
+    FastAPIChat -->|"MCP Tools / Injected JWT"| QuarkusApp
+    FastAPIChat -->|"Semantic Search"| Pinecone
 
-    QuarkusApp -->|Admin REST Client| KC
-    QuarkusApp -->|Flyway & JDBC Pool| MariaDB
+    QuarkusApp -->|"Admin REST Client"| KC
+    QuarkusApp -->|"Flyway & JDBC Pool"| MariaDB
 ```
 
 ### 5.2 Phân rã Cấp độ 2: Chi tiết Mô-đun Backend Quarkus (Level 2 - Core Backend Decomposition)
 
 ```mermaid
-graph TD
-    subgraph REST_Layer ["Tầng REST Resources (base.rest)"]
-        AuthRes["AuthResource / AdminResource"]
-        OrderRes["OrderResource / EcommerceOrderResource"]
-        ProdRes["ProductResource / CategoryResource"]
-        PayRes["PaymentIntentResource / PaymentWebhookResource"]
-        WalletRes["WalletResource / PayoutResource"]
-        I18nRes["I18nResource / VietQRResource"]
+flowchart TB
+    subgraph REST_Layer ["Tầng 1: REST Endpoints (base.rest)"]
+        AuthRes["Auth / Admin Resource"]
+        OrderRes["Order / Ecommerce Resource"]
+        ProdRes["Product / Category Resource"]
+        PayRes["Payment / Webhook Resource"]
+        WalletRes["Wallet / Payout Resource"]
     end
 
-    subgraph Security_Layer ["Tầng Bảo mật & Ngữ cảnh (base.security)"]
-        CallerCtx["CallerContext (JWT Claims & Tenant Resolver)"]
-        BizAccess["BusinessAccess (Data-level RBAC)"]
-        HmacFilter["HmacSignatureFilter (Webhook Verifier)"]
+    subgraph Security_Layer ["Tầng 2: Bảo Mật & Ngữ Cảnh (base.security)"]
+        CallerCtx["CallerContext (JWT Claims)"]
+        BizAccess["BusinessAccess (Tenant/Owner RBAC)"]
+        HmacFilter["HmacSignatureFilter (Webhook)"]
     end
 
-    subgraph Service_Layer ["Tầng Dịch vụ Nghiệp vụ (base.service)"]
+    subgraph Service_Layer ["Tầng 3: Nghiệp Vụ Cốt Lõi (base.service)"]
         OrderFulfill["OrderFulfillmentService"]
-        PayService["PaymentService / PaymentIntentService"]
-        EscrowServ["EscrowService / EscrowReleaseScheduler"]
-        WalletServ["WalletService / PayoutAutomationService"]
-        EcomSync["EcommerceIntegrationService / EcommerceOrderService"]
-        SyncServ["KeycloakSyncService"]
-        LedgerServ["LedgerCheckpointService / RevenueService"]
+        PayService["Payment & PaymentIntent Service"]
+        EscrowServ["Escrow & Release Scheduler"]
+        WalletServ["Wallet & Payout Automation"]
+        EcomSync["Ecommerce Integration Service"]
     end
 
-    subgraph Entity_Layer ["Tầng Thực thể & Dữ liệu (base.entity)"]
+    subgraph Entity_Layer ["Tầng 4: Thực Thể CSDL (base.entity)"]
         EntOrder["Order, OrderItem, OrderHistory"]
-        EntProd["Product, ProductVariant, Category, Tag"]
-        EntFin["Wallet, WalletTransaction, EscrowRecord, PayoutRequest"]
-        EntSys["Tenant, User, Role, Customer, SalesChannel"]
+        EntProd["Product, Variant, Category"]
+        EntFin["Wallet, Transaction, EscrowRecord"]
+        EntSys["Tenant, User, Business, Role"]
     end
 
     REST_Layer --> Security_Layer
@@ -316,20 +337,20 @@ graph TD
 ### 5.3 Phân rã Cấp độ 2: Mô-đun AI Shopping Assistant (FastAPI MCP)
 
 ```mermaid
-graph TD
-    subgraph MCP_Server ["FastAPI MCP Framework (ecommerce-chatbot/mcp_server)"]
-        ServerCore["server.py (CORS, Auth Dependency, Routing)"]
-        ReqContext["request_context.py (ContextVar Thread-safe JWT Store)"]
-        SessStore["session_store.py (In-Memory Concurrent Turn Lock)"]
-        OutVal["output_validator.py (4-Tier Regex & Deterministic Guard)"]
-        Telemetry["telemetry.py (Privacy-Safe Metrics without PII)"]
+flowchart TB
+    subgraph ServerFramework ["1. FastAPI MCP Server (ecommerce-chatbot/mcp_server)"]
+        ServerCore["server.py (CORS, Auth Dependency)"]
+        ReqContext["request_context.py (ContextVar Store)"]
+        SessStore["session_store.py (Concurrent Turn Lock)"]
+        OutVal["output_validator.py (4-Tier Regex Validator)"]
+        Telemetry["telemetry.py (Privacy-Safe Metrics)"]
     end
 
-    subgraph Agent_Core ["Agent Engine (ecommerce-chatbot/agents)"]
-        UniAgent["unified_agent.py (Gemini Bounded Tool Execution Loop)"]
+    subgraph AgentFramework ["2. Unified Agent Engine (ecommerce-chatbot/agents)"]
+        UniAgent["unified_agent.py (Gemini Bounded Loop)"]
     end
 
-    subgraph Tools_Directory ["MCP Tool Definitions (mcp_server/tools)"]
+    subgraph ToolsDirectory ["3. MCP Semantic Tools (mcp_server/tools)"]
         T1["list_customer_orders"]
         T2["get_order_status"]
         T3["get_total_products_count"]
@@ -339,8 +360,8 @@ graph TD
     ServerCore --> ReqContext
     ServerCore --> SessStore
     ServerCore --> UniAgent
-    UniAgent --> Tools_Directory
-    Tools_Directory --> ReqContext
+    UniAgent --> ToolsDirectory
+    ToolsDirectory --> ReqContext
     UniAgent --> OutVal
     OutVal --> SessStore
     ServerCore --> Telemetry
@@ -499,41 +520,41 @@ sequenceDiagram
 Hệ thống được đóng gói và liên kết mạng thông qua `docker-compose.yml`:
 
 ```mermaid
-graph TB
-    subgraph Host_Machine ["Host Machine (Developer / Production Server)"]
-        subgraph Docker_Network ["Docker Internal Bridge Network"]
-            subgraph Data_Services ["Container Dữ liệu"]
-                MDB["mariadb:11.4<br>Port: 3307 (Internal 3306)<br>Volume: mariadbdata"]
-                WPDB["mariadb:11.4 (WordPress DB)<br>Volume: wordpressdbdata"]
+flowchart TB
+    subgraph HostServer ["🖥️ Máy Chủ Host (Local / Staging Server)"]
+        subgraph DockerNet ["🐳 Mạng Docker Bridge Nội Bộ"]
+            subgraph DataContainers ["Cụm Dữ Liệu"]
+                MDB["🗄️ mariadb:11.4<br>Host Port: 3307 | Volume: mariadbdata"]
+                WPDB["🗄️ mariadb:11.4 (WP DB)<br>Volume: wordpressdbdata"]
             end
 
-            subgraph Identity_Service ["Container Định danh"]
-                KC["quay.io/keycloak:26.6.1<br>Port: 8181<br>Env: Realm Import, Max 1.5GB RAM"]
+            subgraph AuthContainers ["Cụm Định Danh"]
+                KC["🔐 Keycloak 26.6.1<br>Host Port: 8181 | RAM Max: 1.5GB"]
             end
 
-            subgraph Omnichannel_Service ["Container Kênh ngoài"]
-                WP["wordpress:7.0.0-php8.3-apache<br>Port: 8090 (Internal 80)<br>Volume: wordpressdata"]
-                WPCli["wordpress:cli-2.12.0<br>setup.sh Bootstrap WooCommerce"]
+            subgraph WebContainers ["Cụm Kênh Ngoài"]
+                WP["🛍️ WordPress 7.0 + WooCommerce<br>Host Port: 8090 | Volume: wordpressdata"]
+                WPCli["⚙️ WP-CLI Setup Container<br>Bootstrap WooCommerce"]
             end
         end
 
-        subgraph Local_Services ["Dịch vụ Native / Dev Mode"]
-            BE["Quarkus Backend<br>Port: 8081<br>JVM 24/25 Executable"]
-            FE["Vite Dev Server (React 19)<br>Port: 5174"]
-            AI["FastAPI MCP Service (Python 3.11)<br>Port: 8000"]
+        subgraph LocalApps ["🚀 Dịch Vụ Ứng Dụng"]
+            BE["⚙️ Quarkus ERP Backend (:8081)<br><i>Java 24/25 Runtime</i>"]
+            FE["🌐 Vite React SPA (:5174)<br><i>Node.js Runtime</i>"]
+            AI["🤖 FastAPI MCP Service (:8000)<br><i>Python 3.11 Runtime</i>"]
         end
     end
 
-    KC -->|JDBC :3306| MDB
-    WP -->|JDBC :3306| WPDB
-    WPCli -->|WP-CLI Config| WP
+    KC -->|"JDBC :3306"| MDB
+    WP -->|"JDBC :3306"| WPDB
+    WPCli -->|"WP-CLI Config"| WP
 
-    BE -->|JDBC :3307| MDB
-    BE -->|OIDC Discovery :8181| KC
-    FE -->|Vite Proxy / Direct API :8081| BE
-    FE -->|Direct Chat API :8000| AI
-    AI -->|REST Client :8081| BE
-    WP -->|Webhook :8081 via host.docker.internal| BE
+    BE -->|"JDBC :3307"| MDB
+    BE -->|"OIDC Discovery :8181"| KC
+    FE -->|"Direct REST API :8081"| BE
+    FE -->|"Direct Chat API :8000"| AI
+    AI -->|"REST Client :8081"| BE
+    WP -->|"Webhook :8081"| BE
 ```
 
 ### 7.2 Bảng Ánh xạ Cổng & Phân bổ Tài nguyên
@@ -553,14 +574,20 @@ graph TB
 ## 8. Các Khái niệm Xuyên suốt (Cross-cutting Concepts)
 
 ```mermaid
-graph LR
-    subgraph CCC ["Cross-Cutting Concepts"]
-        C1[8.1 Bảo mật & RBAC]
-        C2[8.2 Toàn vẹn Tài chính]
-        C3[8.3 Xử lý Ngoại lệ]
-        C4[8.4 Logging & Telemetry]
-        C5[8.5 Đa ngôn ngữ i18n]
-    end
+flowchart LR
+    RootConcept(["🧩 Khái Niệm Xuyên Suốt"])
+
+    C1["8.1 Bảo Mật & RBAC"]
+    C2["8.2 Toàn Vẹn Tài Chính"]
+    C3["8.3 Xử Lý Ngoại Lệ"]
+    C4["8.4 Logging & Telemetry"]
+    C5["8.5 Đa Ngôn Ngữ i18n"]
+
+    RootConcept --> C1
+    RootConcept --> C2
+    RootConcept --> C3
+    RootConcept --> C4
+    RootConcept --> C5
 ```
 
 ### 8.1 Bảo mật, Xác thực & Phân quyền (Security, AuthN & AuthZ)
@@ -642,36 +669,36 @@ Hệ thống sử dụng các JAX-RS `ExceptionMapper` tập trung để chuyể
 ### 10.1 Cây Chất lượng (Quality Tree - ISO/IEC 25010)
 
 ```mermaid
-graph TD
-    QualityTree["Yêu cầu Chất lượng Hệ thống"]
+flowchart LR
+    Root(["🎯 Yêu Cầu Chất Lượng"])
 
-    subgraph Security ["1. Bảo mật (Security)"]
-        Sec1["Cô lập Tenant & Business"]
-        Sec2["Chống rò rỉ dữ liệu qua AI"]
-        Sec3["Chữ ký số Webhook HMAC"]
+    subgraph Sec ["1. Bảo Mật (Security)"]
+        Sec1["Cô Lập Tenant & Business"]
+        Sec2["Chống Rò Rỉ PII qua AI"]
+        Sec3["Chữ Ký Webhook HMAC"]
     end
 
-    subgraph Financial ["2. Toàn vẹn Tài chính (Integrity)"]
-        Fin1["Chống Race Condition ví"]
-        Fin2["Bất biến Sổ cái Sát hạch"]
-        Fin3["Idempotency Thanh toán"]
+    subgraph Fin ["2. Toàn Vẹn Tài Chính"]
+        Fin1["Chống Race Condition Ví"]
+        Fin2["Bất Biến Sổ Cái Đối Soát"]
+        Fin3["Idempotency Thanh Toán"]
     end
 
-    subgraph Performance ["3. Hiệu năng (Performance)"]
-        Perf1["Độ trễ API < 200ms"]
-        Perf2["Khởi động Quarkus < 3s"]
-        Perf3["Bộ nhớ Keycloak <= 1.5GB"]
+    subgraph Perf ["3. Hiệu Năng Phản Hồi"]
+        Perf1["Độ Trễ API < 200ms"]
+        Perf2["Khởi Động Quarkus < 3s"]
+        Perf3["Bộ Nhớ Keycloak <= 1.5GB"]
     end
 
-    subgraph Reliability ["4. Độ tin cậy (Reliability)"]
-        Rel1["Khôi phục trạng thái Escrow"]
-        Rel2["Khử trùng Lặp Webhook"]
+    subgraph Rel ["4. Độ Tin Cậy Vận Hành"]
+        Rel1["Khôi Phục Trạng Thái Escrow"]
+        Rel2["Khử Trùng Lặp Webhook"]
     end
 
-    QualityTree --> Security
-    QualityTree --> Financial
-    QualityTree --> Performance
-    QualityTree --> Reliability
+    Root --> Sec
+    Root --> Fin
+    Root --> Perf
+    Root --> Rel
 ```
 
 ### 10.2 Kịch bản Chất lượng Chi tiết (Quality Scenarios)
@@ -688,23 +715,29 @@ graph TD
 
 ## 11. Rủi ro và Nợ Kỹ thuật (Risks and Technical Debt)
 
-Dựa trên kết quả kiểm toán kỹ thuật codebase (`develop-branch-audit-2026-07-22.md`), các rủi ro kiến trúc và khoản nợ kỹ thuật được ghi nhận và phân loại như sau:
+Dựa trên kết quả kiểm toán kỹ thuật codebase (`develop-branch-audit-2026-07-22.md`), các rủi ro kiến trúc và khoản nợ kỹ thuật được ghi nhận và phân cấp ưu tiên xử lý như sau:
 
 ```mermaid
-quadrantChart
-    title Ma trận Rủi ro & Nợ Kỹ thuật
-    x-axis "Mức độ Phức tạp để Khắc phục (Thấp -> Cao)"
-    y-axis "Mức độ Ảnh hưởng Nghiệp vụ (Thấp -> Nghiêm trọng)"
-    quadrant-1 "Ưu tiên 2: Kế hoạch Tái cấu trúc Lớn"
-    quadrant-2 "Ưu tiên 1: Cần Khắc phục Khẩn cấp"
-    quadrant-3 "Ưu tiên 4: Dọn dẹp & Cải tiến Nhỏ"
-    quadrant-4 "Ưu tiên 3: Tối ưu Hóa Kỹ thuật"
-    "TD-01: Hardcoded Seed Passwords": [0.2, 0.85]
-    "TD-02: God Controller / Huge Pages": [0.8, 0.65]
-    "TD-03: Sổ cái Đơn chiều Single-Entry": [0.75, 0.78]
-    "TD-04: Mock Payment Gateway in Dev": [0.35, 0.72]
-    "TD-05: Thiếu Test Coverage ở Tầng UI": [0.6, 0.45]
-    "TD-06: File Cài đặt Python exe trong Git": [0.15, 0.35]
+flowchart TB
+    subgraph Priority1 ["🔴 Ưu Tiên 1: Khắc Phục Khẩn Cấp (Critical / High Impact)"]
+        P1A["TD-01: Hardcoded Seed Passwords trong Keycloak"]
+        P1B["TD-03: Sổ Cái Đơn Chiều Single-Entry Cần Nâng Lên Double-Entry"]
+    end
+
+    subgraph Priority2 ["🟠 Ưu Tiên 2: Kế Hoạch Tái Cấu Trúc Lớn (High Effort)"]
+        P2A["TD-02: Phân Rã God Controllers & Monster React Pages"]
+    end
+
+    subgraph Priority3 ["🟡 Ưu Tiên 3: Tối Ưu Hóa Kỹ Thuật (Medium Impact)"]
+        P3A["TD-04: Tích Hợp Cổng Thanh Toán Thực Thay Thế Mock"]
+        P3B["TD-05: Bổ Sung Test Coverage Tầng UI (Vitest / Playwright)"]
+    end
+
+    subgraph Priority4 ["🟢 Ưu Tiên 4: Dọn Dẹp Repository (Low Effort)"]
+        P4A["TD-06: Gỡ Bỏ File Nhị Phân Python-installer.exe Khỏi Git"]
+    end
+
+    Priority1 --> Priority2 --> Priority3 --> Priority4
 ```
 
 ### 11.1 Bảng Đăng ký Nợ Kỹ thuật (Technical Debt Registry)
