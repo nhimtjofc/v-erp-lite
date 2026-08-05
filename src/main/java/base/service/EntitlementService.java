@@ -7,12 +7,15 @@ import base.entity.Tenant;
 import base.entity.TenantSubscription;
 import base.entity.User;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -44,8 +47,20 @@ public class EntitlementService {
             String currency,
             Instant currentPeriodEndsAt,
             boolean readOnly,
+            UpgradeQuote upgradeQuote,
             Map<String, Boolean> features,
             Map<String, Long> limits
+    ) {}
+
+    public record UpgradeQuote(
+            String fromPlanCode,
+            String toPlanCode,
+            String toPlanName,
+            String billingPeriod,
+            long remainingDays,
+            long amountMinor,
+            String currency,
+            Instant currentPeriodEndsAt
     ) {}
 
     public List<SubscriptionPlan> listActivePlans() {
@@ -56,10 +71,11 @@ public class EntitlementService {
         TenantSubscription subscription = TenantSubscription.find("tenantId", tenantCode).firstResult();
         if (subscription == null) {
             requireTenant(tenantCode);
-            return planEntitlements(requirePlan("BASE"), "TRIAL", "MONTHLY", 0L, null, false);
+            return planEntitlements(requirePlan("BASE"), "TRIAL", "MONTHLY", 0L, null, false, null);
         }
         SubscriptionPlan plan = requirePlan(subscription.getPlanCode());
-        String effectiveStatus = effectiveStatus(subscription, Instant.now());
+        Instant now = Instant.now();
+        String effectiveStatus = effectiveStatus(subscription, now);
         boolean readOnly = "SUSPENDED".equals(effectiveStatus) || "CANCELLED".equals(effectiveStatus);
         return planEntitlements(
                 plan,
@@ -67,7 +83,8 @@ public class EntitlementService {
                 subscription.getBillingPeriod(),
                 subscription.getPriceMinor(),
                 subscription.getCurrentPeriodEndsAt(),
-                readOnly
+                readOnly,
+                buildUpgradeQuote(subscription, now)
         );
     }
 
@@ -166,6 +183,42 @@ public class EntitlementService {
         return subscription;
     }
 
+    @Transactional
+    public TenantSubscription upgradeSubscription(
+            String tenantCode,
+            String planCode,
+            String billingPeriod,
+            UUID actorId
+    ) {
+        TenantSubscription subscription = TenantSubscription.find("tenantId", tenantCode)
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        UpgradeQuote quote = buildUpgradeQuote(subscription, Instant.now());
+        String normalizedPeriod = normalizePeriod(billingPeriod);
+        if (quote == null
+                || !quote.toPlanCode().equalsIgnoreCase(planCode)
+                || !quote.billingPeriod().equals(normalizedPeriod)) {
+            throw new BadRequestException("Gói hiện tại không còn đủ điều kiện nâng cấp theo kỳ đang sử dụng");
+        }
+
+        SubscriptionPlan plan = requireAvailablePlan(planCode);
+        subscription.setPlanCode(plan.getCode());
+        subscription.setStatus("ACTIVE");
+        subscription.setPriceMinor("ANNUAL".equals(normalizedPeriod)
+                ? plan.getAnnualPriceMinor()
+                : plan.getMonthlyPriceMinor());
+        subscription.setCurrency(plan.getCurrency());
+        subscription.setTrialEndsAt(null);
+        subscription.setGraceEndsAt(null);
+        subscription.setCancelAtPeriodEnd(false);
+        subscription.setUpdatedBy(actorId);
+        return subscription;
+    }
+
+    public UpgradeQuote getUpgradeQuote(TenantSubscription subscription, Instant now) {
+        return buildUpgradeQuote(subscription, now);
+    }
+
     private void requireCapacity(String tenantCode, String limitName, long current) {
         Entitlements entitlements = getEntitlements(tenantCode);
         requireWritable(entitlements);
@@ -193,7 +246,8 @@ public class EntitlementService {
             String billingPeriod,
             long priceMinor,
             Instant currentPeriodEndsAt,
-            boolean readOnly
+            boolean readOnly,
+            UpgradeQuote upgradeQuote
     ) {
         return new Entitlements(
                 plan.getCode(),
@@ -205,9 +259,61 @@ public class EntitlementService {
                 plan.getCurrency(),
                 currentPeriodEndsAt,
                 readOnly,
+                upgradeQuote,
                 new LinkedHashMap<>(plan.getFeatures()),
                 new LinkedHashMap<>(plan.getLimits())
         );
+    }
+
+    private UpgradeQuote buildUpgradeQuote(TenantSubscription subscription, Instant now) {
+        if (subscription == null
+                || !"ACTIVE".equals(subscription.getStatus())
+                || !"BASE".equals(subscription.getPlanCode())
+                || subscription.getPriceMinor() <= 0
+                || subscription.getCurrentPeriodEndsAt() == null
+                || !now.isBefore(subscription.getCurrentPeriodEndsAt())) {
+            return null;
+        }
+
+        SubscriptionPlan basePlan = requirePlan("BASE");
+        SubscriptionPlan premiumPlan = requireAvailablePlan("PREMIUM");
+        String period = normalizePeriod(subscription.getBillingPeriod());
+        long basePrice = "ANNUAL".equals(period) ? basePlan.getAnnualPriceMinor() : basePlan.getMonthlyPriceMinor();
+        long premiumPrice = "ANNUAL".equals(period) ? premiumPlan.getAnnualPriceMinor() : premiumPlan.getMonthlyPriceMinor();
+        long remainingDays = remainingDays(now, subscription.getCurrentPeriodEndsAt());
+        long amountMinor = calculateProratedAmount(basePrice, premiumPrice, remainingDays, period);
+        return new UpgradeQuote(
+                basePlan.getCode(),
+                premiumPlan.getCode(),
+                premiumPlan.getName(),
+                period,
+                remainingDays,
+                amountMinor,
+                premiumPlan.getCurrency(),
+                subscription.getCurrentPeriodEndsAt()
+        );
+    }
+
+    static long remainingDays(Instant now, Instant periodEndsAt) {
+        long remainingSeconds = Math.max(1L, ChronoUnit.SECONDS.between(now, periodEndsAt));
+        return Math.max(1L, (remainingSeconds + 86_399L) / 86_400L);
+    }
+
+    static long calculateProratedAmount(
+            long currentPriceMinor,
+            long targetPriceMinor,
+            long remainingDays,
+            String billingPeriod
+    ) {
+        long priceDifference = targetPriceMinor - currentPriceMinor;
+        if (priceDifference <= 0 || remainingDays <= 0) {
+            throw new BadRequestException("Giá nâng cấp hoặc số ngày còn lại không hợp lệ");
+        }
+        long periodDays = "ANNUAL".equals(billingPeriod) ? 365L : 30L;
+        return BigDecimal.valueOf(priceDifference)
+                .multiply(BigDecimal.valueOf(Math.min(remainingDays, periodDays)))
+                .divide(BigDecimal.valueOf(periodDays), 0, RoundingMode.CEILING)
+                .longValueExact();
     }
 
     private String effectiveStatus(TenantSubscription subscription, Instant now) {

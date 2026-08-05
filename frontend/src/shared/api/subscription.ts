@@ -13,6 +13,17 @@ export interface SubscriptionPlan {
   active: boolean
 }
 
+export interface SubscriptionUpgradeQuote {
+  fromPlanCode: string
+  toPlanCode: string
+  toPlanName: string
+  billingPeriod: 'MONTHLY' | 'ANNUAL'
+  remainingDays: number
+  amountMinor: number
+  currency: string
+  currentPeriodEndsAt: string
+}
+
 export interface TenantEntitlements {
   planCode: string
   planName: string
@@ -23,6 +34,7 @@ export interface TenantEntitlements {
   currency: string
   currentPeriodEndsAt?: string
   readOnly: boolean
+  upgradeQuote?: SubscriptionUpgradeQuote
   features: Record<string, boolean>
   limits: Record<string, number>
 }
@@ -90,7 +102,7 @@ export function useMySubscriptionQuery() {
       })
       return response.data
     },
-    staleTime: 60 * 1000,
+    staleTime: 0,
   })
 }
 export function useAdminTenantSubscriptionQuery(tenantCode?: string) {

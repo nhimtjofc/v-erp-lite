@@ -2,6 +2,7 @@ package base.service;
 
 import base.entity.SubscriptionPayment;
 import base.entity.SubscriptionPlan;
+import base.entity.TenantSubscription;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.LockModeType;
@@ -40,6 +41,33 @@ public class SubscriptionPaymentService {
             return existing;
         }
 
+        SubscriptionPlan plan = requirePlan(planCode);
+        String period = normalizePeriod(billingPeriod);
+        Instant now = Instant.now();
+        TenantSubscription subscription = TenantSubscription.find("tenantId", tenantCode).firstResult();
+        EntitlementService.UpgradeQuote upgradeQuote = entitlementService.getUpgradeQuote(subscription, now);
+        long amountMinor;
+        if (hasActivePaidTerm(subscription, now)) {
+            if (upgradeQuote == null || !upgradeQuote.toPlanCode().equals(plan.getCode())) {
+                throw new BadRequestException("Gói hiện tại đã được thanh toán và bị khóa đến ngày hết hạn");
+            }
+            if (!upgradeQuote.billingPeriod().equals(period)) {
+                throw new BadRequestException("Nâng cấp phải giữ nguyên chu kỳ thanh toán hiện tại");
+            }
+            amountMinor = upgradeQuote.amountMinor();
+        } else {
+            amountMinor = "ANNUAL".equals(period) ? plan.getAnnualPriceMinor() : plan.getMonthlyPriceMinor();
+        }
+
+        SubscriptionPayment submittedPayment = SubscriptionPayment.find(
+                "tenantId = ?1 and status = ?2",
+                tenantCode,
+                "SUBMITTED"
+        ).firstResult();
+        if (submittedPayment != null) {
+            throw new BadRequestException("Đã có một thanh toán đang chờ xác nhận");
+        }
+
         SubscriptionPayment pendingPayment = SubscriptionPayment.find(
                 "tenantId = ?1 and status = ?2",
                 tenantCode,
@@ -48,14 +76,12 @@ public class SubscriptionPaymentService {
         if (pendingPayment != null) {
             pendingPayment.setStatus("CANCELLED");
         }
-        SubscriptionPlan plan = requirePlan(planCode);
-        String period = normalizePeriod(billingPeriod);
         SubscriptionPayment payment = new SubscriptionPayment();
         payment.setId(UUID.randomUUID());
         payment.setTenantId(tenantCode);
         payment.setPlanCode(plan.getCode());
         payment.setBillingPeriod(period);
-        payment.setAmountMinor("ANNUAL".equals(period) ? plan.getAnnualPriceMinor() : plan.getMonthlyPriceMinor());
+        payment.setAmountMinor(amountMinor);
         payment.setCurrency(plan.getCurrency());
         payment.setStatus("PENDING");
         payment.setIdempotencyKey(idempotencyKey.trim());
@@ -100,13 +126,34 @@ public class SubscriptionPaymentService {
         if (!"SUBMITTED".equals(payment.getStatus())) {
             throw new BadRequestException("Only submitted subscription payments can be approved");
         }
-        entitlementService.changeSubscription(
-                payment.getTenantId(),
-                payment.getPlanCode(),
-                payment.getBillingPeriod(),
-                "ACTIVE",
-                actorId
-        );
+        SubscriptionPlan plan = requirePlan(payment.getPlanCode());
+        long fullPriceMinor = "ANNUAL".equals(payment.getBillingPeriod())
+                ? plan.getAnnualPriceMinor()
+                : plan.getMonthlyPriceMinor();
+        boolean proratedUpgrade = "PREMIUM".equals(payment.getPlanCode())
+                && payment.getAmountMinor() < fullPriceMinor;
+        if (proratedUpgrade) {
+            entitlementService.upgradeSubscription(
+                    payment.getTenantId(),
+                    payment.getPlanCode(),
+                    payment.getBillingPeriod(),
+                    actorId
+            );
+        } else {
+            TenantSubscription subscription = TenantSubscription.find("tenantId", payment.getTenantId())
+                    .withLock(LockModeType.PESSIMISTIC_WRITE)
+                    .firstResult();
+            if (hasActivePaidTerm(subscription, Instant.now())) {
+                throw new BadRequestException("Gói hiện tại đã được thanh toán và bị khóa đến ngày hết hạn");
+            }
+            entitlementService.changeSubscription(
+                    payment.getTenantId(),
+                    payment.getPlanCode(),
+                    payment.getBillingPeriod(),
+                    "ACTIVE",
+                    actorId
+            );
+        }
         payment.setStatus("APPROVED");
         payment.setReviewedAt(Instant.now());
         payment.setReviewedBy(actorId);
@@ -143,6 +190,14 @@ public class SubscriptionPaymentService {
             throw new NotFoundException("Subscription payment not found");
         }
         return payment;
+    }
+
+    private boolean hasActivePaidTerm(TenantSubscription subscription, Instant now) {
+        return subscription != null
+                && "ACTIVE".equals(subscription.getStatus())
+                && subscription.getPriceMinor() > 0
+                && subscription.getCurrentPeriodEndsAt() != null
+                && now.isBefore(subscription.getCurrentPeriodEndsAt());
     }
 
     private SubscriptionPlan requirePlan(String planCode) {
