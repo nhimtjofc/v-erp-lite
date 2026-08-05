@@ -32,6 +32,12 @@ public class AdminSubscriptionPaymentResource {
     SubscriptionPaymentService subscriptionPaymentService;
 
     @GET
+    @Path("/stats")
+    public SubscriptionPaymentService.SubscriptionFinancialStats getFinancialStats() {
+        return subscriptionPaymentService.getFinancialStats();
+    }
+
+    @GET
     public List<SubscriptionPayment> listPayments(@QueryParam("status") String status) {
         return subscriptionPaymentService.listPayments(status);
     }

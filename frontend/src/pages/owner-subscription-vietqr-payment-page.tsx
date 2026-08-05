@@ -20,7 +20,6 @@ const T = {
   vnpay: 'VNPay',
   card: 'Thẻ quốc tế (Visa/Mastercard)',
   comingSoon: 'Sắp ra mắt',
-  backToShopping: 'Quay lại chọn gói',
   continue: 'Tiếp tục thanh toán',
   summary: 'Tóm tắt đơn hàng',
   subscription: 'Gói dịch vụ',
@@ -90,8 +89,7 @@ export function OwnerSubscriptionVietQrPaymentPage() {
               </div>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-muted-foreground">{T.backToShopping}</p>
+            <div className="mt-5 flex justify-end border-t pt-4">
               <Link to="/subscription/checkout/$id/webhook" params={{ id }}>
                 <Button className="w-full px-5 sm:w-auto"><LockKeyhole className="h-4 w-4" />{T.continue}</Button>
               </Link>

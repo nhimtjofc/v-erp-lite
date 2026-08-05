@@ -61,6 +61,20 @@ export interface SubscriptionPayment {
   createdAt?: string
 }
 
+export interface SubscriptionFinancialStats {
+  recognizedProfitMinor: number
+  currentMonthProfitMinor: number
+  pendingRevenueMinor: number
+  approvedPaymentCount: number
+  activeSubscriptionCount: number
+  baseSubscriptionCount: number
+  premiumSubscriptionCount: number
+  currency: string
+  profitBasis: 'APPROVED_SUBSCRIPTION_PAYMENTS'
+}
+
+export type SubscriptionMockScenario = 'EXPIRE_NOW' | 'RESET_PERIOD'
+
 export interface CreateSubscriptionPaymentInput {
   planCode: string
   billingPeriod: 'MONTHLY' | 'ANNUAL'
@@ -69,6 +83,7 @@ export interface CreateSubscriptionPaymentInput {
 
 export const MY_SUBSCRIPTION_PAYMENTS_QUERY_KEY = ['my-subscription-payments'] as const
 export const ADMIN_SUBSCRIPTION_PAYMENTS_QUERY_KEY = ['admin-subscription-payments'] as const
+export const SUBSCRIPTION_FINANCIAL_STATS_QUERY_KEY = ['subscription-financial-stats'] as const
 
 const bearerSecurity = [{ scheme: 'bearer' as const, type: 'http' as const }]
 
@@ -122,6 +137,21 @@ export function useAdminTenantSubscriptionQuery(tenantCode?: string) {
   })
 }
 
+export function useMockSubscriptionTimeMutation() {
+  return useMutation({
+    mutationFn: async ({ tenantCode, scenario }: { tenantCode: string; scenario: SubscriptionMockScenario }) => {
+      const response = await client.post<TenantEntitlements, unknown, true>({
+        url: '/api/admin/tenants/{tenantCode}/subscription/mock-time',
+        path: { tenantCode },
+        body: { scenario },
+        security: bearerSecurity,
+        throwOnError: true,
+      })
+      return response.data
+    },
+  })
+}
+
 export function useChangeTenantSubscriptionMutation() {
   return useMutation({
     mutationFn: async (input: ChangeTenantSubscriptionInput) => {
@@ -171,6 +201,20 @@ export function useMockSubscriptionPaymentWebhookMutation() {
         url: '/api/subscriptions/payments/{id}/mock-webhook',
         path: { id },
         body: { gateway, status },
+        security: bearerSecurity,
+        throwOnError: true,
+      })
+      return response.data
+    },
+  })
+}
+
+export function useSubscriptionFinancialStatsQuery() {
+  return useQuery({
+    queryKey: SUBSCRIPTION_FINANCIAL_STATS_QUERY_KEY,
+    queryFn: async () => {
+      const response = await client.get<SubscriptionFinancialStats, unknown, true>({
+        url: '/api/admin/subscription-payments/stats',
         security: bearerSecurity,
         throwOnError: true,
       })

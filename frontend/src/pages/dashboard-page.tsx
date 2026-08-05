@@ -12,25 +12,34 @@ import type { User } from 'oidc-client-ts'
 import type { User as TenantUser } from '@/shared/api'
 
 const FEATURE_DETAILS: Record<string, { label: string; benefit: string }> = {
-  catalog: { label: 'Danh m\u1ee5c & s\u1ea3n ph\u1ea9m', benefit: 'Chu\u1ea9n h\u00f3a h\u00e0ng h\u00f3a tr\u01b0\u1edbc khi b\u00e1n.' },
-  customers: { label: 'Kh\u00e1ch h\u00e0ng', benefit: 'L\u01b0u l\u1ecbch s\u1eed \u0111\u1ec3 ch\u0103m s\u00f3c v\u00e0 b\u00e1n l\u1ea1i.' },
-  orders: { label: '\u0110\u01a1n h\u00e0ng', benefit: 'Theo d\u00f5i quy tr\u00ecnh b\u00e1n h\u00e0ng t\u1eadp trung.' },
-  inventory: { label: 'T\u1ed3n kho', benefit: 'Ki\u1ec3m so\u00e1t s\u1ed1 l\u01b0\u1ee3ng h\u00e0ng c\u00f3 th\u1ec3 b\u00e1n.' },
-  multiBusiness: { label: 'Nhi\u1ec1u \u0111\u01a1n v\u1ecb kinh doanh', benefit: 'Qu\u1ea3n l\u00fd nhi\u1ec1u c\u1eeda h\u00e0ng ho\u1eb7c chi nh\u00e1nh trong c\u00f9ng tenant.' },
-  teamCollaboration: { label: 'C\u1ed9ng t\u00e1c \u0111\u1ed9i nh\u00f3m', benefit: 'M\u1edf r\u1ed9ng s\u1ed1 ng\u01b0\u1eddi d\u00f9ng theo vai tr\u00f2 v\u1eadn h\u00e0nh.' },
-  vouchers: { label: 'Khuy\u1ebfn m\u1ea1i', benefit: 'T\u1ea1o voucher cho c\u00e1c chi\u1ebfn d\u1ecbch b\u00e1n h\u00e0ng.' },
-  reports: { label: 'B\u00e1o c\u00e1o', benefit: 'Theo d\u00f5i doanh thu \u0111\u1ec3 ra quy\u1ebft \u0111\u1ecbnh.' },
-  notifications: { label: 'Th\u00f4ng b\u00e1o', benefit: 'Nh\u1eafc vi\u1ec7c v\u00e0 c\u1eadp nh\u1eadt v\u1eadn h\u00e0nh k\u1ecbp th\u1eddi.' },
-  ecommerce: { label: 'B\u00e1n h\u00e0ng \u0111a k\u00eanh', benefit: 'K\u1ebft n\u1ed1i v\u00e0 \u0111\u1ed3ng b\u1ed9 \u0111\u01a1n h\u00e0ng online.' },
-  onlinePayments: { label: 'Thanh to\u00e1n tr\u1ef1c tuy\u1ebfn', benefit: 'Nh\u1eadn thanh to\u00e1n s\u1ed1 trong lu\u1ed3ng \u0111\u01a1n h\u00e0ng.' },
-  walletPayouts: { label: 'V\u00ed & chi tr\u1ea3', benefit: '\u0110\u1ed1i so\u00e1t s\u1ed1 d\u01b0 v\u00e0 x\u1eed l\u00fd chi tr\u1ea3.' },
+  catalog: { label: 'Danh mục & sản phẩm', benefit: 'Chuẩn hóa hàng hóa trước khi bán.' },
+  customers: { label: 'Khách hàng', benefit: 'Lưu lịch sử để chăm sóc và bán lại.' },
+  orders: { label: 'Đơn hàng', benefit: 'Theo dõi quy trình bán hàng tập trung.' },
+  inventory: { label: 'Tồn kho', benefit: 'Kiểm soát số lượng hàng có thể bán.' },
+  multiBusiness: { label: 'Nhiều đơn vị kinh doanh', benefit: 'Quản lý nhiều cửa hàng hoặc chi nhánh trong cùng tenant.' },
+  teamCollaboration: { label: 'Cộng tác đội nhóm', benefit: 'Mở rộng số người dùng theo vai trò vận hành.' },
+  vouchers: { label: 'Khuyến mại', benefit: 'Tạo voucher cho các chiến dịch bán hàng.' },
+  reports: { label: 'Báo cáo', benefit: 'Theo dõi doanh thu để ra quyết định.' },
+  notifications: { label: 'Thông báo', benefit: 'Nhắc việc và cập nhật vận hành kịp thời.' },
+  ecommerce: { label: 'Bán hàng đa kênh', benefit: 'Kết nối và đồng bộ đơn hàng online.' },
+  onlinePayments: { label: 'Thanh toán trực tuyến', benefit: 'Nhận thanh toán số trong luồng đơn hàng.' },
+  walletPayouts: { label: 'Ví & chi trả', benefit: 'Đối soát số dư và xử lý chi trả.' },
 }
 
 const LIMIT_LABELS: Record<string, string> = {
-  maxUsers: 'ng\u01b0\u1eddi d\u00f9ng',
-  maxBusinesses: '\u0111\u01a1n v\u1ecb kinh doanh',
-  maxProducts: 's\u1ea3n ph\u1ea9m',
-  maxChannels: 'k\u00eanh b\u00e1n h\u00e0ng',
+  maxUsers: 'người dùng',
+  maxBusinesses: 'đơn vị kinh doanh',
+  maxProducts: 'sản phẩm',
+  maxChannels: 'kênh bán hàng',
+}
+
+const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Đang hoạt động',
+  TRIAL: 'Dùng thử',
+  PAST_DUE: 'Quá hạn thanh toán',
+  SUSPENDED: 'Tạm ngưng',
+  EXPIRED: 'Hết hạn',
+  CANCELLED: 'Đã hủy',
 }
 
 export function DashboardPage() {
@@ -70,18 +79,18 @@ export function DashboardPage() {
       setMemberForm({ email: '', firstName: '', lastName: '' })
       await queryClient.invalidateQueries({ queryKey: ['team-members'] })
     } catch {
-      setMemberError('\\u0110\\u00e3 x\\u1ea3y ra l\\u1ed7i khi th\\u00eam th\\u00e0nh vi\\u00ean. Vui l\\u00f2ng th\\u1eed l\\u1ea1i.')
+      setMemberError('Đã xảy ra lỗi khi thêm thành viên. Vui lòng thử lại.')
     }
   }
 
   const removeMember = async (id: string) => {
-    if (!confirm('\\u0110\\u00f3ng t\\u00e0i kho\\u1ea3n c\\u1ee7a th\\u00e0nh vi\\u00ean n\\u00e0y?')) return
+    if (!confirm('Đóng tài khoản của thành viên này?')) return
     setMemberError(null)
     try {
       await deleteMemberMutation.mutateAsync({ path: { id } })
       await queryClient.invalidateQueries({ queryKey: ['team-members'] })
     } catch {
-      setMemberError('Kh\\u00f4ng th\\u1ec3 x\\u00f3a th\\u00e0nh vi\\u00ean. Vui l\\u00f2ng th\\u1eed l\\u1ea1i.')
+      setMemberError('Không thể xóa thành viên. Vui lòng thử lại.')
     }
   }
   const health = healthRaw as { status?: string; service?: string } | undefined
@@ -137,11 +146,11 @@ export function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
           <div>
-            <CardTitle className="text-sm font-medium">{'G\u00f3i thu\u00ea bao'}</CardTitle>
-              <p className="mt-1 text-xs text-muted-foreground">{'Th\u00eam operator \u0111\u1ec3 c\u00f9ng v\u1eadn h\u00e0nh tenant. S\u1ed1 l\u01b0\u1ee3ng ph\u1ee5 thu\u1ed9c h\u1ea1n m\u1ee9c g\u00f3i.'}</p>
+            <CardTitle className="text-sm font-medium">{'Gói thuê bao'}</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">{'Thêm operator để cùng vận hành tenant. Số lượng phụ thuộc hạn mức gói.'}</p>
           </div>
           {subscription && (
-            <Badge variant={subscription.readOnly ? 'destructive' : 'default'}>{subscription.status}</Badge>
+            <Badge variant={subscription.readOnly ? 'destructive' : 'default'}>{SUBSCRIPTION_STATUS_LABELS[subscription.status] ?? subscription.status}</Badge>
           )}
         </CardHeader>
         <CardContent>
@@ -153,24 +162,24 @@ export function DashboardPage() {
                   <p className="mt-1 text-muted-foreground">{subscription.productSlice}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">{'Chu k\u1ef3 thanh to\u00e1n'}</p>
-                  <p className="mt-1 font-medium">{subscription.billingPeriod === 'ANNUAL' ? 'H\u00e0ng n\u0103m' : 'H\u00e0ng th\u00e1ng'}</p>
+                  <p className="text-muted-foreground">{'Chu kỳ thanh toán'}</p>
+                  <p className="mt-1 font-medium">{subscription.billingPeriod === 'ANNUAL' ? 'Hàng năm' : 'Hàng tháng'}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">{'Hi\u1ec7u l\u1ef1c \u0111\u1ebfn'}</p>
+                  <p className="text-muted-foreground">{'Hiệu lực đến'}</p>
                   <p className="mt-1 font-medium">
                     {subscription.currentPeriodEndsAt
                       ? new Date(subscription.currentPeriodEndsAt).toLocaleDateString('vi-VN')
-                      : 'Kh\u00f4ng gi\u1edbi h\u1ea1n'}
+                      : 'Không giới hạn'}
                   </p>
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">{'T\u00ednh n\u0103ng v\u00e0 tr\u01b0\u1eddng h\u1ee3p s\u1eed d\u1ee5ng'}</p>
+                <p className="mb-2 text-sm font-medium">{'Tính năng và trường hợp sử dụng'}</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   {Object.entries(subscription.features).filter(([, enabled]) => enabled).map(([feature]) => {
-                    const detail = FEATURE_DETAILS[feature] ?? { label: feature, benefit: '\u0110\u00e3 \u0111\u01b0\u1ee3c k\u00edch ho\u1ea1t trong g\u00f3i hi\u1ec7n t\u1ea1i.' }
+                    const detail = FEATURE_DETAILS[feature] ?? { label: feature, benefit: 'Đã được kích hoạt trong gói hiện tại.' }
                     return (
                       <div key={feature} className="rounded-md border border-border/60 p-3">
                         <p className="font-medium">{detail.label}</p>
@@ -182,7 +191,7 @@ export function DashboardPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">{'H\u1ea1n m\u1ee9c g\u00f3i'}</p>
+                <p className="mb-2 text-sm font-medium">{'Hạn mức gói'}</p>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(subscription.limits).map(([limit, value]) => (
                     <Badge key={limit} variant="outline">
@@ -193,7 +202,7 @@ export function DashboardPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{'\u0110ang t\u1ea3i th\u00f4ng tin g\u00f3i thu\u00ea bao...'}</p>
+            <p className="text-sm text-muted-foreground">{'Đang tải thông tin gói thuê bao...'}</p>
           )}
         </CardContent>
       </Card>
@@ -201,8 +210,8 @@ export function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
             <div>
-              <CardTitle className="text-sm font-medium">{'Th\u00e0nh vi\u00ean \u0111\u1ed9i nh\u00f3m'}</CardTitle>
-              <p className="mt-1 text-xs text-muted-foreground">{'Th\u00eam operator \u0111\u1ec3 c\u00f9ng v\u1eadn h\u00e0nh tenant. S\u1ed1 l\u01b0\u1ee3ng ph\u1ee5 thu\u1ed9c h\u1ea1n m\u1ee9c g\u00f3i.'}</p>
+              <CardTitle className="text-sm font-medium">{'Thành viên đội nhóm'}</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">{'Thêm operator để cùng vận hành tenant. Số lượng phụ thuộc hạn mức gói.'}</p>
             </div>
             <Badge variant="secondary">operator</Badge>
           </CardHeader>
@@ -217,16 +226,16 @@ export function DashboardPage() {
               <Input
                 value={memberForm.firstName}
                 onChange={(event) => setMemberForm((current) => ({ ...current, firstName: event.target.value }))}
-                placeholder={'T\u00ean'}
+                placeholder={'Tên'}
               />
               <Input
                 value={memberForm.lastName}
                 onChange={(event) => setMemberForm((current) => ({ ...current, lastName: event.target.value }))}
-                placeholder={'H\u1ecd'}
+                placeholder={'Họ'}
               />
               <Button onClick={addMember} disabled={!memberForm.email.trim() || createMemberMutation.isPending}>
                 <UserPlus className="h-4 w-4" />
-                {createMemberMutation.isPending ? '\\u0110ang th\\u00eam...' : 'Th\\u00eam th\\u00e0nh vi\\u00ean'}
+                {createMemberMutation.isPending ? 'Đang thêm...' : 'Thêm thành viên'}
               </Button>
             </div>
             {memberError && <p className="text-sm text-destructive">{memberError}</p>}
@@ -242,14 +251,14 @@ export function DashboardPage() {
                     size="sm"
                     onClick={() => removeMember(member.id!)}
                     disabled={deleteMemberMutation.isPending || member.role?.name !== 'operator'}
-                    title={member.role?.name === 'operator' ? 'X\u00f3a operator' : 'Ch\u1ec9 x\u00f3a operator'}
+                    title={member.role?.name === 'operator' ? 'Xóa operator' : 'Chỉ xóa operator'}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
               {members.filter((member) => member.id !== me?.id).length === 0 && (
-                <p className="px-3 py-4 text-sm text-muted-foreground">{'Ch\u01b0a c\u00f3 th\u00e0nh vi\u00ean n\u00e0o trong \u0111\u1ed9i nh\u00f3m.'}</p>
+                <p className="px-3 py-4 text-sm text-muted-foreground">{'Chưa có thành viên nào trong đội nhóm.'}</p>
               )}
             </div>
           </CardContent>

@@ -3,9 +3,11 @@ import { useParams, useRouter } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listTenantsQueryKey,
+  SUBSCRIPTION_FINANCIAL_STATS_QUERY_KEY,
   subscriptionQueryKey,
   useAdminTenantSubscriptionQuery,
   useChangeTenantSubscriptionMutation,
+  useMockSubscriptionTimeMutation,
   useDeleteTenantMutation,
   useGetTenantQuery,
   useSubscriptionPlansQuery,
@@ -16,7 +18,7 @@ import {
   useUpdateTenantUserMutation,
   useDeleteTenantUserMutation,
 } from '@/shared/api'
-import type { User, Role } from '@/shared/api'
+import type { SubscriptionMockScenario, User, Role } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Badge } from '@/shared/ui/badge'
@@ -30,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { ArrowLeft, Check, CircleDollarSign, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, CircleDollarSign, FastForward, Pencil, Plus, RotateCcw, TimerReset, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 // Inline role listing is safe here because roles are stable seeds (admin, operator, businessOwner).
@@ -56,6 +58,8 @@ export function TenantDetailPage() {
   const { data: subscription, isLoading: subscriptionLoading } = useAdminTenantSubscriptionQuery(tenantCode)
   const { data: plans = [] } = useSubscriptionPlansQuery()
   const changeSubscriptionMutation = useChangeTenantSubscriptionMutation()
+  const mockSubscriptionTimeMutation = useMockSubscriptionTimeMutation()
+  const [showcaseMessage, setShowcaseMessage] = useState('')
   const [subscriptionForm, setSubscriptionForm] = useState({
     planCode: 'BASE',
     billingPeriod: 'MONTHLY' as 'MONTHLY' | 'ANNUAL',
@@ -83,7 +87,28 @@ export function TenantDetailPage() {
   const handleSaveSubscription = async () => {
     if (!tenantCode) return
     await changeSubscriptionMutation.mutateAsync({ tenantCode, ...subscriptionForm })
-    await queryClient.invalidateQueries({ queryKey: subscriptionQueryKey(tenantCode) })
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: subscriptionQueryKey(tenantCode) }),
+      queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_FINANCIAL_STATS_QUERY_KEY }),
+    ])
+  }
+
+  const runSubscriptionShowcase = async (scenario: SubscriptionMockScenario) => {
+    if (!tenantCode) return
+    if (scenario === 'EXPIRE_NOW' && !window.confirm('Cho subscription này hết hạn ngay để demo trạng thái khóa?')) return
+    setShowcaseMessage('')
+    try {
+      await mockSubscriptionTimeMutation.mutateAsync({ tenantCode, scenario })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: subscriptionQueryKey(tenantCode) }),
+        queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_FINANCIAL_STATS_QUERY_KEY }),
+      ])
+      setShowcaseMessage(scenario === 'EXPIRE_NOW'
+        ? 'Subscription đã hết hạn để showcase.'
+        : 'Đã khôi phục kỳ subscription chuẩn.')
+    } catch (cause) {
+      setShowcaseMessage(cause instanceof Error ? cause.message : 'Không thể cập nhật thời gian showcase.')
+    }
   }
 
   const { data: users, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
@@ -296,6 +321,7 @@ export function TenantDetailPage() {
                     <SelectItem value="ACTIVE">{'\u0110ang ho\u1ea1t \u0111\u1ed9ng'}</SelectItem>
                     <SelectItem value="PAST_DUE">{'Qu\u00e1 h\u1ea1n thanh to\u00e1n'}</SelectItem>
                     <SelectItem value="SUSPENDED">{'T\u1ea1m ng\u01b0ng'}</SelectItem>
+                    <SelectItem value="EXPIRED" disabled>Hết hạn</SelectItem>
                     <SelectItem value="CANCELLED">{'\u0110\u00e3 h\u1ee7y'}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -325,8 +351,28 @@ export function TenantDetailPage() {
             )}
 
             {subscription?.currentPeriodEndsAt && (
-              <p className="text-sm text-muted-foreground">{'K\u1ef3 hi\u1ec7n t\u1ea1i k\u1ebft th\u00fac:'} {new Date(subscription.currentPeriodEndsAt).toLocaleDateString('vi-VN')}</p>
+              <p className="text-sm text-muted-foreground">{'K\u1ef3 hi\u1ec7n t\u1ea1i k\u1ebft th\u00fac:'} {new Date(subscription.currentPeriodEndsAt).toLocaleString('vi-VN')}</p>
             )}
+
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+              <div className="flex items-start gap-3">
+                <TimerReset className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <p className="font-semibold">Công cụ showcase subscription (Sandbox)</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Rút ngắn kỳ hạn để demo trạng thái sắp hết hạn hoặc hết hạn. Chỉ admin có thể sử dụng.</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+
+                <Button type="button" size="sm" variant="destructive" onClick={() => runSubscriptionShowcase('EXPIRE_NOW')} disabled={mockSubscriptionTimeMutation.isPending}>
+                  <FastForward className="h-4 w-4" />Hết hạn ngay
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => runSubscriptionShowcase('RESET_PERIOD')} disabled={mockSubscriptionTimeMutation.isPending}>
+                  <RotateCcw className="h-4 w-4" />Khôi phục kỳ chuẩn
+                </Button>
+              </div>
+              {showcaseMessage && <p className="mt-3 text-sm text-muted-foreground">{showcaseMessage}</p>}
+            </div>
             {changeSubscriptionMutation.isError && (
               <p className="text-sm text-destructive">{'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt g\u00f3i. Vui l\u00f2ng th\u1eed l\u1ea1i.'}</p>
             )}

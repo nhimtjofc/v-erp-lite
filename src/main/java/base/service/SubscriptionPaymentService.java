@@ -11,11 +11,24 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
 public class SubscriptionPaymentService {
+
+    public record SubscriptionFinancialStats(
+            long recognizedProfitMinor,
+            long currentMonthProfitMinor,
+            long pendingRevenueMinor,
+            long approvedPaymentCount,
+            long activeSubscriptionCount,
+            long baseSubscriptionCount,
+            long premiumSubscriptionCount,
+            String currency,
+            String profitBasis
+    ) {}
 
     @Inject
     EntitlementService entitlementService;
@@ -99,6 +112,71 @@ public class SubscriptionPaymentService {
             return SubscriptionPayment.list("order by submittedAt desc, createdAt desc");
         }
         return SubscriptionPayment.list("status = ?1 order by submittedAt desc, createdAt desc", normalizeStatus(status));
+    }
+
+    public SubscriptionFinancialStats getFinancialStats() {
+        return calculateFinancialStats(
+                SubscriptionPayment.listAll(),
+                TenantSubscription.listAll(),
+                Instant.now()
+        );
+    }
+
+    static SubscriptionFinancialStats calculateFinancialStats(
+            List<SubscriptionPayment> payments,
+            List<TenantSubscription> subscriptions,
+            Instant now
+    ) {
+        Instant monthStart = now.atZone(ZoneOffset.UTC)
+                .withDayOfMonth(1)
+                .toLocalDate()
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant();
+        long recognizedProfitMinor = 0L;
+        long currentMonthProfitMinor = 0L;
+        long pendingRevenueMinor = 0L;
+        long approvedPaymentCount = 0L;
+        for (SubscriptionPayment payment : payments) {
+            if ("APPROVED".equals(payment.getStatus())) {
+                recognizedProfitMinor += payment.getAmountMinor();
+                approvedPaymentCount++;
+                if (payment.getReviewedAt() != null && !payment.getReviewedAt().isBefore(monthStart)) {
+                    currentMonthProfitMinor += payment.getAmountMinor();
+                }
+            } else if ("SUBMITTED".equals(payment.getStatus())) {
+                pendingRevenueMinor += payment.getAmountMinor();
+            }
+        }
+
+        long activeSubscriptionCount = 0L;
+        long baseSubscriptionCount = 0L;
+        long premiumSubscriptionCount = 0L;
+        for (TenantSubscription subscription : subscriptions) {
+            boolean active = "ACTIVE".equals(subscription.getStatus())
+                    && (subscription.getCurrentPeriodEndsAt() == null
+                    || now.isBefore(subscription.getCurrentPeriodEndsAt()));
+            if (!active) {
+                continue;
+            }
+            activeSubscriptionCount++;
+            if ("BASE".equals(subscription.getPlanCode())) {
+                baseSubscriptionCount++;
+            } else if ("PREMIUM".equals(subscription.getPlanCode())) {
+                premiumSubscriptionCount++;
+            }
+        }
+
+        return new SubscriptionFinancialStats(
+                recognizedProfitMinor,
+                currentMonthProfitMinor,
+                pendingRevenueMinor,
+                approvedPaymentCount,
+                activeSubscriptionCount,
+                baseSubscriptionCount,
+                premiumSubscriptionCount,
+                "VND",
+                "APPROVED_SUBSCRIPTION_PAYMENTS"
+        );
     }
 
     @Transactional

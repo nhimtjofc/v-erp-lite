@@ -24,47 +24,49 @@ public class SubscriptionEntitlementFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
-        if (!caller.isAuthenticated()) {
+        if (!caller.isAuthenticated() || caller.hasRole("admin")) {
             return;
         }
 
-        String path = requestContext.getUriInfo().getPath();
-        if (path.startsWith("api/")) {
-            path = path.substring(4);
-        }
-        if (isPlatformAdministration(path) || path.startsWith("auth/")) {
+        String path = normalizePath(requestContext.getUriInfo().getPath());
+        if (isPlatformAdministration(path) || isSubscriptionRecoveryPath(path) || path.startsWith("auth/")) {
             return;
         }
 
         String tenantCode = caller.tenantCode();
         if (path.startsWith("integrations/ecommerce/")) {
             entitlementService.requireFeature(tenantCode, EntitlementService.FEATURE_ECOMMERCE);
-            return;
+           return;
         }
         if (path.startsWith("payment-intents")) {
             entitlementService.requireFeature(tenantCode, EntitlementService.FEATURE_ONLINE_PAYMENTS);
-            return;
+           return;
         }
         if (path.startsWith("wallets") || path.startsWith("payouts")) {
             entitlementService.requireFeature(tenantCode, EntitlementService.FEATURE_WALLET_PAYOUTS);
-            return;
+           return;
         }
 
-        if (isMutation(requestContext.getMethod())) {
-            entitlementService.requireWritable(tenantCode);
-        }
     }
 
-    private boolean isPlatformAdministration(String path) {
+    static boolean isPlatformAdministration(String path) {
         return path.startsWith("admin/")
                 || path.startsWith("tenants")
                 || path.startsWith("sync/")
-                || path.startsWith("subscriptions/")
-                || path.startsWith("i18n/")
+               || path.startsWith("i18n/")
                 || path.startsWith("health");
     }
 
-    private boolean isMutation(String method) {
-        return "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method) || "DELETE".equals(method);
+    static boolean isSubscriptionRecoveryPath(String path) {
+        return path.equals("users/me") || path.startsWith("subscriptions/");
     }
+
+    static String normalizePath(String path) {
+        if (path == null) {
+            return "";
+        }
+        String normalized = path.replaceFirst("^/+", "");
+        return normalized.startsWith("api/") ? normalized.substring(4) : normalized;
+    }
+
 }

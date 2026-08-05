@@ -14,11 +14,11 @@ export const PAYOUT_STATUS_META: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'destructive' }
 > = {
-  AUTO_APPROVED: { label: 'Auto approved', variant: 'secondary' },
-  FLAGGED: { label: 'Needs review', variant: 'destructive' },
-  APPROVED: { label: 'Approved', variant: 'secondary' },
-  REJECTED: { label: 'Rejected', variant: 'destructive' },
-  PAID: { label: 'Paid', variant: 'default' },
+  AUTO_APPROVED: { label: 'Tự động duyệt', variant: 'secondary' },
+  FLAGGED: { label: 'Cần kiểm tra', variant: 'destructive' },
+  APPROVED: { label: 'Đã duyệt', variant: 'secondary' },
+  REJECTED: { label: 'Đã từ chối', variant: 'destructive' },
+  PAID: { label: 'Đã chi trả', variant: 'default' },
 }
 
 export function useSellerPayoutsQuery(walletId?: string) {

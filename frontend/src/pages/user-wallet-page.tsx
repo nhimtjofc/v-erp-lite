@@ -102,7 +102,7 @@ function TopUpDialog({
       onOpenChange(false)
     },
     onError: (err: any) => {
-      setError(err?.message || 'Unable to complete wallet top-up')
+      setError(err?.message || 'Không thể hoàn tất nạp tiền vào ví')
     },
 
   })

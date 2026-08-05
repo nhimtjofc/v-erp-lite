@@ -2,12 +2,12 @@ package base.rest;
 
 import base.entity.TenantSubscription;
 import base.security.CallerContext;
-import base.security.CallerContext;
 import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -21,6 +21,8 @@ import jakarta.ws.rs.core.MediaType;
 public class AdminSubscriptionResource {
 
     public record ChangeSubscriptionRequest(String planCode, String billingPeriod, String status) {}
+
+    public record MockSubscriptionTimeRequest(String scenario) {}
 
     @Inject
     EntitlementService entitlementService;
@@ -48,5 +50,17 @@ public class AdminSubscriptionResource {
                 request.status(),
                 caller.userId()
         );
+    }
+
+    @POST
+    @Path("/mock-time")
+    public EntitlementService.Entitlements mockSubscriptionTime(
+            @PathParam("tenantCode") String tenantCode,
+            MockSubscriptionTimeRequest request
+    ) {
+        if (request == null) {
+            throw new jakarta.ws.rs.BadRequestException("Mock subscription request is required");
+        }
+        return entitlementService.mockSubscriptionTime(tenantCode, request.scenario(), caller.userId());
     }
 }

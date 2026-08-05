@@ -76,7 +76,9 @@ public class EntitlementService {
         SubscriptionPlan plan = requirePlan(subscription.getPlanCode());
         Instant now = Instant.now();
         String effectiveStatus = effectiveStatus(subscription, now);
-        boolean readOnly = "SUSPENDED".equals(effectiveStatus) || "CANCELLED".equals(effectiveStatus);
+        boolean readOnly = "EXPIRED".equals(effectiveStatus)
+                || "SUSPENDED".equals(effectiveStatus)
+                || "CANCELLED".equals(effectiveStatus);
         return planEntitlements(
                 plan,
                 effectiveStatus,
@@ -90,7 +92,6 @@ public class EntitlementService {
 
     public void requireFeature(String tenantCode, String feature) {
         Entitlements entitlements = getEntitlements(tenantCode);
-        requireWritable(entitlements);
         if (!Boolean.TRUE.equals(entitlements.features().get(feature))) {
             throw new ClientErrorException(
                     "Your current plan does not include feature: " + feature,
@@ -165,6 +166,7 @@ public class EntitlementService {
             subscription.persist();
         }
         subscription.setPlanCode(plan.getCode());
+        subscription.setStartedAt(now);
         subscription.setStatus(normalizedStatus);
         subscription.setBillingPeriod(normalizedPeriod);
         subscription.setPriceMinor("ANNUAL".equals(normalizedPeriod)
@@ -217,6 +219,43 @@ public class EntitlementService {
 
     public UpgradeQuote getUpgradeQuote(TenantSubscription subscription, Instant now) {
         return buildUpgradeQuote(subscription, now);
+    }
+
+    @Transactional
+    public Entitlements mockSubscriptionTime(String tenantCode, String scenario, UUID actorId) {
+        TenantSubscription subscription = TenantSubscription.find("tenantId", tenantCode)
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (subscription == null) {
+            throw new NotFoundException("Subscription not found for tenant: " + tenantCode);
+        }
+        if (subscription.getPriceMinor() <= 0) {
+            throw new BadRequestException("Tenant cần có gói trả phí trước khi dùng công cụ showcase");
+        }
+
+        String normalizedScenario = scenario == null ? "" : scenario.trim().toUpperCase();
+        Instant now = Instant.now();
+        switch (normalizedScenario) {
+
+            case "EXPIRE_NOW" -> {
+                subscription.setStatus("ACTIVE");
+                subscription.setCurrentPeriodEndsAt(now.minus(1, ChronoUnit.SECONDS));
+            }
+            case "RESET_PERIOD" -> {
+                subscription.setStatus("ACTIVE");
+                subscription.setCurrentPeriodEndsAt(now.plus(
+                        "ANNUAL".equals(subscription.getBillingPeriod()) ? 365 : 30,
+                        ChronoUnit.DAYS
+                ));
+            }
+            default -> throw new BadRequestException(
+                    "scenario must be EXPIRE_NOW or RESET_PERIOD"
+            );
+        }
+        subscription.setGraceEndsAt(null);
+        subscription.setCancelAtPeriodEnd(false);
+        subscription.setUpdatedBy(actorId);
+        return getEntitlements(tenantCode);
     }
 
     private void requireCapacity(String tenantCode, String limitName, long current) {
@@ -316,7 +355,7 @@ public class EntitlementService {
                 .longValueExact();
     }
 
-    private String effectiveStatus(TenantSubscription subscription, Instant now) {
+    String effectiveStatus(TenantSubscription subscription, Instant now) {
         String status = normalizeStatus(subscription.getStatus());
         Instant periodEnd = subscription.getCurrentPeriodEndsAt();
         if (("TRIAL".equals(status) || "ACTIVE".equals(status) || "PAST_DUE".equals(status))
@@ -324,7 +363,7 @@ public class EntitlementService {
             if (subscription.getGraceEndsAt() != null && !now.isAfter(subscription.getGraceEndsAt())) {
                 return "PAST_DUE";
             }
-            return "SUSPENDED";
+            return "EXPIRED";
         }
         return status;
     }

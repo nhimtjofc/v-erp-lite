@@ -37,17 +37,23 @@ import { AlertCircle, CalendarClock, Clock, Coins, Landmark, RefreshCw, ShieldCh
 const WALLET_ROLES = ['businessOwner']
 
 const TX_TYPE_LABELS: Record<string, string> = {
-  DEPOSIT: 'Deposit',
-  WITHDRAWAL: 'Withdrawal',
-  COMMISSION: 'Commission',
-  ESCROW_HOLD: 'Escrow hold',
-  ESCROW_RELEASE: 'Escrow release',
-  ESCROW_REFUND: 'Escrow refund',
-  PAYOUT: 'Bank payout',
+  DEPOSIT: 'Tiền vào',
+  WITHDRAWAL: 'Rút tiền',
+  COMMISSION: 'Phí hoa hồng',
+  ESCROW_HOLD: 'Tạm giữ ký quỹ',
+  ESCROW_RELEASE: 'Giải phóng ký quỹ',
+  ESCROW_REFUND: 'Hoàn ký quỹ',
+  PAYOUT: 'Chi trả ngân hàng',
 }
 
 function formatDate(value?: string): string {
   return value ? new Date(value).toLocaleString() : '—'
+}
+
+function getErrorMessage(cause: unknown, fallback: string) {
+  if (cause instanceof Error) return cause.message
+  if (typeof cause === 'object' && cause !== null && 'error' in cause && typeof cause.error === 'string') return cause.error
+  return fallback
 }
 
 function BalanceCard({
@@ -94,7 +100,7 @@ function BankDetailsDialog({
 
   const save = async () => {
     if (!bankId || !accountNumber.trim() || !accountHolder.trim()) {
-      setError('All bank detail fields are required.')
+      setError('Vui lòng nhập đầy đủ thông tin ngân hàng.')
       return
     }
     try {
@@ -109,7 +115,7 @@ function BankDetailsDialog({
       setError('')
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to save bank details.')
+      setError(cause instanceof Error ? cause.message : 'Không thể lưu thông tin ngân hàng.')
     }
   }
 
@@ -117,17 +123,17 @@ function BankDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Bank details</DialogTitle>
+          <DialogTitle>Thông tin ngân hàng</DialogTitle>
           <DialogDescription>
-            Automated payouts use these details. The first payout after any change is always flagged for admin review.
+            Thông tin này được dùng để chi trả tự động. Lần chi trả đầu tiên sau mỗi thay đổi sẽ được chuyển cho quản trị viên kiểm tra.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bank-name">Bank name</Label>
+            <Label htmlFor="bank-name">Ngân hàng</Label>
             <Select value={bankId} onValueChange={(value) => setBankId(value ?? '')} disabled={banksLoading}>
               <SelectTrigger id="bank-name">
-                <SelectValue placeholder={banksLoading ? 'Loading banks…' : 'Select a bank'} />
+                <SelectValue placeholder={banksLoading ? 'Đang tải danh sách ngân hàng…' : 'Chọn ngân hàng'} />
               </SelectTrigger>
               <SelectContent>
                 {banks.map((bank) => (
@@ -139,19 +145,19 @@ function BankDetailsDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="bank-account">Account number</Label>
+            <Label htmlFor="bank-account">Số tài khoản</Label>
             <Input id="bank-account" value={accountNumber} onChange={(event) => setAccountNumber(event.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="bank-holder">Account holder</Label>
+            <Label htmlFor="bank-holder">Chủ tài khoản</Label>
             <Input id="bank-holder" value={accountHolder} onChange={(event) => setAccountHolder(event.target.value)} />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
           <Button onClick={save} disabled={updateBankDetails.isPending}>
-            {updateBankDetails.isPending ? 'Saving…' : 'Save details'}
+            {updateBankDetails.isPending ? 'Đang lưu…' : 'Lưu thông tin'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -177,10 +183,11 @@ function PayoutStatusWidget({ wallet }: { wallet: SellerWallet }) {
     try {
       const payout = await runScreening.mutateAsync(wallet.id!)
       const status = payout?.status ?? 'CREATED'
+      const statusLabel = PAYOUT_STATUS_META[status]?.label ?? status
       setScreeningMessage(
         status === 'PAID'
-          ? 'Payout passed screening and the mock bank transfer completed.'
-          : `Payout screening completed with status ${status}${payout?.flagReason ? `: ${payout.flagReason}` : '.'}`,
+          ? 'Chi trả đã qua kiểm tra và hoàn tất chuyển khoản mô phỏng.'
+          : `Đã kiểm tra chi trả với trạng thái ${statusLabel}${payout?.flagReason ? `: ${payout.flagReason}` : '.'}`,
       )
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY }),
@@ -190,7 +197,7 @@ function PayoutStatusWidget({ wallet }: { wallet: SellerWallet }) {
         queryClient.invalidateQueries({ queryKey: ['admin-payouts'] }),
       ])
     } catch (cause) {
-      setScreeningError(cause instanceof Error ? cause.message : 'Unable to run payout screening.')
+      setScreeningError(cause instanceof Error ? cause.message : 'Không thể kiểm tra điều kiện chi trả.')
     }
   }
 
@@ -200,44 +207,44 @@ function PayoutStatusWidget({ wallet }: { wallet: SellerWallet }) {
         <CardHeader className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-primary" /> Automated payout status
+              <CalendarClock className="h-5 w-5 text-primary" /> Trạng thái chi trả tự động
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Eligible balances are screened automatically; admin only sees exceptions.
+              Số dư đủ điều kiện được kiểm tra tự động; quản trị viên chỉ xử lý các trường hợp ngoại lệ.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setBankOpen(true)}>
-              <Landmark className="mr-2 h-4 w-4" /> {bankConfigured ? 'Update bank details' : 'Add bank details'}
+              <Landmark className="mr-2 h-4 w-4" /> {bankConfigured ? 'Cập nhật ngân hàng' : 'Thêm ngân hàng'}
             </Button>
             <Button onClick={handleRunScreening} disabled={!isEligible || runScreening.isPending}>
               {runScreening.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-              Run payout check
+              Kiểm tra chi trả
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-xs text-muted-foreground">Last payout</p>
-              <p className="font-semibold">{isLoading ? 'Loading…' : formatDate(payoutStatus?.lastPayoutAt)}</p>
+              <p className="text-xs text-muted-foreground">Lần chi trả gần nhất</p>
+              <p className="font-semibold">{isLoading ? 'Đang tải…' : formatDate(payoutStatus?.lastPayoutAt)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Next scheduled run</p>
-              <p className="font-semibold">{isLoading ? 'Loading…' : formatDate(payoutStatus?.nextScheduledRunAt)}</p>
+              <p className="text-xs text-muted-foreground">Lần chạy kế tiếp</p>
+              <p className="font-semibold">{isLoading ? 'Đang tải…' : formatDate(payoutStatus?.nextScheduledRunAt)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Minimum eligible balance</p>
+              <p className="text-xs text-muted-foreground">Số dư tối thiểu</p>
               <p className="font-semibold">
                 {formatMoneyMinor(minimumThreshold, wallet.currency ?? 'VND')}
               </p>
             </div>
           </div>
           {!bankConfigured && (
-            <p className="text-sm text-muted-foreground">Add bank details before running payout screening.</p>
+            <p className="text-sm text-muted-foreground">Hãy thêm thông tin ngân hàng trước khi kiểm tra chi trả.</p>
           )}
           {bankConfigured && availableBalance < minimumThreshold && (
-            <p className="text-sm text-muted-foreground">The available balance is below the payout threshold.</p>
+            <p className="text-sm text-muted-foreground">Số dư khả dụng chưa đạt ngưỡng chi trả.</p>
           )}
           {screeningMessage && (
             <div className="rounded-md border border-success/30 bg-success/10 p-3 text-sm text-success">{screeningMessage}</div>
@@ -258,14 +265,14 @@ function PayoutHistory({ wallet }: { wallet: SellerWallet }) {
   const { data: payouts, isLoading } = useSellerPayoutsQuery(wallet.id)
   return (
     <Card>
-      <CardHeader><CardTitle>Payout history</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Lịch sử chi trả</CardTitle></CardHeader>
       <CardContent>
-        {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
+        {isLoading ? <p className="text-sm text-muted-foreground">Đang tải…</p> : (
           <Table>
-            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Ngày</TableHead><TableHead>Trạng thái</TableHead><TableHead className="text-right">Số tiền</TableHead></TableRow></TableHeader>
             <TableBody>
               {(payouts ?? []).map((payout) => {
-                const meta = PAYOUT_STATUS_META[payout.status ?? ''] ?? { label: payout.status ?? 'Unknown', variant: 'secondary' as const }
+                const meta = PAYOUT_STATUS_META[payout.status ?? ''] ?? { label: payout.status ?? 'Không xác định', variant: 'secondary' as const }
                 return (
                   <TableRow key={payout.id}>
                     <TableCell>{formatDate(payout.paidAt ?? payout.createdAt)}</TableCell>
@@ -285,10 +292,10 @@ function PayoutHistory({ wallet }: { wallet: SellerWallet }) {
 function TransactionHistory({ transactions, currency }: { transactions: WalletTransaction[]; currency: string }) {
   return (
     <Card>
-      <CardHeader><CardTitle>Transaction history</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Lịch sử giao dịch</CardTitle></CardHeader>
       <CardContent>
         <Table>
-          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Ngày</TableHead><TableHead>Loại</TableHead><TableHead>Diễn giải</TableHead><TableHead className="text-right">Số tiền</TableHead></TableRow></TableHeader>
           <TableBody>
             {transactions.map((transaction) => (
               <TableRow key={transaction.id}>
@@ -313,12 +320,12 @@ export function SellerWalletPage() {
   const { data: wallet, isLoading, isError, error } = useMyWalletQuery()
   const { data: transactions } = useWalletTransactionsQuery(wallet?.id)
 
-  if (isMeLoading) return <div className="py-8 text-center text-muted-foreground">Loading access control…</div>
+  if (isMeLoading) return <div className="py-8 text-center text-muted-foreground">Đang kiểm tra quyền truy cập…</div>
   if (!me?.role?.name || !WALLET_ROLES.includes(me.role.name)) {
-    return <div className="py-8 text-center text-destructive">Only business owners can access the seller wallet.</div>
+    return <div className="py-8 text-center text-destructive">Chỉ chủ doanh nghiệp có thể truy cập ví người bán.</div>
   }
-  if (isLoading) return <div className="py-8 text-center text-muted-foreground">Loading wallet…</div>
-  if (isError || !wallet) return <div className="py-8 text-center text-destructive">{error instanceof Error ? error.message : 'Wallet unavailable.'}</div>
+  if (isLoading) return <div className="py-8 text-center text-muted-foreground">Đang tải thông tin ví…</div>
+  if (isError || !wallet) return <div className="py-8 text-center text-destructive">{getErrorMessage(error, 'Không thể tải thông tin ví.')}</div>
 
   const currency = wallet.currency ?? 'VND'
   const available = Number(wallet.availableBalanceMinor ?? 0)
@@ -330,14 +337,14 @@ export function SellerWalletPage() {
       <div className="flex items-center gap-3">
         <Wallet className="h-7 w-7 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('nav:wallet', 'Wallet')}</h1>
-          <p className="mt-1 text-muted-foreground">Escrow and withdrawable funds remain visibly separate.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('nav:wallet', 'Ví tiền')}</h1>
+          <p className="mt-1 text-muted-foreground">Tiền ký quỹ và số dư có thể chi trả được hiển thị riêng biệt.</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <BalanceCard icon={TrendingUp} label="Available balance" value={formatMoneyMinor(available, currency)} hint="Eligible for the next automated payout run" />
-        <BalanceCard icon={Clock} label="Pending balance" value={formatMoneyMinor(pending, currency)} hint="Held in escrow for 7 days after delivery" />
-        <BalanceCard icon={Coins} label="Total balance" value={formatMoneyMinor(total, currency)} hint="Released earnings from completed orders across your shops (after commission)" />
+        <BalanceCard icon={TrendingUp} label="Số dư khả dụng" value={formatMoneyMinor(available, currency)} hint="Đủ điều kiện cho lần chi trả tự động kế tiếp" />
+        <BalanceCard icon={Clock} label="Số dư đang chờ" value={formatMoneyMinor(pending, currency)} hint="Được giữ ký quỹ trong 7 ngày sau khi giao hàng" />
+        <BalanceCard icon={Coins} label="Tổng số dư" value={formatMoneyMinor(total, currency)} hint="Doanh thu đã giải phóng từ các đơn hoàn tất sau khi trừ hoa hồng" />
       </div>
       <PayoutStatusWidget wallet={wallet} />
       <TransactionHistory transactions={transactions ?? []} currency={currency} />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, CheckCircle2, CreditCard, LockKeyhole, Sparkles } from 'lucide-react'
@@ -61,6 +61,8 @@ const T = {
   trial: 'D\u00f9ng th\u1eed',
   pastDue: 'Qu\u00e1 h\u1ea1n thanh to\u00e1n',
   suspended: 'T\u1ea1m ng\u01b0ng',
+  expired: 'Hết hạn',
+  expiredHint: 'Gói hiện tại đã hết hạn. Bạn có thể gia hạn gói cũ hoặc chọn một gói khác.',
   rejected: 'B\u1ecb t\u1eeb ch\u1ed1i',
   cancelled: '\u0110\u00e3 h\u1ee7y',
   failed: 'Thanh to\u00e1n th\u1ea5t b\u1ea1i',
@@ -81,7 +83,14 @@ const subscriptionStatuses: Record<string, string> = {
   TRIAL: T.trial,
   PAST_DUE: T.pastDue,
   SUSPENDED: T.suspended,
+  EXPIRED: T.expired,
   CANCELLED: T.cancelled,
+}
+
+function getErrorMessage(cause: unknown, fallback: string) {
+  if (cause instanceof Error) return cause.message
+  if (typeof cause === 'object' && cause !== null && 'error' in cause && typeof cause.error === 'string') return cause.error
+  return fallback
 }
 
 function PlanFeatures({ plan }: { plan: SubscriptionPlan }) {
@@ -104,6 +113,14 @@ export function SubscriptionPage() {
   const [period, setPeriod] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY')
   const [planCode, setPlanCode] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (subscription?.status !== 'EXPIRED' || planCode) return
+    setPlanCode(subscription.planCode)
+    if (subscription.billingPeriod === 'MONTHLY' || subscription.billingPeriod === 'ANNUAL') {
+      setPeriod(subscription.billingPeriod)
+    }
+  }, [subscription, planCode])
 
   const outstandingPayment = payments.find((payment) => payment.status === 'SUBMITTED')
     ?? payments.find((payment) => payment.status === 'PENDING')
@@ -142,7 +159,7 @@ export function SubscriptionPage() {
       await refresh()
       await navigate({ to: '/subscription/checkout/$id', params: { id: payment.id } })
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : T.createError)
+      setError(getErrorMessage(cause, T.createError))
     }
   }
 
@@ -170,7 +187,7 @@ export function SubscriptionPage() {
 
     {showPlanPicker && <>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div><h2 className="text-xl font-semibold">{T.choosePlan}</h2><p className="text-sm text-muted-foreground">{T.chooseHint}</p></div>
+        <div><h2 className="text-xl font-semibold">{T.choosePlan}</h2><p className="text-sm text-muted-foreground">{subscription?.status === 'EXPIRED' ? T.expiredHint : T.chooseHint}</p></div>
         <Select value={period} onValueChange={(value) => setPeriod(value as 'MONTHLY' | 'ANNUAL')}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="MONTHLY">{T.monthly}</SelectItem><SelectItem value="ANNUAL">{T.annual}</SelectItem></SelectContent>

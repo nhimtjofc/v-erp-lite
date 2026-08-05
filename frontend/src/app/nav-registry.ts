@@ -104,7 +104,7 @@ export const navGroups: NavGroup[] = [
     roles: ['admin', 'systemAdmin'],
     items: [
       { labelKey: 'nav:tenants', to: '/admin/tenants', icon: Building },
-      { labelKey: 'Duyệt thanh toán gói', to: '/admin/subscription-payments', icon: CreditCard },
+      { labelKey: 'Tài chính subscription', to: '/admin/subscription-payments', icon: CreditCard },
       { labelKey: '🏦 Ngân Hàng Ảo', to: '/admin/mock-bank', icon: Banknote },
     ],
   },
