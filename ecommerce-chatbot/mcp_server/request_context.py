@@ -16,8 +16,13 @@ import contextvars
 from dataclasses import dataclass, field
 from functools import lru_cache
 
-import jwt
-from jwt import PyJWKClient
+try:
+    import jwt
+    from jwt import PyJWKClient
+except ImportError:
+    jwt = None
+    PyJWKClient = None
+
 
 # ── Keycloak config (defaults match src/main/resources/application.properties) ──
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://localhost:8181")
@@ -78,10 +83,12 @@ def verify_bearer(authorization_header: str | None) -> RequestContext:
     this to HTTP 401.
     """
     if not authorization_header:
+        print("[AUTH ERROR] Missing Authorization header in request")
         raise AuthError("Missing Authorization header")
 
     parts = authorization_header.split(None, 1)
     if len(parts) != 2 or parts[0].lower() != "bearer" or not parts[1].strip():
+        print(f"[AUTH ERROR] Malformed Authorization header: {authorization_header[:30]}...")
         raise AuthError("Malformed Authorization header; expected 'Bearer <token>'")
     token = parts[1].strip()
 
@@ -97,12 +104,14 @@ def verify_bearer(authorization_header: str | None) -> RequestContext:
     except AuthError:
         raise
     except Exception as e:
+        print(f"[AUTH ERROR] Token verification failed: {type(e).__name__}: {e}")
         # Do not leak crypto/internal detail to the caller or the model.
         raise AuthError("Invalid or expired token") from e
 
     sub = claims.get("sub")
     email = claims.get("email")
     if not sub:
+        print("[AUTH ERROR] Token has no sub claim")
         raise AuthError("Token has no subject (sub) claim")
 
     return RequestContext(

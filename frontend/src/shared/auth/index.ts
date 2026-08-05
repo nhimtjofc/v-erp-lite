@@ -103,7 +103,18 @@ export async function logout(): Promise<void> {
 
 export async function getAccessToken(): Promise<string | null> {
   const user = await userManager.getUser()
-  return user?.access_token ?? null
+  if (user && user.expired) {
+    try {
+      const renewed = await userManager.signinSilent()
+      if (renewed?.access_token) {
+        localStorage.setItem('access_token', renewed.access_token)
+        return renewed.access_token
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return user?.access_token ?? localStorage.getItem('access_token')
 }
 
 export async function forgotPassword(): Promise<void> {

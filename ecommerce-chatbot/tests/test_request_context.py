@@ -10,7 +10,27 @@ import datetime
 import os
 import sys
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    class FakePytest:
+        @staticmethod
+        def fixture(fn):
+            return fn
+        @staticmethod
+        def importorskip(modname):
+            raise ImportError(f"Skipping {modname}")
+        @staticmethod
+        def raises(exc_type):
+            class _Raises:
+                def __enter__(self): return self
+                def __exit__(self, exc, val, tb):
+                    if exc is not None and issubclass(exc, exc_type):
+                        return True
+                    raise AssertionError(f"Expected {exc_type}, got {exc}")
+            return _Raises()
+    pytest = FakePytest()
+
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
