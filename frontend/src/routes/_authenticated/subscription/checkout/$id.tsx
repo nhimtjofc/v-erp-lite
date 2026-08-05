@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { SubscriptionPaymentMethodPage } from '@/pages/subscription-payment-method-page'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/subscription/checkout/$id')({
-  component: SubscriptionPaymentMethodPage,
+  component: () => <Outlet />,
 })

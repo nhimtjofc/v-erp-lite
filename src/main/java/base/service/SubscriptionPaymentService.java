@@ -46,7 +46,7 @@ public class SubscriptionPaymentService {
                 "PENDING"
         ).firstResult();
         if (pendingPayment != null) {
-            throw new BadRequestException("A subscription payment is already awaiting transfer");
+            pendingPayment.setStatus("CANCELLED");
         }
         SubscriptionPlan plan = requirePlan(planCode);
         String period = normalizePeriod(billingPeriod);

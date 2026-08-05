@@ -59,6 +59,7 @@ import { Route as AuthenticatedAdminMockBankRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminTenantsIndexRouteImport } from './routes/_authenticated/admin/tenants/index'
 import { Route as AuthenticatedSubscriptionCheckoutIdRouteImport } from './routes/_authenticated/subscription/checkout/$id'
 import { Route as AuthenticatedAdminTenantsIdRouteImport } from './routes/_authenticated/admin/tenants/$id'
+import { Route as AuthenticatedSubscriptionCheckoutIdIndexRouteImport } from './routes/_authenticated/subscription/checkout/$id/index'
 import { Route as AuthenticatedSubscriptionCheckoutIdWebhookRouteImport } from './routes/_authenticated/subscription/checkout/$id/webhook'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -337,6 +338,12 @@ const AuthenticatedAdminTenantsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedAdminTenantsRoute,
   } as any)
+const AuthenticatedSubscriptionCheckoutIdIndexRoute =
+  AuthenticatedSubscriptionCheckoutIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSubscriptionCheckoutIdRoute,
+  } as any)
 const AuthenticatedSubscriptionCheckoutIdWebhookRoute =
   AuthenticatedSubscriptionCheckoutIdWebhookRouteImport.update({
     id: '/webhook',
@@ -394,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
   '/admin/tenants/': typeof AuthenticatedAdminTenantsIndexRoute
   '/subscription/checkout/$id/webhook': typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
+  '/subscription/checkout/$id/': typeof AuthenticatedSubscriptionCheckoutIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
@@ -435,9 +443,9 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/subscription': typeof AuthenticatedSubscriptionIndexRoute
   '/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
-  '/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
   '/admin/tenants': typeof AuthenticatedAdminTenantsIndexRoute
   '/subscription/checkout/$id/webhook': typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
+  '/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -492,6 +500,7 @@ export interface FileRoutesById {
   '/_authenticated/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
   '/_authenticated/admin/tenants/': typeof AuthenticatedAdminTenantsIndexRoute
   '/_authenticated/subscription/checkout/$id/webhook': typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
+  '/_authenticated/subscription/checkout/$id/': typeof AuthenticatedSubscriptionCheckoutIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/subscription/checkout/$id'
     | '/admin/tenants/'
     | '/subscription/checkout/$id/webhook'
+    | '/subscription/checkout/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -586,9 +596,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/subscription'
     | '/admin/tenants/$id'
-    | '/subscription/checkout/$id'
     | '/admin/tenants'
     | '/subscription/checkout/$id/webhook'
+    | '/subscription/checkout/$id'
   id:
     | '__root__'
     | '/_auth'
@@ -642,6 +652,7 @@ export interface FileRouteTypes {
     | '/_authenticated/subscription/checkout/$id'
     | '/_authenticated/admin/tenants/'
     | '/_authenticated/subscription/checkout/$id/webhook'
+    | '/_authenticated/subscription/checkout/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1001,6 +1012,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTenantsIdRouteImport
       parentRoute: typeof AuthenticatedAdminTenantsRoute
     }
+    '/_authenticated/subscription/checkout/$id/': {
+      id: '/_authenticated/subscription/checkout/$id/'
+      path: '/'
+      fullPath: '/subscription/checkout/$id/'
+      preLoaderRoute: typeof AuthenticatedSubscriptionCheckoutIdIndexRouteImport
+      parentRoute: typeof AuthenticatedSubscriptionCheckoutIdRoute
+    }
     '/_authenticated/subscription/checkout/$id/webhook': {
       id: '/_authenticated/subscription/checkout/$id/webhook'
       path: '/webhook'
@@ -1121,12 +1139,15 @@ const AuthenticatedSettingsRouteWithChildren =
 
 interface AuthenticatedSubscriptionCheckoutIdRouteChildren {
   AuthenticatedSubscriptionCheckoutIdWebhookRoute: typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
+  AuthenticatedSubscriptionCheckoutIdIndexRoute: typeof AuthenticatedSubscriptionCheckoutIdIndexRoute
 }
 
 const AuthenticatedSubscriptionCheckoutIdRouteChildren: AuthenticatedSubscriptionCheckoutIdRouteChildren =
   {
     AuthenticatedSubscriptionCheckoutIdWebhookRoute:
       AuthenticatedSubscriptionCheckoutIdWebhookRoute,
+    AuthenticatedSubscriptionCheckoutIdIndexRoute:
+      AuthenticatedSubscriptionCheckoutIdIndexRoute,
   }
 
 const AuthenticatedSubscriptionCheckoutIdRouteWithChildren =

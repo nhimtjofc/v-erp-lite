@@ -3,10 +3,12 @@ import { CheckCircle2, ChevronLeft, Clock3, CreditCard, Landmark, LockKeyhole, P
 import { useMySubscriptionPaymentsQuery } from '@/shared/api'
 import { formatMoneyMinor } from '@/shared/utils/currency'
 import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
+import { buttonVariants } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
+import { cn } from '@/shared/lib/cn'
 
 const T = {
+  loadError: 'Kh\u00f4ng th\u1ec3 t\u1ea3i phi\u00ean thanh to\u00e1n.',
   back: 'Quay lại Gói & thanh toán',
   loading: 'Đang tải phiên thanh toán...',
   missing: 'Không tìm thấy yêu cầu thanh toán.',
@@ -35,11 +37,12 @@ const T = {
 
 export function SubscriptionPaymentMethodPage() {
   const { id } = useParams({ from: '/_authenticated/subscription/checkout/$id' })
-  const { data: payments = [], isLoading } = useMySubscriptionPaymentsQuery()
+  const { data: payments = [], isLoading, error: paymentsError } = useMySubscriptionPaymentsQuery()
   const payment = payments.find((item) => item.id === id)
   const paymentCode = `SUB-${id.slice(0, 8).toUpperCase()}`
 
   if (isLoading) return <p className="py-8 text-center text-muted-foreground">{T.loading}</p>
+  if (paymentsError) return <p className="py-8 text-center text-destructive">{T.loadError}</p>
   if (!payment || payment.status !== 'PENDING') return <p className="py-8 text-center text-destructive">{T.missing}</p>
 
   return (
@@ -92,8 +95,9 @@ export function SubscriptionPaymentMethodPage() {
 
             <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-semibold text-muted-foreground">{T.backToShopping}</p>
-              <Link to="/subscription/checkout/$id/webhook" params={{ id }}>
-                <Button className="w-full px-5 sm:w-auto"><LockKeyhole className="h-4 w-4" />{T.continue}</Button>
+              <Link to="/subscription/checkout/$id/webhook" params={{ id }} className={cn(buttonVariants(), 'w-full px-5 sm:w-auto')}>
+                <LockKeyhole className="h-4 w-4" />
+                {T.continue}
               </Link>
             </div>
           </CardContent>

@@ -33,7 +33,7 @@ import {
 import { ArrowLeft, Check, CircleDollarSign, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-// Inline role listing Ã¢ï¿½,ï¿½ï¿½?ï¿½ roles are stable seeds (admin, operator, businessOwner).
+// Inline role listing is safe here because roles are stable seeds (admin, operator, businessOwner).
 // Fetch from API if the dropdown ever needs to be dynamic.
 const ROLES: Role[] = [
   { id: 'admin', name: 'admin' },
@@ -51,7 +51,7 @@ export function TenantDetailPage() {
   const deleteTenantMutation = useDeleteTenantMutation()
   const queryClient = useQueryClient()
 
-  // Users in this tenant Ã¢ï¿½,ï¿½ï¿½?ï¿½ only fetch when tenant code is available
+  // Users in this tenant are fetched only when the tenant code is available.
   const tenantCode = tenant?.code
   const { data: subscription, isLoading: subscriptionLoading } = useAdminTenantSubscriptionQuery(tenantCode)
   const { data: plans = [] } = useSubscriptionPlansQuery()
@@ -128,7 +128,7 @@ export function TenantDetailPage() {
     if (!tenantCode) return
     setSaving(true)
     try {
-      // Send role as {name: "..."} only Ã¢ï¿½,ï¿½ï¿½?ï¿½ the backend's resolveRole()
+      // Send role as {name: "..."} because the backend's resolveRole() expects that shape.
       // supports name-based lookup. Omitting the fake string ID avoids
       // Jackson/Hibernate UUID deserialization errors.
       const body = {
