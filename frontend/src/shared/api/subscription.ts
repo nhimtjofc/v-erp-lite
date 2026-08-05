@@ -34,6 +34,30 @@ export interface ChangeTenantSubscriptionInput {
   status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED'
 }
 
+export interface SubscriptionPayment {
+  id: string
+  tenantId: string
+  planCode: string
+  billingPeriod: 'MONTHLY' | 'ANNUAL'
+  amountMinor: number
+  currency: string
+  status: 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'FAILED'
+  paymentReference?: string
+  submittedAt?: string
+  reviewedAt?: string
+  rejectionReason?: string
+  createdAt?: string
+}
+
+export interface CreateSubscriptionPaymentInput {
+  planCode: string
+  billingPeriod: 'MONTHLY' | 'ANNUAL'
+  idempotencyKey: string
+}
+
+export const MY_SUBSCRIPTION_PAYMENTS_QUERY_KEY = ['my-subscription-payments'] as const
+export const ADMIN_SUBSCRIPTION_PAYMENTS_QUERY_KEY = ['admin-subscription-payments'] as const
+
 const bearerSecurity = [{ scheme: 'bearer' as const, type: 'http' as const }]
 
 export function subscriptionQueryKey(tenantCode: string) {
@@ -79,6 +103,7 @@ export function useAdminTenantSubscriptionQuery(tenantCode?: string) {
         security: bearerSecurity,
         throwOnError: true,
       })
+
       return response.data
     },
     enabled: Boolean(tenantCode),
@@ -98,6 +123,78 @@ export function useChangeTenantSubscriptionMutation() {
         },
         security: bearerSecurity,
         throwOnError: true,
+      })
+      return response.data
+    },
+  })
+}
+
+export function useMySubscriptionPaymentsQuery() {
+  return useQuery({
+    queryKey: MY_SUBSCRIPTION_PAYMENTS_QUERY_KEY,
+    queryFn: async () => {
+      const response = await client.get<SubscriptionPayment[], unknown, true>({
+        url: '/api/subscriptions/payments', security: bearerSecurity, throwOnError: true,
+      })
+      return response.data ?? []
+    },
+  })
+}
+
+export function useCreateSubscriptionPaymentMutation() {
+  return useMutation({
+    mutationFn: async (input: CreateSubscriptionPaymentInput) => {
+      const response = await client.post<SubscriptionPayment, unknown, true>({
+        url: '/api/subscriptions/payments', body: input, security: bearerSecurity, throwOnError: true,
+      })
+      return response.data
+    },
+  })
+}
+
+export function useMockSubscriptionPaymentWebhookMutation() {
+  return useMutation({
+    mutationFn: async ({ id, gateway, status }: { id: string; gateway: 'VIETQR'; status: 'SUCCESS' | 'FAILED' }) => {
+      const response = await client.post<SubscriptionPayment, unknown, true>({
+        url: '/api/subscriptions/payments/{id}/mock-webhook',
+        path: { id },
+        body: { gateway, status },
+        security: bearerSecurity,
+        throwOnError: true,
+      })
+      return response.data
+    },
+  })
+}
+
+export function useAdminSubscriptionPaymentsQuery(status?: SubscriptionPayment['status']) {
+  return useQuery({
+    queryKey: [...ADMIN_SUBSCRIPTION_PAYMENTS_QUERY_KEY, status ?? 'ALL'],
+    queryFn: async () => {
+      const response = await client.get<SubscriptionPayment[], unknown, true>({
+        url: '/api/admin/subscription-payments', query: status ? { status } : undefined, security: bearerSecurity, throwOnError: true,
+      })
+      return response.data ?? []
+    },
+  })
+}
+
+export function useApproveSubscriptionPaymentMutation() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await client.post<SubscriptionPayment, unknown, true>({
+        url: '/api/admin/subscription-payments/{id}/approve', path: { id }, security: bearerSecurity, throwOnError: true,
+      })
+      return response.data
+    },
+  })
+}
+
+export function useRejectSubscriptionPaymentMutation() {
+  return useMutation({
+    mutationFn: async ({ id, rejectionReason }: { id: string; rejectionReason: string }) => {
+      const response = await client.post<SubscriptionPayment, unknown, true>({
+        url: '/api/admin/subscription-payments/{id}/reject', path: { id }, body: { rejectionReason }, security: bearerSecurity, throwOnError: true,
       })
       return response.data
     },

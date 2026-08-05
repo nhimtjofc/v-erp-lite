@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedVouchersRouteImport } from './routes/_authenticated/vouchers'
 import { Route as AuthenticatedUserWalletRouteImport } from './routes/_authenticated/user-wallet'
+import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
 import { Route as AuthenticatedShopRouteImport } from './routes/_authenticated/shop'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
@@ -29,6 +30,7 @@ import { Route as AuthenticatedBusinessesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBusinessRouteImport } from './routes/_authenticated/business'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthAuthCallbackRouteImport } from './routes/_auth/auth-callback'
+import { Route as AuthenticatedSubscriptionIndexRouteImport } from './routes/_authenticated/subscription/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
@@ -51,10 +53,13 @@ import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCustomersNewRouteImport } from './routes/_authenticated/customers/new'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers/$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin/tenants'
+import { Route as AuthenticatedAdminSubscriptionPaymentsRouteImport } from './routes/_authenticated/admin/subscription-payments'
 import { Route as AuthenticatedAdminPayoutsRouteImport } from './routes/_authenticated/admin/payouts'
 import { Route as AuthenticatedAdminMockBankRouteImport } from './routes/_authenticated/admin/mock-bank'
 import { Route as AuthenticatedAdminTenantsIndexRouteImport } from './routes/_authenticated/admin/tenants/index'
+import { Route as AuthenticatedSubscriptionCheckoutIdRouteImport } from './routes/_authenticated/subscription/checkout/$id'
 import { Route as AuthenticatedAdminTenantsIdRouteImport } from './routes/_authenticated/admin/tenants/$id'
+import { Route as AuthenticatedSubscriptionCheckoutIdWebhookRouteImport } from './routes/_authenticated/subscription/checkout/$id/webhook'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -84,6 +89,12 @@ const AuthenticatedUserWalletRoute = AuthenticatedUserWalletRouteImport.update({
   path: '/user-wallet',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSubscriptionRoute =
+  AuthenticatedSubscriptionRouteImport.update({
+    id: '/subscription',
+    path: '/subscription',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedShopRoute = AuthenticatedShopRouteImport.update({
   id: '/shop',
   path: '/shop',
@@ -155,6 +166,12 @@ const AuthAuthCallbackRoute = AuthAuthCallbackRouteImport.update({
   path: '/auth-callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthenticatedSubscriptionIndexRoute =
+  AuthenticatedSubscriptionIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSubscriptionRoute,
+  } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/',
@@ -284,6 +301,12 @@ const AuthenticatedAdminTenantsRoute =
     path: '/admin/tenants',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminSubscriptionPaymentsRoute =
+  AuthenticatedAdminSubscriptionPaymentsRouteImport.update({
+    id: '/admin/subscription-payments',
+    path: '/admin/subscription-payments',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminPayoutsRoute =
   AuthenticatedAdminPayoutsRouteImport.update({
     id: '/admin/payouts',
@@ -302,11 +325,23 @@ const AuthenticatedAdminTenantsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAdminTenantsRoute,
   } as any)
+const AuthenticatedSubscriptionCheckoutIdRoute =
+  AuthenticatedSubscriptionCheckoutIdRouteImport.update({
+    id: '/checkout/$id',
+    path: '/checkout/$id',
+    getParentRoute: () => AuthenticatedSubscriptionRoute,
+  } as any)
 const AuthenticatedAdminTenantsIdRoute =
   AuthenticatedAdminTenantsIdRouteImport.update({
     id: '/$id',
     path: '/$id',
     getParentRoute: () => AuthenticatedAdminTenantsRoute,
+  } as any)
+const AuthenticatedSubscriptionCheckoutIdWebhookRoute =
+  AuthenticatedSubscriptionCheckoutIdWebhookRouteImport.update({
+    id: '/webhook',
+    path: '/webhook',
+    getParentRoute: () => AuthenticatedSubscriptionCheckoutIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -325,11 +360,13 @@ export interface FileRoutesByFullPath {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/shop': typeof AuthenticatedShopRoute
+  '/subscription': typeof AuthenticatedSubscriptionRouteWithChildren
   '/user-wallet': typeof AuthenticatedUserWalletRoute
   '/vouchers': typeof AuthenticatedVouchersRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/mock-bank': typeof AuthenticatedAdminMockBankRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
+  '/admin/subscription-payments': typeof AuthenticatedAdminSubscriptionPaymentsRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
@@ -352,8 +389,11 @@ export interface FileRoutesByFullPath {
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/subscription/': typeof AuthenticatedSubscriptionIndexRoute
   '/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
+  '/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
   '/admin/tenants/': typeof AuthenticatedAdminTenantsIndexRoute
+  '/subscription/checkout/$id/webhook': typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
@@ -371,6 +411,7 @@ export interface FileRoutesByTo {
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/mock-bank': typeof AuthenticatedAdminMockBankRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
+  '/admin/subscription-payments': typeof AuthenticatedAdminSubscriptionPaymentsRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/customers/new': typeof AuthenticatedCustomersNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
@@ -392,8 +433,11 @@ export interface FileRoutesByTo {
   '/products': typeof AuthenticatedProductsIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/subscription': typeof AuthenticatedSubscriptionIndexRoute
   '/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
+  '/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
   '/admin/tenants': typeof AuthenticatedAdminTenantsIndexRoute
+  '/subscription/checkout/$id/webhook': typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -413,12 +457,14 @@ export interface FileRoutesById {
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/shop': typeof AuthenticatedShopRoute
+  '/_authenticated/subscription': typeof AuthenticatedSubscriptionRouteWithChildren
   '/_authenticated/user-wallet': typeof AuthenticatedUserWalletRoute
   '/_authenticated/vouchers': typeof AuthenticatedVouchersRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/mock-bank': typeof AuthenticatedAdminMockBankRoute
   '/_authenticated/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
+  '/_authenticated/admin/subscription-payments': typeof AuthenticatedAdminSubscriptionPaymentsRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRouteWithChildren
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/customers/new': typeof AuthenticatedCustomersNewRoute
@@ -441,8 +487,11 @@ export interface FileRoutesById {
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/subscription/': typeof AuthenticatedSubscriptionIndexRoute
   '/_authenticated/admin/tenants/$id': typeof AuthenticatedAdminTenantsIdRoute
+  '/_authenticated/subscription/checkout/$id': typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
   '/_authenticated/admin/tenants/': typeof AuthenticatedAdminTenantsIndexRoute
+  '/_authenticated/subscription/checkout/$id/webhook': typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -462,11 +511,13 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/settings'
     | '/shop'
+    | '/subscription'
     | '/user-wallet'
     | '/vouchers'
     | '/wallet'
     | '/admin/mock-bank'
     | '/admin/payouts'
+    | '/admin/subscription-payments'
     | '/admin/tenants'
     | '/customers/$id'
     | '/customers/new'
@@ -489,8 +540,11 @@ export interface FileRouteTypes {
     | '/products/'
     | '/profile/'
     | '/settings/'
+    | '/subscription/'
     | '/admin/tenants/$id'
+    | '/subscription/checkout/$id'
     | '/admin/tenants/'
+    | '/subscription/checkout/$id/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -508,6 +562,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admin/mock-bank'
     | '/admin/payouts'
+    | '/admin/subscription-payments'
     | '/customers/$id'
     | '/customers/new'
     | '/orders/$id'
@@ -529,8 +584,11 @@ export interface FileRouteTypes {
     | '/products'
     | '/profile'
     | '/settings'
+    | '/subscription'
     | '/admin/tenants/$id'
+    | '/subscription/checkout/$id'
     | '/admin/tenants'
+    | '/subscription/checkout/$id/webhook'
   id:
     | '__root__'
     | '/_auth'
@@ -549,12 +607,14 @@ export interface FileRouteTypes {
     | '/_authenticated/revenue'
     | '/_authenticated/settings'
     | '/_authenticated/shop'
+    | '/_authenticated/subscription'
     | '/_authenticated/user-wallet'
     | '/_authenticated/vouchers'
     | '/_authenticated/wallet'
     | '/_authenticated/'
     | '/_authenticated/admin/mock-bank'
     | '/_authenticated/admin/payouts'
+    | '/_authenticated/admin/subscription-payments'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/customers/$id'
     | '/_authenticated/customers/new'
@@ -577,8 +637,11 @@ export interface FileRouteTypes {
     | '/_authenticated/products/'
     | '/_authenticated/profile/'
     | '/_authenticated/settings/'
+    | '/_authenticated/subscription/'
     | '/_authenticated/admin/tenants/$id'
+    | '/_authenticated/subscription/checkout/$id'
     | '/_authenticated/admin/tenants/'
+    | '/_authenticated/subscription/checkout/$id/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -628,6 +691,13 @@ declare module '@tanstack/react-router' {
       path: '/user-wallet'
       fullPath: '/user-wallet'
       preLoaderRoute: typeof AuthenticatedUserWalletRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/subscription': {
+      id: '/_authenticated/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/shop': {
@@ -727,6 +797,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth-callback'
       preLoaderRoute: typeof AuthAuthCallbackRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_authenticated/subscription/': {
+      id: '/_authenticated/subscription/'
+      path: '/'
+      fullPath: '/subscription/'
+      preLoaderRoute: typeof AuthenticatedSubscriptionIndexRouteImport
+      parentRoute: typeof AuthenticatedSubscriptionRoute
     }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
@@ -882,6 +959,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTenantsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/subscription-payments': {
+      id: '/_authenticated/admin/subscription-payments'
+      path: '/admin/subscription-payments'
+      fullPath: '/admin/subscription-payments'
+      preLoaderRoute: typeof AuthenticatedAdminSubscriptionPaymentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/payouts': {
       id: '/_authenticated/admin/payouts'
       path: '/admin/payouts'
@@ -903,12 +987,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTenantsIndexRouteImport
       parentRoute: typeof AuthenticatedAdminTenantsRoute
     }
+    '/_authenticated/subscription/checkout/$id': {
+      id: '/_authenticated/subscription/checkout/$id'
+      path: '/checkout/$id'
+      fullPath: '/subscription/checkout/$id'
+      preLoaderRoute: typeof AuthenticatedSubscriptionCheckoutIdRouteImport
+      parentRoute: typeof AuthenticatedSubscriptionRoute
+    }
     '/_authenticated/admin/tenants/$id': {
       id: '/_authenticated/admin/tenants/$id'
       path: '/$id'
       fullPath: '/admin/tenants/$id'
       preLoaderRoute: typeof AuthenticatedAdminTenantsIdRouteImport
       parentRoute: typeof AuthenticatedAdminTenantsRoute
+    }
+    '/_authenticated/subscription/checkout/$id/webhook': {
+      id: '/_authenticated/subscription/checkout/$id/webhook'
+      path: '/webhook'
+      fullPath: '/subscription/checkout/$id/webhook'
+      preLoaderRoute: typeof AuthenticatedSubscriptionCheckoutIdWebhookRouteImport
+      parentRoute: typeof AuthenticatedSubscriptionCheckoutIdRoute
     }
   }
 }
@@ -1021,6 +1119,38 @@ const AuthenticatedSettingsRouteWithChildren =
     AuthenticatedSettingsRouteChildren,
   )
 
+interface AuthenticatedSubscriptionCheckoutIdRouteChildren {
+  AuthenticatedSubscriptionCheckoutIdWebhookRoute: typeof AuthenticatedSubscriptionCheckoutIdWebhookRoute
+}
+
+const AuthenticatedSubscriptionCheckoutIdRouteChildren: AuthenticatedSubscriptionCheckoutIdRouteChildren =
+  {
+    AuthenticatedSubscriptionCheckoutIdWebhookRoute:
+      AuthenticatedSubscriptionCheckoutIdWebhookRoute,
+  }
+
+const AuthenticatedSubscriptionCheckoutIdRouteWithChildren =
+  AuthenticatedSubscriptionCheckoutIdRoute._addFileChildren(
+    AuthenticatedSubscriptionCheckoutIdRouteChildren,
+  )
+
+interface AuthenticatedSubscriptionRouteChildren {
+  AuthenticatedSubscriptionIndexRoute: typeof AuthenticatedSubscriptionIndexRoute
+  AuthenticatedSubscriptionCheckoutIdRoute: typeof AuthenticatedSubscriptionCheckoutIdRouteWithChildren
+}
+
+const AuthenticatedSubscriptionRouteChildren: AuthenticatedSubscriptionRouteChildren =
+  {
+    AuthenticatedSubscriptionIndexRoute: AuthenticatedSubscriptionIndexRoute,
+    AuthenticatedSubscriptionCheckoutIdRoute:
+      AuthenticatedSubscriptionCheckoutIdRouteWithChildren,
+  }
+
+const AuthenticatedSubscriptionRouteWithChildren =
+  AuthenticatedSubscriptionRoute._addFileChildren(
+    AuthenticatedSubscriptionRouteChildren,
+  )
+
 interface AuthenticatedAdminTenantsRouteChildren {
   AuthenticatedAdminTenantsIdRoute: typeof AuthenticatedAdminTenantsIdRoute
   AuthenticatedAdminTenantsIndexRoute: typeof AuthenticatedAdminTenantsIndexRoute
@@ -1050,12 +1180,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedShopRoute: typeof AuthenticatedShopRoute
+  AuthenticatedSubscriptionRoute: typeof AuthenticatedSubscriptionRouteWithChildren
   AuthenticatedUserWalletRoute: typeof AuthenticatedUserWalletRoute
   AuthenticatedVouchersRoute: typeof AuthenticatedVouchersRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAdminMockBankRoute: typeof AuthenticatedAdminMockBankRoute
   AuthenticatedAdminPayoutsRoute: typeof AuthenticatedAdminPayoutsRoute
+  AuthenticatedAdminSubscriptionPaymentsRoute: typeof AuthenticatedAdminSubscriptionPaymentsRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRouteWithChildren
 }
 
@@ -1072,12 +1204,15 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedShopRoute: AuthenticatedShopRoute,
+  AuthenticatedSubscriptionRoute: AuthenticatedSubscriptionRouteWithChildren,
   AuthenticatedUserWalletRoute: AuthenticatedUserWalletRoute,
   AuthenticatedVouchersRoute: AuthenticatedVouchersRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAdminMockBankRoute: AuthenticatedAdminMockBankRoute,
   AuthenticatedAdminPayoutsRoute: AuthenticatedAdminPayoutsRoute,
+  AuthenticatedAdminSubscriptionPaymentsRoute:
+    AuthenticatedAdminSubscriptionPaymentsRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRouteWithChildren,
 }
 

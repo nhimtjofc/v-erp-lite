@@ -19,6 +19,7 @@ import {
   PlugZap,
   Bell,
   ChartNoAxesCombined,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -90,6 +91,7 @@ export const navGroups: NavGroup[] = [
       },
       // Seller wallet and payout details remain owner-only.
       { labelKey: 'nav:wallet', to: '/wallet', icon: Wallet, roles: ['businessOwner'] },
+      { labelKey: 'G\u00f3i & thanh to\u00e1n', to: '/subscription', icon: CreditCard, roles: ['businessOwner'] },
       // User wallet for customers
       { labelKey: 'Ví cá nhân', to: '/user-wallet', icon: Wallet, roles: ['customer'] },
       // Admin payout approval dashboard: admin only.
@@ -102,6 +104,7 @@ export const navGroups: NavGroup[] = [
     roles: ['admin', 'systemAdmin'],
     items: [
       { labelKey: 'nav:tenants', to: '/admin/tenants', icon: Building },
+      { labelKey: 'Duy?t thanh to?n g?i', to: '/admin/subscription-payments', icon: CreditCard },
       { labelKey: '🏦 Ngân Hàng Ảo', to: '/admin/mock-bank', icon: Banknote },
     ],
   },

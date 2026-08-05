@@ -49,7 +49,7 @@ public class EntitlementService {
     ) {}
 
     public List<SubscriptionPlan> listActivePlans() {
-        return SubscriptionPlan.list("active = true order by monthlyPriceMinor");
+        return SubscriptionPlan.list("active = true and (code = ?1 or code = ?2) order by monthlyPriceMinor", "BASE", "PREMIUM");
     }
 
     public Entitlements getEntitlements(String tenantCode) {
@@ -133,7 +133,7 @@ public class EntitlementService {
             UUID actorId
     ) {
         requireTenant(tenantCode);
-        SubscriptionPlan plan = requirePlan(planCode);
+        SubscriptionPlan plan = requireAvailablePlan(planCode);
         String normalizedPeriod = normalizePeriod(billingPeriod);
         String normalizedStatus = normalizeStatus(status);
         Instant now = Instant.now();
@@ -228,12 +228,19 @@ public class EntitlementService {
             throw new BadRequestException("planCode is required");
         }
         SubscriptionPlan plan = SubscriptionPlan.find("code", planCode.trim().toUpperCase()).firstResult();
-        if (plan == null || !plan.isActive()) {
+        if (plan == null) {
             throw new NotFoundException("Subscription plan not found: " + planCode);
         }
         return plan;
     }
 
+    private SubscriptionPlan requireAvailablePlan(String planCode) {
+        SubscriptionPlan plan = requirePlan(planCode);
+        if (!plan.isActive() || !List.of("BASE", "PREMIUM").contains(plan.getCode())) {
+            throw new NotFoundException("Subscription plan not available: " + planCode);
+        }
+        return plan;
+    }
     private void requireTenant(String tenantCode) {
         if (Tenant.find("code", tenantCode).firstResult() == null) {
             throw new NotFoundException("Tenant not found: " + tenantCode);
