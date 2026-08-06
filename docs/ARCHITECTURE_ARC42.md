@@ -127,9 +127,9 @@ flowchart TB
 
 | Ràng buộc | Công nghệ / Tiêu chuẩn áp dụng | Chi tiết & Lý do kỹ thuật |
 | :--- | :--- | :--- |
-| **Backend Framework** | Quarkus 3.33.1 (Java 24/25) | Nền tảng Java Cloud-Native tối ưu bộ nhớ, thời gian khởi động tức thì, hỗ trợ Reactive & Imperative REST, Hibernate ORM Panache. |
+| **Backend Framework** | Quarkus 3.33.1.1 (Java 24) | Nền tảng Java Cloud-Native tối ưu bộ nhớ, thời gian khởi động tức thì, hỗ trợ Reactive & Imperative REST, Hibernate ORM Panache. |
 | **Database Engine** | MariaDB 11.4 LTS | Hệ quản trị CSDL quan hệ tương thích MySQL, hỗ trợ JSON Type, bảng InnoDB ACID, múi giờ `Asia/Ho_Chi_Minh`. |
-| **Schema Migration** | Flyway (V1..V66) | Toàn bộ thay đổi cấu trúc bảng, khóa ngoại, chỉ mục và seed data bắt buộc quản lý qua migration script tuần tự, cấm thay đổi schema ad-hoc. |
+| **Schema Migration** | Flyway (V1..V68) | Toàn bộ thay đổi cấu trúc bảng, khóa ngoại, chỉ mục và seed data bắt buộc quản lý qua migration script tuần tự, cấm thay đổi schema ad-hoc. |
 | **Identity & Access Management (IAM)** | Keycloak 26.6.1 | Quản lý danh tính tập trung OIDC, cấp phát JWT ký bằng RS256, hỗ trợ Realm Multi-tenancy, PKCE Authorization Flow. |
 | **Frontend Framework** | React 19.2 + TypeScript 5.9 + Vite 7 | Single Page Application (SPA), routing bằng TanStack Router, quản lý server state bằng TanStack Query, styling Tailwind CSS v4. **Tuyệt đối không dùng Radix UI**, toàn bộ UI nguyên tử sử dụng Base UI v1.5. |
 | **Frontend-Backend Contract** | Hey-API OpenAPI TypeScript SDK | Không viết tay hàm `fetch`. Toàn bộ Client API được sinh tự động từ `openapi-spec.yaml` của Quarkus (`mp.openapi.extensions.smallrye.operationIdStrategy=METHOD`). |
@@ -289,7 +289,7 @@ Tuân thủ nguyên tắc **Zero-Trust đối với LLM**:
 
 ### 4.5 Gói Dịch vụ, Quyền lợi & Quota (Subscription, Entitlements & Quotas)
 * **Nguồn sự thật phía Máy chủ:** `SubscriptionPlan.features` và `SubscriptionPlan.limits` là nguồn duy nhất cấp quyền thương mại. `TenantConfig` chỉ lưu cấu hình vận hành, tuyệt đối không được dùng để tự cấp quyền lợi gói.
-* **Gói đang Kinh doanh:** Migration V60..V66 duy trì hai gói hoạt động `BASE` và `PREMIUM`; gói trung gian `PLUS` đã được ngừng bán. Thuê bao hỗ trợ chu kỳ `MONTHLY`/`ANNUAL` và các trạng thái `TRIAL`, `ACTIVE`, `PAST_DUE`, `SUSPENDED`, `CANCELLED`; khi hết kỳ hiệu lực, trạng thái hiệu dụng trở thành `EXPIRED` và tenant chuyển sang chỉ đọc theo hợp đồng dịch vụ.
+* **Gói đang Kinh doanh:** Migration V60..V68 duy trì hai gói hoạt động `BASE` và `PREMIUM`; gói trung gian `PLUS` đã được ngừng bán. Thuê bao hỗ trợ chu kỳ `MONTHLY`/`ANNUAL` và các trạng thái `TRIAL`, `ACTIVE`, `PAST_DUE`, `SUSPENDED`, `CANCELLED`; khi hết kỳ hiệu lực, trạng thái hiệu dụng trở thành `EXPIRED` và tenant chuyển sang chỉ đọc theo hợp đồng dịch vụ.
 * **Kiểm soát tại Ranh giới HTTP:** `SubscriptionEntitlementFilter` kiểm tra các slice e-commerce, payment intent, wallet và payout; các resource nghiệp vụ nhạy cảm tiếp tục gọi `requireFeature(...)`/`requireWritable(...)` hoặc kiểm tra quota `maxUsers`, `maxBusinesses`, `maxProducts`. Vi phạm quyền lợi trả HTTP `402 Payment Required`.
 * **Thanh toán & Nâng cấp An toàn:** `SubscriptionPaymentService` bắt buộc `idempotencyKey`, chỉ cho phép một giao dịch `SUBMITTED` chờ duyệt trên mỗi tenant, khóa bi quan bản ghi khi webhook/duyệt, và tính phí nâng cấp `BASE → PREMIUM` theo số ngày còn lại với làm tròn lên. Chỉ Admin mới có quyền `APPROVE`/`REJECT` để kích hoạt kỳ thuê bao.
 
@@ -611,7 +611,7 @@ sequenceDiagram
     end
 
     SPA->>API: POST /{id}/mock-webhook (VIETQR, SUCCESS)
-    API->>DB: Khóa Payment; PENDING → SUBMITTED
+    API->>DB: Khóa Payment, PENDING → SUBMITTED
     Admin->>SPS: POST /api/admin/subscription-payments/{id}/approve
     SPS->>DB: Khóa Payment và TenantSubscription
     alt Nâng cấp prorated hợp lệ
@@ -640,19 +640,19 @@ sequenceDiagram
     Buyer->>API: POST /orders/{orderId}/items/{itemId}/cancel-request
     API->>RRS: requestCancelItem(reason)
     RRS->>DB: Khóa Order PESSIMISTIC_WRITE, kiểm tra PAID_ESCROW và quyền sở hữu
-    RRS->>DB: Item → REQUESTED; ghi OrderHistory
+    RRS->>DB: Item → REQUESTED, ghi OrderHistory
     RRS->>NS: Fan-out CANCEL_REQUESTED cho owner/operator
 
     Owner->>API: POST /items/{itemId}/approve-cancel
     API->>RRS: approveCancelItem()
-    RRS->>DB: Item → APPROVED; trả reservedQuantity; tính lại tổng đơn
+    RRS->>DB: Item → APPROVED, trả lại reservedQuantity, tính lại tổng đơn
     RRS->>NS: Báo buyer chờ Admin quyết định tiền
 
     alt Admin hoàn tiền cho khách
         Admin->>API: POST /items/{itemId}/process-cancel-refund
         RRS->>WS: refundPending(PLATFORM wallet)
         RRS->>WS: creditAvailable(USER wallet, CANCEL_REFUND)
-        RRS->>DB: Giảm Escrow; Item → REFUNDED; Order → REFUNDED nếu đã xử lý hết
+        RRS->>DB: Giảm Escrow, Item → REFUNDED, Order → REFUNDED nếu đã xử lý hết
     else Admin giải phóng tiền cho seller
         Admin->>API: POST /items/{itemId}/release-cancel-to-seller
         RRS->>WS: PLATFORM pending → available → debit
@@ -677,7 +677,7 @@ sequenceDiagram
     Cron->>Plugin: Bắt đầu sync với last_sync_at
     loop Phân trang limit=50 cho đến hasMore=false
         Plugin->>API: GET /catalog/changes?since&limit&offset&businessId (Bearer JWT)
-        API->>DB: Lọc tenant + business + active + updatedAt; nạp external mapping
+        API->>DB: Lọc tenant + business + active + updatedAt, nạp external mapping
         API-->>Plugin: Product/Variant DTO + totalCount + hasMore
         Plugin->>Woo: Upsert simple/variable product, stock, giá và attributes
         Woo-->>Plugin: Woo product_id / variation_id
@@ -714,7 +714,7 @@ flowchart TB
         end
 
         subgraph LocalApps ["🚀 Dịch Vụ Ứng Dụng"]
-            BE["⚙️ Quarkus ERP Backend (:8081)<br><i>Java 24/25 Runtime</i>"]
+            BE["⚙️ Quarkus ERP Backend (:8081)<br><i>Java 24 Runtime</i>"]
             FE["🌐 Vite React SPA (:5174)<br><i>Node.js Runtime</i>"]
             AI["🤖 FastAPI MCP Service (:8000)<br><i>Python 3.11 Runtime</i>"]
             MB["🏦 Mock Bank Simulator (:3000)<br><i>Node.js / Express, local-only</i>"]
@@ -847,7 +847,7 @@ Hệ thống sử dụng các JAX-RS `ExceptionMapper` tập trung để chuyể
 ### ADR-01: Lựa chọn Quarkus và Hibernate Panache thay vì Spring Boot
 * **Trạng thái:** Accepted.
 * **Bối cảnh:** Cần một framework backend Java hiệu năng cao, tiêu tốn ít RAM, thời gian khởi động tức thì để chạy tốt trên môi trường container hóa và phù hợp định hướng Serverless / Native Image trong tương lai.
-* **Quyết định:** Chọn Quarkus 3.33.1 với mô hình Active Record của Panache.
+* **Quyết định:** Chọn Quarkus 3.33.1.1 với mô hình Active Record của Panache.
 * **Hệ quả:** Tiết kiệm 60% dung lượng RAM so với Spring Boot truyền thống, tốc độ reload mã nguồn trong lúc phát triển (`quarkusDev`) dưới 1 giây. Tuy nhiên, lập trình viên phải làm quen với việc gọi method trực tiếp trên Entity thay vì inject Repository.
 
 ### ADR-02: Phân vùng Dữ liệu Đa Khách thuê qua Cột (Column-based Tenant Isolation)
