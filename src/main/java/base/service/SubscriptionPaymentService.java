@@ -10,8 +10,11 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,10 +112,64 @@ public class SubscriptionPaymentService {
     }
 
     public List<SubscriptionPayment> listPayments(String status) {
+        String normalizedStatus = null;
+        List<SubscriptionPayment> payments;
         if (status == null || status.isBlank()) {
-            return SubscriptionPayment.list("order by submittedAt desc, createdAt desc");
+            payments = SubscriptionPayment.list("order by submittedAt desc, createdAt desc");
+        } else {
+            normalizedStatus = normalizeStatus(status);
+            payments = SubscriptionPayment.list(
+                    "status = ?1 order by submittedAt desc, createdAt desc",
+                    normalizedStatus
+            );
         }
-        return SubscriptionPayment.list("status = ?1 order by submittedAt desc, createdAt desc", normalizeStatus(status));
+        return includeSeededSubscriptionPayments(payments, TenantSubscription.listAll(), normalizedStatus);
+    }
+
+    static List<SubscriptionPayment> includeSeededSubscriptionPayments(
+            List<SubscriptionPayment> payments,
+            List<TenantSubscription> subscriptions,
+            String status
+    ) {
+        List<SubscriptionPayment> result = new ArrayList<>(payments);
+        if (status == null || "APPROVED".equals(status)) {
+            subscriptions.stream()
+                    .filter(SubscriptionPaymentService::isSeededSubscription)
+                    .map(SubscriptionPaymentService::openingPayment)
+                    .forEach(result::add);
+        }
+        result.sort(Comparator.comparing(
+                SubscriptionPaymentService::displayTime,
+                Comparator.nullsLast(Comparator.reverseOrder())
+        ));
+        return result;
+    }
+
+    private static SubscriptionPayment openingPayment(TenantSubscription subscription) {
+        String openingKey = "opening-subscription:" + subscription.getTenantId();
+        SubscriptionPayment payment = new SubscriptionPayment();
+        payment.setId(UUID.nameUUIDFromBytes(openingKey.getBytes(StandardCharsets.UTF_8)));
+        payment.setTenantId(subscription.getTenantId());
+        payment.setPlanCode(subscription.getPlanCode());
+        payment.setBillingPeriod(subscription.getBillingPeriod());
+        payment.setAmountMinor(subscription.getPriceMinor());
+        payment.setCurrency(subscription.getCurrency());
+        payment.setStatus("APPROVED");
+        payment.setIdempotencyKey(openingKey);
+        payment.setPaymentReference("OPENING-" + subscription.getTenantId());
+        payment.setSubmittedAt(subscription.getStartedAt());
+        payment.setReviewedAt(subscription.getStartedAt());
+        payment.setCreatedAt(subscription.getStartedAt());
+        payment.setUpdatedAt(subscription.getStartedAt());
+        return payment;
+    }
+
+    private static Instant displayTime(SubscriptionPayment payment) {
+        return payment.getSubmittedAt() != null ? payment.getSubmittedAt() : payment.getCreatedAt();
+    }
+
+    private static boolean isSeededSubscription(TenantSubscription subscription) {
+        return subscription.getCreatedBy() == null && subscription.getPriceMinor() > 0;
     }
 
     public SubscriptionFinancialStats getFinancialStats() {
@@ -154,8 +211,9 @@ public class SubscriptionPaymentService {
         long baseSubscriptionCount = 0L;
         long premiumSubscriptionCount = 0L;
         for (TenantSubscription subscription : subscriptions) {
-            if (subscription.getCreatedBy() == null && subscription.getPriceMinor() > 0) {
+            if (isSeededSubscription(subscription)) {
                 recognizedProfitMinor += subscription.getPriceMinor();
+                approvedPaymentCount++;
                 if (subscription.getStartedAt() != null && !subscription.getStartedAt().isBefore(monthStart)) {
                     currentMonthProfitMinor += subscription.getPriceMinor();
                 }

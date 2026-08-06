@@ -18,7 +18,6 @@ const FEATURE_DETAILS: Record<string, { label: string; benefit: string }> = {
   inventory: { label: 'Tồn kho', benefit: 'Kiểm soát số lượng hàng có thể bán.' },
   multiBusiness: { label: 'Nhiều đơn vị kinh doanh', benefit: 'Quản lý nhiều cửa hàng hoặc chi nhánh trong cùng tenant.' },
   teamCollaboration: { label: 'Cộng tác đội nhóm', benefit: 'Mở rộng số người dùng theo vai trò vận hành.' },
-  vouchers: { label: 'Khuyến mại', benefit: 'Tạo voucher cho các chiến dịch bán hàng.' },
   reports: { label: 'Báo cáo', benefit: 'Theo dõi doanh thu để ra quyết định.' },
   notifications: { label: 'Thông báo', benefit: 'Nhắc việc và cập nhật vận hành kịp thời.' },
   ecommerce: { label: 'Bán hàng đa kênh', benefit: 'Kết nối và đồng bộ đơn hàng online.' },
@@ -178,7 +177,7 @@ export function DashboardPage() {
               <div>
                 <p className="mb-2 text-sm font-medium">{'Tính năng và trường hợp sử dụng'}</p>
                 <div className="grid gap-3 md:grid-cols-2">
-                  {Object.entries(subscription.features).filter(([, enabled]) => enabled).map(([feature]) => {
+                  {Object.entries(subscription.features).filter(([feature, enabled]) => enabled && feature !== 'vouchers').map(([feature]) => {
                     const detail = FEATURE_DETAILS[feature] ?? { label: feature, benefit: 'Đã được kích hoạt trong gói hiện tại.' }
                     return (
                       <div key={feature} className="rounded-md border border-border/60 p-3">

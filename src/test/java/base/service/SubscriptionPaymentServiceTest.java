@@ -63,9 +63,43 @@ class SubscriptionPaymentServiceTest {
 
         assertEquals(299_000L, stats.recognizedProfitMinor());
         assertEquals(299_000L, stats.currentMonthProfitMinor());
-        assertEquals(0L, stats.approvedPaymentCount());
+        assertEquals(1L, stats.approvedPaymentCount());
         assertEquals(0L, stats.activeSubscriptionCount());
         assertEquals(0L, stats.activeSubscriptionValueMinor());
+    }
+
+    @Test
+    void includesSeededSubscriptionInAdminPaymentList() {
+        Instant startedAt = Instant.parse("2026-08-01T00:00:00Z");
+        TenantSubscription seededSubscription = subscription(
+                "seeded-default",
+                "ACTIVE",
+                "BASE",
+                299_000L,
+                startedAt,
+                startedAt.plusSeconds(30L * 86_400L)
+        );
+        seededSubscription.setCreatedBy(null);
+
+        List<SubscriptionPayment> payments = SubscriptionPaymentService.includeSeededSubscriptionPayments(
+                List.of(),
+                List.of(seededSubscription),
+                null
+        );
+
+        assertEquals(1, payments.size());
+        assertEquals("seeded-default", payments.getFirst().getTenantId());
+        assertEquals("APPROVED", payments.getFirst().getStatus());
+        assertEquals("OPENING-seeded-default", payments.getFirst().getPaymentReference());
+        assertEquals(299_000L, payments.getFirst().getAmountMinor());
+        assertEquals(
+                0,
+                SubscriptionPaymentService.includeSeededSubscriptionPayments(
+                        List.of(),
+                        List.of(seededSubscription),
+                        "SUBMITTED"
+                ).size()
+        );
     }
 
     private SubscriptionPayment payment(String tenantId, String status, long amountMinor, Instant reviewedAt) {
