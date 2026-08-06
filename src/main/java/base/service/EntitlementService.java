@@ -45,6 +45,7 @@ public class EntitlementService {
             String billingPeriod,
             long priceMinor,
             String currency,
+            Instant startedAt,
             Instant currentPeriodEndsAt,
             boolean readOnly,
             UpgradeQuote upgradeQuote,
@@ -71,7 +72,7 @@ public class EntitlementService {
         TenantSubscription subscription = TenantSubscription.find("tenantId", tenantCode).firstResult();
         if (subscription == null) {
             requireTenant(tenantCode);
-            return planEntitlements(requirePlan("BASE"), "TRIAL", "MONTHLY", 0L, null, false, null);
+            return planEntitlements(requirePlan("BASE"), "TRIAL", "MONTHLY", 0L, null, null, false, null);
         }
         SubscriptionPlan plan = requirePlan(subscription.getPlanCode());
         Instant now = Instant.now();
@@ -84,6 +85,7 @@ public class EntitlementService {
                 effectiveStatus,
                 subscription.getBillingPeriod(),
                 subscription.getPriceMinor(),
+                subscription.getStartedAt(),
                 subscription.getCurrentPeriodEndsAt(),
                 readOnly,
                 buildUpgradeQuote(subscription, now)
@@ -284,6 +286,7 @@ public class EntitlementService {
             String status,
             String billingPeriod,
             long priceMinor,
+            Instant startedAt,
             Instant currentPeriodEndsAt,
             boolean readOnly,
             UpgradeQuote upgradeQuote
@@ -296,6 +299,7 @@ public class EntitlementService {
                 billingPeriod,
                 priceMinor,
                 plan.getCurrency(),
+                startedAt,
                 currentPeriodEndsAt,
                 readOnly,
                 upgradeQuote,

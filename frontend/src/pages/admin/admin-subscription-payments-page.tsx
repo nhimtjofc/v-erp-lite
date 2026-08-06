@@ -110,13 +110,13 @@ export function AdminSubscriptionPaymentsPage() {
       </CardContent></Card>
       <Card><CardContent className="pt-5">
         <div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Thuê bao hoạt động</p><Users className="h-5 w-5 text-primary" /></div>
-        <p className="mt-2 text-3xl font-bold">{statsLoading ? '—' : stats?.activeSubscriptionCount ?? 0}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Base: {stats?.baseSubscriptionCount ?? 0} · Premium: {stats?.premiumSubscriptionCount ?? 0}</p>
+        <p className="mt-2 text-2xl font-bold">{statsLoading ? '—' : formatMoneyMinor(stats?.activeSubscriptionValueMinor ?? 0, stats?.currency)}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{stats?.activeSubscriptionCount ?? 0} thuê bao · Base: {stats?.baseSubscriptionCount ?? 0} · Premium: {stats?.premiumSubscriptionCount ?? 0}</p>
       </CardContent></Card>
     </div>
 
     <p className="rounded-md border border-dashed bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-      Lợi nhuận ghi nhận hiện được tính từ tổng thanh toán subscription đã duyệt. Hệ thống chưa có sổ chi phí vận hành nên số liệu này chưa trừ chi phí.
+      Lợi nhuận ghi nhận gồm toàn bộ thanh toán đã duyệt và giá trị mở sổ của subscription được seed mặc định. Subscription hết hạn không làm giảm lợi nhuận đã ghi nhận. Hệ thống chưa có sổ chi phí vận hành nên số liệu này chưa trừ chi phí.
     </p>
 
     {error && <p className="text-sm text-destructive">{error}</p>}

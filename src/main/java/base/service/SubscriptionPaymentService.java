@@ -24,6 +24,7 @@ public class SubscriptionPaymentService {
             long pendingRevenueMinor,
             long approvedPaymentCount,
             long activeSubscriptionCount,
+            long activeSubscriptionValueMinor,
             long baseSubscriptionCount,
             long premiumSubscriptionCount,
             String currency,
@@ -149,9 +150,16 @@ public class SubscriptionPaymentService {
         }
 
         long activeSubscriptionCount = 0L;
+        long activeSubscriptionValueMinor = 0L;
         long baseSubscriptionCount = 0L;
         long premiumSubscriptionCount = 0L;
         for (TenantSubscription subscription : subscriptions) {
+            if (subscription.getCreatedBy() == null && subscription.getPriceMinor() > 0) {
+                recognizedProfitMinor += subscription.getPriceMinor();
+                if (subscription.getStartedAt() != null && !subscription.getStartedAt().isBefore(monthStart)) {
+                    currentMonthProfitMinor += subscription.getPriceMinor();
+                }
+            }
             boolean active = "ACTIVE".equals(subscription.getStatus())
                     && (subscription.getCurrentPeriodEndsAt() == null
                     || now.isBefore(subscription.getCurrentPeriodEndsAt()));
@@ -159,6 +167,7 @@ public class SubscriptionPaymentService {
                 continue;
             }
             activeSubscriptionCount++;
+            activeSubscriptionValueMinor += subscription.getPriceMinor();
             if ("BASE".equals(subscription.getPlanCode())) {
                 baseSubscriptionCount++;
             } else if ("PREMIUM".equals(subscription.getPlanCode())) {
@@ -172,10 +181,11 @@ public class SubscriptionPaymentService {
                 pendingRevenueMinor,
                 approvedPaymentCount,
                 activeSubscriptionCount,
+                activeSubscriptionValueMinor,
                 baseSubscriptionCount,
                 premiumSubscriptionCount,
                 "VND",
-                "APPROVED_SUBSCRIPTION_PAYMENTS"
+                "APPROVED_PAYMENTS_AND_SEEDED_SUBSCRIPTIONS"
         );
     }
 
@@ -272,10 +282,8 @@ public class SubscriptionPaymentService {
 
     private boolean hasActivePaidTerm(TenantSubscription subscription, Instant now) {
         return subscription != null
-                && "ACTIVE".equals(subscription.getStatus())
                 && subscription.getPriceMinor() > 0
-                && subscription.getCurrentPeriodEndsAt() != null
-                && now.isBefore(subscription.getCurrentPeriodEndsAt());
+                && "ACTIVE".equals(entitlementService.effectiveStatus(subscription, now));
     }
 
     private SubscriptionPlan requirePlan(String planCode) {

@@ -32,6 +32,7 @@ export interface TenantEntitlements {
   billingPeriod: string
   priceMinor: number
   currency: string
+  startedAt?: string
   currentPeriodEndsAt?: string
   readOnly: boolean
   upgradeQuote?: SubscriptionUpgradeQuote
@@ -67,10 +68,11 @@ export interface SubscriptionFinancialStats {
   pendingRevenueMinor: number
   approvedPaymentCount: number
   activeSubscriptionCount: number
+  activeSubscriptionValueMinor: number
   baseSubscriptionCount: number
   premiumSubscriptionCount: number
   currency: string
-  profitBasis: 'APPROVED_SUBSCRIPTION_PAYMENTS'
+  profitBasis: 'APPROVED_PAYMENTS_AND_SEEDED_SUBSCRIPTIONS'
 }
 
 export type SubscriptionMockScenario = 'EXPIRE_NOW' | 'RESET_PERIOD'

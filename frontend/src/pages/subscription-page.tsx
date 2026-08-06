@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, CheckCircle2, CreditCard, LockKeyhole, Sparkles } from 'lucide-react'
+import { CalendarDays, Check, CheckCircle2, Clock3, CreditCard, LockKeyhole, Sparkles } from 'lucide-react'
 import {
   MY_SUBSCRIPTION_PAYMENTS_QUERY_KEY,
   useCreateSubscriptionPaymentMutation,
@@ -26,6 +26,7 @@ const T = {
   denied: 'Ch\u1ec9 ch\u1ee7 doanh nghi\u1ec7p c\u00f3 th\u1ec3 qu\u1ea3n l\u00fd g\u00f3i d\u1ecbch v\u1ee5 v\u00e0 thanh to\u00e1n.',
   currentPlan: 'G\u00f3i hi\u1ec7n t\u1ea1i',
   status: 'Tr\u1ea1ng th\u00e1i',
+  startedAt: 'Ng\u00e0y b\u1eaft \u0111\u1ea7u',
   expiry: 'Ng\u00e0y h\u1ebft h\u1ea1n',
   choosePlan: 'Ch\u1ecdn g\u00f3i ph\u00f9 h\u1ee3p',
   chooseHint: 'G\u00f3i m\u1edbi ch\u1ec9 \u0111\u01b0\u1ee3c k\u00edch ho\u1ea1t sau khi qu\u1ea3n tr\u1ecb vi\u00ean x\u00e1c nh\u1eadn thanh to\u00e1n.',
@@ -124,12 +125,11 @@ export function SubscriptionPage() {
 
   const outstandingPayment = payments.find((payment) => payment.status === 'SUBMITTED')
     ?? payments.find((payment) => payment.status === 'PENDING')
+  const periodStart = subscription?.startedAt ? new Date(subscription.startedAt) : undefined
   const periodEnd = subscription?.currentPeriodEndsAt ? new Date(subscription.currentPeriodEndsAt) : undefined
   const hasActivePaidTerm = Boolean(
     subscription?.status === 'ACTIVE'
-    && subscription.priceMinor > 0
-    && periodEnd
-    && periodEnd.getTime() > Date.now(),
+    && subscription.priceMinor > 0,
   )
   const upgradeQuote = hasActivePaidTerm ? subscription?.upgradeQuote : undefined
   const purchasePeriod = upgradeQuote?.billingPeriod ?? period
@@ -182,7 +182,8 @@ export function SubscriptionPage() {
     {subscription && <Card><CardContent className="flex flex-wrap gap-x-8 gap-y-3 pt-5">
       <div><p className="text-sm text-muted-foreground">{T.currentPlan}</p><p className="font-semibold">{subscription.planName}</p></div>
       <div><p className="text-sm text-muted-foreground">{T.status}</p><Badge variant={subscription.readOnly ? 'destructive' : 'default'}>{subscriptionStatuses[subscription.status] ?? subscription.status}</Badge></div>
-      {periodEnd && <div><p className="text-sm text-muted-foreground">{T.expiry}</p><p className="font-semibold">{periodEnd.toLocaleDateString('vi-VN')}</p></div>}
+      {periodStart && <div><p className="flex items-center gap-1 text-sm text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{T.startedAt}</p><p className="font-semibold">{periodStart.toLocaleDateString('vi-VN')}</p></div>}
+      {periodEnd && <div><p className="flex items-center gap-1 text-sm text-muted-foreground"><Clock3 className="h-3.5 w-3.5" />{T.expiry}</p><p className="font-semibold">{periodEnd.toLocaleDateString('vi-VN')}</p></div>}
     </CardContent></Card>}
 
     {showPlanPicker && <>
