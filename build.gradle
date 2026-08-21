@@ -62,6 +62,8 @@ dependencies {
     // Test
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.quarkus:quarkus-test-security'
+    testImplementation 'io.quarkus:quarkus-test-security-jwt'
+    testImplementation "com.tngtech.archunit:archunit:${archunitVersion}"
     testImplementation 'io.rest-assured:rest-assured'
 }
 

@@ -50,6 +50,9 @@ public class PayoutRequest extends BaseEntity {
     @Column(name = "transfer_reference")
     private String transferReference;
 
+    @Column(name = "payment_reference", length = 35, unique = true)
+    private String paymentReference;
+
     @Column(name = "paid_at")
     private Instant paidAt;
 }

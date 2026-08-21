@@ -1,6 +1,7 @@
 package base.service;
 
 import base.entity.PayoutRequest;
+import base.payment.PaymentReference;
 import base.entity.Wallet;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.NotFoundException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
@@ -214,6 +216,7 @@ public class PayoutService {
         payout.setBankAccountNumber(trimOrEmpty(bankAccountNumber));
         payout.setBankAccountHolder(trimOrEmpty(bankAccountHolder));
         payout.setIdempotencyKey(idempotencyKey);
+        payout.setPaymentReference(PaymentReference.issue(LocalDate.now()));
         payout.setCreatedBy(actorId);
         payout.persist();
         return payout;

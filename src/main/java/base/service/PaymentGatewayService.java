@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -98,7 +99,8 @@ public class PaymentGatewayService {
             return false;
         }
         String expected = hmacSha256(payload, MOCK_SECRET);
-        return expected.equals(signature.trim());
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+                signature.trim().getBytes(StandardCharsets.UTF_8));
     }
 
     public boolean verifySignature(String intentId, String gatewayTransactionId, long amountMinor, String signature) {
@@ -106,7 +108,8 @@ public class PaymentGatewayService {
             return false;
         }
         String expected = signPayload(intentId, gatewayTransactionId, amountMinor);
-        return expected.equals(signature.trim());
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+                signature.trim().getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -203,13 +206,14 @@ public class PaymentGatewayService {
 
     private String normalizeGateway(String gateway) {
         if (gateway == null || gateway.isBlank()) {
-            return "MOCK";
+            throw new IllegalArgumentException("Payment provider is required");
         }
         String upper = gateway.trim().toUpperCase();
         return switch (upper) {
             case "VNPAY" -> "VNPAY";
             case "STRIPE" -> "STRIPE";
-            default -> "MOCK";
+            case "MOCK" -> "MOCK";
+            default -> throw new IllegalArgumentException("Payment provider is not configured: " + gateway);
         };
     }
 }

@@ -70,6 +70,7 @@ public class PayoutResource {
         public String bankAccountNumber;
         public String bankAccountHolder;
         public String transferReference;
+        public String paymentReference;
         public Instant paidAt;
         public Instant createdAt;
         public Instant updatedAt;
@@ -87,6 +88,7 @@ public class PayoutResource {
             response.bankAccountNumber = payout.getBankAccountNumber();
             response.bankAccountHolder = payout.getBankAccountHolder();
             response.transferReference = payout.getTransferReference();
+            response.paymentReference = payout.getPaymentReference();
             response.paidAt = payout.getPaidAt();
             response.createdAt = payout.getCreatedAt();
             response.updatedAt = payout.getUpdatedAt();
