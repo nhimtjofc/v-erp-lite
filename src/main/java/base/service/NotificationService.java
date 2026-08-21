@@ -51,6 +51,13 @@ public class NotificationService {
                     ownerId,
                     order.getTenantId()
             ).firstResult();
+            if (owner == null) {
+                owner = User.find(
+                        "keycloakId = ?1 and tenantId = ?2 and active = true",
+                        ownerId.toString(),
+                        order.getTenantId()
+                ).firstResult();
+            }
             if (owner != null) {
                 recipients.put(owner.getId(), owner);
             }

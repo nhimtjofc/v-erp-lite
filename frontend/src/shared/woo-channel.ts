@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from 'react'
-import { useWooCommerceHealthQuery } from './api/woocommerce'
+import { useEcommerceHealthQuery } from './api/ecommerce'
 
 /**
- * Shared, app-wide selection of the active WooCommerce business/channel.
+ * Shared, app-wide selection of the active Ecommerce business/channel.
  *
- * The backend resolves one WooCommerce channel per business, so the user picks
+ * The backend resolves one Ecommerce channel per business, so the user picks
  * a *business* and every Woo-scoped query (health, orders sync, reconcile) uses
  * the channel resolved from it. Selection is persisted to localStorage and
  * shared across pages via a tiny external store — no provider wiring required.
@@ -43,7 +43,7 @@ export function useSelectedBusinessId() {
 }
 
 /**
- * Resolves the active Woo channel for the selected business.
+ * Resolves the active Ecommerce channel for the selected business.
  * Returns the selection, the health snapshot, and the resolved channelId to
  * pass as `salesChannelId` to orders/catalog queries.
  */
@@ -52,7 +52,7 @@ export function useWooChannel(
   options?: { enabled?: boolean }
 ) {
   const businessId = useSelectedBusinessId()
-  const health = useWooCommerceHealthQuery(tenantScope, businessId, options)
+  const health = useEcommerceHealthQuery(tenantScope, businessId, options)
   return {
     businessId,
     setBusinessId: setSelectedBusinessId,

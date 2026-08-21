@@ -4,6 +4,7 @@ import base.entity.Business;
 import base.security.BusinessAccess;
 import base.security.CallerContext;
 import base.service.RevenueService;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -48,12 +49,16 @@ public class RevenueResource {
     @Inject
     RevenueService revenueService;
 
+    @Inject
+    EntitlementService entitlementService;
+
     @GET
     @Path("/daily")
     public RevenueService.DailyReport getDailyRevenue(@QueryParam("from") LocalDate from,
                                                       @QueryParam("to") LocalDate to,
                                                       @QueryParam("currency") String currency,
                                                       @QueryParam("businessId") UUID requestedBusinessId) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_REPORTS);
         LocalDate today = LocalDate.now(RevenueService.REPORTING_ZONE);
         LocalDate resolvedFrom = from == null ? YearMonth.from(today).atDay(1) : from;
         LocalDate resolvedTo = to == null ? today : to;
@@ -73,6 +78,7 @@ public class RevenueResource {
     public RevenueService.DailyReport getMonthToDateRevenue(@QueryParam("month") String month,
                                                             @QueryParam("currency") String currency,
                                                             @QueryParam("businessId") UUID requestedBusinessId) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_REPORTS);
         LocalDate today = LocalDate.now(RevenueService.REPORTING_ZONE);
         YearMonth currentMonth = YearMonth.from(today);
         YearMonth selectedMonth = currentMonth;
@@ -102,6 +108,7 @@ public class RevenueResource {
     public RevenueService.MonthlyReport getMonthlyRevenue(@QueryParam("month") String month,
                                                           @QueryParam("currency") String currency,
                                                           @QueryParam("businessId") UUID requestedBusinessId) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_REPORTS);
         YearMonth selectedMonth;
         try {
             selectedMonth = month == null || month.isBlank()
@@ -122,6 +129,7 @@ public class RevenueResource {
     @Path("/adjustments")
     @RolesAllowed({"admin", "businessOwner"})
     public Response createRevenueAdjustment(RevenueAdjustmentRequest request) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_REPORTS);
         if (request == null) {
             throw new BadRequestException("Request body is required");
         }
@@ -146,6 +154,7 @@ public class RevenueResource {
     @Path("/adjustments/{id}")
     @RolesAllowed({"admin", "businessOwner"})
     public Response deleteRevenueAdjustment(@PathParam("id") UUID adjustmentId) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_REPORTS);
         UUID businessId = businessAccess.isScopedStaff()
                 ? businessAccess.requireCurrentBusinessId()
                 : null;

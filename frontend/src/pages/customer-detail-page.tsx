@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { CascadingAddressSelect } from '@/shared/ui/cascading-address-select'
 
 export function CustomerDetailPage() {
   const { t } = useTranslation()
@@ -128,11 +129,53 @@ export function CustomerDetailPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="field-address">{t('common:address', 'Address')}</Label>
+            <Label>{t('common:address', 'Address')}</Label>
             {editing ? (
-              <Input id="field-address" value={form.address || ''} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <CascadingAddressSelect
+                provinceCode={(form as any).provinceCode || ''}
+                districtCode={(form as any).districtCode || ''}
+                wardCode={(form as any).wardCode || ''}
+                streetAddress={(form as any).streetAddress || form.address || ''}
+                required={false}
+                onProvinceChange={(code, name) => {
+                  setForm(prev => ({
+                    ...prev,
+                    provinceCode: code,
+                    districtCode: '',
+                    wardCode: '',
+                    address: (prev as any).streetAddress ? `${(prev as any).streetAddress}, ${name}` : name,
+                  } as any))
+                }}
+                onDistrictChange={(code, name) => {
+                  setForm(prev => ({
+                    ...prev,
+                    districtCode: code,
+                    wardCode: '',
+                  } as any))
+                }}
+                onWardChange={(code, name) => {
+                  setForm(prev => ({
+                    ...prev,
+                    wardCode: code,
+                  } as any))
+                }}
+                onStreetAddressChange={(street) => {
+                  setForm(prev => ({
+                    ...prev,
+                    streetAddress: street,
+                    address: street,
+                  } as any))
+                }}
+              />
             ) : (
-              <p className="text-sm">{customer.address || '-'}</p>
+              <p className="text-sm">
+                {(customer as any).streetAddress || customer.address || '-'}
+                {((customer as any).wardCode || (customer as any).districtCode || (customer as any).provinceCode) && (
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    {[(customer as any).wardCode, (customer as any).districtCode, (customer as any).provinceCode].filter(Boolean).join(' • ')}
+                  </span>
+                )}
+              </p>
             )}
           </div>
 

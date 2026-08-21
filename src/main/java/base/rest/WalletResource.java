@@ -1,18 +1,28 @@
 package base.rest;
 
-import base.entity.Business;
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTopUp;
 import base.entity.WalletTransaction;
 import base.model.Money;
 import base.security.CallerContext;
-import base.service.WalletService;
+import base.service.EscrowService;
+import base.service.MoneyService;
 import base.service.VietQRService;
+import base.service.WalletService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -20,16 +30,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @Path("/wallets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -42,6 +44,12 @@ public class WalletResource {
 
     @Inject
     WalletService walletService;
+
+    @Inject
+    MoneyService moneyService;
+
+    @Inject
+    EscrowService escrowService;
 
     @Inject
     VietQRService vietQRService;
@@ -102,6 +110,7 @@ public class WalletResource {
         public UUID userId;
         public long availableBalanceMinor;
         public long pendingBalanceMinor;
+        public long totalBalanceMinor;
         public String currency;
         public UUID bankId;
         public String bankCode;
@@ -120,6 +129,7 @@ public class WalletResource {
             response.ownerId = wallet.getOwnerId();
             response.userId = wallet.getUser() == null ? null : wallet.getUser().getId();
             response.availableBalanceMinor = wallet.getAvailableBalanceMinor();
+            response.totalBalanceMinor = wallet.getAvailableBalanceMinor();
             response.pendingBalanceMinor = wallet.getPendingBalanceMinor();
             response.currency = wallet.getCurrency();
             response.bankId = wallet.getBank() == null ? null : wallet.getBank().getId();
@@ -132,6 +142,13 @@ public class WalletResource {
             response.updatedAt = wallet.getUpdatedAt();
             return response;
         }
+    }
+
+    public static class WalletStatsResponse {
+        public long customerBalance;
+        public long platformCommission;
+        public long escrowBalance;
+        public long sellerBalance;
     }
 
     public static class WalletTransactionResponse {
@@ -169,7 +186,52 @@ public class WalletResource {
                                      @QueryParam("currency") String currency) {
         return walletService.listWallets(caller.tenantCode(), ownerType, ownerId, currency)
                 .stream()
-                .map(WalletResponse::from)
+                .map(w -> {
+                    WalletResponse r = WalletResponse.from(w);
+                    if ("SELLER".equals(w.getOwnerType())) {
+                        r.pendingBalanceMinor = escrowService.sumHeldForSeller(w.getTenantId(), w.getId());
+                    }
+                    return r;
+                })
+                .toList();
+    }
+
+    @GET
+    @Path("/stats")
+    @RolesAllowed({"admin"})
+    public WalletStatsResponse getStats() {
+        Map<String, Long> stats = walletService.getWalletStats(caller.tenantCode());
+        WalletStatsResponse response = new WalletStatsResponse();
+        response.customerBalance = stats.get("customerBalance");
+        response.platformCommission = stats.get("platformCommission");
+        response.escrowBalance = stats.get("escrowBalance");
+        response.sellerBalance = stats.get("sellerBalance");
+        return response;
+    }
+
+    @POST
+    @Path("/escrow/force-release")
+    @RolesAllowed({"admin"})
+    public Map<String, Object> forceReleaseEscrows() {
+        EscrowService.EscrowReleaseSummary summary = escrowService.releaseDueEscrows(
+                Instant.now().plus(Duration.ofDays(7)), caller.userId());
+
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("releasedOrders", summary.releasedOrders());
+        result.put("failedOrders", summary.failedOrders());
+        result.put("message", summary.releasedOrders() + " order(s) escrow released, "
+                + summary.failedOrders() + " failed (simulated 7-day fast-forward)");
+        return result;
+    }
+
+    @GET
+    @Path("/transactions/all")
+    @RolesAllowed({"admin", "qa", "demo"})
+    public List<WalletTransactionResponse> getAllTransactions(@QueryParam("limit") @DefaultValue("50") int limit,
+                                                              @QueryParam("offset") @DefaultValue("0") int offset) {
+        return walletService.listAllTransactions(caller.tenantCode(), limit, offset)
+                .stream()
+                .map(WalletTransactionResponse::from)
                 .toList();
     }
 
@@ -177,7 +239,8 @@ public class WalletResource {
      * The wallet of the currently logged-in user.
      *
      * A business owner is linked to the existing SELLER wallet for their business,
-     * preserving order and payout balances. Other users receive a USER wallet.
+     * preserving order and payout balances. Their pending balance is the held
+     * escrow across all seller wallets in the tenant. Other users receive a USER wallet.
      * The VND wallet is created on demand if provisioning has not created it yet.
      */
     @GET
@@ -190,7 +253,16 @@ public class WalletResource {
         }
         Wallet wallet = walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), currency, caller.userId());
-        return WalletResponse.from(wallet);
+        WalletResponse resp = WalletResponse.from(wallet);
+        // Seller's pending balance is held in the platform wallet as escrow;
+        // the marketplace owner sees held escrow across all tenant businesses.
+        if ("SELLER".equals(wallet.getOwnerType())) {
+            resp.totalBalanceMinor = walletService.getReleasedSellerBalanceForOwner(
+                    caller.tenantCode(), user, wallet.getCurrency());
+            resp.pendingBalanceMinor = walletService.getPendingEscrowForOwnerBusinesses(
+                    caller.tenantCode(), user, wallet.getCurrency());
+        }
+        return resp;
     }
 
     @POST
@@ -212,7 +284,12 @@ public class WalletResource {
     @GET
     @Path("/{id}")
     public WalletResponse getWallet(@PathParam("id") UUID id) {
-        return WalletResponse.from(requireWalletAccess(id));
+        Wallet wallet = requireWalletAccess(id);
+        WalletResponse response = WalletResponse.from(wallet);
+        if ("SELLER".equals(wallet.getOwnerType())) {
+            response.pendingBalanceMinor += escrowService.sumHeldForSeller(wallet.getTenantId(), wallet.getId());
+        }
+        return response;
     }
 
     @GET
@@ -252,8 +329,12 @@ public class WalletResource {
     @Path("/me/top-up")
     @Transactional
     public WalletTopUpResponse topUpMyWallet(WalletTopUpRequest request) {
+        if (request == null) {
+            throw new jakarta.ws.rs.BadRequestException("Request body is required");
+        }
+        Money amount = moneyService.positiveMoney(request.amountMinor, request.currency != null ? request.currency : "VND");
         User user = caller.resolveUser();
-        String currency = request.currency != null ? request.currency : "VND";
+        String currency = amount.getCurrency();
         Wallet wallet = walletService.getOrCreateUserWallet(
                 caller.tenantCode(), user.getId(), currency, caller.userId());
         
@@ -263,33 +344,18 @@ public class WalletResource {
         topUp.setCreatedBy(caller.userId());
         topUp.setUpdatedBy(caller.userId());
         topUp.setWallet(wallet);
-        topUp.setAmountMinor(request.amountMinor);
+        topUp.setAmountMinor(amount.getAmountMinor());
         topUp.setCurrency(currency);
         topUp.setStatus("PENDING");
         
         // Mock bank account for platform receiving top-ups
-        String qrContent = vietQRService.generateQrBase64("MB", "0123456789", request.amountMinor, "Nap tien " + topUp.getId().toString().substring(0, 8).toUpperCase());
+        String qrContent = vietQRService.generateQrBase64("MB", "0123456789", amount.getAmountMinor(), "Nap tien " + topUp.getId().toString().substring(0, 8).toUpperCase());
         topUp.setPaymentQrCodeBase64(qrContent);
         
         topUp.persist();
         return WalletTopUpResponse.from(topUp);
     }
     
-    @POST
-    @Path("/top-up/{id}/complete")
-    @Transactional
-    public Response completeTopUp(@PathParam("id") UUID id) {
-        WalletTopUp topUp = WalletTopUp.findById(id);
-        if (topUp == null) {
-            throw new jakarta.ws.rs.NotFoundException("Top-up request not found");
-        }
-        if ("COMPLETED".equals(topUp.getStatus())) {
-            return Response.ok(Map.of("status", "ALREADY_PROCESSED")).build();
-        }
-        
-        walletService.completeTopUp(id, caller.userId());
-        return Response.ok(Map.of("status", "SUCCESS")).build();
-    }
 
     @GET
     @Path("/me/top-up")
@@ -307,6 +373,29 @@ public class WalletResource {
                 .toList();
     }
 
+
+    /**
+     * Completes a pending top-up in the local mock-payment flow. Real payment
+     * providers complete top-ups through their authenticated webhook instead.
+     */
+    @POST
+    @Path("/top-up/{id}/complete")
+    @Transactional
+    public WalletTopUpResponse completeTopUp(@PathParam("id") UUID id) {
+        WalletTopUp topUp = WalletTopUp.find("id = ?1 and tenantId = ?2", id, caller.tenantCode())
+                .firstResult();
+        if (topUp == null) {
+            throw new jakarta.ws.rs.NotFoundException("Top-up request not found");
+        }
+        if (!caller.hasRole("admin")) {
+            User user = caller.resolveUser();
+            if (!walletService.isWalletOwnedByUser(caller.tenantCode(), topUp.getWallet(), user)) {
+                throw new ForbiddenException("You are not allowed to complete this top-up");
+            }
+        }
+        walletService.completeTopUp(caller.tenantCode(), id, caller.userId());
+        return WalletTopUpResponse.from(topUp);
+    }
     @POST
     @Path("/{id}/credit")
     @RolesAllowed({"admin"})
@@ -362,16 +451,10 @@ public class WalletResource {
             return wallet;
         }
         User user = caller.resolveUser();
-        if (wallet.getUser() != null && user.getId().equals(wallet.getUser().getId())) {
+        if (walletService.isWalletOwnedByUser(caller.tenantCode(), wallet, user)) {
             return wallet;
         }
-        Business business = Business.find(
-                "tenantId = ?1 and createdBy = ?2", caller.tenantCode(), user.getId()).firstResult();
-        if (business == null || !"SELLER".equals(wallet.getOwnerType())
-                || !business.getId().equals(wallet.getOwnerId())) {
-            throw new ForbiddenException("You are not allowed to access this wallet");
-        }
-        return wallet;
+        throw new ForbiddenException("You are not allowed to access this wallet");
     }
 }
  

@@ -98,6 +98,9 @@ public class PaymentGatewayService {
         if (signature == null || signature.isBlank()) {
             return false;
         }
+        if (io.quarkus.runtime.LaunchMode.current() == io.quarkus.runtime.LaunchMode.NORMAL) {
+            return false;
+        }
         String expected = hmacSha256(payload, MOCK_SECRET);
         return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
                 signature.trim().getBytes(StandardCharsets.UTF_8));
@@ -105,6 +108,9 @@ public class PaymentGatewayService {
 
     public boolean verifySignature(String intentId, String gatewayTransactionId, long amountMinor, String signature) {
         if (signature == null || signature.isBlank()) {
+            return false;
+        }
+        if (io.quarkus.runtime.LaunchMode.current() == io.quarkus.runtime.LaunchMode.NORMAL) {
             return false;
         }
         String expected = signPayload(intentId, gatewayTransactionId, amountMinor);
@@ -176,8 +182,8 @@ public class PaymentGatewayService {
         );
     }
 
-    private String signPayload(String intentId, String transactionId, long amountMinor) {
-        String payload = String.format("%s:%s:%d", intentId, transactionId, amountMinor);
+    public String signPayload(String intentId, String transactionId, long amountMinor) {
+        String payload = String.format("%s:%s:%d:%s", intentId, transactionId, amountMinor, MOCK_SECRET);
         return hmacSha256(payload, MOCK_SECRET);
     }
 

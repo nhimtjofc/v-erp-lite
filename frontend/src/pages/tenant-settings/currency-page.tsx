@@ -18,6 +18,8 @@ import {
   Select,
 } from './settings-shared'
 
+const VND_CURRENCY: CurrencySettings = { code: 'VND', symbol: '₫', decimalPlaces: 0 }
+
 export function CurrencyPage() {
   const { t } = useTranslation()
   const { data: me } = useMeQuery()
@@ -25,7 +27,7 @@ export function CurrencyPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [currency, setCurrency] = useState<CurrencySettings>({})
   const [savedCurrency, setSavedCurrency] = useState<CurrencySettings>({})
@@ -36,7 +38,7 @@ export function CurrencyPage() {
 
   useEffect(() => {
     if (settings?.currency) {
-      const c = settings.currency
+      const c = { ...settings.currency, ...VND_CURRENCY }
       setCurrency(c)
       setSavedCurrency(c)
     }
@@ -52,11 +54,12 @@ export function CurrencyPage() {
   const hasChanges = JSON.stringify(currency) !== JSON.stringify(savedCurrency)
 
   const handleSave = () => {
+    const normalizedCurrency = { ...currency, ...VND_CURRENCY }
     mutation.mutate(
-      { body: { settings: { currency } } },
+      { body: { settings: { currency: normalizedCurrency } } },
       {
         onSuccess: () => {
-          setSavedCurrency({ ...currency })
+          setSavedCurrency(normalizedCurrency)
           setMessage({ type: 'success', text: t('common:saved') })
         },
         onError: () => {
@@ -117,11 +120,11 @@ export function CurrencyPage() {
         <div className="space-y-2">
           <Label htmlFor="currencyCode">{t('settings:currency')}</Label>
           <Select
-            value={currency.code ?? effective?.currency?.code ?? ''}
-            onChange={(v) => setCurrency((prev) => ({ ...prev, code: v }))}
+            value="VND"
+            onChange={() => undefined}
             options={CURRENCIES}
             placeholder={t('common:select')}
-            disabled={!isAdmin}
+            disabled
           />
           {effective?.currency?.code && !currency.code && (
             <p className="text-xs text-muted-foreground">
@@ -134,9 +137,9 @@ export function CurrencyPage() {
           <Label htmlFor="currencySymbol">{t('settings:currencySymbol')}</Label>
           <Input
             id="currencySymbol"
-            value={currency.symbol ?? effective?.currency?.symbol ?? ''}
-            onChange={(e) => setCurrency((prev) => ({ ...prev, symbol: e.target.value }))}
-            disabled={!isAdmin}
+            value="₫"
+            readOnly
+            disabled
           />
           {effective?.currency?.symbol && !currency.symbol && (
             <p className="text-xs text-muted-foreground">
@@ -150,14 +153,9 @@ export function CurrencyPage() {
           <Input
             id="decimalPlaces"
             type="number"
-            value={currency.decimalPlaces ?? effective?.currency?.decimalPlaces ?? ''}
-            onChange={(e) =>
-              setCurrency((prev) => ({
-                ...prev,
-                decimalPlaces: e.target.value ? Number(e.target.value) : undefined,
-              }))
-            }
-            disabled={!isAdmin}
+            value={0}
+            readOnly
+            disabled
             min={0}
             max={10}
           />

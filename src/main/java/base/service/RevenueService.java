@@ -1,6 +1,5 @@
 package base.service;
 
-import base.entity.EscrowRecord;
 import base.entity.Business;
 import base.entity.Order;
 import base.entity.OrderHistory;
@@ -34,7 +33,6 @@ public class RevenueService {
             "OTHER_INCOME",
             "OPERATING_EXPENSE",
             "WAREHOUSE_ADJUSTMENT",
-            "COMMISSION_ADJUSTMENT",
             "RETURN_ADJUSTMENT"
     );
 
@@ -153,8 +151,7 @@ public class RevenueService {
         for (SaleEvent sale : sales) {
             MutableDay day = days.get(sale.occurredAt().atZone(REPORTING_ZONE).toLocalDate());
             if (day != null) {
-                day.grossRevenueMinor += sale.amountMinor();
-                day.commissionMinor += sale.commissionMinor();
+                day.netRevenueMinor += sale.amountMinor();
                 day.warehouseCostMinor += sale.warehouseCostMinor();
                 day.orderCount++;
             }
@@ -163,16 +160,13 @@ public class RevenueService {
             MutableDay day = days.get(refund.occurredAt().atZone(REPORTING_ZONE).toLocalDate());
             if (day != null) {
                 day.refundMinor += refund.amountMinor();
-                day.commissionMinor -= refund.commissionReversalMinor();
-                day.warehouseCostMinor -= refund.warehouseCostReversalMinor();
                 day.refundCount++;
             }
         }
 
         List<DailyRevenue> daily = days.values().stream().map(MutableDay::toRevenue).toList();
-        long grossRevenueMinor = daily.stream().mapToLong(DailyRevenue::grossRevenueMinor).sum();
+        long netRevenueMinor = daily.stream().mapToLong(DailyRevenue::netRevenueMinor).sum();
         long refundMinor = daily.stream().mapToLong(DailyRevenue::refundMinor).sum();
-        long commissionMinor = daily.stream().mapToLong(DailyRevenue::commissionMinor).sum();
         long warehouseCostMinor = daily.stream().mapToLong(DailyRevenue::warehouseCostMinor).sum();
         long profitMinor = daily.stream().mapToLong(DailyRevenue::profitMinor).sum();
         long orderCount = daily.stream().mapToLong(DailyRevenue::orderCount).sum();
@@ -184,10 +178,8 @@ public class RevenueService {
                 REPORTING_ZONE.getId(),
                 currency,
                 new RevenueTotals(
-                        grossRevenueMinor,
+                        netRevenueMinor,
                         refundMinor,
-                        grossRevenueMinor - refundMinor,
-                        commissionMinor,
                         warehouseCostMinor,
                         profitMinor,
                         orderCount,
@@ -213,10 +205,8 @@ public class RevenueService {
                 + adjustmentIncomeMinor
                 - adjustmentExpenseMinor;
         MonthlyTotals totals = new MonthlyTotals(
-                operationalTotals.grossRevenueMinor(),
-                operationalTotals.refundMinor(),
                 operationalTotals.netRevenueMinor(),
-                operationalTotals.commissionMinor(),
+                operationalTotals.refundMinor(),
                 operationalTotals.warehouseCostMinor(),
                 adjustmentIncomeMinor,
                 adjustmentExpenseMinor,
@@ -224,9 +214,7 @@ public class RevenueService {
         );
 
         List<BreakdownItem> breakdown = new ArrayList<>();
-        breakdown.add(normalizedBreakdown("GROSS_REVENUE", "INCOME", operationalTotals.grossRevenueMinor()));
-        breakdown.add(normalizedBreakdown("RETURNS", "EXPENSE", operationalTotals.refundMinor()));
-        breakdown.add(normalizedBreakdown("COMMISSION", "EXPENSE", operationalTotals.commissionMinor()));
+        breakdown.add(normalizedBreakdown("NET_REVENUE", "INCOME", operationalTotals.netRevenueMinor()));
         breakdown.add(normalizedBreakdown("WAREHOUSE_COST", "EXPENSE", operationalTotals.warehouseCostMinor()));
 
         Map<String, Long> adjustmentBreakdown = new LinkedHashMap<>();
@@ -285,51 +273,39 @@ public class RevenueService {
 
     private List<SaleEvent> completedSales(String tenantId, UUID businessId, String currency,
                                            Instant from, Instant toExclusive) {
-        StringBuilder historyQuery = new StringBuilder(
-                "tenantId = :tenantId and newStatus = :completed and createdAt >= :from "
-                        + "and createdAt < :to and order.deletedAt is null and order.currency = :currency"
+        StringBuilder orderQuery = new StringBuilder(
+                "tenantId = :tenantId and status = :completed and deletedAt is null and currency = :currency"
         );
-        Map<String, Object> historyParams = new LinkedHashMap<>();
-        historyParams.put("tenantId", tenantId);
-        historyParams.put("completed", "COMPLETED");
-        historyParams.put("from", from);
-        historyParams.put("to", toExclusive);
-        historyParams.put("currency", currency);
+        Map<String, Object> orderParams = new LinkedHashMap<>();
+        orderParams.put("tenantId", tenantId);
+        orderParams.put("completed", "COMPLETED");
+        orderParams.put("currency", currency);
         if (businessId != null) {
-            historyQuery.append(" and order.business.id = :businessId");
-            historyParams.put("businessId", businessId);
+            orderQuery.append(" and business.id = :businessId");
+            orderParams.put("businessId", businessId);
         }
 
-        List<OrderHistory> completionEvents = OrderHistory.list(historyQuery.toString(), historyParams);
-        List<SaleEvent> sales = completionEvents.stream()
-                .map(event -> saleEvent(event.getOrder(), event.getCreatedAt()))
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        // Older imported orders may already be completed without an order-history row.
-        // Count those on their order date, while avoiding duplicates for normal orders.
-        StringBuilder legacyQuery = new StringBuilder(
-                "tenantId = :tenantId and status = :completed and deletedAt is null "
-                        + "and orderDate >= :from and orderDate < :to and currency = :currency"
-        );
-        Map<String, Object> legacyParams = new LinkedHashMap<>(historyParams);
-        if (businessId != null) {
-            legacyQuery.append(" and business.id = :businessId");
+        List<Order> completedOrders = Order.list(orderQuery.toString(), orderParams);
+        if (completedOrders.isEmpty()) {
+            return List.of();
         }
-        List<Order> legacyCandidates = Order.list(legacyQuery.toString(), legacyParams);
-        Set<UUID> candidateIds = legacyCandidates.stream().map(Order::getId).collect(Collectors.toSet());
-        Set<UUID> ordersWithHistory = candidateIds.isEmpty()
-                ? Set.of()
-                : OrderHistory.<OrderHistory>list("tenantId = ?1 and newStatus = ?2 and order.id in ?3",
-                        tenantId, "COMPLETED", candidateIds)
-                        .stream()
-                        .map(event -> event.getOrder().getId())
-                        .collect(Collectors.toSet());
-        for (Order order : legacyCandidates) {
-            if (!ordersWithHistory.contains(order.getId())) {
-                sales.add(saleEvent(order, order.getOrderDate()));
+
+        Set<UUID> orderIds = completedOrders.stream().map(Order::getId).collect(Collectors.toSet());
+        Map<UUID, Instant> completionTimes = new LinkedHashMap<>();
+        for (OrderHistory event : OrderHistory.<OrderHistory>list(
+                "tenantId = ?1 and newStatus = ?2 and order.id in ?3",
+                tenantId, "COMPLETED", orderIds)) {
+            completionTimes.merge(event.getOrder().getId(), event.getCreatedAt(),
+                    (current, candidate) -> current.isAfter(candidate) ? current : candidate);
+        }
+
+        List<SaleEvent> sales = new ArrayList<>();
+        for (Order order : completedOrders) {
+            Instant completedAt = completionTimes.getOrDefault(order.getId(), order.getOrderDate());
+            if (completedAt != null && !completedAt.isBefore(from) && completedAt.isBefore(toExclusive)) {
+                sales.add(saleEvent(order, completedAt));
             }
         }
-
         return sales;
     }
 
@@ -358,18 +334,10 @@ public class RevenueService {
                     && (order.getBusiness() == null || !businessId.equals(order.getBusiness().getId())))) {
                 continue;
             }
-            boolean recognizedRevenue = OrderHistory.count(
-                    "tenantId = ?1 and order.id = ?2 and newStatus = ?3",
-                    tenantId,
-                    order.getId(),
-                    "COMPLETED"
-            ) > 0;
             refunds.add(new RefundEvent(
                     refund.getOrderId(),
                     refund.getCreatedAt(),
-                    refund.getAmountMinor(),
-                    recognizedRevenue ? commissionFor(order) : 0,
-                    recognizedRevenue ? inventoryCostService.orderCost(order) : 0
+                    refund.getAmountMinor()
             ));
         }
         return refunds;
@@ -380,23 +348,8 @@ public class RevenueService {
                 order.getId(),
                 occurredAt,
                 order.getFinalAmountMinor(),
-                commissionFor(order),
                 inventoryCostService.orderCost(order)
         );
-    }
-
-    private long commissionFor(Order order) {
-        List<EscrowRecord> escrows = EscrowRecord.list(
-                "tenantId = ?1 and orderId = ?2 and currency = ?3",
-                order.getTenantId(),
-                order.getId(),
-                order.getCurrency()
-        );
-        if (escrows.isEmpty()) {
-            return 0;
-        }
-        long sellerNetMinor = escrows.stream().mapToLong(EscrowRecord::getAmountMinor).sum();
-        return Math.max(0, order.getFinalAmountMinor() - sellerNetMinor);
     }
 
     private void validateDateRange(LocalDate from, LocalDate to) {
@@ -412,7 +365,11 @@ public class RevenueService {
     }
 
     private String normalizeCurrency(String currency) {
-        return currency == null || currency.isBlank() ? "VND" : currency.trim().toUpperCase();
+        String normalized = currency == null || currency.isBlank() ? "VND" : currency.trim().toUpperCase();
+        if (!"VND".equals(normalized)) {
+            throw new BadRequestException("Revenue reports only support VND");
+        }
+        return normalized;
     }
 
     public record DailyReport(
@@ -436,10 +393,8 @@ public class RevenueService {
     ) {}
 
     public record MonthlyTotals(
-            long grossRevenueMinor,
-            long refundMinor,
             long netRevenueMinor,
-            long commissionMinor,
+            long refundMinor,
             long warehouseCostMinor,
             long adjustmentIncomeMinor,
             long adjustmentExpenseMinor,
@@ -479,10 +434,8 @@ public class RevenueService {
     }
 
     public record RevenueTotals(
-            long grossRevenueMinor,
-            long refundMinor,
             long netRevenueMinor,
-            long commissionMinor,
+            long refundMinor,
             long warehouseCostMinor,
             long profitMinor,
             long orderCount,
@@ -491,27 +444,22 @@ public class RevenueService {
 
     public record DailyRevenue(
             LocalDate date,
-            long grossRevenueMinor,
-            long refundMinor,
             long netRevenueMinor,
-            long commissionMinor,
+            long refundMinor,
             long warehouseCostMinor,
             long profitMinor,
             long orderCount,
             long refundCount
     ) {}
 
-    record SaleEvent(UUID orderId, Instant occurredAt, long amountMinor,
-                     long commissionMinor, long warehouseCostMinor) {}
+    record SaleEvent(UUID orderId, Instant occurredAt, long amountMinor, long warehouseCostMinor) {}
 
-    record RefundEvent(UUID orderId, Instant occurredAt, long amountMinor,
-                       long commissionReversalMinor, long warehouseCostReversalMinor) {}
+    record RefundEvent(UUID orderId, Instant occurredAt, long amountMinor) {}
 
     private static class MutableDay {
         private final LocalDate date;
-        private long grossRevenueMinor;
+        private long netRevenueMinor;
         private long refundMinor;
-        private long commissionMinor;
         private long warehouseCostMinor;
         private long orderCount;
         private long refundCount;
@@ -523,12 +471,10 @@ public class RevenueService {
         private DailyRevenue toRevenue() {
             return new DailyRevenue(
                     date,
-                    grossRevenueMinor,
+                    netRevenueMinor,
                     refundMinor,
-                    grossRevenueMinor - refundMinor,
-                    commissionMinor,
                     warehouseCostMinor,
-                    grossRevenueMinor - refundMinor - commissionMinor - warehouseCostMinor,
+                    netRevenueMinor - warehouseCostMinor,
                     orderCount,
                     refundCount
             );

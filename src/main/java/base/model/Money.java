@@ -66,6 +66,6 @@ public final class Money {
         if ("VND".equalsIgnoreCase(currency)) {
             return 0;
         }
-        return 2; // Default to 2 (USD, etc.)
+        throw new IllegalArgumentException("Unsupported currency: " + currency + ". Only VND is supported.");
     }
 }

@@ -6,6 +6,7 @@ import base.entity.PaymentTransaction;
 import base.security.CallerContext;
 import base.security.PaymentAccess;
 import base.service.PaymentIntentService;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -38,6 +39,9 @@ public class PaymentIntentResource {
     @Inject
     PaymentAccess paymentAccess;
 
+    @Inject
+    EntitlementService entitlementService;
+
     public static class CreateIntentRequest {
         public UUID orderId;
         public String idempotencyKey;
@@ -47,6 +51,7 @@ public class PaymentIntentResource {
     @RolesAllowed({"admin", "businessOwner", "operator", "customer"})
     @Transactional
     public Response createIntent(CreateIntentRequest request) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_ONLINE_PAYMENTS);
         if (request == null || request.orderId == null) {
             throw new BadRequestException("orderId is required");
         }
@@ -69,20 +74,16 @@ public class PaymentIntentResource {
             throw new BadRequestException("Only orders awaiting payment can be paid for");
         }
 
-        long intentAmount = order.getFinalAmountMinor();
-        String intentCurrency = order.getCurrency();
-
-        if ("USD".equalsIgnoreCase(intentCurrency)) {
-            intentAmount = intentAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
-            intentCurrency = "VND";
+        if (!"VND".equalsIgnoreCase(order.getCurrency())) {
+            throw new BadRequestException("Orders can only be paid in VND");
         }
 
         PaymentIntent intent = paymentIntentService.createIntent(
                 tenantCode,
                 order.getId(),
                 order.getCustomer().getId(),
-                intentAmount,
-                intentCurrency,
+                order.getFinalAmountMinor(),
+                "VND",
                 request.idempotencyKey,
                 caller.userId()
         );

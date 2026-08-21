@@ -20,9 +20,10 @@ import {
   listOrdersQueryKey,
   myVouchersQueryKey,
 } from '@/shared/api'
-import { formatUSD } from '@/shared/utils/currency'
+import { formatVND } from '@/shared/utils/currency'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Badge } from '@/shared/ui/badge'
+import { CascadingAddressSelect } from '@/shared/ui/cascading-address-select'
 import { Link } from '@tanstack/react-router'
 
 interface CartItem {
@@ -38,7 +39,7 @@ function cartBusinessId(item: CartItem): string {
 
 function formatMoney(value?: number | null) {
   if (value === null || value === undefined) return '-'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+  return formatVND(value)
 }
 
 export function CartPage() {
@@ -258,9 +259,13 @@ export function CartPage() {
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [customerAddress, setCustomerAddress] = useState('')
-  const [shippingWard, setShippingWard] = useState('')
-  const [shippingProvince, setShippingProvince] = useState('')
+  const [provinceCode, setProvinceCode] = useState('')
+  const [provinceName, setProvinceName] = useState('')
+  const [districtCode, setDistrictCode] = useState('')
+  const [districtName, setDistrictName] = useState('')
+  const [wardCode, setWardCode] = useState('')
+  const [wardName, setWardName] = useState('')
+  const [streetAddress, setStreetAddress] = useState('')
   const [shippingNote, setShippingNote] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD')
 
@@ -273,7 +278,10 @@ export function CartPage() {
       setCustomerName(`${firstName} ${lastName}`.trim())
       setCustomerEmail(myCustomerProfile?.email?.trim() || me?.email?.trim() || '')
       setCustomerPhone(myCustomerProfile?.phone?.trim() || me?.phone?.trim() || '')
-      setCustomerAddress(myCustomerProfile?.address ?? '')
+      setProvinceCode((myCustomerProfile as any)?.provinceCode ?? '')
+      setDistrictCode((myCustomerProfile as any)?.districtCode ?? '')
+      setWardCode((myCustomerProfile as any)?.wardCode ?? '')
+      setStreetAddress((myCustomerProfile as any)?.streetAddress ?? myCustomerProfile?.address ?? '')
     }
   }, [isCustomer, me, myCustomerProfile])
 
@@ -324,8 +332,8 @@ export function CartPage() {
     return Number(v.discountValue)
   }, [selectedVoucher, buyerCartTotal])
 
-  const FREE_SHIPPING_THRESHOLD = 100 
-  const FLAT_SHIPPING_FEE = 10
+  const FREE_SHIPPING_THRESHOLD = 2_500_000
+  const FLAT_SHIPPING_FEE = 250_000
   const VAT_RATE = 0.1 
 
   const buyerShippingFeeMinor = buyerCartTotal > 0 && (buyerCartTotal - buyerDiscountAmount) < FREE_SHIPPING_THRESHOLD ? FLAT_SHIPPING_FEE : 0
@@ -361,10 +369,14 @@ export function CartPage() {
       setError('Vui lòng chọn một cửa hàng để tạo đơn và thanh toán.')
       return
     }
-    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim() || !shippingWard.trim() || !shippingProvince.trim()) {
-      setError('Vui lòng điền đầy đủ thông tin giao hàng bắt buộc')
+    if (!customerName.trim() || !customerPhone.trim() || !provinceCode.trim() || !districtCode.trim() || !wardCode.trim() || !streetAddress.trim()) {
+      setError('Vui lòng chọn Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập địa chỉ cụ thể')
       return
     }
+    const shipWard = wardName || wardCode
+    const shipProv = provinceName || provinceCode
+    const fullAddress = `${streetAddress.trim()}, ${shipWard}, ${districtName || districtCode}, ${shipProv}`
+
     customerCheckoutMutation.mutate({
       body: {
         customerId,
@@ -372,16 +384,20 @@ export function CartPage() {
         voucherCode: selectedVoucher?.code ?? undefined,
         shippingName: customerName.trim(),
         shippingPhone: customerPhone.trim(),
-        shippingAddress: customerAddress.trim(),
-        shippingWard: shippingWard.trim(),
-        shippingProvince: shippingProvince.trim(),
+        provinceCode: provinceCode.trim(),
+        districtCode: districtCode.trim(),
+        wardCode: wardCode.trim(),
+        streetAddress: streetAddress.trim(),
+        shippingAddress: fullAddress,
+        shippingWard: shipWard,
+        shippingProvince: shipProv,
         shippingNote: shippingNote.trim() || undefined,
         items: checkoutItems.map(item => ({
           productId: item.product.id,
           productVariantId: item.variant?.id ?? null,
           quantity: item.quantity,
         })) as any,
-      }
+      } as any,
     })
   }
 
@@ -492,7 +508,7 @@ export function CartPage() {
                             {/* Price info */}
                             <div className="text-right sm:w-24">
                               <div className="text-[10px] text-muted-foreground">Đơn giá</div>
-                              <div className="font-semibold text-sm text-foreground">{formatUSD(item.priceMinor)}</div>
+                              <div className="font-semibold text-sm text-foreground">{formatVND(item.priceMinor)}</div>
                             </div>
 
                             {/* Quantity buttons */}
@@ -521,7 +537,7 @@ export function CartPage() {
                             {/* Subtotal */}
                             <div className="text-right sm:w-28">
                               <div className="text-[10px] text-muted-foreground">Thành tiền</div>
-                              <div className="font-bold text-sm text-primary">{formatUSD(item.priceMinor * item.quantity)}</div>
+                              <div className="font-bold text-sm text-primary">{formatVND(item.priceMinor * item.quantity)}</div>
                             </div>
 
                             {/* Trash action */}
@@ -570,10 +586,10 @@ export function CartPage() {
                         {collectedVoucherList.map((cv: any) => {
                           const v = cv.voucher
                           const isValid = buyerCartTotal >= Number(v.minOrderValueMinor)
-                          const discValStr = v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : formatUSD(Number(v.discountValue))
+                          const discValStr = v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : formatVND(Number(v.discountValue))
                           return (
                             <option key={v.id} value={v.id} disabled={!isValid}>
-                              {v.code} ({discValStr} OFF) {!isValid ? ` - Đơn tối thiểu: ${formatUSD(Number(v.minOrderValueMinor))}` : ''}
+                              {v.code} ({discValStr} OFF) {!isValid ? ` - Đơn tối thiểu: ${formatVND(Number(v.minOrderValueMinor))}` : ''}
                             </option>
                           )
                         })}
@@ -586,7 +602,7 @@ export function CartPage() {
                               Đã áp dụng: {selectedVoucher.code}
                             </span>
                             <p className="text-muted-foreground mt-0.5">
-                              Giảm {selectedVoucher.discountType === 'PERCENTAGE' ? `${selectedVoucher.discountValue}%` : formatUSD(Number(selectedVoucher.discountValue))} (Tối đa: {selectedVoucher.maxDiscountAmountMinor ? formatUSD(Number(selectedVoucher.maxDiscountAmountMinor)) : 'Không giới hạn'})
+                              Giảm {selectedVoucher.discountType === 'PERCENTAGE' ? `${selectedVoucher.discountValue}%` : formatVND(Number(selectedVoucher.discountValue))} (Tối đa: {selectedVoucher.maxDiscountAmountMinor ? formatVND(Number(selectedVoucher.maxDiscountAmountMinor)) : 'Không giới hạn'})
                             </p>
                           </div>
                         </div>
@@ -610,13 +626,13 @@ export function CartPage() {
                   <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tổng tiền hàng</span>
-                      <span className="font-medium text-foreground">{formatUSD(buyerCartTotal)}</span>
+                      <span className="font-medium text-foreground">{formatVND(buyerCartTotal)}</span>
                     </div>
 
                     {buyerDiscountAmount > 0 && (
                       <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
                         <span>Chiết khấu Voucher</span>
-                        <span>-{formatUSD(buyerDiscountAmount)}</span>
+                        <span>-{formatVND(buyerDiscountAmount)}</span>
                       </div>
                     )}
 
@@ -624,7 +640,7 @@ export function CartPage() {
                       <span className="text-muted-foreground">Phí ship</span>
                       <span>
                         {buyerShippingFeeMinor > 0 ? (
-                          formatUSD(buyerShippingFeeMinor)
+                          formatVND(buyerShippingFeeMinor)
                         ) : (
                           <span className="text-emerald-500 font-semibold">Miễn phí</span>
                         )}
@@ -633,20 +649,20 @@ export function CartPage() {
 
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">VAT (10%)</span>
-                      <span className="font-medium text-foreground">{formatUSD(buyerTaxAmountMinor)}</span>
+                      <span className="font-medium text-foreground">{formatVND(buyerTaxAmountMinor)}</span>
                     </div>
 
                     {buyerShippingFeeMinor > 0 && (
                       <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 mt-1">
                         <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span>Mua thêm <strong>{formatUSD(FREE_SHIPPING_THRESHOLD - (buyerCartTotal - buyerDiscountAmount))}</strong> để được miễn phí vận chuyển!</span>
+                        <span>Mua thêm <strong>{formatVND(FREE_SHIPPING_THRESHOLD - (buyerCartTotal - buyerDiscountAmount))}</strong> để được miễn phí vận chuyển!</span>
                       </div>
                     )}
 
                     <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                       <span>Tổng cộng</span>
                       <span className="text-primary text-lg">
-                        {formatUSD(buyerFinalAmountMinor)}
+                        {formatVND(buyerFinalAmountMinor)}
                       </span>
                     </div>
                   </div>
@@ -705,7 +721,7 @@ export function CartPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="shippingPhone">Số điện thoại liên lạc</Label>
+                <Label htmlFor="shippingPhone">Số điện thoại liên lạc *</Label>
                 <Input
                   id="shippingPhone"
                   value={customerPhone}
@@ -714,35 +730,40 @@ export function CartPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="shippingAddress">Địa chỉ nhận hàng</Label>
-                <Input
-                  id="shippingAddress"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-                />
-              </div>
+              <CascadingAddressSelect
+                provinceCode={provinceCode}
+                districtCode={districtCode}
+                wardCode={wardCode}
+                streetAddress={streetAddress}
+                onProvinceChange={(code, name) => {
+                  setProvinceCode(code)
+                  setProvinceName(name)
+                  setDistrictCode('')
+                  setDistrictName('')
+                  setWardCode('')
+                  setWardName('')
+                }}
+                onDistrictChange={(code, name) => {
+                  setDistrictCode(code)
+                  setDistrictName(name)
+                  setWardCode('')
+                  setWardName('')
+                }}
+                onWardChange={(code, name) => {
+                  setWardCode(code)
+                  setWardName(name)
+                }}
+                onStreetAddressChange={setStreetAddress}
+              />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="shippingProvince">Tỉnh/Thành phố *</Label>
-                  <Input
-                    id="shippingProvince"
-                    value={shippingProvince}
-                    onChange={(e) => setShippingProvince(e.target.value)}
-                    placeholder="Tỉnh/Thành phố"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="shippingWard">Phường/Xã/Quận *</Label>
-                  <Input
-                    id="shippingWard"
-                    value={shippingWard}
-                    onChange={(e) => setShippingWard(e.target.value)}
-                    placeholder="Phường/Xã/Quận"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="shippingNote">Ghi chú giao hàng</Label>
+                <Input
+                  id="shippingNote"
+                  value={shippingNote}
+                  onChange={(e) => setShippingNote(e.target.value)}
+                  placeholder="Ghi chú thêm cho shipper (tùy chọn)..."
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -785,25 +806,25 @@ export function CartPage() {
               <div className="border-t border-border pt-3 mt-4 space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Tạm tính</span>
-                  <span>{formatUSD(buyerCartTotal)}</span>
+                  <span>{formatVND(buyerCartTotal)}</span>
                 </div>
                 {buyerDiscountAmount > 0 && (
                   <div className="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
                     <span>Voucher giảm giá</span>
-                    <span>-{formatUSD(buyerDiscountAmount)}</span>
+                    <span>-{formatVND(buyerDiscountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Phí ship</span>
-                  <span>{buyerShippingFeeMinor > 0 ? formatUSD(buyerShippingFeeMinor) : 'Free'}</span>
+                  <span>{buyerShippingFeeMinor > 0 ? formatVND(buyerShippingFeeMinor) : 'Free'}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Thuế VAT (10%)</span>
-                  <span>{formatUSD(buyerTaxAmountMinor)}</span>
+                  <span>{formatVND(buyerTaxAmountMinor)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-sm text-foreground pt-1.5">
                   <span>Tổng tiền thanh toán</span>
-                  <span className="text-primary">{formatUSD(buyerFinalAmountMinor)}</span>
+                  <span className="text-primary">{formatVND(buyerFinalAmountMinor)}</span>
                 </div>
               </div>
 

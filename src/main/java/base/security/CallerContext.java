@@ -1,12 +1,14 @@
 package base.security;
 
 import base.entity.User;
+import base.entity.Business;
 import base.service.UserProvisioningService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonValue;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.Logger;
@@ -131,7 +133,26 @@ public class CallerContext {
                 throw new NotFoundException("User not found for authenticated caller");
             }
         }
+        if (!user.isActive()) {
+            throw new ForbiddenException("User account is inactive");
+        }
         return user;
+    }
+
+    public Business resolveBusiness() {
+        User user = resolveUser();
+        String tenantCode = tenantCode();
+        Business business = Business.find("createdBy = ?1 and tenantId = ?2", user.getId(), tenantCode).firstResult();
+        if (business == null && (hasRole("operator") || hasRole("businessOwner"))) {
+            User owner = User.find("email = ?1 and tenantId = ?2", "owner@v-erp.com", tenantCode).firstResult();
+            if (owner != null) {
+                business = Business.find("createdBy = ?1 and tenantId = ?2", owner.getId(), tenantCode).firstResult();
+            }
+            if (business == null) {
+                business = Business.find("tenantId = ?1", tenantCode).firstResult();
+            }
+        }
+        return business;
     }
 
     private static UUID parseUuid(String value) {

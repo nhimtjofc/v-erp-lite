@@ -210,6 +210,15 @@ public class PaymentIntentService {
         transaction.persist();
     }
 
+    @Transactional
+    public void processWebhookEvent(String tenantId, UUID intentId, String gateway, String gatewayTransactionId, String status) {
+        if ("SUCCESS".equalsIgnoreCase(status) || "SUCCEEDED".equalsIgnoreCase(status)) {
+            markSucceeded(tenantId, intentId, gateway, gatewayTransactionId, null);
+        } else {
+            markFailed(tenantId, intentId, gateway, gatewayTransactionId, null);
+        }
+    }
+
     private void requireStatus(PaymentIntent intent, String expectedStatus) {
         if (!expectedStatus.equals(intent.getStatus())) {
             throw new BadRequestException("Trạng thái ý định thanh toán không hợp lệ");
@@ -219,6 +228,25 @@ public class PaymentIntentService {
     private void ensureNotExpired(PaymentIntent intent) {
         if (intent.getExpiresAt().isBefore(Instant.now())) {
             throw new BadRequestException("Ý định thanh toán đã hết hạn");
+        }
+    }
+
+    @Transactional
+    public void processWebhookEvent(String intentId, String gateway, String eventId, String status, String rawSignature) throws IllegalStateException {
+        UUID parsedIntentId = UUID.fromString(intentId);
+        // Tenant resolving is normally done via CallerContext or similar, but for webhook it might not be authenticated.
+        // Assuming the intent itself contains the tenantId.
+        // We'll find the intent first across all tenants (or require tenantId as parameter).
+        // Since we don't have tenantId in the signature, we find it by ID.
+        PaymentIntent intent = PaymentIntent.find("id = ?1", parsedIntentId).firstResult();
+        if (intent == null) {
+            throw new NotFoundException("Payment intent not found");
+        }
+        
+        if ("SUCCESS".equalsIgnoreCase(status)) {
+            markSucceeded(intent.getTenantId(), parsedIntentId, gateway, eventId, null);
+        } else {
+            markFailed(intent.getTenantId(), parsedIntentId, gateway, eventId, null);
         }
     }
 }

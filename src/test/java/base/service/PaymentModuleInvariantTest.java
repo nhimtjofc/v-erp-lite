@@ -30,14 +30,14 @@ class PaymentModuleInvariantTest {
 
     @Test
     void moneyRoundingUsesMinorUnitsAndHalfUpPolicy() {
-        Money usd = Money.fromDecimal(new BigDecimal("10.005"), "USD");
-        assertEquals(1001, usd.getAmountMinor());
-        assertEquals(new BigDecimal("10.01"), usd.toDecimal());
+        Money vnd = Money.fromDecimal(new BigDecimal("10.5"), "VND");
+        assertEquals(11, vnd.getAmountMinor());
+        assertEquals(new BigDecimal("11"), vnd.toDecimal());
 
-        Money commission = Money.of(100, "USD").multiply(0.05);
+        Money commission = Money.of(100, "VND").multiply(0.05);
         assertEquals(5, commission.getAmountMinor());
 
-        assertThrows(BadRequestException.class, () -> Money.fromDecimal(new BigDecimal("-1"), "USD"));
+        assertThrows(BadRequestException.class, () -> Money.fromDecimal(new BigDecimal("-1"), "VND"));
     }
 
     @Test

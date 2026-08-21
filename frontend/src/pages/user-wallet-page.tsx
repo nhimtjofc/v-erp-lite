@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMeQuery } from '@/shared/api'
 import {
-  useSellerWalletQuery, // actually it's a myWallet query inside
+  MY_WALLET_QUERY_KEY,
+  useMyWalletQuery,
   useWalletTransactionsQuery,
 } from '@/shared/api/wallet'
 import { topUpMyWallet, completeTopUp, getMyTopUps } from '@/shared/api/gen/sdk.gen'
@@ -90,20 +91,21 @@ function TopUpDialog({
   })
 
   const completeMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await completeTopUp({
-        path: { id },
-      })
+    mutationFn: async (topUp: any) => {
+      const res = await completeTopUp({ path: { id: topUp.id } })
       return res.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seller-wallet'] })
+      queryClient.invalidateQueries({ queryKey: MY_WALLET_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] })
       setPendingTopUp(null)
       onOpenChange(false)
     },
-  })
+    onError: (err: any) => {
+      setError(err?.message || 'Không thể hoàn tất nạp tiền vào ví')
+    },
 
+  })
   const handleCreate = () => {
     setError('')
     const amount = Number.parseInt(amountStr.replace(/\D/g, ''), 10)
@@ -116,7 +118,7 @@ function TopUpDialog({
 
   const handleSimulatePayment = () => {
     if (pendingTopUp) {
-      completeMutation.mutate(pendingTopUp.id)
+      completeMutation.mutate(pendingTopUp)
     }
   }
 
@@ -147,9 +149,10 @@ function TopUpDialog({
         ) : (
           <div className="grid gap-4 py-4 flex flex-col items-center">
             <p className="text-sm font-medium text-center">Quét mã QR sau để nạp tiền:</p>
+            {error && <div className="w-full text-sm font-medium text-destructive">{error}</div>}
             {pendingTopUp.paymentQrCodeBase64 && (
               <img
-                src={`data:image/png;base64,${pendingTopUp.paymentQrCodeBase64}`}
+                src={pendingTopUp.paymentQrCodeBase64}
                 alt="VietQR"
                 className="w-48 h-48 mx-auto rounded border"
               />
@@ -181,7 +184,7 @@ function TopUpDialog({
 
 export function UserWalletPage() {
   const { data: user } = useMeQuery()
-  const { data: wallet, isLoading: walletLoading } = useSellerWalletQuery()
+  const { data: wallet, isLoading: walletLoading } = useMyWalletQuery()
   const { data: transactions, isLoading: txLoading } = useWalletTransactionsQuery(wallet?.id)
   
   const [topUpOpen, setTopUpOpen] = useState(false)

@@ -7,6 +7,7 @@ import { catalogApi } from '@/shared/api/catalog'
 import { uploadImage } from '@/shared/api'
 import type { Product, Category, ProductOption, ProductVariant } from '@/shared/api/catalog'
 import { Button } from '@/shared/ui/button'
+import { useMeQuery } from '@/shared/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -29,6 +30,7 @@ interface ProductFormState {
   saleStartsAt: string
   saleEndsAt: string
   active: boolean
+  approvalStatus: string
   stockQuantity: string
   lowStockThreshold: string
   hasVariants: boolean
@@ -49,6 +51,7 @@ const emptyForm: ProductFormState = {
   saleStartsAt: '',
   saleEndsAt: '',
   active: true,
+  approvalStatus: 'PENDING',
   stockQuantity: '0',
   lowStockThreshold: '0',
   hasVariants: false,
@@ -99,6 +102,7 @@ function productToForm(product: Product): ProductFormState {
     saleStartsAt: toLocalInputValue(product.saleStartsAt),
     saleEndsAt: toLocalInputValue(product.saleEndsAt),
     active: product.active ?? true,
+    approvalStatus: product.approvalStatus || 'PENDING',
     stockQuantity: product.stockQuantity?.toString() || '0',
     lowStockThreshold: product.lowStockThreshold?.toString() || '0',
     hasVariants,
@@ -147,6 +151,7 @@ function buildPayload(form: ProductFormState): Partial<Product> {
     saleStartsAt: fromLocalInputValue(form.saleStartsAt),
     saleEndsAt: fromLocalInputValue(form.saleEndsAt),
     active: form.active,
+    approvalStatus: form.approvalStatus,
     stockQuantity: form.hasVariants ? 0 : Number(form.stockQuantity || 0),
     lowStockThreshold: form.hasVariants ? 0 : Number(form.lowStockThreshold || 0),
     options,
@@ -159,6 +164,8 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
   const { t } = useTranslation(['catalog', 'common'])
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { data: me } = useMeQuery()
+  const isStaffApprove = me?.role?.name === 'admin' || me?.role?.name === 'operator'
   const isEdit = Boolean(productId)
   const [form, setForm] = useState<ProductFormState>(emptyForm)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof ProductFormState, string>>>({})
@@ -554,6 +561,25 @@ export function ProductFormPage({ productId }: ProductFormPageProps) {
                 <p className="text-sm text-muted-foreground">{t('inactiveHint')}</p>
               </div>
               <Switch id="active" checked={form.active} onCheckedChange={(checked) => updateField('active', checked)} />
+            </div>
+
+            <div className="flex items-center justify-between rounded-md border px-4 py-3">
+              <div>
+                <Label htmlFor="approvalStatus">{t('status')}</Label>
+                <p className="text-sm text-muted-foreground">Trạng thái phê duyệt sản phẩm (chỉ Admin/Operator mới được thay đổi)</p>
+              </div>
+              <div className="w-48">
+                <select
+                  id="approvalStatus"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-80 disabled:cursor-not-allowed"
+                  value={form.approvalStatus}
+                  onChange={(event) => updateField('approvalStatus', event.target.value)}
+                  disabled={!isStaffApprove}
+                >
+                  <option value="PENDING">{t('pending')}</option>
+                  <option value="APPROVED">{t('approved')}</option>
+                </select>
+              </div>
             </div>
 
             {!form.hasVariants && (

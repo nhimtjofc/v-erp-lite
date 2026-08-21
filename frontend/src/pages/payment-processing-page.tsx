@@ -3,12 +3,11 @@ import { Link } from '@tanstack/react-router'
 import QRCode from 'qrcode'
 import {
   type PaymentIntent,
-  useCompleteMockPaymentMutation,
   useCreateIntentMutation,
-  useFailMockPaymentMutation,
   useGetOrderQuery,
-  useInitiateMockPaymentMutation,
+  useInitiateChargeMutation,
   useListOrderPaymentIntentsQuery,
+  useSimulateTransferredMutation,
 } from '@/shared/api'
 import { formatMoneyMinor } from '@/shared/utils/currency'
 import { Button } from '@/shared/ui/button'
@@ -31,6 +30,9 @@ import {
   ShieldCheck,
   Smartphone,
   XCircle,
+  Terminal,
+  Server,
+  Zap,
 } from 'lucide-react'
 
 interface PaymentProcessingPageProps {
@@ -48,7 +50,7 @@ interface MockPaymentSessionResponse {
 type PaymentMethod = 'MOCK_QR'
 
 const TERMINAL_STATUSES = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED'])
-const PAYABLE_ORDER_STATUSES = new Set(['PENDING', 'PENDING_PAYMENT'])
+const PAYABLE_ORDER_STATUSES = new Set(['PENDING_PAYMENT'])
 const MOCK_PAYMENT_ENABLED = import.meta.env.DEV
   || import.meta.env.VITE_ENABLE_MOCK_PAYMENT === 'true'
 
@@ -82,13 +84,13 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
   const [activeIntentId, setActiveIntentId] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [actionError, setActionError] = useState('')
+  const [timeLeft, setTimeLeft] = useState<string>('')
 
   const orderQuery = useGetOrderQuery({ path: { id: orderId } })
   const intentsQuery = useListOrderPaymentIntentsQuery({ path: { orderId } })
   const createIntentMutation = useCreateIntentMutation()
-  const initiateMutation = useInitiateMockPaymentMutation()
-  const completeMutation = useCompleteMockPaymentMutation()
-  const failMutation = useFailMockPaymentMutation()
+  const initiateChargeMutation = useInitiateChargeMutation()
+  const simulateTransferredMutation = useSimulateTransferredMutation()
 
   const intents = intentsQuery.data ?? []
   const intent = useMemo(
@@ -102,10 +104,10 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
       && new Date(intent.expiresAt).getTime() <= Date.now()
   )
   const isBusy = createIntentMutation.isPending
-    || initiateMutation.isPending
-    || completeMutation.isPending
-    || failMutation.isPending
+    || initiateChargeMutation.isPending
+    || simulateTransferredMutation.isPending
 
+  // Polling active payment intent
   useEffect(() => {
     if (!intent?.id || !status || TERMINAL_STATUSES.has(status)) return
     const intervalId = window.setInterval(() => {
@@ -114,12 +116,37 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
     return () => window.clearInterval(intervalId)
   }, [intent?.id, status, intentsQuery.refetch])
 
+  // Timer countdown for intent expiry
+  useEffect(() => {
+    if (!intent?.expiresAt || TERMINAL_STATUSES.has(status ?? '')) {
+      setTimeLeft('')
+      return
+    }
+
+    const updateTimer = () => {
+      const remaining = new Date(intent.expiresAt!).getTime() - Date.now()
+      if (remaining <= 0) {
+        setTimeLeft('Đã hết hạn')
+        void intentsQuery.refetch()
+      } else {
+        const mins = Math.floor(remaining / 60000)
+        const secs = Math.floor((remaining % 60000) / 1000)
+        setTimeLeft(`${mins}:${secs < 10 ? '0' : ''}${secs}`)
+      }
+    }
+
+    updateTimer()
+    const timerId = window.setInterval(updateTimer, 1000)
+    return () => window.clearInterval(timerId)
+  }, [intent?.expiresAt, status, intentsQuery])
+
+  // Generate QR Code URL
   useEffect(() => {
     if (!session?.qrCodeContent) {
       setQrDataUrl('')
       return
     }
-    QRCode.toDataURL(session.qrCodeContent, { width: 240, margin: 2 })
+    QRCode.toDataURL(session.qrCodeContent, { width: 260, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setActionError('Không thể tạo mã QR thanh toán.'))
   }, [session?.qrCodeContent])
@@ -150,37 +177,49 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
       }
       setActiveIntentId(payableIntent.id)
 
-      const createdSession = await initiateMutation.mutateAsync({
-        body: { paymentIntentId: payableIntent.id },
-      }) as MockPaymentSessionResponse
-      setSession(createdSession)
+      // Initiate charge with mock bank API
+      const opResult = await initiateChargeMutation.mutateAsync({
+        body: {
+          paymentIntentId: payableIntent.id,
+          amountMinor: payableIntent.amountMinor!,
+          currency: payableIntent.currency!,
+        },
+      }) as any
+
+      if (opResult && opResult.transactionId) {
+        setSession({
+          gateway: 'MOCK',
+          gatewayTransactionId: opResult.transactionId,
+          paymentUrl: opResult.metadata.paymentUrl || `https://mock-gateway.v-erp-lite.local/pay?txn=${opResult.transactionId}`,
+          qrCodeContent: opResult.metadata.qrCodeContent || `v-erp://payment/mock?intent=${payableIntent.id}&txn=${opResult.transactionId}&amount=${payableIntent.amountMinor}&currency=${payableIntent.currency}`,
+          expiresAt: payableIntent.expiresAt ?? new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        })
+      } else {
+        throw new Error('Không thể khởi tạo phiên giao dịch từ Mock Bank.')
+      }
+
       await intentsQuery.refetch()
     } catch (error) {
       setActionError(paymentErrorMessage(error))
     }
   }
 
-  async function completePayment() {
-    if (!activeIntentId) return
+  async function simulatePaymentWebhook(success: boolean) {
+    if (!activeIntentId || !session?.gatewayTransactionId) return
     setActionError('')
     try {
-      await completeMutation.mutateAsync({
-        path: { intentId: activeIntentId },
+      await simulateTransferredMutation.mutateAsync({
+        body: {
+          paymentIntentId: activeIntentId,
+          gatewayTransactionId: session.gatewayTransactionId,
+          status: success ? 'SUCCESS' : 'FAILED',
+          amountMinor: intent?.amountMinor ?? 0,
+          currency: intent?.currency ?? 'VND',
+        },
       })
-      await intentsQuery.refetch()
-    } catch (error) {
-      setActionError(paymentErrorMessage(error))
-    }
-  }
-
-  async function failPayment() {
-    if (!activeIntentId) return
-    setActionError('')
-    try {
-      await failMutation.mutateAsync({
-        path: { intentId: activeIntentId },
-      })
-      setSession(null)
+      if (!success) {
+        setSession(null)
+      }
       await intentsQuery.refetch()
     } catch (error) {
       setActionError(paymentErrorMessage(error))
@@ -194,8 +233,8 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
   if (orderQuery.isLoading || intentsQuery.isLoading) {
     return (
       <div className="flex min-h-[55vh] items-center justify-center gap-3 text-muted-foreground">
-        <LoaderCircle className="h-6 w-6 animate-spin" />
-        Đang tải phiên thanh toán...
+        <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+        Đang tải phiên thanh toán an toàn...
       </div>
     )
   }
@@ -209,7 +248,7 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
   }
 
   const order = orderQuery.data
-  const currency = order.currency ?? 'USD'
+  const currency = order.currency ?? 'VND'
   const amount = Number(order.finalAmountMinor ?? 0)
   const paymentCurrency = intent?.currency ?? currency
   const paymentAmount = Number(intent?.amountMinor ?? amount)
@@ -251,189 +290,250 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
     )
   }
 
-  if (!MOCK_PAYMENT_ENABLED) {
-    return (
-      <PaymentError
-        title="Cổng thanh toán demo đã tắt"
-        message="MockPay chỉ được bật trong môi trường phát triển và kiểm thử."
-      />
-    )
-  }
-
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-12">
-      <Link
-        to="/orders/$id"
-        params={{ id: orderId }}
-        className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Quay lại đơn hàng
-      </Link>
+    <div className="mx-auto max-w-6xl space-y-6 px-4 pb-16 pt-2">
+      {/* Steps progress indicator */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <Link
+          to="/orders/$id"
+          params={{ id: orderId }}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> Quay lại đơn hàng
+        </Link>
+        <div className="hidden sm:flex items-center gap-3 text-xs font-semibold tracking-wider text-muted-foreground">
+          <span className="text-primary font-bold">1. ĐƠN HÀNG</span>
+          <span className="text-muted-foreground/30">/</span>
+          <span className={cn(session ? "text-primary font-bold" : "text-muted-foreground")}>2. XÁC NHẬN</span>
+          <span className="text-muted-foreground/30">/</span>
+          <span className={cn(status === 'SUCCEEDED' ? "text-primary font-bold" : "text-muted-foreground")}>3. HOÀN TẤT</span>
+        </div>
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.75fr)]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
         <div className="space-y-6">
           <div>
-            <Badge variant="outline" className="mb-3 border-primary/30 bg-primary/5 text-primary">
-              Thanh toán an toàn
+            <Badge variant="outline" className="mb-2 border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-medium">
+              <Zap className="mr-1 h-3 w-3 fill-current" /> Cổng thanh toán Sandbox Bảo Mật Cao
             </Badge>
-            <h1 className="text-3xl font-bold tracking-tight">Hoàn tất thanh toán</h1>
-            <p className="mt-2 text-muted-foreground">
-              Đơn {order.orderNumber} đã được tạo. Chọn phương thức để tiếp tục.
+            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/75 bg-clip-text">
+              Hoàn tất thanh toán
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Đơn hàng <span className="font-mono text-foreground font-semibold">#{order.orderNumber}</span> của bạn đã sẵn sàng.
             </p>
           </div>
 
           {!session ? (
-            <Card>
+            <Card className="border-border/60 shadow-lg dark:shadow-black/20 overflow-hidden bg-card/50 backdrop-blur-md">
               <CardHeader>
-                <CardTitle>Phương thức thanh toán</CardTitle>
-                <CardDescription>Gateway mock dùng cho môi trường demo, không trừ tiền thật.</CardDescription>
+                <CardTitle>Chọn phương thức thanh toán</CardTitle>
+                <CardDescription>Cổng thanh toán giả lập hỗ trợ kiểm tra luồng bảo mật HMAC & Replay Protection.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <button
                   type="button"
                   onClick={() => setMethod('MOCK_QR')}
                   className={cn(
-                    'flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors',
+                    'flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200',
                     method === 'MOCK_QR'
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                      : 'border-border hover:bg-muted/50'
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md translate-x-1'
+                      : 'border-border/60 hover:bg-muted/30 hover:border-border'
                   )}
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <QrCode className="h-5 w-5" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                    <QrCode className="h-6 w-6" />
                   </span>
                   <span className="flex-1">
-                    <span className="block font-semibold">Chuyển khoản VietQR</span>
-                    <span className="block text-sm text-muted-foreground">Quét mã VietQR bằng ứng dụng ngân hàng</span>
+                    <span className="block font-bold text-foreground">Chuyển khoản VietQR Sandbox</span>
+                    <span className="block text-xs text-muted-foreground mt-0.5">Xác thực giao dịch tự động qua Webhook ký mã HMAC</span>
                   </span>
                   <span className={cn(
-                    'flex h-5 w-5 items-center justify-center rounded-full border',
-                    method === 'MOCK_QR' ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                    'flex h-6 w-6 items-center justify-center rounded-full border transition-all',
+                    method === 'MOCK_QR' ? 'border-primary bg-primary text-primary-foreground scale-105' : 'border-muted-foreground/30'
                   )}>
-                    {method === 'MOCK_QR' && <Check className="h-3.5 w-3.5" />}
+                    {method === 'MOCK_QR' && <Check className="h-4 w-4" />}
                   </span>
                 </button>
 
                 <UnavailableMethod icon={Landmark} name="VNPay" />
-                <UnavailableMethod icon={CreditCard} name="Thẻ quốc tế" />
+                <UnavailableMethod icon={CreditCard} name="Thẻ quốc tế (Visa/Mastercard)" />
 
                 {actionError && <PaymentAlert message={actionError} />}
 
-                <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-between">
+                <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-between items-center border-t border-border/40">
                   <Link to="/shop">
                     <Button variant="ghost" className="w-full sm:w-auto">Tiếp tục mua sắm · Thanh toán sau</Button>
                   </Link>
-                  <Button onClick={() => void startPayment()} disabled={isBusy} className="sm:min-w-44">
-                    {isBusy ? <LoaderCircle className="animate-spin" /> : <LockKeyhole />}
+                  <Button onClick={() => void startPayment()} disabled={isBusy} className="w-full sm:w-auto sm:min-w-48 shadow-lg shadow-primary/10">
+                    {isBusy ? <LoaderCircle className="animate-spin h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
                     {status === 'PROCESSING' ? 'Tạo lại mã QR' : 'Tiếp tục thanh toán'}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="overflow-hidden">
-              <CardHeader className="border-b bg-muted/30 text-center">
-                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Smartphone className="h-6 w-6" />
-                </div>
-                <CardTitle>Quét mã để thanh toán</CardTitle>
-                <CardDescription>PaymentIntent đang được polling mỗi 2 giây.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5 pt-6 text-center">
-                <div className="mx-auto w-fit rounded-2xl border bg-white p-3 shadow-sm">
-                  {qrDataUrl ? (
-                    <img src={qrDataUrl} alt="Mã QR thanh toán MockPay" className="h-56 w-56" />
-                  ) : (
-                    <div className="flex h-56 w-56 items-center justify-center">
-                      <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="grid gap-6 md:grid-cols-[1fr_1.1fr]">
+              {/* QR Code Card */}
+              <Card className="border-border/60 shadow-xl overflow-hidden bg-card/60 backdrop-blur-md flex flex-col justify-between">
+                <CardHeader className="border-b bg-muted/20 text-center py-4">
+                  <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <CardTitle className="text-lg">Quét mã QR thanh toán</CardTitle>
+                  <CardDescription className="text-xs">Ứng dụng tự động kiểm tra trạng thái</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6 text-center flex-1 flex flex-col justify-center">
+                  <div className="relative mx-auto w-fit rounded-2xl border bg-white p-3 shadow-md group">
+                    {qrDataUrl ? (
+                      <img src={qrDataUrl} alt="Mã QR thanh toán VietQR" className="h-52 w-52 transition-transform duration-300 group-hover:scale-[1.02]" />
+                    ) : (
+                      <div className="flex h-52 w-52 items-center justify-center">
+                        <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                    {/* Glowing effect inside QR card */}
+                    <div className="absolute inset-0 rounded-2xl border-2 border-primary/20 pointer-events-none animate-pulse" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Số tiền cần chuyển</div>
+                    <div className="text-3xl font-extrabold text-primary tracking-tight">
+                      {formatMoneyMinor(paymentAmount, paymentCurrency)}
                     </div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-sm text-muted-foreground">Số tiền</div>
-                  <div className="text-2xl font-bold text-primary">{formatMoneyMinor(paymentAmount, paymentCurrency)}</div>
-                </div>
-
-                <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-left text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Gateway</span>
-                    <Badge variant="secondary">{session.gateway}</Badge>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Gateway transaction</span>
-                    <code className="mt-1 block truncate font-mono text-xs" title={session.gatewayTransactionId}>
-                      {session.gatewayTransactionId}
-                    </code>
+
+                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 py-1.5 px-3 rounded-full w-fit mx-auto border border-emerald-500/10">
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    Đang lắng nghe tín hiệu ngân hàng...
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Session expires</span>
-                    <p className="mt-1 font-medium">{new Date(session.expiresAt).toLocaleString()}</p>
+                </CardContent>
+              </Card>
+
+              {/* Developer Sandbox POS Console */}
+              <Card className="border-primary/20 shadow-xl overflow-hidden bg-slate-950 text-slate-100 flex flex-col justify-between font-mono">
+                <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center gap-2 font-bold text-slate-200">
+                    <Terminal className="h-4 w-4 text-emerald-400" />
+                    <span>MOCK BANK POS SIMULATOR v2.0</span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Mock gateway URL</span>
-                    <code className="mt-1 block truncate font-mono text-xs text-muted-foreground" title={session.paymentUrl}>
-                      {session.paymentUrl}
-                    </code>
-                  </div>
+                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 bg-emerald-500/10 font-mono">
+                    ONLINE
+                  </Badge>
                 </div>
-
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Đang chờ xác nhận từ gateway...
-                </div>
-
-                {actionError && <PaymentAlert message={actionError} />}
-
-                <div className="rounded-lg border border-dashed p-4 text-left">
-                  <div className="mb-3 text-sm font-semibold">Điều khiển dành cho showcase</div>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button onClick={() => void completePayment()} disabled={isBusy} className="flex-1">
-                      {completeMutation.isPending ? <LoaderCircle className="animate-spin" /> : <CheckCircle2 />}
-                      Mô phỏng thành công
-                    </Button>
-                    <Button variant="destructive" onClick={() => void failPayment()} disabled={isBusy} className="flex-1">
-                      {failMutation.isPending ? <LoaderCircle className="animate-spin" /> : <XCircle />}
-                      Mô phỏng thất bại
-                    </Button>
+                <CardContent className="space-y-4 pt-4 text-xs flex-1 flex flex-col justify-between">
+                  <div className="space-y-2 bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-[11px] leading-relaxed text-slate-300">
+                    <div className="flex items-center gap-2 border-b border-slate-800 pb-1.5 mb-1.5 text-slate-400">
+                      <Server className="h-3.5 w-3.5 text-blue-400" />
+                      <span>Security Inspection & Webhook Metadata</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">GATEWAY:</span>
+                      <span className="text-emerald-400 font-bold">{session.gateway}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-slate-500 shrink-0">TXN_ID:</span>
+                      <span className="truncate text-blue-300 select-all" title={session.gatewayTransactionId}>
+                        {session.gatewayTransactionId}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">EXPIRES:</span>
+                      <span className="text-amber-400">{timeLeft ? timeLeft : 'N/A'}</span>
+                    </div>
+                    <div className="border-t border-slate-800 pt-1.5 mt-1.5">
+                      <span className="text-slate-500 block mb-1">MOCK URL (Signed webhook emitter):</span>
+                      <span className="block truncate text-slate-400 text-[10px]" title={session.paymentUrl}>
+                        {session.paymentUrl}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <Link to="/shop" className="block">
-                  <Button variant="ghost" className="w-full">Tiếp tục mua sắm · Thanh toán sau</Button>
-                </Link>
-              </CardContent>
-            </Card>
+                  <div className="border border-slate-800 rounded-lg p-3 bg-slate-900/40 text-[11px] space-y-1">
+                    <div className="text-slate-400 font-bold mb-1 flex items-center gap-1">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Webhook Security (HMAC Verified)
+                    </div>
+                    <p className="text-slate-500 text-[10px]">
+                      Bản tin webhook sẽ được ký bằng HMAC-SHA256 thô thông qua khóa bí mật trước khi gửi. Database sẽ kiểm tra tính duy nhất của mã giao dịch để chặn Replay Attack.
+                    </p>
+                  </div>
+
+                  {actionError && <PaymentAlert message={actionError} />}
+
+                  <div className="space-y-3 pt-2">
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      MÔ PHỎNG PHẢN HỒI WEBHOOK TỪ NGÂN HÀNG
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={() => void simulatePaymentWebhook(true)}
+                        disabled={isBusy}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white border-0 font-mono text-xs shadow-lg shadow-emerald-950/20"
+                      >
+                        {simulateTransferredMutation.isPending ? (
+                          <LoaderCircle className="animate-spin h-3.5 w-3.5 mr-1" />
+                        ) : (
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        Gửi Webhook SUCCESS (200)
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => void simulatePaymentWebhook(false)}
+                        disabled={isBusy}
+                        className="bg-rose-700 hover:bg-rose-600 font-mono text-xs shadow-lg shadow-rose-950/20"
+                      >
+                        {simulateTransferredMutation.isPending ? (
+                          <LoaderCircle className="animate-spin h-3.5 w-3.5 mr-1" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        Gửi Webhook FAILED (400)
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
+        {/* Order Summary Sidebar */}
+        <div className="space-y-6">
+          <Card className="border-border/60 shadow-lg bg-card/30 backdrop-blur-md">
+            <CardHeader className="pb-3">
               <CardTitle className="text-lg">Tóm tắt đơn hàng</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
-                <PackageCheck className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <PackageCheck className="h-5 w-5" />
+                </div>
                 <div>
-                  <div className="font-semibold">{order.orderNumber}</div>
+                  <div className="font-bold text-sm text-foreground">{order.orderNumber}</div>
                   <div className="text-xs text-muted-foreground">{order.items?.length ?? 0} dòng sản phẩm</div>
                 </div>
               </div>
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Tổng thanh toán</span>
-                  <span className="text-xl font-bold">{formatMoneyMinor(paymentAmount, paymentCurrency)}</span>
+              <div className="border-t border-border/40 pt-4 space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Trạng thái đơn</span>
+                  <Badge variant="secondary">{order.status}</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm pt-2">
+                  <span className="text-muted-foreground font-medium">Tổng thanh toán</span>
+                  <span className="text-xl font-extrabold text-foreground tracking-tight">
+                    {formatMoneyMinor(paymentAmount, paymentCurrency)}
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="space-y-3 pt-6 text-sm">
-              <TrustItem icon={ShieldCheck} text="Backend xác thực lại số tiền và đơn hàng" />
-              <TrustItem icon={Clock3} text="PaymentIntent hết hạn sau 30 phút" />
-              <TrustItem icon={LockKeyhole} text="Idempotency chống thanh toán trùng" />
+          <Card className="border-border/60 shadow-sm bg-card/10 backdrop-blur-sm">
+            <CardContent className="space-y-3.5 pt-6 text-xs leading-relaxed">
+              <TrustItem icon={ShieldCheck} text="Hệ thống xác thực chéo số dư & chữ ký số" />
+              <TrustItem icon={Clock3} text="Phiên giao dịch được khóa bảo vệ trong 30 phút" />
+              <TrustItem icon={LockKeyhole} text="Idempotency ngăn chặn nạp tiền trùng lặp tuyệt đối" />
             </CardContent>
           </Card>
         </div>
@@ -444,42 +544,42 @@ export function PaymentProcessingPage({ orderId }: PaymentProcessingPageProps) {
 
 function UnavailableMethod({ icon: Icon, name }: { icon: ElementType; name: string }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-dashed p-4 opacity-55">
+    <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/50 p-4 opacity-50 bg-muted/10 cursor-not-allowed">
       <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <Icon className="h-5 w-5" />
       </span>
-      <span className="flex-1 font-medium">{name}</span>
-      <Badge variant="secondary">Sắp hỗ trợ</Badge>
+      <span className="flex-1 font-semibold text-sm text-muted-foreground">{name}</span>
+      <Badge variant="secondary" className="text-[10px]">Sắp ra mắt</Badge>
     </div>
   )
 }
 
 function TrustItem({ icon: Icon, text }: { icon: ElementType; text: string }) {
   return (
-    <div className="flex items-start gap-3">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-      <span className="text-muted-foreground">{text}</span>
+    <div className="flex items-start gap-2.5">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      <span className="text-muted-foreground font-medium">{text}</span>
     </div>
   )
 }
 
 function PaymentAlert({ message }: { message: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-left text-sm text-destructive">
+    <div className="flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive/5 p-3.5 text-left text-xs text-destructive">
       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-      <span>{message}</span>
+      <span className="font-semibold">{message}</span>
     </div>
   )
 }
 
 function PaymentError({ title, message }: { title: string; message: string }) {
   return (
-    <div className="mx-auto max-w-lg py-16 text-center">
-      <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
-      <h1 className="text-2xl font-bold">{title}</h1>
-      <p className="mt-2 text-muted-foreground">{message}</p>
+    <div className="mx-auto max-w-lg py-20 px-4 text-center">
+      <AlertCircle className="mx-auto mb-4 h-14 w-14 text-destructive animate-bounce" />
+      <h1 className="text-2xl font-extrabold text-foreground tracking-tight">{title}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
       <Link to="/orders" className="mt-6 inline-block">
-        <Button variant="outline"><ArrowLeft /> Quay lại danh sách đơn</Button>
+        <Button variant="outline"><ArrowLeft className="mr-1.5 h-4 w-4" /> Quay lại danh sách đơn</Button>
       </Link>
     </div>
   )
@@ -507,43 +607,43 @@ function PaymentResult({
   onRetry,
 }: PaymentResultProps) {
   return (
-    <div className="mx-auto max-w-xl py-10">
-      <Card className="overflow-hidden text-center">
-        <div className={cn('h-2', success ? 'bg-success' : 'bg-destructive')} />
-        <CardContent className="space-y-6 px-6 py-10">
+    <div className="mx-auto max-w-xl py-12 px-4">
+      <Card className="overflow-hidden text-center border-border/60 shadow-2xl bg-card/60 backdrop-blur-md">
+        <div className={cn('h-2.5', success ? 'bg-emerald-500' : 'bg-rose-500')} />
+        <CardContent className="space-y-6 px-6 py-12">
           <div className={cn(
-            'mx-auto flex h-20 w-20 items-center justify-center rounded-full',
-            success ? 'bg-success/15 text-success' : 'bg-destructive/10 text-destructive'
+            'mx-auto flex h-20 w-20 items-center justify-center rounded-full shadow-inner transition-transform duration-500 hover:scale-105',
+            success ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
           )}>
             {success ? <CheckCircle2 className="h-10 w-10" /> : <XCircle className="h-10 w-10" />}
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-extrabold tracking-tight">
               {success ? 'Thanh toán thành công' : expired ? 'Phiên thanh toán đã hết hạn' : 'Thanh toán thất bại'}
             </h1>
-            <p className="mt-2 text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed px-4">
               {success
-                ? `Đã ghi nhận ${amount} cho đơn ${orderNumber ?? orderId}. Đơn hàng vẫn ở trạng thái Pending cho đến khi nhân viên xác nhận.`
-                : 'Đơn hàng vẫn được giữ ở trạng thái chờ. Bạn có thể tạo một lần thanh toán mới.'}
+                ? `Đã ghi nhận thanh toán số tiền ${amount} cho đơn hàng #${orderNumber ?? orderId}. Đơn hàng đang được hệ thống xử lý.`
+                : 'Thanh toán không thể hoàn tất. Đơn hàng vẫn được giữ trong danh sách chờ để bạn tiếp tục thanh toán lại.'}
             </p>
           </div>
 
           {error && <PaymentAlert message={error} />}
 
-          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="flex flex-col justify-center gap-3 sm:flex-row pt-4 border-t border-border/40">
             {!success && onRetry && (
-              <Button onClick={onRetry} disabled={retrying}>
-                {retrying ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
+              <Button onClick={onRetry} disabled={retrying} className="w-full sm:w-auto">
+                {retrying ? <LoaderCircle className="animate-spin mr-1.5 h-4 w-4" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
                 Thử thanh toán lại
               </Button>
             )}
-            <Link to="/orders/$id" params={{ id: orderId }}>
+            <Link to="/orders/$id" params={{ id: orderId }} className="w-full sm:w-auto">
               <Button variant={success ? 'default' : 'outline'} className="w-full">
                 Xem chi tiết đơn hàng
               </Button>
             </Link>
             {success && (
-              <Link to="/shop">
+              <Link to="/shop" className="w-full sm:w-auto">
                 <Button variant="outline" className="w-full">Tiếp tục mua sắm</Button>
               </Link>
             )}

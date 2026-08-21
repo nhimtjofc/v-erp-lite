@@ -22,15 +22,15 @@ class MoneyServiceTest {
     @Test
     void normalizeCurrencyTrimsAndUppercases() {
         assertEquals("VND", moneyService.normalizeCurrency(" vnd "));
-        assertEquals("USD", moneyService.normalizeCurrency("usd"));
-        assertEquals("EUR", moneyService.normalizeCurrency("EUR"));
+        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("USD"));
+        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("EUR"));
     }
 
     @Test
-    void normalizeCurrencyRejectsNullOrBlank() {
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency(null));
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency(""));
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("  "));
+    void normalizeCurrencyDefaultsNullOrBlankToVnd() {
+        assertEquals("VND", moneyService.normalizeCurrency(null));
+        assertEquals("VND", moneyService.normalizeCurrency(""));
+        assertEquals("VND", moneyService.normalizeCurrency("  "));
     }
 
     @Test
@@ -48,8 +48,6 @@ class MoneyServiceTest {
         assertEquals(100, m.getAmountMinor());
         assertEquals("VND", m.getCurrency());
 
-        m = moneyService.positiveMoney(1, "USD");
-        assertEquals(1, m.getAmountMinor());
     }
 
     @Test
@@ -60,7 +58,7 @@ class MoneyServiceTest {
     @Test
     void positiveMoneyRejectsNegative() {
         assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(-1, "VND"));
-        assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(-100_000, "USD"));
+        assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(-100_000, "VND"));
     }
 
     @Test
@@ -75,22 +73,20 @@ class MoneyServiceTest {
     void requireSameCurrencyAcceptsMatch() {
         assertDoesNotThrow(() -> moneyService.requireSameCurrency("VND", "VND"));
         assertDoesNotThrow(() -> moneyService.requireSameCurrency(" vnd ", "VND"));
-        assertDoesNotThrow(() -> moneyService.requireSameCurrency("USD", "usd"));
     }
 
     @Test
     void requireSameCurrencyRejectsMismatch() {
         assertThrows(BadRequestException.class, () -> moneyService.requireSameCurrency("VND", "USD"));
-        assertThrows(BadRequestException.class, () -> moneyService.requireSameCurrency("USD", "EUR"));
+        assertThrows(BadRequestException.class, () -> moneyService.requireSameCurrency("USD", "VND"));
     }
 
     // ─── Money Model ────────────────────────────────────────────────
 
     @Test
-    void moneyFromDecimalUsd() {
-        Money m = Money.fromDecimal(new BigDecimal("10.99"), "USD");
-        assertEquals(1099, m.getAmountMinor());
-        assertEquals(new BigDecimal("10.99"), m.toDecimal());
+    void moneyFromDecimalRejectsUnsupportedCurrency() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Money.fromDecimal(new BigDecimal("10.99"), "USD"));
     }
 
     @Test
@@ -102,13 +98,13 @@ class MoneyServiceTest {
 
     @Test
     void moneyFromDecimalHalfUpRounding() {
-        Money m = Money.fromDecimal(new BigDecimal("10.005"), "USD");
-        assertEquals(1001, m.getAmountMinor());
-        assertEquals(new BigDecimal("10.01"), m.toDecimal());
+        Money m = Money.fromDecimal(new BigDecimal("10.5"), "VND");
+        assertEquals(11, m.getAmountMinor());
+        assertEquals(new BigDecimal("11"), m.toDecimal());
 
-        m = Money.fromDecimal(new BigDecimal("10.004"), "USD");
-        assertEquals(1000, m.getAmountMinor());
-        assertEquals(new BigDecimal("10.00"), m.toDecimal());
+        m = Money.fromDecimal(new BigDecimal("10.4"), "VND");
+        assertEquals(10, m.getAmountMinor());
+        assertEquals(new BigDecimal("10"), m.toDecimal());
     }
 
     @Test
@@ -119,13 +115,13 @@ class MoneyServiceTest {
 
     @Test
     void moneyFromDecimalRejectsNegative() {
-        assertThrows(BadRequestException.class, () -> Money.fromDecimal(new BigDecimal("-1"), "USD"));
-        assertThrows(BadRequestException.class, () -> Money.fromDecimal(new BigDecimal("-0.01"), "USD"));
+        assertThrows(BadRequestException.class, () -> Money.fromDecimal(new BigDecimal("-1"), "VND"));
+        assertThrows(BadRequestException.class, () -> Money.fromDecimal(new BigDecimal("-0.01"), "VND"));
     }
 
     @Test
     void moneyZeroRejectedByFromDecimal() {
-        assertThrows(BadRequestException.class, () -> Money.fromDecimal(BigDecimal.ZERO, "USD"));
+        assertThrows(BadRequestException.class, () -> Money.fromDecimal(BigDecimal.ZERO, "VND"));
     }
 
     // ─── Commission / Multiplication ────────────────────────────────
@@ -195,7 +191,6 @@ class MoneyServiceTest {
     void moneyEquality() {
         assertEquals(Money.of(100, "VND"), Money.of(100, "VND"));
         assertNotEquals(Money.of(100, "VND"), Money.of(200, "VND"));
-        assertNotEquals(Money.of(100, "VND"), Money.of(100, "USD"));
     }
 
     @Test

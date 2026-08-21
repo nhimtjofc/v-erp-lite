@@ -36,6 +36,18 @@ public class Customer extends BaseEntity {
     @Column(name = "address")
     private String address;
 
+    @Column(name = "province_code", length = 50)
+    private String provinceCode;
+
+    @Column(name = "district_code", length = 50)
+    private String districtCode;
+
+    @Column(name = "ward_code", length = 50)
+    private String wardCode;
+
+    @Column(name = "street_address", columnDefinition = "TEXT")
+    private String streetAddress;
+
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
@@ -100,6 +112,38 @@ public class Customer extends BaseEntity {
 
     public void setTier(String tier) {
         this.tier = tier;
+    }
+
+    public String getProvinceCode() {
+        return provinceCode;
+    }
+
+    public void setProvinceCode(String provinceCode) {
+        this.provinceCode = provinceCode;
+    }
+
+    public String getDistrictCode() {
+        return districtCode;
+    }
+
+    public void setDistrictCode(String districtCode) {
+        this.districtCode = districtCode;
+    }
+
+    public String getWardCode() {
+        return wardCode;
+    }
+
+    public void setWardCode(String wardCode) {
+        this.wardCode = wardCode;
+    }
+
+    public String getStreetAddress() {
+        return streetAddress;
+    }
+
+    public void setStreetAddress(String streetAddress) {
+        this.streetAddress = streetAddress;
     }
 
     private String generateCardNumber() {

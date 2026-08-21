@@ -96,10 +96,11 @@ class PaymentSecurityTest {
     }
 
     @Test
-    void nullCurrencyRejectedOnWalletCreate() {
+    void nullCurrencyDefaultsToVndOnWalletCreate() {
         String tenantId = tenant();
-        assertThrows(BadRequestException.class, () ->
-                walletService.getOrCreateWallet(tenantId, "SELLER", UUID.randomUUID(), null, actorId));
+        Wallet wallet = walletService.getOrCreateWallet(
+                tenantId, "SELLER", UUID.randomUUID(), null, actorId);
+        assertEquals("VND", wallet.getCurrency());
     }
 
     @Test
@@ -368,8 +369,8 @@ class PaymentSecurityTest {
     void invalidCurrencyRejectedByMoneyService() {
         assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("VNDD"));
         assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("VN"));
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency(""));
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency(null));
+        assertEquals("VND", moneyService.normalizeCurrency(""));
+        assertEquals("VND", moneyService.normalizeCurrency(null));
     }
 
     // ─── Helpers ───────────────────────────────────────────────────

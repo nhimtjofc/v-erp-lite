@@ -3,6 +3,7 @@ package base.service;
 import base.entity.Bank;
 import base.entity.Business;
 import base.entity.LedgerCheckpoint;
+import base.entity.Role;
 import base.entity.User;
 import base.entity.Wallet;
 import base.entity.WalletTransaction;
@@ -46,9 +47,9 @@ class WalletServiceTest {
     @Test
     void moneyServiceNormalizesCurrencyAndRejectsInvalidMoney() {
         assertEquals("VND", moneyService.normalizeCurrency(" vnd "));
-        assertEquals(12_345, moneyService.positiveMoney(12_345, "usd").getAmountMinor());
+        assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(12_345, "USD"));
 
-        assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency(null));
+        assertEquals("VND", moneyService.normalizeCurrency(null));
         assertThrows(BadRequestException.class, () -> moneyService.normalizeCurrency("VN"));
         assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(0, "VND"));
         assertThrows(BadRequestException.class, () -> moneyService.positiveMoney(-1, "VND"));
@@ -103,6 +104,7 @@ class WalletServiceTest {
             user.setTenantId(tenantId);
             user.setEmail(userId + "@example.test");
             user.setActive(true);
+            user.setRole(Role.find("name", "businessOwner").firstResult());
             user.persist();
         });
 
@@ -127,6 +129,7 @@ class WalletServiceTest {
             user.setTenantId(tenantId);
             user.setEmail(userId + "@example.test");
             user.setActive(true);
+            user.setRole(Role.find("name", "businessOwner").firstResult());
             user.persist();
         });
         Wallet personalWallet = walletService.getOrCreateUserWallet(tenantId, userId, "VND", actorId);
@@ -146,6 +149,43 @@ class WalletServiceTest {
         assertEquals("SELLER", sellerWallet.getOwnerType());
         assertEquals(businessId, sellerWallet.getOwnerId());
         assertEquals(userId, sellerWallet.getUser().getId());
+    }
+
+    @Test
+    void getOrCreateUserWalletUsesBusinessAssignedToOwner() {
+        String tenantId = tenant();
+        UUID userId = UUID.randomUUID();
+        UUID businessId = UUID.randomUUID();
+        UUID creatorId = UUID.randomUUID();
+        QuarkusTransaction.requiringNew().run(() -> {
+            Business business = new Business();
+            business.setId(businessId);
+            business.setTenantId(tenantId);
+            business.setName("Assigned seller " + businessId);
+            business.setCreatedBy(creatorId);
+            business.setActive(true);
+            business.persist();
+
+            User user = new User();
+            user.setId(userId);
+            user.setTenantId(tenantId);
+            user.setEmail(userId + "@example.test");
+            user.setActive(true);
+            user.setRole(Role.find("name", "businessOwner").firstResult());
+            user.setBusiness(business);
+            user.persist();
+        });
+
+        Wallet sellerWallet = walletService.getOrCreateUserWallet(tenantId, userId, "VND", actorId);
+
+        assertEquals("SELLER", sellerWallet.getOwnerType());
+        assertEquals(businessId, sellerWallet.getOwnerId());
+        assertEquals(userId, sellerWallet.getUser().getId());
+        assertTrue(walletService.isWalletOwnedByUser(
+                tenantId,
+                sellerWallet,
+                User.find("id = ?1 and tenantId = ?2", userId, tenantId).firstResult()
+        ));
     }
 
     @Test

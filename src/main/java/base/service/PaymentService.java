@@ -27,11 +27,11 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class PaymentService {
-
-    private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-    private static final int PLATFORM_COMMISSION_PERCENT = 5;
     @Inject
     WalletService walletService;
+
+    @Inject
+    MoneyService moneyService;
 
     @Inject
     EscrowService escrowService;
@@ -41,6 +41,9 @@ public class PaymentService {
 
     @ConfigProperty(name = "orders.owner-decision-sla", defaultValue = "PT24H")
     Duration ownerDecisionSla;
+
+    @ConfigProperty(name = "orders.escrow-hold-days", defaultValue = "7")
+    int escrowHoldDays;
 
     @Transactional
     public List<EscrowRecord> settleSucceededIntent(PaymentIntent intent, UUID actorId) {
@@ -55,7 +58,7 @@ public class PaymentService {
                 "id = ?1 and tenantId = ?2 and deletedAt IS NULL",
                 intent.getOrderId(),
                 intent.getTenantId()
-        ).firstResult();
+        ).withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).firstResult();
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
@@ -72,54 +75,28 @@ public class PaymentService {
             return existing;
         }
 
+        moneyService.requireSameCurrency(order.getCurrency(), intent.getCurrency());
         long expectedAmount = order.getFinalAmountMinor();
-        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(intent.getCurrency())) {
-            expectedAmount = expectedAmount * 254;
-        }
 
         if (expectedAmount != intent.getAmountMinor()) {
             throw new BadRequestException("Payment amount does not match order total");
         }
 
         List<SellerAllocation> allocations = allocateBySeller(order, intent.getAmountMinor());
-        long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
-        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
-            long commission = commissionFor(allocation.amountMinor());
-            long sellerNet = allocation.amountMinor() - commission;
-            platformCommissionTotal += commission;
-            if (sellerNet > 0) {
+            if (allocation.amountMinor() > 0) {
                 records.add(escrowService.holdSellerEscrow(
                         intent.getTenantId(),
                         intent.getOrderId(),
                         allocation.sellerOwnerId(),
-                        Money.of(sellerNet, intent.getCurrency()),
-                        ownerDeadline,
+                        Money.of(allocation.amountMinor(), intent.getCurrency()),
+                        escrowHoldUntil,
                         actorId
                 ));
             }
-        }
-
-        if (platformCommissionTotal > 0) {
-            Wallet platformWallet = walletService.getOrCreateWallet(
-                    intent.getTenantId(),
-                    "PLATFORM",
-                    PLATFORM_OWNER_ID,
-                    intent.getCurrency(),
-                    actorId
-            );
-            walletService.creditAvailable(
-                    intent.getTenantId(),
-                    platformWallet.getId(),
-                    Money.of(platformCommissionTotal, intent.getCurrency()),
-                    "COMMISSION",
-                    "ORDER",
-                    intent.getOrderId(),
-                    actorId,
-                    "Platform commission from order"
-            );
         }
 
         markPaidEscrow(order, actorId);
@@ -138,10 +115,8 @@ public class PaymentService {
             return existing;
         }
 
+        moneyService.requireSameCurrency(order.getCurrency(), userWallet.getCurrency());
         long expectedAmount = order.getFinalAmountMinor();
-        if ("USD".equalsIgnoreCase(order.getCurrency()) && "VND".equalsIgnoreCase(userWallet.getCurrency())) {
-            expectedAmount = expectedAmount * 254; // Convert USD to VND
-        }
 
         // Deduct from user wallet
         walletService.debitAvailable(
@@ -156,47 +131,54 @@ public class PaymentService {
         );
 
         List<SellerAllocation> allocations = allocateBySeller(order, expectedAmount);
-        long platformCommissionTotal = 0;
         List<EscrowRecord> records = new ArrayList<>();
-        Instant ownerDeadline = Instant.now().plus(ownerDecisionSla);
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
 
         for (SellerAllocation allocation : allocations) {
-            long commission = commissionFor(allocation.amountMinor());
-            long sellerNet = allocation.amountMinor() - commission;
-            platformCommissionTotal += commission;
-            if (sellerNet > 0) {
+            if (allocation.amountMinor() > 0) {
                 records.add(escrowService.holdSellerEscrow(
                         order.getTenantId(),
                         order.getId(),
                         allocation.sellerOwnerId(),
-                        Money.of(sellerNet, userWallet.getCurrency()),
-                        ownerDeadline,
+                        Money.of(allocation.amountMinor(), userWallet.getCurrency()),
+                        escrowHoldUntil,
                         actorId
                 ));
             }
         }
 
-        if (platformCommissionTotal > 0) {
-            Wallet platformWallet = walletService.getOrCreateWallet(
-                    order.getTenantId(),
-                    "PLATFORM",
-                    PLATFORM_OWNER_ID,
-                    userWallet.getCurrency(),
-                    actorId
-            );
-            walletService.creditAvailable(
-                    order.getTenantId(),
-                    platformWallet.getId(),
-                    Money.of(platformCommissionTotal, userWallet.getCurrency()),
-                    "COMMISSION",
-                    "ORDER",
-                    order.getId(),
-                    actorId,
-                    "Platform commission from order"
-            );
-        }
-
         markPaidEscrow(order, actorId);
+        return records;
+    }
+
+    /**
+     * Creates the escrow hold for an order whose payment was collected outside
+     * the online payment flow (e.g. COD / cash on delivery). No-op if escrow
+     * already exists. The hold uses the standard release due date so both the
+     * release scheduler and the admin "fast-forward 7 days" button apply.
+     */
+    @Transactional
+    public List<EscrowRecord> createEscrowHoldForOrder(Order order, UUID actorId) {
+        List<EscrowRecord> existing = escrowService.listByOrder(order.getTenantId(), order.getId());
+        if (!existing.isEmpty()) {
+            return existing;
+        }
+        String currency = order.getCurrency() != null ? order.getCurrency() : "VND";
+        List<SellerAllocation> allocations = allocateBySeller(order, order.getFinalAmountMinor());
+        List<EscrowRecord> records = new ArrayList<>();
+        Instant escrowHoldUntil = Instant.now().plus(Duration.ofDays(escrowHoldDays));
+        for (SellerAllocation allocation : allocations) {
+            if (allocation.amountMinor() > 0) {
+                records.add(escrowService.holdSellerEscrow(
+                        order.getTenantId(),
+                        order.getId(),
+                        allocation.sellerOwnerId(),
+                        Money.of(allocation.amountMinor(), currency),
+                        escrowHoldUntil,
+                        actorId
+                ));
+            }
+        }
         return records;
     }
 
@@ -277,13 +259,6 @@ public class PaymentService {
             allocations.add(new SellerAllocation(entry.getKey(), amount));
         }
         return allocations;
-    }
-
-    private long commissionFor(long amountMinor) {
-        return BigDecimal.valueOf(amountMinor)
-                .multiply(BigDecimal.valueOf(PLATFORM_COMMISSION_PERCENT))
-                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP)
-                .longValue();
     }
 
     private record SellerAllocation(UUID sellerOwnerId, long amountMinor) {}

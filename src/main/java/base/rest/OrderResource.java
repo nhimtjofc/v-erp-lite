@@ -30,13 +30,18 @@ import base.service.EscrowService;
 import base.service.InventoryCostService;
 import base.service.NotificationService;
 import base.service.OrderFulfillmentService;
+import base.service.PaymentRefundService;
 import base.service.PaymentService;
+import base.service.ReturnRefundService;
 import base.service.VietQRService;
 import base.service.WalletService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -51,15 +56,20 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/orders")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
+    private static final Logger log = LoggerFactory.getLogger(OrderResource.class);
+
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-    private static final long FLAT_SHIPPING_FEE_MINOR = 1000;
-    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 10000;
+    private static final String CURRENCY = "VND";
+    private static final long FLAT_SHIPPING_FEE_MINOR = 250_000;
+    private static final long FREE_SHIPPING_THRESHOLD_MINOR = 2_500_000;
     private static final double TAX_RATE = 0.10;
 
     @Inject
@@ -95,6 +105,12 @@ public class OrderResource {
     @Inject
     PaymentService paymentService;
 
+    @Inject
+    PaymentRefundService paymentRefundService;
+
+    @Inject
+    ReturnRefundService returnRefundService;
+
     public static class CartItem {
         public UUID productId;
         public UUID productVariantId;
@@ -102,15 +118,36 @@ public class OrderResource {
     }
 
     public static class CheckoutRequest {
+        @NotNull(message = "Customer ID is required")
         public UUID customerId;
+
         public String voucherCode;
+
+        @NotBlank(message = "Shipping name is required")
         public String shippingName;
+
+        @NotBlank(message = "Shipping phone number is required")
         public String shippingPhone;
+
+        @NotBlank(message = "Province code is required")
+        public String provinceCode;
+
+        @NotBlank(message = "District code is required")
+        public String districtCode;
+
+        @NotBlank(message = "Ward code is required")
+        public String wardCode;
+
+        @NotBlank(message = "Street address is required")
+        public String streetAddress;
+
         public String shippingAddress;
         public String shippingWard;
         public String shippingProvince;
         public String shippingNote;
         public String paymentMethod; // e.g. COD or BANK_TRANSFER
+
+        @NotNull(message = "Order must contain at least one item")
         public List<CartItem> items;
     }
 
@@ -129,6 +166,10 @@ public class OrderResource {
         public Long shippingFeeMinor;
         public BigDecimal discountPercent;
         public BigDecimal vatPercent;
+    }
+
+    public static class CancelItemRequest {
+        public String reason;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -186,11 +227,13 @@ public class OrderResource {
 
         if (isBusinessStaff) {
             Business business = businessAccess.findCurrentBusiness();
+            log.info("listOrders: isBusinessStaff=true, business={}", business != null ? business.getId() + "/" + business.getName() : "null");
             if (business != null) {
                 query.append(" AND business.id = :businessId");
                 params.put("businessId", business.getId());
             } else {
                 query.append(" AND id IS NULL");
+                log.warn("listOrders: businessAccess.findCurrentBusiness() returned null for staff user! Query will return no results.");
             }
         }
 
@@ -247,8 +290,8 @@ public class OrderResource {
         }
         Map<String, Long> countByStatus = new HashMap<>();
         for (String s : List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING",
-                "DELIVERED", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
-                "PENDING", "CONFIRMED", "SHIPPING", "SHIPPED")) {
+                "DELIVERED", "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
+                "RETURN_REQUESTED", "RETURN_APPROVED")) {
             countByStatus.put(s, 0L);
         }
         for (Object[] row : rows) {
@@ -342,7 +385,7 @@ public class OrderResource {
                 throw new ForbiddenException("You are not allowed to view this order history");
             }
         }
-        return OrderHistory.list("order.id = ?1 ORDER BY createdAt DESC", id);
+        return OrderHistory.list("order.id = ?1 ORDER BY createdAt DESC, sequenceNo DESC", id);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -372,6 +415,20 @@ public class OrderResource {
             }
         }
         return EscrowRecord.find("tenantId = ?1 AND orderId = ?2 ORDER BY createdAt ASC", caller.tenantCode(), id).list();
+    }
+
+    @POST
+    @Path("/{id}/escrow/force-release")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public List<EscrowRecord> forceReleaseEscrow(@PathParam("id") UUID id) {
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode).firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+        return escrowService.releaseOrderEscrow(tenantCode, id, caller.userId());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -411,7 +468,7 @@ public class OrderResource {
     @Path("/checkout")
     @RolesAllowed({"admin", "businessOwner", "operator", "customer", "user"})
     @Transactional
-    public Response checkoutOrder(CheckoutRequest request) {
+    public Response checkoutOrder(@Valid CheckoutRequest request) {
         if (request == null) {
             throw new BadRequestException("Request body is required");
         }
@@ -427,14 +484,17 @@ public class OrderResource {
         if (request.shippingPhone == null || request.shippingPhone.isBlank()) {
             throw new BadRequestException("Shipping phone number is required");
         }
-        if (request.shippingAddress == null || request.shippingAddress.isBlank()) {
-            throw new BadRequestException("Shipping address is required");
+        if (request.provinceCode == null || request.provinceCode.isBlank()) {
+            throw new BadRequestException("Province code is required");
         }
-        if (request.shippingWard == null || request.shippingWard.isBlank()) {
-            throw new BadRequestException("Shipping ward is required");
+        if (request.districtCode == null || request.districtCode.isBlank()) {
+            throw new BadRequestException("District code is required");
         }
-        if (request.shippingProvince == null || request.shippingProvince.isBlank()) {
-            throw new BadRequestException("Shipping province is required");
+        if (request.wardCode == null || request.wardCode.isBlank()) {
+            throw new BadRequestException("Ward code is required");
+        }
+        if (request.streetAddress == null || request.streetAddress.isBlank()) {
+            throw new BadRequestException("Street address is required");
         }
 
         String tenantCode = caller.tenantCode();
@@ -458,6 +518,7 @@ public class OrderResource {
         order.setTenantId(tenantCode);
         order.setCreatedBy(userId);
         Business orderBusiness = null;
+        String orderCurrency = CURRENCY;
 
         for (CartItem item : request.items) {
             if (item.quantity <= 0) {
@@ -476,6 +537,10 @@ public class OrderResource {
                 orderBusiness = product.getBusiness();
             } else if (!orderBusiness.getId().equals(product.getBusiness().getId())) {
                 throw new BadRequestException("Multi-vendor order decisions are not supported; checkout one vendor at a time");
+            }
+            
+            if (!CURRENCY.equalsIgnoreCase(product.getCurrency())) {
+                throw new BadRequestException("All products in an order must use VND");
             }
 
             long unitPrice;
@@ -529,6 +594,7 @@ public class OrderResource {
             orderItem.setUnitPriceMinor(unitPrice);
             orderItem.setUnitCostMinor(inventoryCostService.resolveUnitCost(product, variant));
             orderItem.setSubtotalAmountMinor(itemSubtotal);
+            orderItem.setCurrency(CURRENCY);
             orderItems.add(orderItem);
         }
 
@@ -555,8 +621,8 @@ public class OrderResource {
             }
         }
 
-        // 5. Calculate Shipping Fee (USD)
-        // Flat rate: $10. Free shipping if subtotal - discount >= $100.
+        // 5. Calculate Shipping Fee (VND)
+        // Flat rate: 250,000 VND. Free shipping from 2,500,000 VND.
         long orderAfterDiscount = subtotal - discount;
         long shippingFee = FLAT_SHIPPING_FEE_MINOR;
         if (orderAfterDiscount >= FREE_SHIPPING_THRESHOLD_MINOR) {
@@ -570,20 +636,36 @@ public class OrderResource {
         long finalAmount = orderAfterDiscount + shippingFee + tax;
 
         // 8. Populate Order Details
+        log.info("checkoutOrder: setting business={} (id={}) on order",
+                orderBusiness != null ? orderBusiness.getName() : "null",
+                orderBusiness != null ? orderBusiness.getId() : "null");
         order.setCustomer(customer);
         order.setBusiness(orderBusiness);
         order.setVoucher(voucher);
         order.setOrderNumber(orderNumber);
-        
-        String initialStatus = "COD".equalsIgnoreCase(request.paymentMethod) ? "PENDING" : "PENDING_PAYMENT";
+        order.setCurrency(orderCurrency);
+        order.setPaymentMethod(request.paymentMethod);
+
+        String initialStatus = "PENDING_PAYMENT";
         order.setStatus(initialStatus);
         
-        order.setShippingName(request.shippingName);
-        order.setShippingPhone(request.shippingPhone);
-        order.setShippingAddress(request.shippingAddress);
-        order.setShippingWard(request.shippingWard);
-        order.setShippingProvince(request.shippingProvince);
-        order.setShippingNote(request.shippingNote);
+        order.setShippingName(request.shippingName.trim());
+        order.setShippingPhone(request.shippingPhone.trim());
+        order.setProvinceCode(request.provinceCode.trim());
+        order.setDistrictCode(request.districtCode.trim());
+        order.setWardCode(request.wardCode.trim());
+        order.setStreetAddress(request.streetAddress.trim());
+
+        String shipWard = (request.shippingWard != null && !request.shippingWard.isBlank()) ? request.shippingWard.trim() : request.wardCode.trim();
+        String shipProv = (request.shippingProvince != null && !request.shippingProvince.isBlank()) ? request.shippingProvince.trim() : request.provinceCode.trim();
+        String fullAddress = (request.shippingAddress != null && !request.shippingAddress.isBlank())
+                ? request.shippingAddress.trim()
+                : (request.streetAddress.trim() + ", " + shipWard + ", " + shipProv);
+
+        order.setShippingAddress(fullAddress);
+        order.setShippingWard(shipWard);
+        order.setShippingProvince(shipProv);
+        order.setShippingNote(request.shippingNote != null ? request.shippingNote.trim() : null);
         order.setSubtotalAmountMinor(subtotal);
         order.setDiscountAmountMinor(discount);
         order.setShippingFeeMinor(shippingFee);
@@ -602,11 +684,6 @@ public class OrderResource {
             paymentService.processWalletPayment(order, userWallet, caller.userId());
         } else if ("BANK_TRANSFER".equalsIgnoreCase(request.paymentMethod)) {
             Wallet wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2 and currency = 'VND'", tenantCode, orderBusiness.getId()).firstResult();
-            
-            // Fallback to the first wallet if VND wallet doesn't exist (for legacy compatibility)
-            if (wallet == null) {
-                wallet = Wallet.find("tenantId = ?1 and ownerType = 'SELLER' and ownerId = ?2", tenantCode, orderBusiness.getId()).firstResult();
-            }
 
             if (wallet == null || wallet.getBankName() == null || wallet.getBankAccountNumber() == null) {
                 throw new jakarta.ws.rs.WebApplicationException(
@@ -615,12 +692,8 @@ public class OrderResource {
                     .build()
                 );
             }
-            long qrAmount = finalAmount;
-            if ("USD".equalsIgnoreCase(order.getCurrency())) {
-                qrAmount = qrAmount * 254; // 1 USD = 25,400 VND => 1 minor USD = 254 minor VND
-            }
             String message = "Thanh toan " + orderNumber;
-            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), qrAmount, message);
+            String qrBase64 = vietQRService.generateQrBase64(wallet.getBankName(), wallet.getBankAccountNumber(), finalAmount, message);
             order.setPaymentQrCodeBase64(qrBase64);
         }
 
@@ -673,7 +746,7 @@ public class OrderResource {
         paymentAccess.requireOrderAccess(order);
 
         String oldStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if ("COMPLETED".equals(oldStatus)) {
+        if ("PENDING_COMPLETION".equals(oldStatus) || "COMPLETED".equals(oldStatus)) {
             return order;
         }
         if (!"DELIVERED".equals(oldStatus)) {
@@ -681,14 +754,13 @@ public class OrderResource {
         }
 
         UUID userId = caller.userId();
-        completeOrder(order, tenantCode, userId);
-        order.setStatus("COMPLETED");
+        order.setStatus("PENDING_COMPLETION");
         order.setUpdatedBy(userId);
-        persistHistory(order, oldStatus, "COMPLETED", "Buyer confirmed receipt", userId, tenantCode);
+        persistHistory(order, oldStatus, "PENDING_COMPLETION", "Buyer confirmed receipt; awaiting 7-day escrow hold", userId, tenantCode);
         notificationService.notifyBusinessStaff(
                 order,
-                "ORDER_COMPLETED",
-                "The buyer confirmed receipt of order " + order.getOrderNumber() + ".",
+                "ORDER_RECEIVED",
+                "The buyer confirmed receipt of order " + order.getOrderNumber() + ". Escrow hold starts now (7 days).",
                 userId);
         return order;
     }
@@ -719,9 +791,9 @@ public class OrderResource {
             return order;
         }
 
-        if (!List.of("PENDING_PAYMENT", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED", "COMPLETED",
-                "OWNER_DECLINED", "REFUNDED", "CANCELLED", "PENDING", "CONFIRMED", "SHIPPING",
-                "SHIPPED").contains(newStatus)) {
+        if (!List.of("PENDING_PAYMENT", "PAID_ESCROW", "OWNER_ACCEPTED", "FULFILLING", "DELIVERED",
+                "PENDING_COMPLETION", "COMPLETED", "OWNER_DECLINED", "REFUNDED", "CANCELLED",
+                "CANCEL_REQUESTED", "CANCEL_APPROVED", "RETURN_REQUESTED", "RETURN_APPROVED").contains(newStatus)) {
             throw new BadRequestException("Invalid status value");
         }
 
@@ -737,6 +809,9 @@ public class OrderResource {
         if (List.of("PENDING", "PENDING_PAYMENT", "CONFIRMED", "SHIPPING").contains(oldStatus)
                 && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
+                if (item.getCancelledAt() != null) {
+                    continue;
+                }
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
                     variant.setReservedQuantity(Math.max(0, variant.getReservedQuantity() - item.getQuantity()));
@@ -766,8 +841,8 @@ public class OrderResource {
                 }
             }
         }
-        // 3. From SHIPPED/COMPLETED to CANCELLED: return actual stock
-        else if (List.of("SHIPPED", "COMPLETED").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
+        // 3. From SHIPPED/COMPLETED/PENDING_COMPLETION to CANCELLED: return actual stock
+        else if (List.of("SHIPPED", "COMPLETED", "PENDING_COMPLETION").contains(oldStatus) && "CANCELLED".equals(newStatus)) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductVariant() != null) {
                     ProductVariant variant = item.getProductVariant();
@@ -783,37 +858,48 @@ public class OrderResource {
 
         // Reactivate voucher if order is cancelled
         if ("CANCELLED".equals(newStatus)) {
-            if (order.getVoucher() != null) {
-                Voucher v = order.getVoucher();
-                v.setUsedCount(Math.max(0, v.getUsedCount() - 1));
-                v.setUpdatedBy(userId);
+            reactivateVoucher(order, tenantCode, userId);
+        }
 
-                CustomerVoucher cv = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3",
-                        order.getCustomer().getId(), v.getId(), tenantCode).firstResult();
-                if (cv != null) {
-                    cv.setUsed(false);
-                }
-            }
+        // Auto-simulate: DELIVERED immediately transitions to PENDING_COMPLETION
+        // (7-day escrow hold starts automatically without manual button)
+        String effectiveStatus = newStatus;
+        if ("DELIVERED".equals(newStatus) && !"DELIVERED".equals(oldStatus)) {
+            effectiveStatus = "PENDING_COMPLETION";
         }
 
         // Award points, update membership, and release escrow on completion.
-        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+        if ("COMPLETED".equals(effectiveStatus) && !"COMPLETED".equals(oldStatus)) {
             completeOrder(order, tenantCode, userId);
         }
 
         if ("CANCELLED".equals(newStatus) && !"CANCELLED".equals(oldStatus)) {
-            escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+            if (List.of("CONFIRMED", "SHIPPING").contains(oldStatus)) {
+                paymentRefundService.refundOrder(tenantCode, order.getId(),
+                        "Order cancelled by staff", userId);
+            } else {
+                escrowService.refundOrderEscrow(tenantCode, order.getId(), userId);
+            }
         }
 
-        order.setStatus(newStatus);
+        // Payment collected outside the online flow (COD / cash on delivery):
+        // create the escrow hold so the 7-day release applies to this order too.
+        if ("PAID_ESCROW".equals(effectiveStatus) && !"PAID_ESCROW".equals(oldStatus)) {
+            paymentService.createEscrowHoldForOrder(order, userId);
+        }
+
+        order.setStatus(effectiveStatus);
         order.setUpdatedBy(userId);
 
         // Record history
-        persistHistory(order, oldStatus, newStatus, request.note, userId, tenantCode);
+        String historyNote = "DELIVERED".equals(newStatus)
+                ? "Delivered; escrow hold auto-started (7 days)"
+                : request.note;
+        persistHistory(order, oldStatus, effectiveStatus, historyNote, userId, tenantCode);
         notificationService.notifyBuyer(
                 order,
                 "ORDER_STATUS_UPDATED",
-                "Order " + order.getOrderNumber() + " status changed to " + newStatus + ".",
+                "Order " + order.getOrderNumber() + " status changed to " + effectiveStatus + ".",
                 userId);
 
         return order;
@@ -892,7 +978,7 @@ public class OrderResource {
         }
 
         String status = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
-        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED").contains(status)) {
+        if (!List.of("COMPLETED", "CANCELLED", "OWNER_DECLINED", "REFUNDED", "PENDING_COMPLETION").contains(status)) {
             throw new BadRequestException("Only completed or cancelled orders can be deleted");
         }
 
@@ -900,6 +986,293 @@ public class OrderResource {
         order.setUpdatedBy(caller.userId());
 
         return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public Order cancelOrderItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can cancel order items");
+        }
+
+        String tenantCode = caller.tenantCode();
+        UUID userId = caller.userId();
+
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", orderId, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+        UUID customerId = c != null ? c.getId() : null;
+        boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+        if (!isOwner) {
+            throw new ForbiddenException("You are not allowed to cancel items in this order");
+        }
+
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
+            throw new BadRequestException("Cannot cancel items when order is in " + orderStatus + " status");
+        }
+
+        OrderItem item = OrderItem.find("id = ?1 and order.id = ?2 and tenantId = ?3", itemId, orderId, tenantCode).firstResult();
+        if (item == null) {
+            throw new NotFoundException("Order item not found");
+        }
+        if (item.getCancelledAt() != null) {
+            throw new BadRequestException("This item has already been cancelled");
+        }
+
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        fulfillmentService.cancelItem(tenantCode, orderId, itemId, reason, userId);
+
+        order = Order.find("id = ?1 and tenantId = ?2", orderId, tenantCode).firstResult();
+
+        // Reactivate voucher if all items cancelled
+        if (areAllItemsCancelled(order)) {
+            reactivateVoucher(order, tenantCode, userId);
+        }
+
+        String productName = item.getProduct() != null ? item.getProduct().getName() : "";
+        notificationService.notifyBusinessStaff(
+                order,
+                "ORDER_ITEM_CANCELLED",
+                productName + " in order " + order.getOrderNumber() + " was cancelled by the customer."
+                        + (reason != null ? " Reason: " + reason : ""),
+                userId);
+
+        notificationService.notifyBuyer(
+                order,
+                "ITEM_CANCELLED",
+                "You cancelled " + productName + " in order " + order.getOrderNumber() + "."
+                        + (reason != null ? " Reason: " + reason : ""),
+                userId);
+
+        return order;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Owner / Staff Cancel Item
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/owner-cancel")
+    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @Transactional
+    public OrderItem ownerCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        String tenantCode = caller.tenantCode();
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", orderId, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        requireBusinessStaffAccess(order);
+
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if ("PAID_ESCROW".equals(orderStatus)) {
+            throw new BadRequestException("For paid orders, use the cancel request approval flow instead. POST /orders/{id}/items/{itemId}/approve-cancel");
+        }
+
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        OrderItem item = fulfillmentService.cancelItem(tenantCode, orderId, itemId, reason, caller.userId());
+
+        Order refreshed = Order.find("id = ?1 and tenantId = ?2", orderId, tenantCode).firstResult();
+        String productName = item.getProduct() != null ? item.getProduct().getName() : "";
+        notificationService.notifyBuyer(
+                refreshed,
+                "ITEM_CANCELLED_BY_OWNER",
+                "The vendor cancelled " + productName + " in order " + refreshed.getOrderNumber() + "."
+                        + (reason != null ? " Reason: " + reason : ""),
+                caller.userId());
+
+        return item;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Customer Cancel Entire Order
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{id}/cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public Response cancelOrder(@PathParam("id") UUID id, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can cancel the order");
+        }
+
+        String tenantCode = caller.tenantCode();
+        UUID userId = caller.userId();
+
+        Order order = Order.find("id = ?1 and tenantId = ?2 and deletedAt IS NULL", id, tenantCode)
+                .withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+                .firstResult();
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+
+        Customer c = Customer.find("email = ?1 and tenantId = ?2", caller.userEmail(), tenantCode).firstResult();
+        UUID customerId = c != null ? c.getId() : null;
+        boolean isOwner = (customerId != null && order.getCustomer() != null && customerId.equals(order.getCustomer().getId()))
+                || (caller.userId() != null && caller.userId().equals(order.getCreatedBy()));
+        if (!isOwner) {
+            throw new ForbiddenException("You are not allowed to cancel this order");
+        }
+
+        String orderStatus = order.getStatus() == null ? "" : order.getStatus().trim().toUpperCase();
+        if (!List.of("PENDING_PAYMENT").contains(orderStatus)) {
+            throw new BadRequestException("Cannot cancel order when it is in " + orderStatus + " status");
+        }
+
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+
+        // Cancel all remaining items via cancelItem (handles proportional refund correctly)
+        List<OrderItem> activeItems = order.getItems().stream()
+                .filter(oi -> oi.getCancelledAt() == null).toList();
+        for (OrderItem item : activeItems) {
+            fulfillmentService.cancelItem(tenantCode, id, item.getId(), reason, userId);
+        }
+
+        order = Order.find("id = ?1 and tenantId = ?2", id, tenantCode).firstResult();
+
+        boolean isPaid = List.of("PAID_ESCROW", "CONFIRMED").contains(orderStatus);
+        reactivateVoucher(order, tenantCode, userId);
+
+        notificationService.notifyBusinessStaff(
+                order, "ORDER_CANCELLED",
+                "Order " + order.getOrderNumber() + " was cancelled by the customer."
+                        + (reason != null ? " Reason: " + reason : ""), userId);
+
+        notificationService.notifyBuyer(
+                order, "ORDER_CANCELLED",
+                "You cancelled order " + order.getOrderNumber() + "."
+                        + (isPaid ? " A full refund has been processed." : "")
+                        + (reason != null ? " Reason: " + reason : ""), userId);
+
+        return Response.ok(order).build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Return / Refund per item
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/request-return")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public OrderItem requestItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can request return");
+        }
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        return returnRefundService.requestItemReturn(
+                caller.tenantCode(), orderId, itemId, reason, caller.userId(), caller.userEmail());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/approve-return")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem approveItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.approveItemReturn(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/reject-return")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem rejectItemReturn(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.rejectItemReturn(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cancel request / Approve / Reject (PAID_ESCROW flow)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/request-cancel")
+    @RolesAllowed({"customer", "user"})
+    @Transactional
+    public OrderItem requestCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId, CancelItemRequest request) {
+        boolean isCustomerOnly = (securityIdentity.hasRole("customer") || securityIdentity.hasRole("user"))
+                && !securityIdentity.hasRole("admin")
+                && !securityIdentity.hasRole("businessOwner")
+                && !securityIdentity.hasRole("operator");
+        if (!isCustomerOnly) {
+            throw new ForbiddenException("Only the buyer can request cancellation");
+        }
+        String reason = (request != null && request.reason != null) ? request.reason.trim() : null;
+        return returnRefundService.requestCancelItem(
+                caller.tenantCode(), orderId, itemId, reason, caller.userId(), caller.userEmail());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/approve-cancel")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem approveCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.approveCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/reject-cancel")
+    @RolesAllowed({"admin", "businessOwner"})
+    @Transactional
+    public OrderItem rejectCancelItem(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.rejectCancelItem(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Admin cancel refund disposition
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/refund-cancel")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem processCancelRefund(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.processCancelRefund(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/release-cancel-to-seller")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem releaseCancelToSeller(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.releaseCancelToSeller(
+                caller.tenantCode(), orderId, itemId, caller.userId());
+    }
+
+    @POST
+    @Path("/{orderId}/items/{itemId}/refund-return")
+    @RolesAllowed({"admin"})
+    @Transactional
+    public OrderItem processReturnRefund(@PathParam("orderId") UUID orderId, @PathParam("itemId") UUID itemId) {
+        return returnRefundService.processReturnRefund(
+                caller.tenantCode(), orderId, itemId, caller.userId());
     }
 
     private void persistHistory(Order order, String oldStatus, String newStatus, String note, UUID userId, String tenantCode) {
@@ -922,20 +1295,54 @@ public class OrderResource {
                 customer.setTotalSpendMinor(0L);
             }
             customer.setTotalSpendMinor(customer.getTotalSpendMinor() + amount);
-            customer.setPoints(customer.getPoints() + (int) (amount / 100));
+            customer.setPoints(customer.getPoints() + (int) (amount / 10_000));
 
             long totalSpend = customer.getTotalSpendMinor();
-            if (totalSpend >= 300000) {
+            if (totalSpend >= 75_000_000) {
                 customer.setTier("DIAMOND");
-            } else if (totalSpend >= 100000) {
+            } else if (totalSpend >= 25_000_000) {
                 customer.setTier("PLATINUM");
-            } else if (totalSpend >= 20000) {
+            } else if (totalSpend >= 5_000_000) {
                 customer.setTier("GOLD");
             } else {
                 customer.setTier("SILVER");
             }
         }
         escrowService.releaseOrderEscrow(tenantCode, order.getId(), userId);
+    }
+
+    private void reactivateVoucher(Order order, String tenantCode, UUID userId) {
+        if (order.getVoucher() == null) {
+            return;
+        }
+        Voucher voucher = order.getVoucher();
+        voucher.setUsedCount(Math.max(0, voucher.getUsedCount() - 1));
+        voucher.setUpdatedBy(userId);
+
+        if (order.getCustomer() == null) {
+            return;
+        }
+        CustomerVoucher customerVoucher = CustomerVoucher.find(
+                "customerId = ?1 and voucherId = ?2 and tenantId = ?3",
+                order.getCustomer().getId(), voucher.getId(), tenantCode).firstResult();
+        if (customerVoucher != null) {
+            customerVoucher.setUsed(false);
+        }
+    }
+
+    static List<OrderItem> cancellationTargets(Order order, OrderItem requestedItem) {
+        if (order != null && "PAID_ESCROW".equalsIgnoreCase(order.getStatus()) && order.getItems() != null) {
+            return order.getItems().stream()
+                    .filter(item -> item.getCancelledAt() == null)
+                    .toList();
+        }
+        return requestedItem != null ? List.of(requestedItem) : List.of();
+    }
+
+    static boolean areAllItemsCancelled(Order order) {
+        return order.getItems() != null
+                && !order.getItems().isEmpty()
+                && order.getItems().stream().allMatch(item -> item.getCancelledAt() != null);
     }
 
     private void requireBusinessStaffAccess(Order order) {
@@ -963,7 +1370,10 @@ public class OrderResource {
 
     private boolean isAllowedStatusTransition(String oldStatus, String newStatus) {
         if ("PENDING_PAYMENT".equals(oldStatus)) {
-            return "CANCELLED".equals(newStatus);
+            return List.of("PAID_ESCROW", "CANCELLED").contains(newStatus);
+        }
+        if ("PAID_ESCROW".equals(oldStatus)) {
+            return List.of("OWNER_ACCEPTED", "OWNER_DECLINED", "CANCELLED").contains(newStatus);
         }
         if ("OWNER_ACCEPTED".equals(oldStatus)) {
             return "FULFILLING".equals(newStatus);
@@ -972,22 +1382,19 @@ public class OrderResource {
             return "DELIVERED".equals(newStatus);
         }
         if ("DELIVERED".equals(oldStatus)) {
-            return "COMPLETED".equals(newStatus);
+            return "PENDING_COMPLETION".equals(newStatus);
+        }
+        if ("PENDING_COMPLETION".equals(oldStatus)) {
+            return List.of("COMPLETED", "CANCELLED").contains(newStatus);
         }
         if ("OWNER_DECLINED".equals(oldStatus)) {
             return "REFUNDED".equals(newStatus);
         }
-        if ("PENDING".equals(oldStatus)) {
-            return List.of("CONFIRMED", "CANCELLED").contains(newStatus);
+        if ("RETURN_REQUESTED".equals(oldStatus)) {
+            return "RETURN_APPROVED".equals(newStatus);
         }
-        if ("CONFIRMED".equals(oldStatus)) {
-            return List.of("SHIPPING", "CANCELLED").contains(newStatus);
-        }
-        if ("SHIPPING".equals(oldStatus)) {
-            return List.of("SHIPPED", "CANCELLED").contains(newStatus);
-        }
-        if ("SHIPPED".equals(oldStatus)) {
-            return "COMPLETED".equals(newStatus);
+        if ("RETURN_APPROVED".equals(oldStatus)) {
+            return "REFUNDED".equals(newStatus);
         }
         return false;
     }

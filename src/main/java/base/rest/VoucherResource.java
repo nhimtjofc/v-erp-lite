@@ -4,6 +4,7 @@ import base.entity.Customer;
 import base.entity.CustomerVoucher;
 import base.entity.Voucher;
 import base.security.CallerContext;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -25,9 +26,13 @@ import java.util.UUID;
 public class VoucherResource {
 
     private static final Logger LOG = Logger.getLogger(VoucherResource.class);
+    private static final String CURRENCY = "VND";
 
     @Inject
     CallerContext caller;
+
+    @Inject
+    EntitlementService entitlementService;
 
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
@@ -99,10 +104,18 @@ public class VoucherResource {
     @GET
     @Path("/my")
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
+    @Transactional
     public List<Map<String, Object>> myVouchers(@QueryParam("customerId") UUID customerId) {
         String tenantCode = caller.tenantCode();
-        Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
-        if (customer == null) {
+        Customer customer = resolveOrCreateCustomer();
+        if (customer != null) {
+            customerId = customer.getId();
+        }
+        if (customerId == null) {
+            throw new BadRequestException("customerId is required");
+        }
+        Customer c = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
+        if (c == null) {
             throw new NotFoundException("Customer not found");
         }
         List<CustomerVoucher> cvs = CustomerVoucher.find("customerId = ?1 and isUsed = false and tenantId = ?2", customerId, tenantCode).list();
@@ -124,21 +137,23 @@ public class VoucherResource {
     @Transactional
     public Response collect(@PathParam("id") UUID voucherId, @QueryParam("customerId") UUID customerId) {
         String tenantCode = caller.tenantCode();
+        Customer customer = resolveOrCreateCustomer();
+        if (customer != null) {
+            customerId = customer.getId();
+        }
+        if (customerId == null) {
+            throw new BadRequestException("customerId is required");
+        }
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", voucherId, tenantCode).firstResult();
         if (voucher == null) {
             throw new NotFoundException("Voucher not found");
         }
-        Customer customer = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
-        if (customer == null) {
+        Customer c = Customer.find("id = ?1 and tenantId = ?2", customerId, tenantCode).firstResult();
+        if (c == null) {
             throw new NotFoundException("Customer not found");
         }
         CustomerVoucher existing = CustomerVoucher.find("customerId = ?1 and voucherId = ?2 and tenantId = ?3", customerId, voucherId, tenantCode).firstResult();
         if (existing != null) {
-            if (existing.isUsed()) {
-                existing.setUsed(false);
-                existing.setCollectedAt(Instant.now());
-                return Response.ok(existing).build();
-            }
             return Response.ok(existing).build();
         }
         CustomerVoucher cv = new CustomerVoucher();
@@ -154,6 +169,7 @@ public class VoucherResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response createVoucher(Voucher voucher) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_VOUCHERS);
         validate(voucher);
         // Check for duplicates
         Voucher existing = Voucher.find("code = ?1 and tenantId = ?2", voucher.getCode().trim(), caller.tenantCode()).firstResult();
@@ -165,6 +181,7 @@ public class VoucherResource {
         voucher.setTenantId(caller.tenantCode());
         voucher.setCreatedBy(caller.userId());
         voucher.setCode(voucher.getCode().trim());
+        voucher.setCurrency(CURRENCY);
         voucher.persist();
         return Response.created(URI.create("/api/vouchers/" + voucher.getId())).entity(voucher).build();
     }
@@ -174,6 +191,7 @@ public class VoucherResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Voucher updateVoucher(@PathParam("id") UUID id, Voucher updated) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_VOUCHERS);
         validate(updated);
         Voucher voucher = Voucher.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
         if (voucher == null) {
@@ -194,6 +212,7 @@ public class VoucherResource {
         voucher.setDiscountValue(updated.getDiscountValue());
         voucher.setMinOrderValueMinor(updated.getMinOrderValueMinor());
         voucher.setMaxDiscountAmountMinor(updated.getMaxDiscountAmountMinor());
+        voucher.setCurrency(CURRENCY);
         voucher.setStartTime(updated.getStartTime());
         voucher.setEndTime(updated.getEndTime());
         voucher.setUsageLimit(updated.getUsageLimit());
@@ -207,6 +226,7 @@ public class VoucherResource {
     @RolesAllowed({"admin", "businessOwner", "operator"})
     @Transactional
     public Response deleteVoucher(@PathParam("id") UUID id) {
+        entitlementService.requireFeature(caller.tenantCode(), EntitlementService.FEATURE_VOUCHERS);
         long deleted = Voucher.delete("id = ?1 and tenantId = ?2", id, caller.tenantCode());
         if (deleted == 0) {
             throw new NotFoundException("Voucher not found");
@@ -215,6 +235,9 @@ public class VoucherResource {
     }
 
     private void validate(Voucher voucher) {
+        if (voucher.getCurrency() != null && !CURRENCY.equalsIgnoreCase(voucher.getCurrency())) {
+            throw new BadRequestException("Vouchers only support VND");
+        }
         if (voucher.getCode() == null || voucher.getCode().isBlank()) {
             throw new BadRequestException("Voucher code is required");
         }
@@ -233,5 +256,35 @@ public class VoucherResource {
         if (voucher.getStartTime() != null && voucher.getEndTime() != null && voucher.getEndTime().isBefore(voucher.getStartTime())) {
             throw new BadRequestException("Voucher end time must be after start time");
         }
+    }
+
+    private Customer resolveOrCreateCustomer() {
+        String tenantCode = caller.tenantCode();
+        if (caller.hasRole("customer")
+                && !caller.hasRole("admin")
+                && !caller.hasRole("operator")
+                && !caller.hasRole("businessOwner")) {
+            String email = caller.userEmail();
+            Customer customer = Customer.find("email = ?1 and tenantId = ?2", email, tenantCode).firstResult();
+            if (customer == null) {
+                customer = new Customer();
+                customer.setId(UUID.randomUUID());
+                customer.setTenantId(tenantCode);
+                customer.setEmail(email);
+                String preferredUsername = caller.preferredUsername();
+                if (preferredUsername != null && !preferredUsername.isBlank()) {
+                    customer.setFirstName(preferredUsername);
+                    customer.setLastName("");
+                } else {
+                    customer.setFirstName("Customer");
+                    customer.setLastName("");
+                }
+                customer.setActive(true);
+                customer.setCreatedBy(caller.userId());
+                customer.persist();
+            }
+            return customer;
+        }
+        return null;
     }
 }

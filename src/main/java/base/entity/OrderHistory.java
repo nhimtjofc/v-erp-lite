@@ -31,6 +31,9 @@ public class OrderHistory extends PanacheEntityBase {
     @Column(name = "new_status", nullable = false, length = 50)
     private String newStatus;
 
+    @Column(name = "sequence_no", nullable = false, insertable = false, updatable = false)
+    private long sequenceNo;
+
     @Column(columnDefinition = "TEXT")
     private String note;
 

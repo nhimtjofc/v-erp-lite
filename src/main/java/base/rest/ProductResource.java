@@ -6,6 +6,7 @@ import base.entity.ProductVariant;
 import base.entity.Tag;
 import base.security.BusinessAccess;
 import base.security.CallerContext;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -27,6 +28,8 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProductResource {
 
+    private static final String CURRENCY = "VND";
+
     // Trigger hot reload for new sample vendor products
     @Inject
     CallerContext caller;
@@ -34,12 +37,16 @@ public class ProductResource {
     @Inject
     BusinessAccess businessAccess;
 
+    @Inject
+    EntitlementService entitlementService;
+
     @GET
     @RolesAllowed({"admin", "operator", "businessOwner", "customer"})
     public List<Product> listProducts(
             @QueryParam("search") String search,
             @QueryParam("categoryId") UUID categoryId,
-            @QueryParam("tagId") UUID tagId) {
+            @QueryParam("tagId") UUID tagId,
+            @QueryParam("approvalStatus") String approvalStatus) {
         String tenantCode = caller.tenantCode();
         StringBuilder query = new StringBuilder("SELECT DISTINCT p FROM Product p");
         if (tagId != null) {
@@ -58,6 +65,15 @@ public class ProductResource {
             } else {
                 query.append(" AND p.id IS NULL");
             }
+        }
+
+        // Restrict non-staff callers to only APPROVED products. Staff can filter via query parameter.
+        boolean isStaff = caller.hasRole("admin") || caller.hasRole("operator") || caller.hasRole("businessOwner");
+        if (!isStaff) {
+            query.append(" AND p.approvalStatus = 'APPROVED'");
+        } else if (approvalStatus != null && !approvalStatus.isBlank()) {
+            query.append(" AND p.approvalStatus = :approvalStatus");
+            params.put("approvalStatus", approvalStatus);
         }
 
         if (categoryId != null) {
@@ -87,6 +103,10 @@ public class ProductResource {
         if (product == null) {
             throw new NotFoundException("Product not found");
         }
+        boolean isStaff = caller.hasRole("admin") || businessAccess.isScopedStaff();
+        if (!isStaff && !"APPROVED".equals(product.getApprovalStatus())) {
+            throw new NotFoundException("Product not found");
+        }
         if (product.getBusiness() != null) {
             businessAccess.requireAccess(product.getBusiness().getId());
         } else if (businessAccess.isScopedStaff()) {
@@ -96,10 +116,12 @@ public class ProductResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response createProduct(Product product) {
+        entitlementService.requireProductCapacity(caller.tenantCode());
         validate(product);
+        product.setCurrency(CURRENCY);
         product.setId(UUID.randomUUID());
         product.setTenantId(caller.tenantCode());
         product.setCreatedBy(caller.userId());
@@ -107,6 +129,11 @@ public class ProductResource {
         product.setTags(resolveTags(product));
         if (businessAccess.isScopedStaff()) {
             product.setBusiness(businessAccess.requireCurrentBusiness());
+            product.setApprovalStatus("PENDING");
+        } else {
+            if (product.getApprovalStatus() == null || product.getApprovalStatus().isBlank()) {
+                product.setApprovalStatus("APPROVED");
+            }
         }
 
         if (product.getVariants() != null) {
@@ -124,7 +151,7 @@ public class ProductResource {
 
     @PUT
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Product updateProduct(@PathParam("id") UUID id, Product updated) {
         validate(updated);
@@ -137,6 +164,15 @@ public class ProductResource {
         } else if (businessAccess.isScopedStaff()) {
             throw new ForbiddenException("You are not allowed to modify this product");
         }
+
+        if (businessAccess.isScopedStaff()) {
+            updated.setApprovalStatus(product.getApprovalStatus()); // prevent self-approval
+        } else {
+            if (updated.getApprovalStatus() != null && !updated.getApprovalStatus().isBlank()) {
+                product.setApprovalStatus(updated.getApprovalStatus());
+            }
+        }
+
         product.setCategory(resolveCategory(updated));
         product.setTags(resolveTags(updated));
         product.setSku(updated.getSku());
@@ -146,6 +182,7 @@ public class ProductResource {
         product.setBasePriceMinor(updated.getBasePriceMinor());
         product.setSalePriceMinor(updated.getSalePriceMinor());
         product.setCostPriceMinor(updated.getCostPriceMinor());
+        product.setCurrency(CURRENCY);
         product.setSaleStartsAt(updated.getSaleStartsAt());
         product.setSaleEndsAt(updated.getSaleEndsAt());
         product.setActive(updated.isActive());
@@ -202,7 +239,7 @@ public class ProductResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed({"admin", "businessOwner", "operator"})
+    @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response deleteProduct(@PathParam("id") UUID id) {
         Product product = Product.find("id = ?1 and tenantId = ?2", id, caller.tenantCode()).firstResult();
@@ -222,6 +259,9 @@ public class ProductResource {
     }
 
     private void validate(Product product) {
+        if (product.getCurrency() != null && !CURRENCY.equalsIgnoreCase(product.getCurrency())) {
+            throw new BadRequestException("Products only support VND");
+        }
         if (product.getSku() == null || product.getSku().isBlank()) {
             throw new BadRequestException("Product SKU is required");
         }

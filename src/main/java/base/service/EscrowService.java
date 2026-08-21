@@ -1,6 +1,8 @@
 package base.service;
 
 import base.entity.EscrowRecord;
+import base.entity.Order;
+import base.entity.OrderHistory;
 import base.entity.Wallet;
 import base.model.Money;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,6 +18,9 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class EscrowService {
+
+    private static final UUID PLATFORM_OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final int PLATFORM_COMMISSION_PERCENT = 5;
 
     @Inject
     WalletService walletService;
@@ -34,31 +39,30 @@ public class EscrowService {
         }
         moneyService.requirePositive(amount);
 
-        Wallet wallet = walletService.getOrCreateWallet(tenantId, "SELLER", sellerOwnerId, amount.getCurrency(),
+        Wallet sellerWallet = walletService.getOrCreateWallet(tenantId, "SELLER", sellerOwnerId, amount.getCurrency(),
                 actorId);
         EscrowRecord existing = EscrowRecord.find(
                 "tenantId = ?1 and orderId = ?2 and sellerWallet.id = ?3",
                 tenantId,
                 orderId,
-                wallet.getId()).firstResult();
+                sellerWallet.getId()).firstResult();
         if (existing != null) {
             return existing;
         }
 
-        walletService.holdEscrowForSeller(
-                tenantId,
-                sellerOwnerId,
-                amount,
-                "ORDER",
-                orderId,
-                actorId,
-                "Tạm giữ tiền đơn hàng");
+        Wallet platformWallet = walletService.getOrCreateWallet(
+                tenantId, "PLATFORM", PLATFORM_OWNER_ID, amount.getCurrency(), actorId);
+        UUID escrowId = UUID.randomUUID();
+        walletService.creditPending(
+                tenantId, platformWallet.getId(), amount,
+                "ESCROW_HOLD", "ESCROW", escrowId,
+                actorId, "Tạm giữ tiền đơn hàng (platform)");
 
         EscrowRecord escrow = new EscrowRecord();
-        escrow.setId(UUID.randomUUID());
+        escrow.setId(escrowId);
         escrow.setTenantId(tenantId);
         escrow.setOrderId(orderId);
-        escrow.setSellerWallet(wallet);
+        escrow.setSellerWallet(sellerWallet);
         escrow.setAmountMinor(amount.getAmountMinor());
         escrow.setCurrency(amount.getCurrency());
         escrow.setStatus("HELD");
@@ -76,36 +80,89 @@ public class EscrowService {
         return EscrowRecord.list("tenantId = ?1 and status = ?2", tenantId, status.trim().toUpperCase());
     }
 
+    public long sumHeldForSeller(String tenantId, UUID sellerWalletId) {
+        Long total = EscrowRecord.getEntityManager()
+                .createQuery("select COALESCE(SUM(e.amountMinor), 0) from EscrowRecord e where e.tenantId = :tenantId and e.sellerWallet.id = :sellerWalletId and e.status = 'HELD'", Long.class)
+                .setParameter("tenantId", tenantId)
+                .setParameter("sellerWalletId", sellerWalletId)
+                .getSingleResult();
+        return total;
+    }
+
     @Transactional
     public List<EscrowRecord> releaseOrderEscrow(String tenantId, UUID orderId, UUID actorId) {
         List<EscrowRecord> records = heldRecords(tenantId, orderId);
+        if (records.isEmpty()) return records;
+
+        Wallet platformWallet = walletService.getOrCreateWallet(
+                tenantId, "PLATFORM", PLATFORM_OWNER_ID, records.get(0).getCurrency(), actorId);
+
         for (EscrowRecord record : records) {
+            Wallet sellerWallet = record.getSellerWallet();
+            Money amount = Money.of(record.getAmountMinor(), record.getCurrency());
+
             walletService.releasePendingToAvailable(
-                    tenantId,
-                    record.getSellerWallet().getId(),
-                    Money.of(record.getAmountMinor(), record.getCurrency()),
-                    "ORDER",
-                    orderId,
-                    actorId,
-                    "Giải ngân tiền đơn hàng");
+                    tenantId, platformWallet.getId(), amount,
+                    "ESCROW", record.getId(), actorId,
+                    "Giải ngân tiền tạm giữ đơn hàng từ ví platform");
+
+            long commission = commissionFor(record.getAmountMinor());
+            long sellerNet = record.getAmountMinor() - commission;
+
+            if (sellerNet > 0) {
+                walletService.debitAvailable(
+                        tenantId, platformWallet.getId(), Money.of(sellerNet, record.getCurrency()),
+                        "ESCROW_RELEASE_SELLER", "ESCROW", record.getId(), actorId,
+                        "Chuyển tiền bán hàng cho người bán");
+
+                walletService.creditAvailable(
+                        tenantId, sellerWallet.getId(), Money.of(sellerNet, record.getCurrency()),
+                        "ESCROW_SELLER_CREDIT", "ESCROW", record.getId(), actorId,
+                        "Nhận tiền từ đơn hàng đã giải ngân");
+            }
+
             record.setStatus("RELEASED");
             record.setUpdatedBy(actorId);
         }
+
+        // Auto-complete order when escrow is released (after 7-day hold period)
+        if (!records.isEmpty()) {
+            Order order = Order.find("id = ?1 and tenantId = ?2", orderId, tenantId).firstResult();
+            if (order != null && "PENDING_COMPLETION".equals(order.getStatus())) {
+                String oldStatus = order.getStatus();
+                order.setStatus("COMPLETED");
+                order.setUpdatedBy(actorId);
+                order.persist();
+
+                OrderHistory history = new OrderHistory();
+                history.setId(UUID.randomUUID());
+                history.setOrder(order);
+                history.setTenantId(tenantId);
+                history.setOldStatus(oldStatus);
+                history.setNewStatus("COMPLETED");
+                history.setNote("Auto-completed after escrow hold period");
+                history.setCreatedBy(actorId);
+                history.persist();
+            }
+        }
+
         return records;
     }
 
     @Transactional
     public List<EscrowRecord> refundOrderEscrow(String tenantId, UUID orderId, UUID actorId) {
         List<EscrowRecord> records = heldRecords(tenantId, orderId);
+        if (records.isEmpty()) return records;
+
+        Wallet platformWallet = walletService.getOrCreateWallet(
+                tenantId, "PLATFORM", PLATFORM_OWNER_ID, records.get(0).getCurrency(), actorId);
+
         for (EscrowRecord record : records) {
             walletService.refundPending(
-                    tenantId,
-                    record.getSellerWallet().getId(),
+                    tenantId, platformWallet.getId(),
                     Money.of(record.getAmountMinor(), record.getCurrency()),
-                    "ORDER",
-                    orderId,
-                    actorId,
-                    "Hoàn tiền tạm giữ đơn hàng");
+                    "ESCROW", record.getId(), actorId,
+                    "Hoàn tiền tạm giữ đơn hàng từ ví platform");
             record.setStatus("REFUNDED");
             record.setUpdatedBy(actorId);
         }
@@ -124,13 +181,14 @@ public class EscrowService {
             throw new BadRequestException("Chỉ hoàn tiền ký quỹ đang giữ");
         }
 
-        Wallet sellerWallet = escrow.getSellerWallet();
+        Wallet platformWallet = walletService.getOrCreateWallet(
+                tenantId, "PLATFORM", PLATFORM_OWNER_ID, escrow.getCurrency(), actorId);
         Money amount = Money.of(escrow.getAmountMinor(), escrow.getCurrency());
 
         walletService.refundPending(
-                escrow.getTenantId(), sellerWallet.getId(), amount,
-                "ORDER", escrow.getOrderId(),
-                actorId, "Hoàn tiền ký quỹ"
+                tenantId, platformWallet.getId(), amount,
+                "ESCROW", escrow.getId(), actorId,
+                "Hoàn tiền ký quỹ từ ví platform"
         );
 
         escrow.setStatus("REFUNDED");
@@ -147,5 +205,44 @@ public class EscrowService {
                 tenantId,
                 orderId,
                 "HELD");
+    }
+
+    private long commissionFor(long amountMinor) {
+        return java.math.BigDecimal.valueOf(amountMinor)
+                .multiply(java.math.BigDecimal.valueOf(PLATFORM_COMMISSION_PERCENT))
+                .divide(java.math.BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP)
+                .longValue();
+    }
+
+    /**
+     * Releases every escrow whose hold period has elapsed as of {@code referenceNow}.
+     * This mirrors EscrowReleaseScheduler but lets callers simulate time passing
+     * (e.g. the admin "fast-forward 7 days" button passes now + 7 days).
+     */
+    @Transactional
+    public EscrowReleaseSummary releaseDueEscrows(Instant referenceNow, UUID actorId) {
+        List<Object[]> eligibleOrders = EscrowRecord.getEntityManager().createQuery(
+                "select distinct e.orderId, e.tenantId from EscrowRecord e "
+                        + "where e.status = 'HELD' and e.releaseDueAt <= :referenceNow",
+                Object[].class)
+                .setParameter("referenceNow", referenceNow)
+                .getResultList();
+
+        int released = 0;
+        int failed = 0;
+        for (Object[] row : eligibleOrders) {
+            UUID orderId = (UUID) row[0];
+            String tenantId = (String) row[1];
+            try {
+                releaseOrderEscrow(tenantId, orderId, actorId);
+                released++;
+            } catch (Exception e) {
+                failed++;
+            }
+        }
+        return new EscrowReleaseSummary(released, failed);
+    }
+
+    public record EscrowReleaseSummary(int releasedOrders, int failedOrders) {
     }
 }

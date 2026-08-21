@@ -12,7 +12,7 @@ services:
     volumes:
       - mariadbdata:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -proot-secret"]
+      test: [ "CMD-SHELL", "mariadb-admin ping -h localhost -u root -proot-secret" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,6 +32,13 @@ services:
       KC_DB_URL: jdbc:mariadb://mariadb:3306/v-erp-lite
       KC_DB_USERNAME: v-erp
       KC_DB_PASSWORD: v-erp-secret
+      # Giới hạn bộ nhớ của Java (JVM) để Keycloak không phình to
+      JAVA_OPTS_APPEND: -Xms512m -Xmx1024m
+    # Giới hạn tài nguyên cứng của container Docker
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
     ports:
       - "8181:8181"
     volumes:
@@ -49,7 +56,7 @@ services:
     volumes:
       - wordpressdbdata:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -79,7 +86,7 @@ services:
       - ./docker/wordpress/wp-content/plugins/v-erp-catalog-connector:/var/www/html/wp-content/plugins/v-erp-catalog-connector
       - ./docker/wordpress/wp-content/plugins/v-erp-woo-checkout:/var/www/html/wp-content/plugins/v-erp-woo-checkout
     healthcheck:
-      test: ["CMD-SHELL", "php -r '$$socket = @fsockopen(\"127.0.0.1\", 80); if (!$$socket) { exit(1); } fclose($$socket);'"]
+      test: [ "CMD-SHELL", "php -r '$$socket = @fsockopen(\"127.0.0.1\", 80); if (!$$socket) { exit(1); } fclose($$socket);'" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -115,7 +122,7 @@ services:
       - ./docker/wordpress/wp-content/plugins/v-erp-catalog-connector:/var/www/html/wp-content/plugins/v-erp-catalog-connector
       - ./docker/wordpress/wp-content/plugins/v-erp-woo-checkout:/var/www/html/wp-content/plugins/v-erp-woo-checkout
       - ./docker/wordpress/setup.sh:/opt/v-erp/setup.sh:ro
-    entrypoint: ["/bin/sh", "/opt/v-erp/setup.sh"]
+    entrypoint: [ "/bin/sh", "/opt/v-erp/setup.sh" ]
     restart: "no"
 
 volumes:

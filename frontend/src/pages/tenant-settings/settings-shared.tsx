@@ -86,13 +86,7 @@ export const TIME_FORMATS = [
 ]
 
 export const CURRENCIES = [
-  { value: 'USD', label: 'USD ($)', symbol: '$' },
-  { value: 'EUR', label: 'EUR (€)', symbol: '€' },
-  { value: 'GBP', label: 'GBP (£)', symbol: '£' },
-  { value: 'JPY', label: 'JPY (¥)', symbol: '¥' },
   { value: 'VND', label: 'VND (₫)', symbol: '₫' },
-  { value: 'SGD', label: 'SGD ($)', symbol: 'S$' },
-  { value: 'AUD', label: 'AUD ($)', symbol: 'A$' },
 ]
 
 export const NOTIFICATION_CHANNELS = [

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react'
+import { MessageCircle, X, Send, Bot } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { getAccessToken, userManager } from '@/shared/auth'
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -14,6 +15,7 @@ interface Message {
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -41,19 +43,56 @@ export function ChatWidget() {
     setIsLoading(true)
 
     try {
-      const res = await fetch('http://localhost:8000/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: userMessage }),
-      })
+      // Forward the logged-in user's OIDC access token so the agent can derive
+      // identity server-side (see interceptors.ts for the same token source).
+      let token = await getAccessToken()
+      if (!token) {
+        token = localStorage.getItem('access_token')
+      }
+
+      const sendChatRequest = async (authToken: string | null) => {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`
+        }
+        return fetch('http://localhost:8000/chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message: userMessage, session_id: sessionId }),
+        })
+      }
+
+      let res = await sendChatRequest(token)
+
+      // Coalesced retry on 401 using silent token renewal
+      if (res.status === 401) {
+        try {
+          const renewed = await userManager.signinSilent()
+          if (renewed?.access_token) {
+            localStorage.setItem('access_token', renewed.access_token)
+            res = await sendChatRequest(renewed.access_token)
+          }
+        } catch {
+          // silent refresh failed
+        }
+      }
+
+      if (res.status === 401) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: '🔒 Phiên đăng nhập đã hết hạn. Vui lòng làm mới trang (F5) hoặc đăng nhập lại để tiếp tục.' },
+        ])
+        return
+      }
 
       if (!res.ok) {
         throw new Error('Network response was not ok')
       }
 
       const data = await res.json()
+      if (data.session_id) {
+        setSessionId(data.session_id)
+      }
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: data.response || 'Xin lỗi, tôi không thể xử lý yêu cầu lúc này.' },

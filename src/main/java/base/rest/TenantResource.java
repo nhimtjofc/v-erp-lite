@@ -1,7 +1,9 @@
 package base.rest;
 
 import base.entity.Tenant;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -16,6 +18,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @RolesAllowed("admin")
 public class TenantResource {
+
+    @Inject
+    EntitlementService entitlementService;
 
     @GET
     public List<Tenant> listTenants() {
@@ -37,6 +42,7 @@ public class TenantResource {
     public Response createTenant(Tenant tenant) {
         tenant.setId(UUID.randomUUID());
         tenant.persist();
+        entitlementService.startTrial(tenant.getCode(), null);
         return Response.created(URI.create("/api/tenants/" + tenant.getId())).entity(tenant).build();
     }
 

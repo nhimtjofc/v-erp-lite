@@ -4,6 +4,7 @@ import base.entity.Business;
 import base.entity.User;
 import base.security.BusinessAccess;
 import base.security.CallerContext;
+import base.service.EntitlementService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -26,6 +27,9 @@ public class BusinessResource {
 
     @Inject
     BusinessAccess businessAccess;
+
+    @Inject
+    EntitlementService entitlementService;
 
     @GET
     public List<Business> listBusinesses() {
@@ -51,9 +55,10 @@ public class BusinessResource {
     @RolesAllowed({"admin", "businessOwner"})
     @Transactional
     public Response createBusiness(Business business) {
+        entitlementService.requireBusinessCapacity(caller.tenantCode());
         business.setId(UUID.randomUUID());
         business.setTenantId(caller.tenantCode());
-        business.setCreatedBy(caller.userId());
+        business.setCreatedBy(caller.resolveUser().getId());
         business.persist();
         if (caller.hasRole("businessOwner") && !caller.hasRole("admin")) {
             User owner = caller.resolveUser();

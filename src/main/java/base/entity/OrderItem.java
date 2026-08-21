@@ -1,5 +1,6 @@
 package base.entity;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -51,6 +52,54 @@ public class OrderItem extends BaseEntity {
 
     @Column(nullable = false, length = 3)
     private String currency = "VND";
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
+    @Column(name = "cancelled_by")
+    private UUID cancelledBy;
+
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
+    @Column(name = "cancel_requested_at")
+    private Instant cancelRequestedAt;
+
+    @Column(name = "cancel_requested_by")
+    private UUID cancelRequestedBy;
+
+    @Column(name = "cancel_status")
+    private String cancelStatus;
+
+    @Column(name = "cancel_approved_at")
+    private Instant cancelApprovedAt;
+
+    @Column(name = "cancel_approved_by")
+    private UUID cancelApprovedBy;
+
+    @Column(name = "return_requested_at")
+    private Instant returnRequestedAt;
+
+    @Column(name = "return_requested_by")
+    private UUID returnRequestedBy;
+
+    @Column(name = "return_reason")
+    private String returnReason;
+
+    @Column(name = "return_approved_at")
+    private Instant returnApprovedAt;
+
+    @Column(name = "return_approved_by")
+    private UUID returnApprovedBy;
+
+    @Column(name = "return_status")
+    private String returnStatus;
+
+    @Column(name = "return_refund_minor")
+    private Long returnRefundMinor;
+
+    @Column(name = "return_refund_currency", length = 3)
+    private String returnRefundCurrency;
 
     public UUID getId() {
         return id;

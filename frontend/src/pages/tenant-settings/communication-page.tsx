@@ -25,7 +25,7 @@ export function CommunicationPage() {
   const { data: effectiveSettings } = useGetEffectiveSettingsQuery()
   const mutation = usePutTenantSettingsMutation()
 
-  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner'
+  const isAdmin = me?.role?.name === 'admin' || me?.role?.name === 'businessOwner' || me?.role?.name === 'operator'
 
   const [communication, setCommunication] = useState<CommunicationSettings>({})
   const [savedCommunication, setSavedCommunication] = useState<CommunicationSettings>({})

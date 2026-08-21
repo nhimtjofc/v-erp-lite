@@ -3,13 +3,12 @@ import { useParams, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useGetOrderQuery,
-  useConfirmReceiptMutation,
   useUpdateStatusMutation,
   useOwnerDecisionMutation,
   listOrdersQueryKey,
   useMeQuery,
-  useWooCommerceOrdersQuery,
-  useReconcileWooCommerceOrderMutation,
+    useEcommerceOrdersQuery,
+    useReconcileEcommerceOrderMutation,
 } from '@/shared/api'
 import {
   useOrderEscrowQuery,
@@ -24,11 +23,11 @@ import { Badge } from '@/shared/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { formatMoneyMinor, formatUSD } from '@/shared/utils/currency'
+import { formatMoneyMinor, formatVND } from '@/shared/utils/currency'
 import {
   AlertCircle, ArrowLeft, Calendar, CheckCircle2, Package, XCircle,
   User, Truck, Tag, Receipt, Clock, ChevronRight, Printer, RefreshCw,
-  Trash2, Save, PlugZap, CreditCard, Shield, RotateCcw, KeyRound,
+  Trash2, Save, PlugZap, CreditCard, Shield, RotateCcw, KeyRound, FastForward,
 } from 'lucide-react'
 
 interface OrderHistoryEntry {
@@ -61,6 +60,10 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     label: 'Delivered', badgeClass: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
     dotClass: 'border-emerald-400 bg-emerald-500 text-white', icon: Truck,
   },
+  PENDING_COMPLETION: {
+    label: 'Escrow hold (7 days)', badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white', icon: Clock,
+  },
   OWNER_DECLINED: {
     label: 'Owner declined', badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
     dotClass: 'border-red-400 bg-red-500 text-white', icon: XCircle,
@@ -68,30 +71,6 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
   REFUNDED: {
     label: 'Refunded', badgeClass: 'border-slate-500/30 bg-slate-500/15 text-slate-700 dark:text-slate-300',
     dotClass: 'border-slate-400 bg-slate-500 text-white', icon: RefreshCw,
-  },
-  PENDING: {
-    label: 'Pending',
-    badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
-    dotClass: 'border-amber-400 bg-amber-500 text-white',
-    icon: Clock,
-  },
-  CONFIRMED: {
-    label: 'Confirmed',
-    badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
-    dotClass: 'border-sky-400 bg-sky-500 text-white',
-    icon: CheckCircle2,
-  },
-  SHIPPING: {
-    label: 'Shipping',
-    badgeClass: 'border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
-    dotClass: 'border-violet-400 bg-violet-500 text-white',
-    icon: Package,
-  },
-  SHIPPED: {
-    label: 'Shipped',
-    badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
-    dotClass: 'border-orange-400 bg-orange-500 text-white',
-    icon: Truck,
   },
   COMPLETED: {
     label: 'Completed',
@@ -104,6 +83,22 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; dotClas
     badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
     dotClass: 'border-red-400 bg-red-500 text-white',
     icon: XCircle,
+  },
+  RETURN_REQUESTED: {
+    label: 'Return requested', badgeClass: 'border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    dotClass: 'border-amber-400 bg-amber-500 text-white', icon: RotateCcw,
+  },
+  RETURN_APPROVED: {
+    label: 'Return approved', badgeClass: 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    dotClass: 'border-sky-400 bg-sky-500 text-white', icon: CheckCircle2,
+  },
+  CANCEL_REQUESTED: {
+    label: 'Cancel requested', badgeClass: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300',
+    dotClass: 'border-red-400 bg-red-500 text-white', icon: XCircle,
+  },
+  CANCEL_APPROVED: {
+    label: 'Cancel approved (awaiting admin)', badgeClass: 'border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    dotClass: 'border-orange-400 bg-orange-500 text-white', icon: Clock,
   },
 }
 
@@ -211,7 +206,7 @@ function PaymentActivityCard({
                   </p>
                 </div>
                 <span className="font-semibold">
-                  {formatMoneyMinor(Number(intent.amountMinor ?? 0), intent.currency ?? 'USD')}
+                  {formatMoneyMinor(Number(intent.amountMinor ?? 0), intent.currency ?? 'VND')}
                 </span>
               </div>
 
@@ -275,6 +270,20 @@ export function OrderDetailPage() {
   const [decisionError, setDecisionError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [cancellingItem, setCancellingItem] = useState<any | null>(null)
+  const [cancelItemReason, setCancelItemReason] = useState('')
+  const [cancelItemError, setCancelItemError] = useState<string | null>(null)
+  const [returningItem, setReturningItem] = useState<any | null>(null)
+  const [returnItemReason, setReturnItemReason] = useState('')
+  const [returnItemError, setReturnItemError] = useState<string | null>(null)
+  const [approvingReturnItem, setApprovingReturnItem] = useState<any | null>(null)
+  const [approveReturnError, setApproveReturnError] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    title: string
+    description: string
+    onConfirm: () => void
+  }>({ open: false, title: '', description: '', onConfirm: () => {} })
   const [notes, setNotes] = useState<string | null>(null)
   const [shippingFeeMinor, setShippingFee] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<string | null>(null)
@@ -296,14 +305,14 @@ export function OrderDetailPage() {
     data: wooOrders,
     refetch: refetchWooOrders,
     isFetching: isWooOrdersFetching,
-  } = useWooCommerceOrdersQuery(
+  } = useEcommerceOrdersQuery(
     tenantScope,
     order?.orderNumber ? { search: order.orderNumber } : undefined,
     { enabled: isWooEnabled }
   )
   const wooOrderInfo = wooOrders?.find((o) => o.erpOrderId === order?.id)
 
-  const reconcileMutation = useReconcileWooCommerceOrderMutation()
+  const reconcileMutation = useReconcileEcommerceOrderMutation()
 
   const historyQuery = useQuery({
     queryKey: ['order-history', id],
@@ -367,16 +376,6 @@ export function OrderDetailPage() {
     onError: (err) => setDecisionError(err instanceof Error ? err.message : 'Unable to submit owner decision.'),
   })
 
-  const confirmReceiptMutation = useConfirmReceiptMutation({
-    onSuccess: async () => {
-      await refreshOrderPage()
-      await queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
-      setStatusError(null)
-    },
-    onError: (err) => {
-      setStatusError(err instanceof Error ? err.message : 'Unable to confirm receipt.')
-    },
-  })
 
   const deleteMutation = useMutation({
     mutationFn: deleteOrder,
@@ -407,6 +406,289 @@ export function OrderDetailPage() {
       setError('')
     },
     onError: (err) => setError(err instanceof Error ? err.message : 'Unable to update order.'),
+  })
+
+  const returnItemMutation = useMutation({
+    mutationFn: async (body: { itemId: string; reason?: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/request-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: body.reason || undefined }),
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to request return')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setReturningItem(null)
+      setReturnItemReason('')
+      setReturnItemError(null)
+    },
+    onError: (err) => {
+      setReturnItemError(err instanceof Error ? err.message : 'Unable to request return.')
+    },
+  })
+
+  const approveReturnMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/approve-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to approve return')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setApprovingReturnItem(null)
+      setApproveReturnError(null)
+    },
+    onError: (err) => {
+      setApproveReturnError(err instanceof Error ? err.message : 'Unable to approve return.')
+    },
+  })
+
+  const rejectReturnMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/reject-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to reject return')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+    onError: (err) => {
+      setApproveReturnError(err instanceof Error ? err.message : 'Unable to reject return.')
+    },
+  })
+
+  const cancelItemMutation = useMutation({
+    mutationFn: async (body: { itemId: string; reason?: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: body.reason || undefined }),
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to cancel item')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setCancellingItem(null)
+      setCancelItemReason('')
+      setCancelItemError(null)
+    },
+    onError: (err) => {
+      setCancelItemError(err instanceof Error ? err.message : 'Unable to cancel item.')
+    },
+  })
+
+  const requestCancelItemMutation = useMutation({
+    mutationFn: async (body: { itemId: string; reason?: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/request-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: body.reason || undefined }),
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to request cancellation')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+      setCancellingItem(null)
+      setCancelItemReason('')
+      setCancelItemError(null)
+    },
+    onError: (err) => {
+      setCancelItemError(err instanceof Error ? err.message : 'Unable to request cancellation.')
+    },
+  })
+
+  const approveCancelMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/approve-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to approve cancellation')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const rejectCancelMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/reject-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to reject cancellation')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const processCancelRefundMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/refund-cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to process cancel refund')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const releaseCancelToSellerMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/release-cancel-to-seller`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to release funds to seller')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const processReturnRefundMutation = useMutation({
+    mutationFn: async (body: { itemId: string }) => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/items/${body.itemId}/refund-return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || 'Unable to process return refund')
+      }
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      queryClient.invalidateQueries({ queryKey: listOrdersQueryKey() })
+      queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+    },
+  })
+
+  const forceReleaseMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('access_token')
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+      const res = await fetch(`${baseUrl}/api/orders/${id}/escrow/force-release`, {
+        method: 'POST',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+      })
+      if (!res.ok) throw new Error(await res.text() || 'Force release failed')
+      return res.json()
+    },
+    onSuccess: async () => {
+      await refreshOrderPage()
+      await escrowQuery.refetch()
+    },
   })
 
   const openStatusDialog = (newStatus: string) => {
@@ -455,14 +737,17 @@ export function OrderDetailPage() {
     )
   }
 
-  const status = order.status?.toUpperCase() ?? 'PENDING'
-  const isPending = status === 'PENDING'
-  const isConfirmed = status === 'CONFIRMED'
-  const isShipping = status === 'SHIPPING'
-  const isShipped = status === 'SHIPPED'
-  const isPendingPayment = status === 'PENDING' || status === 'PENDING_PAYMENT'
+  const status = order.status?.toUpperCase() ?? 'PENDING_PAYMENT'
+  const isPendingPayment = status === 'PENDING_PAYMENT'
   const isFinal = ['COMPLETED', 'CANCELLED', 'OWNER_DECLINED', 'REFUNDED'].includes(status)
+  const showHeaderActions = status !== 'REFUNDED'
+  const canShowPayment = !isFinal && isPendingPayment
   const canDelete = isAdmin && isFinal
+  const immediateCancellableStatuses = ['PENDING_PAYMENT']
+  const canCancelItem = isCustomer && immediateCancellableStatuses.includes(status)
+  const canRequestCancel = isCustomer && status === 'PAID_ESCROW'
+  const returnableStatuses = ['DELIVERED', 'PENDING_COMPLETION']
+  const canRequestReturn = isCustomer && returnableStatuses.includes(status)
 
   const statusCfg = getStatusConfig(status)
   const currentNotes = notes ?? order.notes ?? ''
@@ -499,6 +784,7 @@ export function OrderDetailPage() {
           </p>
         </div>
 
+        {showHeaderActions && (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={refreshOrderPage} disabled={isRefreshing || updateStatusMutation.isPending}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
@@ -508,7 +794,7 @@ export function OrderDetailPage() {
             <Printer className="h-4 w-4 mr-1.5" /> Print
           </Button>
 
-          {canAccessPayment && isPendingPayment && (
+          {!isFinal && canAccessPayment && canShowPayment && (
             <Link to="/orders/payment" search={{ orderId: id }}>
               <Button size="sm">
                 <CreditCard className="h-4 w-4 mr-1.5" /> Payment
@@ -528,7 +814,24 @@ export function OrderDetailPage() {
             </Button>
           )}
 
-          {isOwner && status === 'PAID_ESCROW' && (
+          {canRequestCancel && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                const firstActiveItem = order.items?.find((item) => !(item as any).cancelledAt && !(item as any).cancelRequestedAt)
+                if (firstActiveItem) {
+                  setCancellingItem(firstActiveItem)
+                  setCancelItemReason('')
+                  setCancelItemError(null)
+                }
+              }}
+            >
+              <RotateCcw className="h-4 w-4 mr-1.5" /> Request Cancel
+            </Button>
+          )}
+
+          {!isFinal && isOwner && status === 'PAID_ESCROW' && (
             <>
               <Button onClick={() => submitOwnerDecision('ACCEPT')} disabled={ownerDecisionMutation.isPending} className="font-semibold">
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Accept
@@ -538,9 +841,9 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {isStaff && isPending && (
+          {!isFinal && isStaff && isPendingPayment && (
             <>
-              <Button onClick={() => openStatusDialog('CONFIRMED')} variant="secondary" className="font-semibold">
+              <Button onClick={() => openStatusDialog('PAID_ESCROW')} variant="secondary" className="font-semibold">
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm
               </Button>
               <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
@@ -548,40 +851,47 @@ export function OrderDetailPage() {
               </Button>
             </>
           )}
-          {isStaff && isConfirmed && (
-            <Button onClick={() => openStatusDialog('SHIPPING')} className="font-semibold">
-              <Package className="h-4 w-4 mr-1.5" /> Start Shipping
+          {!isFinal && isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
+          {!isFinal && isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
+          {!isFinal && isStaff && status === 'DELIVERED' && (
+            <div className="text-sm text-muted-foreground italic">
+              Escrow hold will start automatically upon delivery.
+            </div>
+          )}
+          {!isFinal && isStaff && status === 'PENDING_COMPLETION' && (
+            <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" size="sm">
+              <XCircle className="h-4 w-4 mr-1.5" /> Cancel Order
             </Button>
           )}
-          {isStaff && isShipping && (
-            <>
-              <Button onClick={() => openStatusDialog('SHIPPED')} variant="secondary" className="font-semibold">
-                <Truck className="h-4 w-4 mr-1.5" /> Mark Shipped
-              </Button>
-              <Button onClick={() => openStatusDialog('CANCELLED')} variant="destructive" className="font-semibold">
-                <XCircle className="h-4 w-4 mr-1.5" /> Cancel
-              </Button>
-            </>
-          )}
-          {isStaff && isShipped && (
-            <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90 font-semibold">
-              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete
-            </Button>
-          )}
-          {isStaff && status === 'OWNER_ACCEPTED' && <Button onClick={() => openStatusDialog('FULFILLING')}><Package className="h-4 w-4 mr-1.5" /> Start fulfillment</Button>}
-          {isStaff && status === 'FULFILLING' && <Button onClick={() => openStatusDialog('DELIVERED')}><Truck className="h-4 w-4 mr-1.5" /> Mark delivered</Button>}
-          {isStaff && status === 'DELIVERED' && <Button onClick={() => openStatusDialog('COMPLETED')} className="bg-success text-success-foreground hover:bg-success/90"><CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete</Button>}
-          {isCustomer && status === 'DELIVERED' && (
+          {isAdmin && status === 'RETURN_APPROVED' && (
             <Button
-              onClick={() => confirmReceiptMutation.mutate({ path: { id } })}
-              disabled={confirmReceiptMutation.isPending}
+              size="sm"
               className="bg-success text-success-foreground hover:bg-success/90"
+              onClick={() => {
+                const items = (order as any).items ?? []
+                const approvedItems = items.filter((i: any) => i.returnApprovedAt && i.returnStatus !== 'REFUNDED')
+                if (approvedItems.length === 0) return
+                setConfirmDialog({
+                  open: true,
+                  title: 'Process Return Refunds',
+                  description: `Process refund for ${approvedItems.length} returned item(s)?`,
+                  onConfirm: () => {
+                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                    Promise.all(approvedItems.map((i: any) =>
+                      processReturnRefundMutation.mutateAsync({ itemId: i.id })
+                    )).then(() => {
+                      refreshOrderPage()
+                    })
+                  },
+                })
+              }}
+              disabled={processReturnRefundMutation.isPending}
             >
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />
-              {confirmReceiptMutation.isPending ? 'Confirming...' : 'Confirm received'}
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Process Return Refunds
             </Button>
           )}
         </div>
+      )}
       </div>
 
       {deleteError && (
@@ -595,6 +905,11 @@ export function OrderDetailPage() {
           Owner decision deadline: <strong>{new Date(order.ownerDecisionDeadline).toLocaleString()}</strong>. Funds remain in escrow after acceptance.
         </div>
       )}
+      {status === 'PENDING_COMPLETION' && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+          <strong>Escrow hold active.</strong> Funds are held by the platform for 7 days. After the hold period, the order will be auto-completed and funds released to the seller.
+        </div>
+      )}
 
       {canAccessPayment && (
         <PaymentActivityCard
@@ -602,7 +917,7 @@ export function OrderDetailPage() {
           isLoading={paymentActivityQuery.isLoading}
           isError={paymentActivityQuery.isError}
           orderId={id}
-          payable={isPendingPayment}
+          payable={canShowPayment}
         />
       )}
 
@@ -621,31 +936,253 @@ export function OrderDetailPage() {
             <CardContent className="p-0">
               <div className="divide-y divide-border px-6">
                 {order.items?.map((item, index) => {
+                  const isItemCancelled = !!(item as any).cancelledAt
+                  const isReturnRequested = !!(item as any).returnRequestedAt && !(item as any).returnApprovedAt
+                  const isReturnApproved = !!(item as any).returnApprovedAt
+                  const itemReturnStatus = (item as any).returnStatus
+                  const isCancelRequested = !!(item as any).cancelRequestedAt && !(item as any).cancelApprovedAt && (item as any).cancelStatus !== 'REJECTED'
+                  const isCancelApproved = !!(item as any).cancelApprovedAt && (item as any).cancelStatus === 'APPROVED'
+                  const isCancelRejected = (item as any).cancelStatus === 'REJECTED'
                   const variantValues = item.productVariant
                     ? Object.entries(item.productVariant.optionValues ?? {})
                         .map(([_, v]) => v)
                         .join(' / ')
                     : null
+                  const isDimmed = isItemCancelled || isReturnApproved
 
                   return (
-                    <div key={index} className="py-4 flex items-center justify-between">
-                      <div className="space-y-0.5">
+                    <div key={index} className={`py-4 flex items-center justify-between gap-4 ${isDimmed ? 'opacity-50' : ''}`}>
+                      <div className="space-y-0.5 min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                          <h4 className="font-semibold text-sm">{item.product?.name}</h4>
+                          <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <h4 className={`font-semibold text-sm ${isDimmed ? 'line-through text-muted-foreground' : ''}`}>
+                            {item.product?.name}
+                          </h4>
+                          {isItemCancelled && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Cancelled</Badge>
+                          )}
+                          {isCancelRequested && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300">Cancel requested</Badge>
+                          )}
+                          {isCancelRejected && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 bg-muted/20 text-muted-foreground">Cancel rejected</Badge>
+                          )}
+                          {isReturnRequested && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300">Return requested</Badge>
+                          )}
+                          {isReturnApproved && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300">Return approved</Badge>
+                          )}
                         </div>
                         {variantValues && (
                           <p className="text-xs text-muted-foreground font-medium">{variantValues}</p>
                         )}
                         <p className="text-xs text-muted-foreground">SKU: {item.productVariant?.sku ?? item.product?.sku}</p>
+                        {isItemCancelled && (item as any).cancellationReason && (
+                          <p className="text-xs text-destructive italic mt-0.5">Reason: {(item as any).cancellationReason}</p>
+                        )}
+                        {isCancelRequested && (item as any).cancellationReason && (
+                          <p className="text-xs text-red-600 dark:text-red-400 italic mt-0.5">Cancel reason: {(item as any).cancellationReason}</p>
+                        )}
+                        {isCancelRejected && (
+                          <p className="text-xs text-muted-foreground italic mt-0.5">Cancel request rejected</p>
+                        )}
+                        {isReturnRequested && (item as any).returnReason && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-0.5">Return reason: {(item as any).returnReason}</p>
+                        )}
+                        {isReturnApproved && itemReturnStatus === 'REFUNDED' && (item as any).returnRefundMinor != null && (
+                          <p className="text-xs text-success italic mt-0.5">Refunded: {formatMoneyMinor(Number((item as any).returnRefundMinor), (item as any).returnRefundCurrency || 'VND')}</p>
+                        )}
+                        {isReturnApproved && itemReturnStatus !== 'REFUNDED' && (item as any).returnRefundMinor != null && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-0.5">Refund pending: {formatMoneyMinor(Number((item as any).returnRefundMinor), (item as any).returnRefundCurrency || 'VND')}</p>
+                        )}
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-sm font-semibold">
-                          {formatUSD(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatUSD(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
+                      <div className="flex items-center gap-3 shrink-0">
+                        {!isItemCancelled && !isReturnRequested && !isReturnApproved && canCancelItem && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              setCancellingItem(item)
+                              setCancelItemReason('')
+                              setCancelItemError(null)
+                            }}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
+                        )}
+                        {!isItemCancelled && !isReturnRequested && !isReturnApproved && canRequestCancel && !(item as any).cancelRequestedAt && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              setCancellingItem(item)
+                              setCancelItemReason('')
+                              setCancelItemError(null)
+                            }}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Request Cancel
+                          </Button>
+                        )}
+                        {!isItemCancelled && !isReturnRequested && !isReturnApproved && canRequestReturn && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs border-amber-500/30 text-amber-700 dark:text-amber-300"
+                            onClick={() => {
+                              setReturningItem(item)
+                              setReturnItemReason('')
+                              setReturnItemError(null)
+                            }}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Request Return
+                          </Button>
+                        )}
+                        {isReturnRequested && isOwner && itemReturnStatus !== 'REJECTED' && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setApprovingReturnItem(item)
+                                setApproveReturnError(null)
+                              }}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Reject Return',
+                                  description: 'Reject return for this item?',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    rejectReturnMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
+                              }}
+                              disabled={rejectReturnMutation.isPending}
+                            >
+                              <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                            </Button>
+                          </>
+                        )}
+                        {isCancelRequested && isOwner && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Approve Cancellation',
+                                  description: 'Approve cancellation for this item? Refund will be pending admin decision.',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    approveCancelMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
+                              }}
+                              disabled={approveCancelMutation.isPending}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Reject Cancellation',
+                                  description: 'Reject cancellation for this item?',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    rejectCancelMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
+                              }}
+                              disabled={rejectCancelMutation.isPending}
+                            >
+                              <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                            </Button>
+                          </>
+                        )}
+                        {isCancelApproved && isAdmin && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90"
+                              onClick={() => {
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Refund to Customer',
+                                  description: 'Refund to customer? Money goes from escrow to customer wallet.',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    processCancelRefundMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
+                              }}
+                              disabled={processCancelRefundMutation.isPending}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Refund to Customer
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setConfirmDialog({
+                                  open: true,
+                                  title: 'Release to Seller',
+                                  description: 'Release to seller? Money goes from escrow to seller wallet.',
+                                  onConfirm: () => {
+                                    setConfirmDialog(prev => ({ ...prev, open: false }))
+                                    releaseCancelToSellerMutation.mutate({ itemId: (item as any).id })
+                                  },
+                                })
+                              }}
+                              disabled={releaseCancelToSellerMutation.isPending}
+                            >
+                              <Shield className="h-3.5 w-3.5 mr-1" /> Release to Seller
+                            </Button>
+                          </>
+                        )}
+                        {isReturnApproved && isAdmin && itemReturnStatus !== 'REFUNDED' && (
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90"
+                            onClick={() => {
+                              setConfirmDialog({
+                                open: true,
+                                title: 'Process Return Refund',
+                                description: 'Process return refund for this item?',
+                                onConfirm: () => {
+                                  setConfirmDialog(prev => ({ ...prev, open: false }))
+                                  processReturnRefundMutation.mutate({ itemId: (item as any).id })
+                                },
+                              })
+                            }}
+                            disabled={processReturnRefundMutation.isPending}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Refund to Customer
+                          </Button>
+                        )}
+                        <div className="text-right">
+                          <div className="text-sm font-semibold">
+                            {formatVND(Number(item.unitPriceMinor) * (item.quantity ?? 0))}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatVND(Number(item.unitPriceMinor))} × {item.quantity ?? 0}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -675,7 +1212,33 @@ export function OrderDetailPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <span className="text-muted-foreground block text-xs">Shipping Address</span>
-                  <span className="font-medium text-sm block whitespace-pre-wrap">{order.shippingAddress}</span>
+                  <span className="font-medium text-sm block whitespace-pre-wrap">
+                    {order.shippingAddress || (order as any).streetAddress || '—'}
+                  </span>
+                  {((order as any).wardCode || (order as any).districtCode || (order as any).provinceCode) && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                      {(order as any).streetAddress && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Số nhà/Đường: {(order as any).streetAddress}
+                        </span>
+                      )}
+                      {(order as any).wardCode && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Phường/Xã: {(order as any).wardCode}
+                        </span>
+                      )}
+                      {(order as any).districtCode && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Quận/Huyện: {(order as any).districtCode}
+                        </span>
+                      )}
+                      {(order as any).provinceCode && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                          Tỉnh/Thành: {(order as any).provinceCode}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {order.shippingNote && (
                   <div className="sm:col-span-2">
@@ -687,7 +1250,7 @@ export function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {isStaff && (
+          {isStaff && !isFinal && (
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Update Order</CardTitle>
@@ -829,13 +1392,13 @@ export function OrderDetailPage() {
               <CardHeader className="flex flex-row items-center gap-3 pb-3">
                 <PlugZap className="h-5 w-5 text-primary" />
                 <div>
-                  <CardTitle className="text-lg">WooCommerce Sync</CardTitle>
+                  <CardTitle className="text-lg">Ecommerce Sync</CardTitle>
                   <CardDescription>Order integration details</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="text-sm space-y-3">
                 <div>
-                  <span className="text-muted-foreground block text-xs">WooCommerce Order ID</span>
+                  <span className="text-muted-foreground block text-xs">Ecommerce Order ID</span>
                   <span className="font-semibold text-foreground">#{wooOrderInfo.wooOrderId}</span>
                 </div>
                 <div>
@@ -930,7 +1493,7 @@ export function OrderDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatUSD(Number(order.subtotalAmountMinor))}</span>
+                  <span className="font-medium">{formatVND(Number(order.subtotalAmountMinor))}</span>
                 </div>
 
                 {Number(order.discountAmountMinor) > 0 && (
@@ -939,7 +1502,7 @@ export function OrderDetailPage() {
                       <Tag className="h-3.5 w-3.5" />
                       Discount {order.voucher?.code && `(${order.voucher.code})`}
                     </span>
-                    <span>-{formatUSD(Number(order.discountAmountMinor))}</span>
+                    <span>-{formatVND(Number(order.discountAmountMinor))}</span>
                   </div>
                 )}
 
@@ -947,20 +1510,20 @@ export function OrderDetailPage() {
                   <span className="text-muted-foreground">Shipping Fee</span>
                   <span>
                     {Number(order.shippingFeeMinor) > 0
-                      ? `${formatUSD(Number(order.shippingFeeMinor))}`
+                      ? `${formatVND(Number(order.shippingFeeMinor))}`
                       : <span className="text-success font-medium">Free</span>}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{formatUSD(Number(order.taxAmountMinor))}</span>
+                  <span>{formatVND(Number(order.taxAmountMinor))}</span>
                 </div>
 
                 <div className="border-t border-border pt-3 mt-2 flex justify-between text-base font-bold">
                   <span>Grand Total</span>
                   <span className="text-primary text-lg">
-                    {formatUSD(Number(order.finalAmountMinor))}
+                    {formatVND(Number(order.finalAmountMinor))}
                   </span>
                 </div>
               </div>
@@ -969,12 +1532,25 @@ export function OrderDetailPage() {
 
           {escrowRecords && escrowRecords.length > 0 && (
             <Card className="shadow-sm">
-              <CardHeader className="flex flex-row items-center gap-3">
-                <Shield className="h-5 w-5 text-primary" />
-                <div>
-                  <CardTitle className="text-lg">Escrow Records</CardTitle>
-                  <CardDescription>Funds held and released for this order</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg">Escrow Records</CardTitle>
+                    <CardDescription>Funds held and released for this order</CardDescription>
+                  </div>
                 </div>
+                {isAdmin && escrowRecords.some((r: any) => r.status === 'HELD') && (
+                  <Button
+                    size="sm"
+                    onClick={() => forceReleaseMutation.mutate()}
+                    disabled={forceReleaseMutation.isPending}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <FastForward className={`h-4 w-4 mr-1 ${forceReleaseMutation.isPending ? 'animate-spin' : ''}`} />
+                    {forceReleaseMutation.isPending ? 'Releasing...' : 'Release now'}
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
                 {escrowRecords.map((record) => (
@@ -988,12 +1564,24 @@ export function OrderDetailPage() {
                           {record.status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Release due: {record.releaseDueAt ? new Date(record.releaseDueAt).toLocaleDateString() : '—'}
-                      </p>
+                      {record.status === 'HELD' && (
+                        <p className="text-xs text-muted-foreground">
+                          Hold until: {record.releaseDueAt ? new Date(record.releaseDueAt).toLocaleDateString() : '—'}
+                        </p>
+                      )}
+                      {record.status === 'RELEASED' && (
+                        <p className="text-xs text-success">
+                          Funds released to seller balance
+                        </p>
+                      )}
+                      {record.status === 'REFUNDED' && (
+                        <p className="text-xs text-destructive">
+                          Funds returned to buyer
+                        </p>
+                      )}
                     </div>
                     <span className="font-semibold">
-                      {formatMoneyMinor(Number(record.amountMinor ?? 0), record.currency ?? order.currency ?? 'USD')}
+                      {formatMoneyMinor(Number(record.amountMinor ?? 0), record.currency ?? order.currency ?? 'VND')}
                     </span>
                   </div>
                 ))}
@@ -1026,7 +1614,7 @@ export function OrderDetailPage() {
                       <p className="text-xs text-muted-foreground font-mono">Refund ID: {refund.gatewayRefundId}</p>
                     </div>
                     <span className="font-semibold text-destructive">
-                      -{formatMoneyMinor(Number(refund.amountMinor ?? 0), refund.currency ?? order.currency ?? 'USD')}
+                      -{formatMoneyMinor(Number(refund.amountMinor ?? 0), refund.currency ?? order.currency ?? 'VND')}
                     </span>
                   </div>
                 ))}
@@ -1089,6 +1677,216 @@ export function OrderDetailPage() {
             <Button variant="outline" onClick={() => setShowDeclineDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => submitOwnerDecision('DECLINE')} disabled={ownerDecisionMutation.isPending || !declineReason.trim()}>
               {ownerDecisionMutation.isPending ? 'Declining…' : 'Decline and refund'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancellingItem} onOpenChange={(open) => { if (!open) setCancellingItem(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{status === 'PENDING_PAYMENT' ? 'Cancel this item?' : 'Request cancellation?'}</DialogTitle>
+            <DialogDescription>
+              {status === 'PENDING_PAYMENT'
+                ? 'This item will be removed from the order and the total will be recalculated.'
+                : 'A cancellation request will be sent to the shop owner for approval. If approved, the payment will be refunded from escrow.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">{cancellingItem?.product?.name}</span>
+              </div>
+              {cancellingItem?.productVariant?.sku && (
+                <p className="text-xs text-muted-foreground ml-6">SKU: {cancellingItem.productVariant.sku}</p>
+              )}
+              <div className="flex justify-between text-sm ml-6">
+                <span className="text-muted-foreground">{formatVND(Number(cancellingItem?.unitPriceMinor))} × {cancellingItem?.quantity ?? 0}</span>
+                <span className="font-semibold">{formatVND(Number(cancellingItem?.unitPriceMinor) * (cancellingItem?.quantity ?? 0))}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cancel-item-reason">Reason (optional)</Label>
+              <select
+                id="cancel-item-reason"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={cancelItemReason}
+                onChange={(e) => setCancelItemReason(e.target.value)}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Wrong size/color">Wrong size/color</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Found cheaper elsewhere">Found cheaper elsewhere</option>
+                <option value="Ordered by mistake">Ordered by mistake</option>
+                <option value="Other">Other...</option>
+              </select>
+              {cancelItemReason === 'Other' && (
+                <textarea
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Please describe..."
+                  onChange={(e) => setCancelItemReason(e.target.value)}
+                />
+              )}
+            </div>
+            {cancelItemError && (
+              <p className="text-sm text-destructive">{cancelItemError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancellingItem(null)} disabled={cancelItemMutation.isPending}>
+              Keep
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (status === 'PENDING_PAYMENT') {
+                  cancelItemMutation.mutate({
+                    itemId: cancellingItem?.id,
+                    reason: cancelItemReason,
+                  })
+                } else {
+                  requestCancelItemMutation.mutate({
+                    itemId: cancellingItem?.id,
+                    reason: cancelItemReason,
+                  })
+                }
+              }}
+              disabled={cancelItemMutation.isPending || requestCancelItemMutation.isPending || !cancellingItem?.id}
+            >
+              {cancelItemMutation.isPending || requestCancelItemMutation.isPending
+                ? 'Submitting...'
+                : status === 'PENDING_PAYMENT' ? 'Yes, Cancel' : 'Submit Cancel Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!returningItem} onOpenChange={(open) => { if (!open) setReturningItem(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request return for this item?</DialogTitle>
+            <DialogDescription>
+              The shop owner will review your return request. Refund will be processed if approved.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">{returningItem?.product?.name}</span>
+              </div>
+              {returningItem?.productVariant?.sku && (
+                <p className="text-xs text-muted-foreground ml-6">SKU: {returningItem.productVariant.sku}</p>
+              )}
+              <div className="flex justify-between text-sm ml-6">
+                <span className="text-muted-foreground">{formatVND(Number(returningItem?.unitPriceMinor))} × {returningItem?.quantity ?? 0}</span>
+                <span className="font-semibold">{formatVND(Number(returningItem?.unitPriceMinor) * (returningItem?.quantity ?? 0))}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="return-item-reason">Reason for return</Label>
+              <select
+                id="return-item-reason"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={returnItemReason}
+                onChange={(e) => setReturnItemReason(e.target.value)}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Wrong item received">Wrong item received</option>
+                <option value="Product damaged / defective">Product damaged / defective</option>
+                <option value="Not as described">Not as described</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Other">Other...</option>
+              </select>
+              {returnItemReason === 'Other' && (
+                <textarea
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Please describe..."
+                  onChange={(e) => setReturnItemReason(e.target.value)}
+                />
+              )}
+            </div>
+            {returnItemError && (
+              <p className="text-sm text-destructive">{returnItemError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturningItem(null)} disabled={returnItemMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700"
+              onClick={() => {
+                returnItemMutation.mutate({
+                  itemId: returningItem?.id,
+                  reason: returnItemReason,
+                })
+              }}
+              disabled={returnItemMutation.isPending || !returningItem?.id}
+            >
+              {returnItemMutation.isPending ? 'Submitting...' : 'Submit Return Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!approvingReturnItem} onOpenChange={(open) => { if (!open) setApprovingReturnItem(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve return for this item?</DialogTitle>
+            <DialogDescription>
+              Confirm that the returned item has been received. The refund will be processed by the admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">{approvingReturnItem?.product?.name}</span>
+              </div>
+              <div className="flex justify-between text-sm ml-6">
+                <span className="text-muted-foreground">Return reason:</span>
+                <span className="font-medium">{(approvingReturnItem as any)?.returnReason || 'N/A'}</span>
+              </div>
+            </div>
+            {approveReturnError && (
+              <p className="text-sm text-destructive">{approveReturnError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApprovingReturnItem(null)} disabled={approveReturnMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="bg-success text-success-foreground hover:bg-success/90"
+              onClick={() => {
+                approveReturnMutation.mutate({
+                  itemId: approvingReturnItem?.id,
+                })
+              }}
+              disabled={approveReturnMutation.isPending || !approvingReturnItem?.id}
+            >
+              {approveReturnMutation.isPending ? 'Approving...' : 'Approve Return'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.title}</DialogTitle>
+            <DialogDescription>{confirmDialog.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>
+              Cancel
+            </Button>
+            <Button variant="default" className="bg-success text-success-foreground hover:bg-success/90" onClick={confirmDialog.onConfirm}>
+              Confirm
             </Button>
           </DialogFooter>
         </DialogContent>

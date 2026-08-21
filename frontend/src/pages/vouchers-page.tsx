@@ -16,7 +16,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
-import { formatUSD } from '@/shared/utils/currency'
+import { formatVND } from '@/shared/utils/currency'
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -247,7 +247,7 @@ export function VouchersPage() {
                 {voucherList.map((voucher) => {
                   const val = Number(voucher.discountValue)
                   const isPercent = voucher.discountType === 'PERCENTAGE'
-                  const discountFormatted = isPercent ? `${val}%` : formatUSD(val)
+                  const discountFormatted = isPercent ? `${val}%` : formatVND(val)
                   
                   return (
                     <TableRow key={voucher.id!}>
@@ -256,7 +256,7 @@ export function VouchersPage() {
                       </TableCell>
                       <TableCell className="font-medium">{voucher.name}</TableCell>
                       <TableCell className="font-medium">{discountFormatted}</TableCell>
-                      <TableCell>{formatUSD(Number(voucher.minOrderValueMinor))}</TableCell>
+                      <TableCell>{formatVND(Number(voucher.minOrderValueMinor))}</TableCell>
                       <TableCell>
                         {voucher.usedCount} / {voucher.usageLimit ?? '∞'}
                       </TableCell>
@@ -336,7 +336,7 @@ export function VouchersPage() {
                   onChange={(e) => setDiscountType(e.target.value)}
                 >
                   <option value="PERCENTAGE">Percentage (%)</option>
-                  <option value="FIXED_AMOUNT">Fixed Amount ($)</option>
+                  <option value="FIXED_AMOUNT">Fixed Amount (₫)</option>
                 </select>
               </div>
 

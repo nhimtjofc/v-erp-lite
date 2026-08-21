@@ -1,100 +1,58 @@
 package base.model;
 
 import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MoneyTest {
 
     @Test
-    public void testCreationAndProperties() {
-        Money m = Money.of(1025, "USD");
-        assertEquals(1025, m.getAmountMinor());
-        assertEquals("USD", m.getCurrency());
+    public void createsVndMoney() {
+        Money money = Money.of(10_250, "VND");
+        assertEquals(10_250, money.getAmountMinor());
+        assertEquals("VND", money.getCurrency());
     }
 
     @Test
-    public void testFromDecimalUSD() {
-        // USD has exponent 2
-        Money m1 = Money.fromDecimal(new BigDecimal("10.25"), "USD");
-        assertEquals(1025, m1.getAmountMinor());
+    public void convertsVndDecimalUsingZeroExponent() {
+        Money roundedUp = Money.fromDecimal(new BigDecimal("50000.5"), "VND");
+        Money roundedDown = Money.fromDecimal(new BigDecimal("50000.4"), "VND");
 
-        // Half up rounding test: 10.255 -> 10.26 -> 1026
-        Money m2 = Money.fromDecimal(new BigDecimal("10.255"), "USD");
-        assertEquals(1026, m2.getAmountMinor());
-
-        Money m3 = Money.fromDecimal(new BigDecimal("10.254"), "USD");
-        assertEquals(1025, m3.getAmountMinor());
+        assertEquals(50_001, roundedUp.getAmountMinor());
+        assertEquals(50_000, roundedDown.getAmountMinor());
+        assertEquals(new BigDecimal("50001"), roundedUp.toDecimal());
     }
 
     @Test
-    public void testFromDecimalVND() {
-        // VND has exponent 0
-        Money m1 = Money.fromDecimal(new BigDecimal("50000"), "VND");
-        assertEquals(50000, m1.getAmountMinor());
-
-        // Half up rounding test: 50000.5 -> 50001
-        Money m2 = Money.fromDecimal(new BigDecimal("50000.5"), "VND");
-        assertEquals(50001, m2.getAmountMinor());
+    public void rejectsUnsupportedCurrencyConversion() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Money.fromDecimal(new BigDecimal("10"), "USD"));
+        assertThrows(IllegalArgumentException.class,
+                () -> Money.of(10, "USD").toDecimal());
     }
 
     @Test
-    public void testToDecimal() {
-        Money mUsd = Money.of(1025, "USD");
-        assertEquals(new BigDecimal("10.25"), mUsd.toDecimal());
+    public void addsAndSubtractsVnd() {
+        Money amount = Money.of(10_000, "VND");
 
-        Money mVnd = Money.of(50000, "VND");
-        assertEquals(new BigDecimal("50000"), mVnd.toDecimal());
+        assertEquals(15_000, amount.add(Money.of(5_000, "VND")).getAmountMinor());
+        assertEquals(7_000, amount.subtract(Money.of(3_000, "VND")).getAmountMinor());
     }
 
     @Test
-    public void testAdd() {
-        Money m1 = Money.of(1000, "USD");
-        Money m2 = Money.of(500, "USD");
-        Money result = m1.add(m2);
-        assertEquals(1500, result.getAmountMinor());
-        assertEquals("USD", result.getCurrency());
+    public void multipliesVndWithHalfUpRounding() {
+        Money commission = Money.of(10_250, "VND").multiply(0.05);
+        assertEquals(513, commission.getAmountMinor());
+        assertEquals("VND", commission.getCurrency());
     }
 
     @Test
-    public void testSubtract() {
-        Money m1 = Money.of(1000, "USD");
-        Money m2 = Money.of(300, "USD");
-        Money result = m1.subtract(m2);
-        assertEquals(700, result.getAmountMinor());
-        assertEquals("USD", result.getCurrency());
-    }
-
-    @Test
-    public void testMultiply() {
-        Money m = Money.of(1025, "USD"); // $10.25
-        Money commission = m.multiply(0.05); // 5% commission = $0.5125 -> half-up -> $0.51 -> 51
-        assertEquals(51, commission.getAmountMinor());
-        assertEquals("USD", commission.getCurrency());
-    }
-
-    @Test
-    public void testCurrencyMismatchThrowsException() {
-        Money usd = Money.of(100, "USD");
-        Money vnd = Money.of(100, "VND");
-        
-        Exception e1 = assertThrows(IllegalArgumentException.class, () -> usd.add(vnd));
-        assertTrue(e1.getMessage().contains("Currency mismatch"));
-        
-        Exception e2 = assertThrows(IllegalArgumentException.class, () -> usd.subtract(vnd));
-        assertTrue(e2.getMessage().contains("Currency mismatch"));
-    }
-
-    @Test
-    public void testEquality() {
-        Money m1 = Money.of(100, "USD");
-        Money m2 = Money.of(100, "USD");
-        Money m3 = Money.of(100, "VND");
-        Money m4 = Money.of(200, "USD");
-
-        assertEquals(m1, m2);
-        assertNotEquals(m1, m3);
-        assertNotEquals(m1, m4);
-        assertEquals(m1.hashCode(), m2.hashCode());
+    public void equalityUsesAmountAndCurrency() {
+        assertEquals(Money.of(100, "VND"), Money.of(100, "VND"));
+        assertNotEquals(Money.of(100, "VND"), Money.of(200, "VND"));
     }
 }
