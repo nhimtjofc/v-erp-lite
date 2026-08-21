@@ -52,7 +52,7 @@ class SingleWritePathTest {
     @Test
     void theBalanceGuardAndAppendOnlyTriggersAreInstalledByMigration() throws IOException {
         String migrations = Stream.of(
-                        Path.of("src/main/resources/db/migration/V50_002__ledger_posting_and_guards.sql"))
+                        Path.of("src/main/resources/db/migration/V70_002__ledger_posting_and_guards.sql"))
                 .map(SingleWritePathTest::read)
                 .reduce("", String::concat);
 

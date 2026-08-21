@@ -12,7 +12,7 @@ class SubscriptionEntitlementFilterTest {
         String path = SubscriptionEntitlementFilter.normalizePath("/api/subscriptions/payments");
 
         assertEquals("subscriptions/payments", path);
-        assertTrue(SubscriptionEntitlementFilter.isPlatformAdministration(path));
+        assertTrue(SubscriptionEntitlementFilter.isSubscriptionRecoveryPath(path));
     }
 
     @Test
@@ -20,6 +20,6 @@ class SubscriptionEntitlementFilterTest {
         String path = SubscriptionEntitlementFilter.normalizePath("subscriptions/payments");
 
         assertEquals("subscriptions/payments", path);
-        assertTrue(SubscriptionEntitlementFilter.isPlatformAdministration(path));
+        assertTrue(SubscriptionEntitlementFilter.isSubscriptionRecoveryPath(path));
     }
 }
