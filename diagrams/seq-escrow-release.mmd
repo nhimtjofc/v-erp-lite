@@ -1,0 +1,49 @@
+%% Phụ trách: N10-B
+%% Sequence UC-02: xử lý đơn và giải phóng escrow
+%% Participant đều là lớp có trong diagrams/class.mmd
+sequenceDiagram
+    autonumber
+    participant Customer
+    participant OrderResource
+    participant OrderFulfillmentService
+    participant Order
+    participant OrderHistory
+    participant EscrowService
+    participant EscrowReleaseScheduler
+    participant EscrowRecord
+    participant Wallet
+    participant WalletTransaction
+    participant LedgerCheckpoint
+
+    OrderResource->>OrderFulfillmentService: ownerAccept(orderId, caller)
+    OrderFulfillmentService->>Order: kiểm tra quyền business và trạng thái
+    alt sai quyền hoặc sai thứ tự
+        OrderFulfillmentService-->>OrderResource: 403/409
+    else hợp lệ
+        OrderFulfillmentService->>Order: PAID_ESCROW -> OWNER_ACCEPTED -> FULFILLING -> DELIVERED
+        OrderFulfillmentService->>OrderHistory: ghi từng lần đổi trạng thái
+        Note over Order: Hệ thống tự chuyển DELIVERED -> PENDING_COMPLETION
+        OrderFulfillmentService-->>OrderResource: PENDING_COMPLETION
+
+        Customer->>OrderResource: xác nhận đã nhận hàng
+        OrderResource->>OrderFulfillmentService: complete(orderId, caller)
+        OrderFulfillmentService->>Order: chuyển COMPLETED
+        OrderFulfillmentService->>OrderHistory: ghi COMPLETED
+        OrderFulfillmentService->>EscrowService: releaseOrderEscrow(orderId)
+
+        EscrowService->>EscrowRecord: kiểm tra HELD
+        alt escrow không còn HELD
+            EscrowService-->>OrderFulfillmentService: không có bản ghi, không ghi sổ
+        else hợp lệ
+            EscrowService->>EscrowService: commissionFor(amount) = 5%
+            EscrowService->>Wallet: giải ngân từ ví platform
+            EscrowService->>Wallet: cộng sellerNet vào ví người bán
+            EscrowService->>WalletTransaction: ghi CREDIT/ESCROW_SELLER_CREDIT
+            EscrowService->>EscrowRecord: đặt RELEASED
+            EscrowService->>LedgerCheckpoint: cập nhật số dư đối soát
+            EscrowService-->>OrderFulfillmentService: released
+        end
+        OrderFulfillmentService-->>Customer: đơn hoàn tất, tiền đã chuyển người bán
+    end
+
+    Note over EscrowReleaseScheduler,EscrowService: Định kỳ, scheduler gọi releaseDueEscrows(now) cho escrow HELD có releaseDueAt <= now (mặc định 7 ngày)

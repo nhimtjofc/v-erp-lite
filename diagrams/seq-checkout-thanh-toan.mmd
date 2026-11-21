@@ -1,0 +1,48 @@
+%% Phụ trách: N10-C
+%% Sequence UC-01: đặt hàng và thanh toán escrow
+%% Participant đều là lớp có trong diagrams/class.mmd
+sequenceDiagram
+    autonumber
+    participant Customer
+    participant OrderResource
+    participant EntitlementService
+    participant Product
+    participant Voucher
+    participant Order
+    participant OrderItem
+    participant PaymentIntent
+    participant PaymentIntentService
+    participant PaymentService
+    participant PaymentTransaction
+    participant Wallet
+    participant EscrowRecord
+    participant OrderHistory
+
+    Customer->>OrderResource: POST /api/orders (items, voucher, address)
+    OrderResource->>EntitlementService: requireWritable(tenant)
+    EntitlementService-->>OrderResource: ok hoặc 402
+    alt tenant hết hạn hoặc thiếu tồn
+        OrderResource-->>Customer: 402/409, không tạo đơn
+    else hợp lệ
+        OrderResource->>Product: giữ tồn kho FOR UPDATE
+        Product-->>OrderResource: reservedQuantity tăng
+        OrderResource->>Voucher: isValid và calculateDiscount
+        Voucher-->>OrderResource: discountMinor
+        OrderResource->>Order: tạo đơn PENDING_PAYMENT
+        OrderResource->>OrderItem: tạo item theo business
+        OrderResource->>OrderHistory: ghi PENDING_PAYMENT
+        OrderResource->>PaymentIntentService: createIntent(order, idempotencyKey)
+        PaymentIntentService->>PaymentIntent: lưu REQUIRES_PAYMENT_METHOD (hạn 30 phút)
+        PaymentIntentService-->>OrderResource: qrCode + intentId
+        OrderResource-->>Customer: 201 đơn + QR
+
+        Customer->>PaymentService: xác nhận thanh toán
+        PaymentService->>PaymentIntent: kiểm tra hạn và idempotency
+        PaymentService->>PaymentTransaction: ghi SUCCESS
+        PaymentService->>PaymentIntent: cập nhật SUCCEEDED
+        PaymentService->>Order: chuyển PAID_ESCROW
+        PaymentService->>EscrowRecord: tạo HELD (releaseDueAt)
+        PaymentService->>Wallet: chờ giải phóng, chưa cộng available
+        PaymentService->>OrderHistory: ghi PAID_ESCROW
+        PaymentService-->>Customer: thanh toán thành công
+    end

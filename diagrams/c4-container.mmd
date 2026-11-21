@@ -1,0 +1,38 @@
+%% Phụ trách: N10-C
+%% C4 level 2 - container của V-ERP Lite
+C4Container
+    title Container của V-ERP Lite
+
+    Person(buyer, "Khách mua hàng", "Duyệt hàng, đặt hàng, thanh toán, chat")
+    Person(seller, "Chủ doanh nghiệp", "Quản lý gian hàng và ví")
+    Person(operator, "Nhân viên vận hành", "Xử lý đơn, hoàn tiền, đối soát")
+    Person(admin, "Quản trị sàn", "Quản trị tenant và rủi ro")
+
+    System_Boundary(verp, "V-ERP Lite") {
+        Container(spa, "Web SPA", "React 19, TypeScript 5.9, Vite 7", "Storefront và cổng quản trị; gọi REST API và chat")
+        Container(api, "Backend API", "Quarkus 3.33.1, Java 25", "Nghiệp vụ catalog, đơn hàng, escrow, ví, payout, tenant và đồng bộ")
+        Container(bot, "Trợ lý AI", "FastAPI, Python, MCP tools", "Vòng lặp tool read-only, kiểm tra đầu ra và phiên do server quản lý")
+        ContainerDb(db, "Cơ sở dữ liệu", "MariaDB 11.4, Flyway", "Dữ liệu nghiệp vụ, sổ cái append-only và checkpoint")
+    }
+
+    System_Ext(kc, "Keycloak", "OIDC provider và Admin REST")
+    System_Ext(woo, "WordPress / WooCommerce", "Kênh bán ngoài và webhook")
+    System_Ext(bank, "Ngân hàng / VietQR", "QR thanh toán và IPN")
+    System_Ext(gateway, "Cổng thanh toán", "VNPay, Stripe, chế độ mô phỏng")
+    System_Ext(llm, "Google Gemini & Pinecone", "LLM và vector store")
+
+    Rel(buyer, spa, "Sử dụng", "HTTPS")
+    Rel(seller, spa, "Quản trị gian hàng", "HTTPS")
+    Rel(operator, spa, "Xử lý đơn", "HTTPS")
+    Rel(admin, spa, "Quản trị hệ thống", "HTTPS")
+
+    Rel(spa, api, "Gọi API nghiệp vụ", "JSON / JWT")
+    Rel(spa, bot, "Gửi tin nhắn chat", "JSON / JWT")
+    Rel(bot, api, "Gọi 4 tool read-only", "REST / JWT")
+    Rel(api, db, "Đọc và ghi", "JDBC, pool 8")
+    Rel(api, kc, "Xác thực và đồng bộ tài khoản", "OIDC / Admin REST")
+    Rel(woo, api, "Gửi webhook đơn hàng", "HMAC SHA-256")
+    Rel(api, woo, "Đồng bộ catalog", "REST")
+    Rel(api, bank, "Tạo QR, nhận IPN", "HTTPS")
+    Rel(api, gateway, "Thanh toán, hoàn tiền", "HTTPS")
+    Rel(bot, llm, "Suy luận và embedding", "HTTPS / SDK")

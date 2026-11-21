@@ -1,0 +1,53 @@
+%% Phụ trách: N10-D
+%% Sequence UC-03: trợ lý AI tra cứu đơn hàng, identity outside model
+%% Participant đều là lớp có trong diagrams/class.mmd
+sequenceDiagram
+    autonumber
+    participant Customer
+    participant ChatWidget
+    participant ChatEndpoint
+    participant RequestContext
+    participant SessionStore
+    participant UnifiedAgent
+    participant OutputValidator
+    participant OrderResource
+    participant Order
+
+    Customer->>ChatWidget: nhập câu hỏi
+    ChatWidget->>ChatEndpoint: POST /chat {message, session_id} + Bearer JWT
+    ChatEndpoint->>RequestContext: verify_bearer(Authorization)
+    alt thiếu hoặc sai token
+        RequestContext-->>ChatEndpoint: AuthError
+        ChatEndpoint-->>ChatWidget: 401, không gọi LLM
+    else token hợp lệ
+        RequestContext-->>ChatEndpoint: user_id, tenant, roles, access_token
+        ChatEndpoint->>SessionStore: create hoặc load(session_id, owner)
+        ChatEndpoint->>SessionStore: turn(session_id) khóa chống đồng thời
+        alt session đang bận
+            SessionStore-->>ChatEndpoint: SessionBusy
+            ChatEndpoint-->>ChatWidget: 409
+        else sẵn sàng
+            ChatEndpoint->>UnifiedAgent: handle(message, history, requestContext)
+            loop bounded tool loop tối đa 5 bước
+                UnifiedAgent->>UnifiedAgent: model chọn tool + đối số
+                UnifiedAgent->>UnifiedAgent: guard chặn trường danh tính
+                UnifiedAgent->>OrderResource: GET /api/orders + Bearer token
+                OrderResource->>Order: lọc tenantId + quyền sở hữu
+                Order-->>OrderResource: danh sách đơn được phép
+                OrderResource-->>UnifiedAgent: tool result (dữ liệu không tin cậy)
+            end
+            UnifiedAgent->>OutputValidator: validate_reply(reply, tool_results)
+            alt vi phạm lần 1
+                OutputValidator-->>UnifiedAgent: tech_leak/instruction_leak/action_claim/pii
+                UnifiedAgent->>UnifiedAgent: retry 1 lần không tool
+            end
+            alt vẫn vi phạm
+                UnifiedAgent-->>ChatEndpoint: SAFE_FALLBACK, is_valid=false
+                ChatEndpoint->>SessionStore: không append lượt lỗi
+            else hợp lệ
+                UnifiedAgent-->>ChatEndpoint: reply, history, is_valid=true
+                ChatEndpoint->>SessionStore: append lượt nguyên tử
+            end
+            ChatEndpoint-->>ChatWidget: {response, session_id}
+        end
+    end

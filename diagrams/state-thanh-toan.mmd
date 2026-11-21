@@ -1,0 +1,19 @@
+%% Phụ trách: N10-C
+%% State machine của PaymentIntent - đối chiếu PaymentIntent.java và PaymentIntentService
+stateDiagram-v2
+    [*] --> REQUIRES_PAYMENT_METHOD : createIntent, hạn 30 phút
+
+    REQUIRES_PAYMENT_METHOD --> PROCESSING : khách xác nhận thanh toán
+    REQUIRES_PAYMENT_METHOD --> CANCELLED : expireIntent quá hạn
+    PROCESSING --> SUCCEEDED : webhook thành công
+    PROCESSING --> FAILED : webhook thất bại
+    PROCESSING --> CANCELLED : hủy trước khi có kết quả
+
+    SUCCEEDED --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]
+
+    note right of SUCCEEDED
+        Xử lý idempotent theo gateway_transaction_id;
+        chỉ tạo một escrow HELD
+    end note

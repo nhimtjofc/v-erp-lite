@@ -1,0 +1,558 @@
+%% Phụ trách: N10-C
+%% Class diagram M3 - khớp với entity trong src/main/java/base/entity
+%% và các lớp xuất hiện trong diagrams/seq-*.mmd
+classDiagram
+    direction LR
+
+    class PanacheEntityBase {
+        <<framework>>
+    }
+    class BaseEntity {
+        <<abstract>>
+        +String tenantId
+        +Instant createdAt
+        +UUID createdBy
+        +Instant updatedAt
+        +UUID updatedBy
+        +long version
+    }
+
+    class Tenant {
+        +UUID id
+        +String code
+        +String name
+        +UUID ownerId
+        +boolean active
+    }
+    class Role {
+        +UUID id
+        +String name
+        +String description
+    }
+    class TenantConfig {
+        +String tenantId
+        +Map settings
+        +Instant updatedAt
+        +UUID updatedBy
+    }
+    class UserSettings {
+        +UUID userId
+        +String tenantId
+        +Map settings
+        +Instant updatedAt
+    }
+    class User {
+        +UUID id
+        +String email
+        +String firstName
+        +String lastName
+        +String keycloakId
+        +boolean active
+        +boolean mfaEnabled
+    }
+    class Business {
+        +UUID id
+        +String name
+        +String email
+        +String phone
+        +boolean active
+    }
+    class Customer {
+        +UUID id
+        +String email
+        +String firstName
+        +String lastName
+        +int points
+        +Long totalSpendMinor
+        +String tier
+        +boolean active
+    }
+
+    class Category {
+        +UUID id
+        +String name
+        +boolean active
+    }
+    class Product {
+        +UUID id
+        +String sku
+        +String name
+        +long basePriceMinor
+        +Long salePriceMinor
+        +int stockQuantity
+        +int reservedQuantity
+        +String approvalStatus
+        +getAvailableQuantity() int
+    }
+    class ProductVariant {
+        +UUID id
+        +String sku
+        +long priceMinor
+        +int stockQuantity
+        +int reservedQuantity
+        +Map optionValues
+        +getAvailableQuantity() int
+    }
+    class Tag {
+        +UUID id
+        +String name
+    }
+    class ProductOption {
+        <<value object>>
+        +String name
+        +List values
+    }
+
+    class Voucher {
+        +UUID id
+        +String code
+        +String name
+        +String discountType
+        +long discountValue
+        +long minOrderValueMinor
+        +Long maxDiscountAmountMinor
+        +Instant startTime
+        +Instant endTime
+        +Integer usageLimit
+        +int usedCount
+        +boolean active
+    }
+    class CustomerVoucher {
+        +UUID id
+        +UUID customerId
+        +UUID voucherId
+        +boolean isUsed
+        +Instant collectedAt
+    }
+
+    class Order {
+        +UUID id
+        +String orderNumber
+        +String status
+        +Instant orderDate
+        +long subtotalAmountMinor
+        +long discountAmountMinor
+        +long shippingFeeMinor
+        +long taxAmountMinor
+        +long vatAmountMinor
+        +long finalAmountMinor
+        +Instant ownerDecisionDeadline
+    }
+    class OrderItem {
+        +UUID id
+        +int quantity
+        +long unitPriceMinor
+        +long unitCostMinor
+        +long subtotalAmountMinor
+        +String currency
+        +Instant cancelledAt
+    }
+    class OrderHistory {
+        +UUID id
+        +String oldStatus
+        +String newStatus
+        +String note
+        +Instant createdAt
+    }
+
+    class PaymentIntent {
+        +UUID id
+        +UUID orderId
+        +UUID customerId
+        +long amountMinor
+        +String currency
+        +String status
+        +String idempotencyKey
+        +Instant expiresAt
+    }
+    class PaymentTransaction {
+        +UUID id
+        +String gateway
+        +String gatewayTransactionId
+        +long amountMinor
+        +String currency
+        +String status
+    }
+    class PaymentRefund {
+        +UUID id
+        +UUID orderId
+        +String gateway
+        +String gatewayRefundId
+        +long amountMinor
+        +String currency
+        +String status
+        +String reason
+    }
+    class PaymentIdempotency {
+        +UUID id
+        +String idempotencyKey
+        +String status
+        +String responseBody
+        +String requestFingerprint
+        +Instant leaseExpiresAt
+    }
+    class WebhookEvent {
+        +UUID id
+        +String gateway
+        +String eventType
+        +UUID paymentIntentId
+        +String gatewayTransactionId
+        +String externalEventId
+        +String status
+        +String errorMessage
+        +Instant processedAt
+    }
+
+    class Wallet {
+        +UUID id
+        +String ownerType
+        +UUID ownerId
+        +long availableBalanceMinor
+        +long pendingBalanceMinor
+        +String currency
+    }
+    class WalletTransaction {
+        +UUID id
+        +String type
+        +String transactionType
+        +long amountMinor
+        +String referenceType
+        +UUID referenceId
+        +long sequenceNo
+        +String description
+    }
+    class WalletTopUp {
+        +UUID id
+        +long amountMinor
+        +String currency
+        +String status
+        +String paymentQrCodeBase64
+    }
+    class PayoutRequest {
+        +UUID id
+        +long amountMinor
+        +String currency
+        +String status
+        +boolean autoApproved
+        +String idempotencyKey
+        +String transferReference
+        +Instant paidAt
+    }
+    class Bank {
+        +UUID id
+        +String code
+        +String name
+        +String bin
+        +boolean active
+    }
+    class LedgerCheckpoint {
+        +UUID id
+        +UUID lastTransactionId
+        +long lastSequenceNo
+        +long availableBalanceMinor
+        +long pendingBalanceMinor
+        +Instant checkpointedAt
+    }
+    class EscrowRecord {
+        +UUID id
+        +UUID orderId
+        +long amountMinor
+        +String currency
+        +String status
+        +Instant releaseDueAt
+    }
+    class RevenueAdjustment {
+        +UUID id
+        +LocalDate entryDate
+        +String category
+        +String direction
+        +long amountMinor
+        +String currency
+        +String description
+    }
+    class VendorRiskEvent {
+        +UUID id
+        +UUID ownerId
+        +String eventType
+        +Instant occurredAt
+        +Instant resolvedAt
+        +String details
+    }
+    class Notification {
+        +UUID id
+        +UUID orderId
+        +String type
+        +String message
+        +Instant readAt
+    }
+
+    class SubscriptionPlan {
+        +String code
+        +String name
+        +String productSlice
+        +long monthlyPriceMinor
+        +long annualPriceMinor
+        +String currency
+        +Map features
+        +Map limits
+        +boolean active
+    }
+    class TenantSubscription {
+        +UUID id
+        +String planCode
+        +String status
+        +String billingPeriod
+        +long priceMinor
+        +String currency
+        +Instant startedAt
+        +Instant currentPeriodEndsAt
+        +Instant trialEndsAt
+        +Instant graceEndsAt
+        +boolean cancelAtPeriodEnd
+    }
+    class SubscriptionPayment {
+        +UUID id
+        +String planCode
+        +String billingPeriod
+        +long amountMinor
+        +String currency
+        +String status
+        +String idempotencyKey
+        +String paymentReference
+        +Instant submittedAt
+        +Instant reviewedAt
+    }
+
+    class SalesChannel {
+        +UUID id
+        +UUID businessId
+        +String channelType
+        +String storeUrl
+        +String status
+        +String healthStatus
+        +String secretReference
+        +boolean active
+    }
+    class ExternalEntityMapping {
+        +UUID id
+        +UUID salesChannelId
+        +String entityType
+        +UUID erpEntityId
+        +String externalEntityId
+        +String externalParentId
+        +String syncStatus
+    }
+    class InboundEventLog {
+        +UUID id
+        +String gateway
+        +String eventId
+        +String status
+        +Instant processedAt
+    }
+
+    class OrderResource {
+        +createOrder(request) Order
+        +getOrder(id) Order
+        +updateStatus(id, status) Order
+        +confirmReceived(id) Order
+        +isAllowedStatusTransition(old, new) boolean
+    }
+    class OrderFulfillmentService {
+        +ownerAccept(orderId, caller) Order
+        +ownerDecline(orderId, reason, caller) Order
+        +complete(orderId, caller) void
+    }
+    class PaymentIntentService {
+        +createIntent(order, idempotencyKey) PaymentIntent
+        +expireIntent(tenantId, intentId) PaymentIntent
+    }
+    class PaymentService {
+        +settleSucceededIntent(intent, actorId) List
+        +processWalletPayment(order, wallet, actorId) List
+        +createEscrowHoldForOrder(order, actorId) List
+    }
+    class PaymentRefundService {
+        +refundOrder(tenantId, orderId, reason, actorId) void
+    }
+    class EscrowService {
+        +holdSellerEscrow(tenantId, orderId, sellerId, amount, dueAt, actorId) EscrowRecord
+        +releaseOrderEscrow(tenantId, orderId, actorId) List
+        +refundOrderEscrow(tenantId, orderId, actorId) List
+        +releaseDueEscrows(now, actorId) EscrowReleaseSummary
+        +commissionFor(amountMinor) long
+    }
+    class EscrowReleaseScheduler {
+        +autoReleaseEscrows() void
+    }
+    class OwnerDecisionScheduler {
+        +expireOwnerDecisions() void
+    }
+    class WalletService {
+        +creditAvailable(tenantId, walletId, amount, type, refType, refId, actorId) void
+        +debitAvailable(tenantId, walletId, amount, type, refType, refId, actorId) void
+        +releasePendingToAvailable(tenantId, walletId, amount, refType, refId, actorId, note) void
+        +refundPending(tenantId, walletId, amount, refType, refId, actorId) void
+    }
+    class LedgerCheckpointService {
+        +writeCheckpoint(wallet, transaction, actorId) LedgerCheckpoint
+        +latestForWallet(tenantId, walletId) LedgerCheckpoint
+        +createCheckpoint(walletId, tenantCode) void
+    }
+    class EntitlementService {
+        +requireWritable(tenant) void
+        +featureEnabled(tenant, feature) boolean
+    }
+    class ReturnRefundService {
+        +requestCancelItem(orderId, itemId, reason, actorId) OrderItem
+        +approveCancelItem(orderId, itemId, actorId) OrderItem
+        +requestReturnItem(orderId, itemId, reason, actorId) OrderItem
+        +approveReturnItem(orderId, itemId, actorId) OrderItem
+    }
+    class NotificationService {
+        +notifyBuyer(order, type, message, actorId) void
+        +notifyBusinessStaff(order, type, message, actorId) void
+    }
+
+    class ChatWidget {
+        <<React>>
+        +sendMessage(text) void
+    }
+    class ChatEndpoint {
+        <<FastAPI>>
+        +chat(request) ChatResponse
+        +verifyToken(authorization) RequestContext
+    }
+    class RequestContext {
+        <<identity>>
+        +String userId
+        +String tenantId
+        +List roles
+        +String accessToken
+        +verifyBearer(header) RequestContext
+    }
+    class SessionStore {
+        +load(sessionId, owner) Session
+        +appendTurn(sessionId, turn) void
+        +lock(sessionId) void
+    }
+    class UnifiedAgent {
+        +handle(message, history, context) AgentResult
+        +runToolLoop(model, tools, maxSteps) AgentResult
+    }
+    class OutputValidator {
+        +validateReply(reply, toolResults) ValidationResult
+    }
+
+    PanacheEntityBase <|-- Tenant
+    PanacheEntityBase <|-- Role
+    PanacheEntityBase <|-- TenantConfig
+    PanacheEntityBase <|-- UserSettings
+    PanacheEntityBase <|-- Bank
+    PanacheEntityBase <|-- CustomerVoucher
+    PanacheEntityBase <|-- SubscriptionPlan
+    PanacheEntityBase <|-- OrderHistory
+    PanacheEntityBase <|-- InboundEventLog
+    PanacheEntityBase <|-- WebhookEvent
+    BaseEntity <|-- User
+    BaseEntity <|-- Business
+    BaseEntity <|-- Customer
+    BaseEntity <|-- Category
+    BaseEntity <|-- Product
+    BaseEntity <|-- ProductVariant
+    BaseEntity <|-- Tag
+    BaseEntity <|-- Voucher
+    BaseEntity <|-- Order
+    BaseEntity <|-- OrderItem
+    BaseEntity <|-- PaymentIntent
+    BaseEntity <|-- PaymentTransaction
+    BaseEntity <|-- PaymentRefund
+    BaseEntity <|-- PaymentIdempotency
+    BaseEntity <|-- Wallet
+    BaseEntity <|-- WalletTransaction
+    BaseEntity <|-- WalletTopUp
+    BaseEntity <|-- PayoutRequest
+    BaseEntity <|-- LedgerCheckpoint
+    BaseEntity <|-- EscrowRecord
+    BaseEntity <|-- RevenueAdjustment
+    BaseEntity <|-- VendorRiskEvent
+    BaseEntity <|-- Notification
+    BaseEntity <|-- TenantSubscription
+    BaseEntity <|-- SubscriptionPayment
+    BaseEntity <|-- SalesChannel
+    BaseEntity <|-- ExternalEntityMapping
+
+    Tenant "1" --> "*" User : có
+    User "*" --> "0..1" Role : mang
+    User "*" --> "0..1" Business : thuộc
+    Business "1" --> "*" Product : bán
+    Category "1" --> "*" Product : phân loại
+    Category "1" --> "0..1" Category : cha
+    Product "1" *-- "*" ProductVariant : có
+    Product "*" -- "*" Tag : gắn
+    Product ..> ProductOption : dùng
+
+    Customer "1" --> "*" Order : đặt
+    Business "1" --> "*" Order : nhận
+    Order "1" *-- "*" OrderItem : gồm
+    Order "1" --> "*" OrderHistory : lịch sử
+    Order "*" --> "0..1" Voucher : áp dụng
+    OrderItem "*" --> "1" Product : tham chiếu
+    OrderItem "*" --> "0..1" ProductVariant : tham chiếu
+    Customer "1" --> "*" CustomerVoucher : sở hữu
+    Voucher "1" --> "*" CustomerVoucher : phát hành
+
+    PaymentIntent "*" --> "1" Order : thanh toán cho
+    PaymentTransaction "*" --> "1" PaymentIntent : giao dịch
+    PaymentRefund "*" --> "1" PaymentIntent : hoàn
+    PaymentRefund "*" --> "1" Order : thuộc
+
+    User "1" --> "0..1" Wallet : sở hữu
+    Wallet "1" *-- "*" WalletTransaction : bút toán
+    Wallet "1" --> "*" WalletTopUp : nạp
+    Wallet "1" --> "*" PayoutRequest : rút
+    Wallet "*" --> "0..1" Bank : liên kết
+    LedgerCheckpoint "*" --> "1" Wallet : đối soát
+
+    EscrowRecord "*" --> "1" Order : giữ cho
+    EscrowRecord "*" --> "1" Wallet : ví người bán
+    Order "1" --> "*" Notification : thông báo
+    Customer "1" --> "*" Notification : nhận
+    User "1" --> "*" Notification : nhận
+    RevenueAdjustment "*" --> "1" Business : điều chỉnh
+
+    Tenant "1" --> "0..1" TenantSubscription : đăng ký
+    TenantSubscription ..> SubscriptionPlan : planCode
+    SubscriptionPayment ..> SubscriptionPlan : planCode
+    SalesChannel "*" --> "1" Business : kênh bán
+    ExternalEntityMapping "*" --> "1" SalesChannel : ánh xạ
+
+    OrderResource ..> Order : quản lý
+    OrderResource ..> PaymentIntentService : tạo intent
+    OrderResource ..> EntitlementService : kiểm gói
+    OrderFulfillmentService ..> Order : chuyển trạng thái
+    OrderFulfillmentService ..> EscrowService : giải phóng
+    PaymentIntentService ..> PaymentIntent : tạo
+    PaymentService ..> PaymentTransaction : ghi
+    PaymentService ..> EscrowService : giữ tiền
+    PaymentService ..> Wallet : trừ ví
+    PaymentRefundService ..> PaymentRefund : ghi
+    EscrowService ..> EscrowRecord : giữ và giải phóng
+    EscrowService ..> WalletService : chuyển tiền
+    EscrowService ..> LedgerCheckpoint : cập nhật
+    WalletService ..> WalletTransaction : ghi
+    EscrowReleaseScheduler ..> EscrowService : gọi định kỳ
+    OwnerDecisionScheduler ..> OrderFulfillmentService : hủy quá hạn
+    ReturnRefundService ..> EscrowService : hoàn tiền
+    NotificationService ..> Notification : tạo
+
+    ChatWidget ..> ChatEndpoint : gọi
+    ChatEndpoint ..> RequestContext : xác thực
+    ChatEndpoint ..> SessionStore : phiên
+    ChatEndpoint ..> UnifiedAgent : xử lý
+    UnifiedAgent ..> OutputValidator : kiểm câu trả lời
+    UnifiedAgent ..> OrderResource : tool read-only
+    RequestContext ..> User : danh tính từ JWT
+
+    note for RequestContext "Identity lấy từ JWT; không nằm trong prompt hay đối số tool"
+    note for Order "Legacy PENDING, CONFIRMED, SHIPPING, SHIPPED vẫn được API chấp nhận"
+    note for EscrowRecord "HELD -> RELEASED hoặc REFUNDED; không quay lại"

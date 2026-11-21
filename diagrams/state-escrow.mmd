@@ -1,0 +1,19 @@
+%% Phụ trách: N10-B
+%% State machine của EscrowRecord - đối chiếu EscrowService
+stateDiagram-v2
+    [*] --> HELD : thanh toán thành công hoặc COD đã thu
+
+    HELD --> RELEASED : buyer xác nhận, escrow tới hạn, hoặc staff hoàn tất
+    HELD --> REFUNDED : owner từ chối, hủy đơn, hoặc duyệt trả hàng
+
+    RELEASED --> [*]
+    REFUNDED --> [*]
+
+    note right of HELD
+        releaseDueAt = now + orders.escrow-hold-days
+        mặc định 7 ngày
+    end note
+    note right of RELEASED
+        Ví người bán +amount - 5%
+        Ví platform giữ hoa hồng
+    end note

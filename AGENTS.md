@@ -5,14 +5,14 @@
 Infrastructure before backend, backend before frontend:
 
 ```bash
-docker compose up -d                    # PostgreSQL + Keycloak
+docker compose up -d                    # MariaDB + Keycloak (+ WordPress/WooCommerce)
 ./gradlew quarkusDev                    # Backend dev mode at :8081
 # then (separate terminal):
 cd frontend && npm run dev              # Vite at :5174, proxies /api → :8081
 ```
 
 Keycloak realm (`keycloak/realm-v-erp-lite.json`) auto-imports on first start.
-Seeded user: `admin@v-erp.com` / `password`. Keycloak admin console: `admin` / `admin` at `localhost:8181`.
+Seeded users are created by `V4__seed_users.sql` with credentials from the realm import; change them before any shared deployment. Keycloak admin console: `admin` / `admin` at `localhost:8181`.
 
 ## Commands
 
@@ -35,16 +35,18 @@ No frontend test runner. No backend lint tasks.
 
 ## Ports
 
-| Service   | Port | Notes                |
-|-----------|------|----------------------|
-| Backend   | 8081 | Quarkus default 8080 |
-| Frontend  | 5174 | Vite default 5173    |
-| Keycloak  | 8181 |                      |
-| PG (ext)  | 5433 |                      |
+| Service   | Port | Notes                          |
+|-----------|------|--------------------------------|
+| Backend   | 8081 | Quarkus default 8080           |
+| Frontend  | 5174 | Vite default 5173              |
+| Keycloak  | 8181 | OIDC realm `v-erp-lite`        |
+| MariaDB   | 3307 | Container port 3306            |
+| WordPress | 8090 | WooCommerce integration        |
+| AI chat   | 8000 | FastAPI MCP server             |
 
 ## Architecture
 
-Single-module Quarkus (Gradle) app, flat `base.*` package structure:
+Single-module Quarkus (Gradle) app, flat `base.*` package structure. Container view and data ownership are in `diagrams/c4-container.mmd` and `docs/du-lieu.md`; system context in `diagrams/c4-context.mmd`:
 
 - `base.entity` — JPA entities (Tenant, User, Customer, Business, Role, BaseEntity, TenantConfig, UserSettings)
 - `base.security` — Keycloak OIDC auth: CallerContext, TenantResolver, TotpUtil

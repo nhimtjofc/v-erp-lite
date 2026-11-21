@@ -1,0 +1,46 @@
+%% Phụ trách: N10-B
+%% State machine của Order - đối chiếu OrderResource.isAllowedStatusTransition
+stateDiagram-v2
+    [*] --> PENDING_PAYMENT : tạo đơn
+
+    PENDING_PAYMENT --> PAID_ESCROW : thanh toán SUCCEEDED
+    PENDING_PAYMENT --> CANCELLED : hết hạn 30 phút
+
+    PAID_ESCROW --> OWNER_ACCEPTED : owner nhận đơn
+    PAID_ESCROW --> OWNER_DECLINED : owner từ chối
+    PAID_ESCROW --> CANCELLED : staff hủy
+
+    OWNER_ACCEPTED --> FULFILLING : bắt đầu giao
+    FULFILLING --> DELIVERED : giao xong
+    DELIVERED --> PENDING_COMPLETION : tự động, bắt đầu chờ xác nhận
+
+    PENDING_COMPLETION --> COMPLETED : buyer xác nhận hoặc escrow tới hạn
+    PENDING_COMPLETION --> CANCEL_REQUESTED : khách yêu cầu hủy toàn bộ
+    PENDING_COMPLETION --> RETURN_REQUESTED : khách yêu cầu trả hàng
+
+    CANCEL_REQUESTED --> CANCEL_APPROVED : staff duyệt hủy
+    CANCEL_APPROVED --> REFUNDED : hoàn tiền
+    RETURN_REQUESTED --> RETURN_APPROVED : staff duyệt trả
+    RETURN_APPROVED --> REFUNDED : hoàn tiền
+    OWNER_DECLINED -.-> REFUNDED : đối soát hoàn tiền thủ công
+
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+    REFUNDED --> [*]
+
+    note right of OWNER_DECLINED
+        declineAndRefund() hoàn tiền qua PaymentRefundService
+        nhưng giữ trạng thái OWNER_DECLINED, không tự set REFUNDED
+    end note
+
+    note right of PENDING_PAYMENT
+        Legacy PENDING, CONFIRMED, SHIPPING, SHIPPED
+        vẫn được API chấp nhận cho dữ liệu cũ
+    end note
+    note right of PAID_ESCROW
+        Escrow HELD được tạo tại đây,
+        releaseDueAt = now + 7 ngày
+    end note
+    note right of COMPLETED
+        Escrow RELEASED, hoa hồng 5% ở ví platform
+    end note

@@ -1,0 +1,28 @@
+%% Phụ trách: N10-C
+%% C4 level 1 - ngữ cảnh hệ thống V-ERP Lite
+C4Context
+    title Ngữ cảnh hệ thống V-ERP Lite
+
+    Person(buyer, "Khách mua hàng", "Duyệt sản phẩm, đặt hàng, thanh toán, theo dõi đơn, chat với trợ lý AI")
+    Person(seller, "Chủ doanh nghiệp", "Quản lý sản phẩm, tồn kho, đơn hàng, ví và yêu cầu rút tiền")
+    Person(operator, "Nhân viên vận hành", "Xử lý đơn, giao vận, hoàn tiền và đối soát")
+    Person(admin, "Quản trị sàn", "Quản lý tenant, người dùng, gói dịch vụ và rủi ro payout")
+
+    System(verp, "V-ERP Lite", "Nền tảng thương mại nhiều tenant: catalog, đơn hàng, escrow, sổ cái ví, payout và trợ lý AI")
+
+    System_Ext(keycloak, "Keycloak", "Định danh OIDC, phát hành JWT RS256 và quản lý tài khoản")
+    System_Ext(woo, "WordPress / WooCommerce", "Kênh bán ngoài: đồng bộ catalog và gửi webhook đơn hàng")
+    System_Ext(bank, "Ngân hàng / VietQR", "Sinh mã QR thanh toán và nhận thông báo giao dịch")
+    System_Ext(gateway, "Cổng thanh toán", "VNPay, Stripe hoặc cổng mô phỏng cho thanh toán và hoàn tiền")
+    System_Ext(llm, "Google Gemini & Pinecone", "Mô hình ngôn ngữ và cơ sở dữ liệu vector cho trợ lý AI")
+
+    Rel(buyer, verp, "Mua sắm, thanh toán, tra cứu đơn", "HTTPS")
+    Rel(seller, verp, "Quản trị gian hàng và ví", "HTTPS")
+    Rel(operator, verp, "Xử lý đơn và đối soát", "HTTPS")
+    Rel(admin, verp, "Quản trị hệ thống", "HTTPS")
+
+    Rel(verp, keycloak, "Xác thực, đồng bộ tài khoản", "OIDC / Admin REST")
+    Rel(verp, woo, "Đồng bộ sản phẩm, nhận webhook", "REST / HMAC SHA-256")
+    Rel(verp, bank, "Tạo VietQR, nhận IPN", "HTTPS")
+    Rel(verp, gateway, "Thanh toán và hoàn tiền", "HTTPS")
+    Rel(verp, llm, "Suy luận và tìm kiếm vector", "HTTPS / SDK")
